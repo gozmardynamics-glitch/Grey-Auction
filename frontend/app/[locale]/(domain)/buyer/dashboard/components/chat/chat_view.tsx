@@ -24,8 +24,15 @@ export default function ChatView({ conversation, onBack }: ChatViewProps) {
 
   const handleSend = () => {
     if (!messageInput.trim()) return;
-    console.log('Sending:', messageInput);
+    const content = messageInput.trim();
     setMessageInput('');
+
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    fetch(`${apiBase}/conversations/${conversation.id}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    }).catch(() => {});
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

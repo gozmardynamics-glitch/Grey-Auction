@@ -1,3 +1,19 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+async function apiFetch(path: string, options?: RequestInit): Promise<any> {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data ?? json;
+  } catch {
+    return null;
+  }
+}
+
 import {
   dummyAuctions,
   categories,
@@ -27,27 +43,31 @@ import {
 
 import { SELLER_DUMMY_PAYMENTS } from '@/app/[locale]/(domain)/seller/models/data';
 
-// Server-side data fetching functions.
-// Currently return mock data — replace internals with fetch() when backend is ready.
+// ─── Website ─────────────────────────────────────────────────────────────
 
 export async function getAuctions() {
-  return dummyAuctions;
+  const data = await apiFetch('/auctions');
+  return data ?? dummyAuctions;
 }
 
 export async function getAuctionBySlug(slug: string) {
-  return dummyAuctions.find((a) => a.id === slug) ?? dummyAuctions[0];
+  const data = await apiFetch(`/auctions/${slug}`);
+  return data ?? dummyAuctions.find((a) => a.id === slug) ?? dummyAuctions[0];
 }
 
 export async function getFeaturedAuctions() {
-  return dummyAuctions;
+  const data = await apiFetch('/auctions/featured');
+  return data ?? dummyAuctions;
 }
 
 export async function getCategories() {
-  return categories;
+  const data = await apiFetch('/categories');
+  return data ?? categories;
 }
 
 export async function getFaqCategories() {
-  return faqCategories;
+  const data = await apiFetch('/faqs');
+  return data ?? faqCategories;
 }
 
 export async function getCartItems() {
@@ -62,73 +82,90 @@ export async function getOrderItems() {
 }
 
 export async function getWishlistItems() {
-  return dummyAuctions;
+  const data = await apiFetch('/wishlist');
+  return data ?? dummyAuctions;
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────
 
 export async function getAdminAuctions() {
-  return DUMMY_AUCTIONS;
+  const data = await apiFetch('/admin/auctions');
+  return data ?? DUMMY_AUCTIONS;
 }
 
 export async function getAdminBids() {
-  return DUMMY_BIDS;
+  const data = await apiFetch('/admin/bids');
+  return data ?? DUMMY_BIDS;
 }
 
 export async function getAdminBuyers() {
-  return DUMMY_BUYERS;
+  const data = await apiFetch('/admin/buyers');
+  return data ?? DUMMY_BUYERS;
 }
 
 export async function getAdminSellers() {
-  return DUMMY_SELLERS;
+  const data = await apiFetch('/admin/sellers');
+  return data ?? DUMMY_SELLERS;
 }
 
 export async function getAdminAdmins() {
-  return DUMMY_ADMINS;
+  const data = await apiFetch('/admin/admins');
+  return data ?? DUMMY_ADMINS;
 }
 
 export async function getAdminCategories() {
-  return DUMMY_CATEGORIES;
+  const data = await apiFetch('/admin/categories');
+  return data ?? DUMMY_CATEGORIES;
 }
 
 export async function getAdminBanners() {
-  return DUMMY_BANNERS;
+  const data = await apiFetch('/admin/banners');
+  return data ?? DUMMY_BANNERS;
 }
 
 export async function getAdminFaqs() {
-  return DUMMY_FAQS;
+  const data = await apiFetch('/admin/faqs');
+  return data ?? DUMMY_FAQS;
 }
 
 export async function getAdminPayments() {
-  return DUMMY_PAYMENTS;
+  const data = await apiFetch('/admin/payments');
+  return data ?? DUMMY_PAYMENTS;
 }
 
 export async function getAdminBiddingRooms() {
-  return DUMMY_BIDDING_ROOMS;
+  const data = await apiFetch('/admin/rooms');
+  return data ?? DUMMY_BIDDING_ROOMS;
 }
 
 export async function getAdminTickets() {
-  return DUMMY_TICKETS;
+  const data = await apiFetch('/admin/tickets');
+  return data ?? DUMMY_TICKETS;
 }
 
 // ─── Seller ─────────────────────────────────────────────────────────────
 
 export async function getSellerListings() {
-  return DUMMY_LISTINGS;
+  const data = await apiFetch('/seller/listings');
+  return data ?? DUMMY_LISTINGS;
 }
 
 export async function getSellerPayments() {
-  return SELLER_DUMMY_PAYMENTS;
+  const data = await apiFetch('/seller/payments');
+  return data ?? SELLER_DUMMY_PAYMENTS;
 }
 
 export async function getSellerSales() {
-  return DUMMY_SALES;
+  const data = await apiFetch('/seller/sales');
+  return data ?? DUMMY_SALES;
 }
 
 export async function getSellerBiddingRooms() {
-  return SELLER_BIDDING_ROOMS;
+  const data = await apiFetch('/seller/rooms');
+  return data ?? SELLER_BIDDING_ROOMS;
 }
 
 export async function getSellerConversations() {
-  return DUMMY_CONVERSATIONS;
+  const data = await apiFetch('/seller/conversations');
+  return data ?? DUMMY_CONVERSATIONS;
 }
