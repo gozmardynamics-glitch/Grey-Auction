@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
 
-# Next.js build output
+# Build output
+dist/
 .next/
 out/
 

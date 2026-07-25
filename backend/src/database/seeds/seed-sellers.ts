@@ -1,10 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app.module';
-import { SellerService } from '../seller/services/seller.service';
+import { AppModule } from '../../app.module';
+import { SellerService } from '../../seller/services/seller.service';
 import {
   SellerBusinessType,
   SellerPayoutMethod,
-} from '../seller/entities/seller.entity';
+} from '../../seller/entities/seller.entity';
 
 /**
  * Seed script to create test seller accounts

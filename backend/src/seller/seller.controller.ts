@@ -13,7 +13,7 @@ import {
   HttpStatus,
   UploadedFile,
   UseInterceptors,
-} from '@nestjs/swagger';
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -23,7 +23,6 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { SellerService } from './services/seller.service';
 import { SellerDocumentService } from './services/seller-document.service';
 import { SellerPayoutService } from './services/seller-payout.service';
@@ -50,6 +49,7 @@ import {
   ReviewQueryDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import {
   SellerGuard,
@@ -60,7 +60,6 @@ import {
   CurrentSeller,
   SellerOnly,
   RequireVerification,
-  CheckOwnership,
 } from './decorators';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { CurrentAdmin } from '../admin/decorators/current-admin.decorator';
@@ -816,12 +815,3 @@ export class SellerController {
     };
   }
 }
-
-// Helper decorator for extracting current user (add this to auth module if not exists)
-
-export const CurrentUser = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.user;
-  },
-);
