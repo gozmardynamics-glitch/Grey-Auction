@@ -1,0 +1,63 @@
+{
+  "header": {
+    "allAuctions": "Toutes les enchères",
+    "allCategories": "Toutes les catégories",
+    "wishlist": "Liste de souhaits",
+    "cart": "Panier",
+    "myAccount": "Mon compte",
+    "becomeSeller": "Devenir vendeur",
+    "searchPlaceholder": "Rechercher des lots",
+    "category": "Catégorie",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "settings": "Paramètres",
+    "featuredLots": "Lots en vedette",
+    "viewAll": "Voir tout"
+  },
+  "footer": {
+    "company": "Entreprise",
+    "aboutUs": "À propos",
+    "howItWorks": "Comment ça marche",
+    "career": "Carrière",
+    "marketplace": "Marché",
+    "liveAuctions": "Enchères en direct",
+    "featuredLots": "Lots en vedette",
+    "categories": "Catégories",
+    "useful": "Utile",
+    "contactUs": "Contactez-nous",
+    "deliveryInfo": "Informations de livraison",
+    "blog": "Blog",
+    "support": "Support",
+    "faq": "FAQ",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsAndConditions": "Conditions générales",
+    "copyright": "Tous droits réservés"
+  },
+  "cookieConsent": {
+    "title": "Nous respectons votre vie privée",
+    "description": "Nous utilisons des cookies pour améliorer votre expérience de navigation, proposer du contenu personnalisé et analyser notre trafic. Vous pouvez accepter tous les cookies, refuser les cookies non essentiels ou personnaliser vos préférences.",
+    "acceptAll": "Tout accepter",
+    "rejectAll": "Tout refuser",
+    "customize": "Personnaliser",
+    "savePreferences": "Enregistrer les préférences",
+    "necessary": "Nécessaires",
+    "necessaryDesc": "Indispensables au bon fonctionnement du site. Ne peuvent pas être désactivés.",
+    "analytics": "Analytiques",
+    "analyticsDesc": "Nous aident à comprendre comment les visiteurs interagissent avec notre site.",
+    "marketing": "Marketing",
+    "marketingDesc": "Utilisés pour diffuser des publicités pertinentes et suivre les campagnes."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "submit": "Soumettre",
+    "search": "Rechercher",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "header": {
+    "allAuctions": "Alle veilingen",
+    "allCategories": "Alle categorieën",
+    "wishlist": "Verlanglijst",
+    "cart": "Winkelwagen",
+    "myAccount": "Mijn account",
+    "becomeSeller": "Word verkoper",
+    "searchPlaceholder": "Zoek naar kavels",
+    "category": "Categorie",
+    "signIn": "Inloggen",
+    "signOut": "Uitloggen",
+    "settings": "Instellingen",
+    "featuredLots": "Uitgelichte kavels",
+    "viewAll": "Alles bekijken"
+  },
+  "footer": {
+    "company": "Bedrijf",
+    "aboutUs": "Over ons",
+    "howItWorks": "Hoe het werkt",
+    "career": "Carrière",
+    "marketplace": "Marktplaats",
+    "liveAuctions": "Live veilingen",
+    "featuredLots": "Uitgelichte kavels",
+    "categories": "Categorieën",
+    "useful": "Nuttig",
+    "contactUs": "Neem contact op",
+    "deliveryInfo": "Bezorginformatie",
+    "blog": "Blog",
+    "support": "Ondersteuning",
+    "faq": "FAQ",
+    "privacyPolicy": "Privacybeleid",
+    "termsAndConditions": "Algemene voorwaarden",
+    "copyright": "Alle rechten voorbehouden"
+  },
+  "cookieConsent": {
+    "title": "Wij respecteren uw privacy",
+    "description": "Wij gebruiken cookies om uw browse-ervaring te verbeteren, gepersonaliseerde inhoud aan te bieden en ons verkeer te analyseren. U kunt ervoor kiezen alle cookies te accepteren, niet-essentiële cookies te weigeren of uw voorkeuren aan te passen.",
+    "acceptAll": "Alles accepteren",
+    "rejectAll": "Alles weigeren",
+    "customize": "Aanpassen",
+    "savePreferences": "Voorkeuren opslaan",
+    "necessary": "Noodzakelijk",
+    "necessaryDesc": "Vereist voor het goed functioneren van de website. Kan niet worden uitgeschakeld.",
+    "analytics": "Analytisch",
+    "analyticsDesc": "Helpen ons te begrijpen hoe bezoekers onze website gebruiken.",
+    "marketing": "Marketing",
+    "marketingDesc": "Gebruikt om relevante advertenties te tonen en campagnes te volgen."
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Er is iets misgegaan",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "submit": "Verzenden",
+    "search": "Zoeken",
+    "back": "Terug",
+    "next": "Volgende",
+    "previous": "Vorige"
+  }
+}

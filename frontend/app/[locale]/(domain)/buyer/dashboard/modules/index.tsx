@@ -1,0 +1,12 @@
+export { default as BuyerDashboardModule } from './dashboard';
+export { default as BuyerAccountModule } from './account';
+export { default as BuyerMyBidsModule } from './my_bids';
+export { default as BuyerAuctionsModule } from './auctions';
+export { default as BuyerAuthenticationsModule } from './authentications';
+export { default as BuyerWishlistModule } from './wishlist';
+export { default as BuyerPurchasesModule } from './purchases';
+export { default as BuyerNotificationsModule } from './notifications';
+export { default as BuyerSettingsModule } from './settings';
+export { default as BuyerMessagesModule } from './messages';
+export { default as BuyerChatsModule } from './chats';
+export { default as BuyerWalletModule } from './wallet';

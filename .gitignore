@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# System files
+.DS_Store
+Thumbs.db
+*.lnk
+
+# Temp/editor files
+~$*
+*~
+
+# Playwright
+.playwright-mcp/
+
+# Zip archives (source code is extracted)
+*.zip
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# TypeScript
+*.tsbuildinfo

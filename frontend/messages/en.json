@@ -1,0 +1,63 @@
+{
+  "header": {
+    "allAuctions": "All Auctions",
+    "allCategories": "All Categories",
+    "wishlist": "Wishlist",
+    "cart": "Cart",
+    "myAccount": "My Account",
+    "becomeSeller": "Become a Seller",
+    "searchPlaceholder": "Search for lots",
+    "category": "Category",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "settings": "Settings",
+    "featuredLots": "Featured Lots",
+    "viewAll": "View All"
+  },
+  "footer": {
+    "company": "Company",
+    "aboutUs": "About Us",
+    "howItWorks": "How it Works",
+    "career": "Career",
+    "marketplace": "Marketplace",
+    "liveAuctions": "Live Auctions",
+    "featuredLots": "Featured Lots",
+    "categories": "Categories",
+    "useful": "Useful",
+    "contactUs": "Contact Us",
+    "deliveryInfo": "Delivery Information",
+    "blog": "Blog",
+    "support": "Support",
+    "faq": "FAQ",
+    "privacyPolicy": "Privacy Policy",
+    "termsAndConditions": "Terms & Conditions",
+    "copyright": "All Rights Reserved"
+  },
+  "cookieConsent": {
+    "title": "We value your privacy",
+    "description": "We use cookies to enhance your browsing experience, serve personalised content, and analyse our traffic. You can choose to accept all cookies, reject non-essential cookies, or customise your preferences.",
+    "acceptAll": "Accept All",
+    "rejectAll": "Reject All",
+    "customize": "Customize",
+    "savePreferences": "Save Preferences",
+    "necessary": "Necessary",
+    "necessaryDesc": "Required for the website to function properly. Cannot be disabled.",
+    "analytics": "Analytics",
+    "analyticsDesc": "Help us understand how visitors interact with our website.",
+    "marketing": "Marketing",
+    "marketingDesc": "Used to deliver relevant advertisements and track campaigns."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "submit": "Submit",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  }
+}

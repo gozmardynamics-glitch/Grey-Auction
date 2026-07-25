@@ -1,0 +1,122 @@
+import { api } from '@/redux/api';
+import type { Auction, AuctionFilters, Bid, CreateAuctionData } from '../models';
+
+const auctionsApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    getAuctions: builder.query<Auction[], AuctionFilters | void>({
+      query: (filters) => ({
+        url: '/auctions',
+        params: filters
+          ? {
+              categories: filters.categories.join(','),
+              countries: filters.countries.join(','),
+              brands: filters.brands.join(','),
+              priceMin: filters.priceRange[0],
+              priceMax: filters.priceRange[1],
+              sortBy: filters.sortBy,
+            }
+          : undefined,
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Auction' as const, id })),
+              { type: 'Auction', id: 'LIST' },
+            ]
+          : [{ type: 'Auction', id: 'LIST' }],
+    }),
+
+    getFeaturedAuctions: builder.query<Auction[], void>({
+      query: () => '/auctions/featured',
+      providesTags: [{ type: 'Auction', id: 'FEATURED' }],
+    }),
+
+    getAuctionById: builder.query<Auction, string>({
+      query: (id) => `/auctions/${id}`,
+      providesTags: (_result, _error, id) => [{ type: 'Auction', id }],
+    }),
+
+    createAuction: builder.mutation<Auction, CreateAuctionData>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('description', data.description);
+        formData.append('startingBid', data.startingBid.toString());
+        formData.append('endTime', data.endTime.toISOString());
+        formData.append('category', data.category);
+        data.images.forEach((image, index) => {
+          formData.append(`image${index}`, image);
+        });
+
+        return { url: '/auctions', method: 'POST', body: formData };
+      },
+      invalidatesTags: [{ type: 'Auction', id: 'LIST' }],
+    }),
+
+    updateAuction: builder.mutation<Auction, { id: string; data: Partial<Auction> }>({
+      query: ({ id, data }) => ({
+        url: `/auctions/${id}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Auction', id },
+        { type: 'Auction', id: 'LIST' },
+      ],
+    }),
+
+    deleteAuction: builder.mutation<void, string>({
+      query: (id) => ({ url: `/auctions/${id}`, method: 'DELETE' }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Auction', id },
+        { type: 'Auction', id: 'LIST' },
+      ],
+    }),
+
+    // ─── Bids ───────────────────────────────────────────────────────
+
+    getAuctionBids: builder.query<Bid[], string>({
+      query: (auctionId) => `/auctions/${auctionId}/bids`,
+      providesTags: (_result, _error, auctionId) => [
+        { type: 'Bid', id: auctionId },
+      ],
+    }),
+
+    placeBid: builder.mutation<Bid, { auctionId: string; amount: number }>({
+      query: ({ auctionId, amount }) => ({
+        url: `/auctions/${auctionId}/bids`,
+        method: 'POST',
+        body: { amount },
+      }),
+      invalidatesTags: (_result, _error, { auctionId }) => [
+        { type: 'Bid', id: auctionId },
+        { type: 'Auction', id: auctionId },
+      ],
+    }),
+
+    // ─── User-scoped ────────────────────────────────────────────────
+
+    getUserAuctions: builder.query<Auction[], string>({
+      query: (userId) => `/users/${userId}/auctions`,
+      providesTags: [{ type: 'Auction', id: 'LIST' }],
+    }),
+
+    getUserBids: builder.query<Bid[], string>({
+      query: (userId) => `/users/${userId}/bids`,
+      providesTags: [{ type: 'Bid', id: 'USER' }],
+    }),
+  }),
+});
+
+export const {
+  useGetAuctionsQuery,
+  useGetFeaturedAuctionsQuery,
+  useGetAuctionByIdQuery,
+  useCreateAuctionMutation,
+  useUpdateAuctionMutation,
+  useDeleteAuctionMutation,
+  useGetAuctionBidsQuery,
+  usePlaceBidMutation,
+  useGetUserAuctionsQuery,
+  useGetUserBidsQuery,
+} = auctionsApi;
