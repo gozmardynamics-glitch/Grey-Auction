@@ -67,6 +67,7 @@ export default function ProductDetailsClient({
   const currentBid = useAppSelector((state) => state.bidding.currentBid);
   const bidHistory = useAppSelector((state) => state.bidding.bidHistory);
   const authUser = useAppSelector((state) => state.auth.user);
+  const authToken = useAppSelector((state) => state.auth.token);
   const isLoggedIn = useAppSelector((state) => state.auth.isAuthenticated);
 
   const [bidType, setBidType] = useState('maximum');
@@ -114,7 +115,21 @@ export default function ProductDetailsClient({
     dispatch(setBidError(null));
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiBase}/auctions/${auctionId}/bids`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ amount: bidAmount }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Bid failed');
+      }
+
       dispatch(
         placeBid({
           amount: bidAmount,
@@ -125,13 +140,13 @@ export default function ProductDetailsClient({
       );
       setBidAmount(0);
       setBidModalStep('success');
-    } catch {
-      dispatch(setBidError('Failed to place bid. Please try again.'));
+    } catch (err: any) {
+      dispatch(setBidError(err.message || 'Failed to place bid. Please try again.'));
       setBidModalOpen(false);
     } finally {
       dispatch(setBidding(false));
     }
-  }, [bidAmount, auctionId, authUser, dispatch]);
+  }, [bidAmount, auctionId, authUser, authToken, dispatch]);
 
   const handleBidModalClose = useCallback(() => {
     setBidModalOpen(false);
