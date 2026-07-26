@@ -75,9 +75,9 @@ export function CategoriesCard({
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group h-full">
-      <div className="grid grid-cols-[140px_1fr] md:grid-cols-2 h-full">
+      <div className="grid grid-cols-[100px_1fr] md:grid-cols-2 h-full">
         {/* Left Side - Image */}
-        <div className="relative h-full min-h-[160px] md:min-h-full w-full rounded-l-md bg-muted-foreground">
+        <div className="relative h-full min-h-[110px] md:min-h-full w-full rounded-l-md bg-muted-foreground">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
@@ -156,12 +156,12 @@ export function CategoriesCard({
 
         {/* Right Side - Content */}
         <div className="flex flex-col w-full">
-          <CardContent className="space-y-1 md:space-y-4 p-3 md:py-6">
+          <CardContent className="space-y-1 md:space-y-3 p-2 md:py-4">
             {/* Header with Actions */}
             <div className="flex items-start justify-between gap-2 md:gap-4">
-              <div className="flex-1 space-y-1 md:space-y-2">
+              <div className="flex-1 space-y-1 md:space-y-1.5">
                 {/* Title */}
-                <h3 className="text-sm md:text-2xl font-bold text-primary line-clamp-1 md:line-clamp-2">
+                <h3 className="text-sm md:text-lg font-bold text-primary line-clamp-1 md:line-clamp-2">
                   {auction.title}
                 </h3>
 
@@ -178,7 +178,7 @@ export function CategoriesCard({
                     <span>
                       {auction.location.city}, {auction.location.country}
                     </span>
-                    <span className="text-sm md:text-lg">
+                    <span className="text-sm md:text-base">
                       {getCountryFlag(auction.location.countryCode)}
                     </span>
                   </div>
@@ -191,14 +191,14 @@ export function CategoriesCard({
               <p className="text-xs md:text-sm text-muted-foreground">
                 Current bid:
               </p>
-              <p className="text-sm md:text-xl font-bold text-foreground">
+              <p className="text-sm md:text-lg font-bold text-foreground">
                 {formatCurrency(auction.currentBid)}
               </p>
             </div>
           </CardContent>
 
           {/* Footer with Buttons */}
-          <CardFooter className="flex flex-col gap-1 md:gap-1 items-center justify-end h-full p-3 pt-0 md:p-6 md:pt-0">
+          <CardFooter className="flex flex-col gap-1 md:gap-1 items-center justify-end h-full p-2 pt-0 md:p-4 md:pt-0">
             {auction.status === 'active' && (
               <div className="flex gap-2 md:flex-col md:gap-1 w-full">
                 <Button

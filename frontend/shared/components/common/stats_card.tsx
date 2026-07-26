@@ -43,19 +43,19 @@ export default function StatsCard({
       <CardHeader className="">
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-lg ${iconBgColor}`}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBgColor}`}
           >
-            <Icon className={`h-6 w-6 ${iconColor}`} />
+            <Icon className={`h-5 w-5 ${iconColor}`} />
           </div>
-          <CardTitle className="text-base font-medium text-muted-foreground">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             {title}
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="text-3xl font-semibold text-foreground">{value}</div>
-        <div className="flex items-center gap-1 text-sm">
-          <div className={`flex items-center gap-1 text-sm px-2 py-1 rounded-md bg-background text-foreground ${getTrendColor()}`}>
+      <CardContent className="space-y-1.5">
+        <div className="text-2xl font-semibold text-foreground">{value}</div>
+        <div className="flex items-center gap-1 text-xs">
+          <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-background text-foreground ${getTrendColor()}`}>
             {getTrendIcon()}
             <span className="font-medium">{Math.abs(trend)}%</span>
           </div>

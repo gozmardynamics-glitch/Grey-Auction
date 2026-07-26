@@ -27,15 +27,15 @@ export default function AuctionCard({ auction, onClick }: AuctionCardProps) {
           {auction.status}
         </Badge>
       </div>
-      <div className="p-4 space-y-3">
-        <h3 className="text-sm font-semibold truncate">{auction.name}</h3>
+      <div className="p-3 space-y-2">
+        <h3 className="text-xs font-semibold truncate">{auction.name}</h3>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Current Bid</p>
-          <p className="text-sm font-semibold">{formatCurrency(auction.currentBid)}</p>
+          <p className="text-[10px] text-muted-foreground">Current Bid</p>
+          <p className="text-xs font-semibold">{formatCurrency(auction.currentBid)}</p>
         </div>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Status</p>
-          <p className="text-xs text-orange-600">{auction.reserveStatus}</p>
+          <p className="text-[10px] text-muted-foreground">Status</p>
+          <p className="text-[10px] text-orange-600">{auction.reserveStatus}</p>
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div>

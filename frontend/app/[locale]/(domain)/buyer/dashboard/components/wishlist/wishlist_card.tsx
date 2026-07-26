@@ -108,14 +108,14 @@ export default function WishlistCard({ item }: { item: WishlistItem }) {
       </div>
 
       {/* Content */}
-      <div className="p-2.5 sm:p-3 space-y-2 sm:space-y-3">
+      <div className="p-2 space-y-1.5">
         {/* Title */}
-        <h3 className="text-sm font-semibold leading-tight truncate">
+        <h3 className="text-xs font-semibold leading-tight truncate">
           {item.title}
         </h3>
 
         {/* Specs */}
-        <p className="text-xs text-muted-foreground truncate">{item.specs}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{item.specs}</p>
 
         {/* Current Bid */}
         <div className="flex items-center justify-between gap-2">

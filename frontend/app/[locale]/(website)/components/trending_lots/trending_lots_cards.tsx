@@ -78,7 +78,7 @@ export function TrendingLotsCards({
     <Card className="overflow-hidden shadow-none hover:shadow-lg transition-shadow duration-300 group">
       <CardHeader className="p-0 relative">
         {/* Image */}
-        <div className="relative h-72 bg-muted-foreground overflow-hidden">
+        <div className="relative h-48 bg-muted-foreground overflow-hidden">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
@@ -105,7 +105,7 @@ export function TrendingLotsCards({
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`w-5 h-5 transition-colors ${
+                className={`h-4 w-4 transition-colors ${
                   isWishlisted
                     ? 'fill-red-500 text-red-500'
                     : 'text-muted-foreground'
@@ -147,48 +147,48 @@ export function TrendingLotsCards({
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-3 space-y-2">
         {/* Title */}
-        <h3 className="text-xl font-bold text-primary line-clamp-1">
+        <h3 className="text-base font-bold text-primary line-clamp-1">
           {auction.title}
         </h3>
 
         {/* Specs */}
         {auction.specs && (
-          <p className="text-sm text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {auction.specs}
           </p>
         )}
 
         {/* Location */}
         {auction.location && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>
               {auction.location.city}, {auction.location.country}
             </span>
-            <span className="text-lg">
+            <span className="text-base">
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
         )}
 
         {/* Current Bid */}
-        <div className="pt-2 flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">Current bid:</p>
-          <p className="text-sm font-bold text-foreground">
+        <div className="pt-1 flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">Current bid:</p>
+          <p className="text-xs font-bold text-foreground">
             {formatCurrency(auction.currentBid)}
           </p>
         </div>
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 w-full flex gap-2">
+      <CardFooter className="p-3 pt-0 w-full flex gap-2">
         {/* Action Button */}
         {auction.status === 'active' ? (
           <>
             <Button
               variant="outline"
-              size="lg"
-              className="flex-1 border-primary text-primary font-medium"
+              size="default"
+              className="flex-1 border-primary text-primary font-medium text-sm"
               onClick={handleActionClick}
             >
               Buy Now
@@ -196,8 +196,8 @@ export function TrendingLotsCards({
 
             <Button
               variant="default"
-              size="lg"
-              className="flex-1"
+              size="default"
+              className="flex-1 text-sm"
               onClick={handleActionClick}
             >
               Bid Now

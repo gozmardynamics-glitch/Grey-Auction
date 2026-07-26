@@ -209,7 +209,7 @@ export function AuctionCard({
   return (
     <Card className="group overflow-hidden shadow-none transition-shadow duration-300 hover:shadow-lg">
       <CardHeader className="relative p-0">
-        <div className="relative h-72 overflow-hidden bg-muted-foreground">
+        <div className="relative h-48 overflow-hidden bg-muted-foreground">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
@@ -233,7 +233,7 @@ export function AuctionCard({
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`h-5 w-5 transition-colors ${
+                className={`h-4 w-4 transition-colors ${
                   isWishlisted
                     ? 'fill-red-500 text-red-500'
                     : 'text-muted-foreground'
@@ -272,46 +272,46 @@ export function AuctionCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 p-4">
-        <h3 className="text-xl font-bold text-primary line-clamp-1">
+      <CardContent className="space-y-2 p-3">
+        <h3 className="text-base font-bold text-primary line-clamp-1">
           {auction.title}
         </h3>
         {auction.specs && (
-          <p className="text-sm text-muted-foreground">{auction.specs}</p>
+          <p className="text-xs text-muted-foreground">{auction.specs}</p>
         )}
         {auction.location && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>
               {auction.location.city}, {auction.location.country}
             </span>
-            <span className="text-lg">
+            <span className="text-base">
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
         )}
-        <div className="flex items-center gap-2 pt-2">
-          <p className="text-sm text-muted-foreground">Current bid:</p>
-          <p className="text-sm font-bold text-foreground">
+        <div className="flex items-center gap-2 pt-1">
+          <p className="text-xs text-muted-foreground">Current bid:</p>
+          <p className="text-xs font-bold text-foreground">
             {formatCurrency(auction.currentBid)}
           </p>
         </div>
       </CardContent>
 
-      <CardFooter className="flex w-full gap-2 p-4 pt-0">
+      <CardFooter className="flex w-full gap-2 p-3 pt-0">
         {auction.status === 'active' ? (
           <>
             <Button
               variant="outline"
-              size="lg"
-              className="flex-1 border-primary font-medium text-primary"
+              size="default"
+              className="flex-1 border-primary font-medium text-primary text-sm"
               onClick={handleBuyNowClick}
             >
               Buy Now
             </Button>
             <Button
               variant="default"
-              size="lg"
-              className="flex-1"
+              size="default"
+              className="flex-1 text-sm"
               onClick={handleBidClick}
             >
               Bid Now
@@ -320,8 +320,8 @@ export function AuctionCard({
         ) : auction.status === 'live' ? (
           <Button
             variant="default"
-            size="lg"
-            className="flex-1"
+            size="default"
+            className="flex-1 text-sm"
             onClick={handleBidClick}
           >
             Join Live Auction
@@ -329,8 +329,8 @@ export function AuctionCard({
         ) : auction.status === 'new' ? (
           <Button
             variant="default"
-            size="lg"
-            className="flex-1"
+            size="default"
+            className="flex-1 text-sm"
             onClick={handleBidClick}
           >
             Bid Now
@@ -338,8 +338,8 @@ export function AuctionCard({
         ) : auction.status === 'sold' ? (
           <Button
             variant="default"
-            size="lg"
-            className="flex-1"
+            size="default"
+            className="flex-1 text-sm"
             onClick={handleBidClick}
           >
             View
