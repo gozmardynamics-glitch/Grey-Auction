@@ -40,7 +40,7 @@ export default function FeaturedCosmeticsAuctions({
           {cosmeticCategories.map((category) => (
             <Card
               key={category.id}
-              className={`${category.backgroundColor} shadow-none rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300`}
+              className={`${category.backgroundColor} rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300`}
             >
               <CardContent className="p-4 md:p-6">
                 {/* 2-Column Grid: Text Left, Image Right */}

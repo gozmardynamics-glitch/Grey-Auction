@@ -53,7 +53,7 @@ export default function ActiveAuctionCard({
   const totalBid = currentBid + auctionFee + vatBid + vatFee;
 
   return (
-    <Card className="space-y-4 p-4 shadow-none">
+    <Card className="space-y-4 p-4">
       <div>
         <p className="mb-2 text-sm text-muted-foreground">
           Your Bid:

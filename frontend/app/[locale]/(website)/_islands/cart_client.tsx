@@ -76,7 +76,7 @@ export default function CartClient({ initialItems }: CartClientProps) {
         <div className="pb-4">
           <h2 className="text-base font-semibold">Cart Totals</h2>
         </div>
-        <Card className="w-[300px] shrink-0 shadow-none">
+        <Card className="w-[300px] shrink-0">
           <CardContent className="space-y-4 mt-5">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">

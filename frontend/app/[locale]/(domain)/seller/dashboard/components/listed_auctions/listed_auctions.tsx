@@ -17,7 +17,7 @@ interface ListedAuctionsProps {
 
 export default function ListedAuctionsComponent({ data = [] }: ListedAuctionsProps) {
   return (
-    <Card className="shadow-none">
+    <Card className="">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">Listed Auctions</CardTitle>
       </CardHeader>

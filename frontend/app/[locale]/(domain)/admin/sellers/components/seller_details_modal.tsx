@@ -59,7 +59,7 @@ export default function SellerDetailsModal({
 
         <div className="space-y-6 p-6 pt-4">
           {/* Seller Header */}
-          <Card className=" flex flex-col gap-2 sm:flex-row sm:items-center justify-between rounded-lg border p-4 shadow-none">
+          <Card className=" flex flex-col gap-2 sm:flex-row sm:items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-2">
               <Avatar className="h-14 w-14">
                 <AvatarImage src={seller.avatar} alt={seller.name} />
@@ -134,7 +134,7 @@ export default function SellerDetailsModal({
           {/* Basic Information */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold">Basic Information</h3>
-            <Card className="grid grid-cols-2 gap-4 border rounded-lg p-4 shadow-none">
+            <Card className="grid grid-cols-2 gap-4 border rounded-lg p-4">
               <InfoRow label="Seller ID" value={seller.id} />
               <InfoRow
                 label="Phone Number"
@@ -151,7 +151,7 @@ export default function SellerDetailsModal({
           {/* Contact Address */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold">Contact Address</h3>
-            <Card className="grid grid-cols-2 gap-4 border rounded-lg p-4 shadow-none">
+            <Card className="grid grid-cols-2 gap-4 border rounded-lg p-4">
               <InfoRow label="Street" value={seller.street || '-'} />
               <InfoRow label="City" value={seller.city || '-'} />
               <InfoRow label="State" value={seller.state || '-'} />

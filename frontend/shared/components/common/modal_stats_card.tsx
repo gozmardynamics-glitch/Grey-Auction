@@ -8,7 +8,7 @@ export function ModalStatCard({
   value: string | number;
 }) {
   return (
-    <Card className="space-y-1 text-start border p-4 rounded-lg shadow-none">
+    <Card className="space-y-1 text-start border p-4 rounded-lg">
       <TypographySmall className="text-xs text-muted-foreground">
         {label}
       </TypographySmall>

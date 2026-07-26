@@ -80,7 +80,7 @@ export default function TotalRevenue({
   };
 
   return (
-    <Card className="shadow-none">
+    <Card className="">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div className="space-y-1">
           <CardTitle className="text-base font-medium">Total Revenue</CardTitle>

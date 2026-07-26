@@ -226,7 +226,7 @@ export default function ProductDetailsClient({
 
           {/* ─── Live Auction — Not Logged In ────────────────────── */}
           {auctionStatus === 'live' && !isLoggedIn && (
-            <Card className="space-y-4 bg-tertiary/10 p-4 shadow-none">
+            <Card className="space-y-4 bg-tertiary/10 p-4">
               <div className="inline-flex items-center gap-2 rounded-full text-xs bg-tertiary text-primary-foreground px-3 py-1">
                 <Radio size={15} />
                 <span className="font-semibold">Live Auction In Progress</span>
@@ -257,7 +257,7 @@ export default function ProductDetailsClient({
 
           {/* ─── Not logged in — prompt to register ────────────── */}
           {auctionStatus === 'active' && !isLoggedIn && (
-            <Card className="space-y-4 p-4 shadow-none">
+            <Card className="space-y-4 p-4">
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">Your Bid:</p>
                 <RadioGroup
@@ -326,7 +326,7 @@ export default function ProductDetailsClient({
 
           {/* ─── Sold ────────────────────── */}
           {auctionStatus === 'sold' && (
-            <Card className="space-y-4 bg-destructive/10 p-4 shadow-none">
+            <Card className="space-y-4 bg-destructive/10 p-4">
               <div className="inline-flex items-center gap-2 rounded-full text-xs bg-destructive text-primary-foreground px-3 py-1">
                 <TagIcon size={15} />
                 <span className="font-semibold">Sold</span>

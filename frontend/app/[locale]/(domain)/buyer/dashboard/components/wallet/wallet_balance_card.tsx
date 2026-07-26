@@ -20,7 +20,7 @@ export default function WalletBalanceCard({
   onAddAccount,
 }: WalletBalanceCardProps) {
   return (
-    <Card className="overflow-hidden bg-card shadow-none p-6 space-y-4">
+    <Card className="overflow-hidden bg-card p-6 space-y-4">
       {/* Top Row: Wallet icon + label | Bank info badge or Add Account */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

@@ -75,7 +75,7 @@ export function TrendingLotsCards({
   };
 
   return (
-    <Card className="overflow-hidden shadow-none hover:shadow-lg transition-shadow duration-300 group">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
       <CardHeader className="p-0 relative">
         {/* Image */}
         <div className="relative h-48 bg-muted-foreground overflow-hidden">

@@ -31,11 +31,11 @@ const stats = [
 
 export default function BuyerStats() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.label} className="shadow-none border">
+          <Card key={stat.label} className="border">
             <CardContent className="flex flex-col gap-2 p-3">
               <div className={`flex items-center gap-2`}>
                 <div

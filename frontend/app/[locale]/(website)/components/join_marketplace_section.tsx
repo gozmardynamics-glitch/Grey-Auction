@@ -69,7 +69,7 @@ export default function JoinMarketplace() {
 
           {/* Right Side - Image Card with Countdown */}
           <div className="relative flex items-center justify-center p-8 lg:p-12">
-            <Card className="relative w-full max-w-full md:max-w-[80%] bg-linear-to-br from-gray-900 to-gray-800 border-0 overflow-hidden rounded-xl shadow-none">
+            <Card className="relative w-full max-w-full md:max-w-[80%] bg-linear-to-br from-gray-900 to-gray-800 border-0 overflow-hidden rounded-xl">
               {/* Car Image */}
               <div className="relative h-[250px] md:h-[350px] lg:h-[400px]">
                 <Image

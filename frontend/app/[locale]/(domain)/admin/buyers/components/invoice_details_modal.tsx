@@ -82,7 +82,7 @@ export default function InvoiceDetailsModal({
         </DialogHeader>
         <div className="space-y-5 p-6 pt-4">
           {/* Invoice Details */}
-          <Card className="space-y-1 shadow-none p-2">
+          <Card className="space-y-1 p-2">
             <h3 className="text-sm font-semibold mb-2">Invoice Details</h3>
             <InfoRow label="Invoice Number" value={invoice.invoiceNumber} />
             <InfoRow label="Issue Date" value={invoice.issueDate} />

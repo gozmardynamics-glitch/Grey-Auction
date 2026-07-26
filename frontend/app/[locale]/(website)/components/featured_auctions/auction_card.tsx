@@ -84,7 +84,7 @@ export function AuctionCard({
   // ─── List View ───────────────────────────────────────────────────
   if (viewMode === 'list') {
     return (
-      <Card className="group flex flex-row overflow-hidden shadow-none transition-shadow duration-300 hover:shadow-lg">
+      <Card className="group flex flex-row overflow-hidden transition-shadow duration-300 hover:shadow-lg">
         {/* Image */}
         <div className="relative h-auto w-[120px] shrink-0 overflow-hidden bg-muted sm:w-[220px]">
           <Image
@@ -207,7 +207,7 @@ export function AuctionCard({
 
   // ─── Grid View (existing) ────────────────────────────────────────
   return (
-    <Card className="group overflow-hidden shadow-none transition-shadow duration-300 hover:shadow-lg">
+    <Card className="group overflow-hidden transition-shadow duration-300 hover:shadow-lg">
       <CardHeader className="relative p-0">
         <div className="relative h-48 overflow-hidden bg-muted-foreground">
           <Image

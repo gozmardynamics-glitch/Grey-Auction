@@ -141,7 +141,7 @@ export default function AuctionListingClient({
         <div className="flex gap-8">
           {/* ─── Desktop Sidebar ──────────────────────────────────── */}
           <aside className="hidden w-[260px] shrink-0 lg:block">
-            <Card className="sticky top-6 border-none bg-background shadow-none">
+            <Card className="sticky top-6 border-none bg-background">
               <CardContent className="p-0">
                 <FilterSidebar />
               </CardContent>

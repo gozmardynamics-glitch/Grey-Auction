@@ -66,7 +66,7 @@ export default function Hero() {
         </div>
 
         {/* Trust Badges */}
-        <Card className="flex flex-col p-4 shadow-none border-none w-fit">
+        <Card className="flex flex-col p-4 border-none w-fit">
           <div className="flex items-center gap-1">
             <div className="flex -space-x-2">
               <div className="h-8 w-8 rounded-full border-2 border-background bg-blue-500" />

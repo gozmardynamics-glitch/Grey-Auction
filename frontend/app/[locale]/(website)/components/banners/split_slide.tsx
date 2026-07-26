@@ -85,7 +85,7 @@ export function SplitSlide({
 
       {/* Right Column - Product Card */}
       {slide.product && (
-        <Card className="relative z-10 hidden p-0 border-none shadow-none lg:block max-w-[90%] mx-auto">
+        <Card className="relative z-10 hidden p-0 border-none lg:block max-w-[90%] mx-auto">
           <div className="relative bg-background min-w-[400px] rounded-2xl shadow-xl overflow-hidden">
             <Image
               src={slide.product.image}

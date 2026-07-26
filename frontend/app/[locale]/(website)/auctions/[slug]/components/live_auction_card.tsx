@@ -27,7 +27,7 @@ export default function LiveAuctionCard({
   };
 
   return (
-    <Card className="space-y-4 bg-tertiary/10 p-4 shadow-none">
+    <Card className="space-y-4 bg-tertiary/10 p-4">
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center gap-2 rounded-full text-xs bg-tertiary text-primary-foreground px-3 py-1">
           <Radio size={15} />

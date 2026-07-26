@@ -24,7 +24,7 @@ export default function SellerBalanceCard({
   onAddAccount,
 }: SellerBalanceCardProps) {
   return (
-    <Card className="overflow-hidden bg-background shadow-none p-6 space-y-4">
+    <Card className="overflow-hidden bg-background p-6 space-y-4">
       {/* Payment Method Row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

@@ -29,7 +29,7 @@ const defaultMessages: Message[] = [];
 
 export default function Messages({ messages = defaultMessages }: MessagesProps) {
   return (
-    <Card className="shadow-none">
+    <Card className="">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">Messages</CardTitle>
       </CardHeader>

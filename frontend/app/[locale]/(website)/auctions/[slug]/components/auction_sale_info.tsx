@@ -19,7 +19,7 @@ export default function AuctionSaleInfo() {
       <h2 className="mb-4 text-xl font-bold text-foreground">
         Auction Sale Information
       </h2>
-      <Card className="bg-primary/10 p-4 shadow-none border-none">
+      <Card className="bg-primary/10 p-4 border-none">
         <CardContent className="space-y-4 p-5">
           {/* Seller */}
           <div className="flex items-center justify-between">

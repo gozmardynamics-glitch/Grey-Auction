@@ -23,7 +23,7 @@ export default function DashboardStats({
   requestsTrend = 0,
 }: DashboardStatsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <StatsCard
         title="Active Auctions"
         value={activeAuctions}

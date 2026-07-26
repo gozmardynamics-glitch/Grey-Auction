@@ -47,7 +47,7 @@ export default function ContactForm() {
   };
 
   return (
-    <Card className="mt-12 mb-12 bg-card shadow-none border-none">
+    <Card className="mt-12 mb-12 bg-card border-none">
       <CardContent className="p-4 sm:p-8">
         <Form {...form}>
           <form

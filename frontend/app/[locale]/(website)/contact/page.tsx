@@ -22,7 +22,7 @@ export default function ContactPage() {
         <ContactForm />
 
         {/* Contact Info + Map */}
-        <Card className="bg-card shadow-none border-none">
+        <Card className="bg-card border-none">
           <CardContent className="flex flex-col sm:flex-row gap-6 sm:gap-8 p-4 sm:p-8">
             {/* Map */}
             <div className="h-[200px] w-full sm:w-[280px] shrink-0 overflow-hidden rounded-lg bg-muted">

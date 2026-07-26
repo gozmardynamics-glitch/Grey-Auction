@@ -76,7 +76,7 @@ export default function TotalRevenue({
  
 
   return (
-    <Card className="shadow-none bg-background">
+    <Card className="bg-background">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div className="space-y-1">
           <CardTitle className="text-base font-medium">Total Revenue</CardTitle>

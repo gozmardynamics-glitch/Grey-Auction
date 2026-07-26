@@ -52,7 +52,7 @@ function FeaturedAuctionCard({
 
   return (
     <Card
-      className={`${gradientClass} rounded-xl border-0 shadow-none relative overflow-hidden min-h-[400px] text-foreground`}
+      className={`${gradientClass} rounded-xl border-0 relative overflow-hidden min-h-[400px] text-foreground`}
     >
       <CardContent className="h-full flex flex-col justify-center w-full p-6 lg:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center ">

@@ -68,7 +68,7 @@ export default function SearchableFaq({ faqCategories }: SearchableFaqProps) {
           >
             {/* Category Label Card */}
             <div className="sm:w-[220px] shrink-0 sm:pt-2">
-              <Card className="border-none bg-card shadow-none">
+              <Card className="border-none bg-card">
                 <CardContent className="flex items-center gap-2 p-4 sm:justify-center sm:p-6">
                   <span className="text-lg text-primary">
                     {category.emoji}

@@ -35,7 +35,7 @@ export default function PendingRequests({ data = [] }: PendingRequestsProps) {
   });
 
   return (
-    <Card className='shadow-none'>
+    <Card className=''>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium">
           Pending Requests

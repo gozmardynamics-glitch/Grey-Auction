@@ -79,7 +79,7 @@ export default function AuctionActivity({
   ];
 
   return (
-    <Card className='shadow-none bg-background'>
+    <Card className='bg-background'>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">
           Auction Activity
