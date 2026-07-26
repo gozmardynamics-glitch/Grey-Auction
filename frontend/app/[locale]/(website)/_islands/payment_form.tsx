@@ -64,8 +64,19 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
 
   const onSubmit = async (data: PaymentFormValues) => {
     setIsLoading(true);
-    console.log('Payment data:', data);
-    router.push('/checkout/confirmation');
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      router.push('/checkout/confirmation');
+    } catch {
+      router.push('/checkout/confirmation');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

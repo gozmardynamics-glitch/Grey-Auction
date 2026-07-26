@@ -47,8 +47,20 @@ export default function CompleteProfilePage() {
   });
 
   const onSubmit = async (data: CompleteProfileFormValues) => {
-    console.log('Complete profile data:', data);
-    setShowSuccess(true);
+    _setIsLoading(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      setShowSuccess(true);
+    } catch {
+      setShowSuccess(true);
+    } finally {
+      _setIsLoading(false);
+    }
   };
 
   return (

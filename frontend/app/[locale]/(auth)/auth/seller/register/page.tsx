@@ -54,10 +54,28 @@ export default function SellerRegisterPage() {
 
   const onSubmit = async (data: SellerRegisterFormValues) => {
     try {
-      console.log('Register data:', data);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiBase}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          name: `${data.first_name} ${data.last_name}`.trim(),
+          role: 'seller',
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Registration failed');
+      }
+
       router.push('/auth/seller/register/otp');
-    } catch {
-      form.setError('root', { message: 'Registration failed. Please try again.' });
+    } catch (err: any) {
+      form.setError('root', { message: err.message || 'Registration failed. Please try again.' });
+    } finally {
+      _setIsLoading(false);
     }
   };
 

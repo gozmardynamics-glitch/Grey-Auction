@@ -36,9 +36,12 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      console.log('Forgot Password data:', data);
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email }),
+      });
 
       router.push('/auth/login/forgot_password/reset_password');
     } catch {

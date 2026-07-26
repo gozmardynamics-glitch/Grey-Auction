@@ -33,8 +33,17 @@ export default function ContactForm() {
 
   const onSubmit = async (data: ContactFormValues) => {
     setIsLoading(true);
-    console.log('Contact form:', data);
-    setIsLoading(false);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    } catch {
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

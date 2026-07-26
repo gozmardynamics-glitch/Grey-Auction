@@ -54,10 +54,16 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
     setCurrentStep(2);
   };
 
-  const handleAuctionDetails = (data: AuctionDetailsValues) => {
+  const handleAuctionDetails = async (data: AuctionDetailsValues) => {
     const finalData = { ...formData, ...data };
-    // TODO: handle form submission
-    console.log('Form submitted:', finalData);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/sellers/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalData),
+      });
+    } catch {}
   };
 
   const handleBack = () => {

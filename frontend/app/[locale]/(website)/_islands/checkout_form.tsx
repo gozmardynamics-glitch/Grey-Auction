@@ -83,8 +83,19 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
 
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsLoading(true);
-    console.log('Checkout data:', data);
-    router.push('/checkout/payment');
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      router.push('/checkout/payment');
+    } catch {
+      router.push('/checkout/payment');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

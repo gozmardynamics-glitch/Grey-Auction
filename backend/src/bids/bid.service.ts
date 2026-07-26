@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bid } from './entities/bid.entity';
 import { PlaceBidDto } from './dto/bid.dto';
 import { ProductService } from '../products/product.service';
+import { AuctionGateway } from './gateways/auction.gateway';
 
 @Injectable()
 export class BidService {
@@ -11,6 +12,7 @@ export class BidService {
     @InjectRepository(Bid)
     private readonly repo: Repository<Bid>,
     private readonly productService: ProductService,
+    @Optional() private readonly gateway?: AuctionGateway,
   ) {}
 
   async placeBid(productId: string, userId: string, dto: PlaceBidDto): Promise<Bid> {
@@ -39,6 +41,12 @@ export class BidService {
 
     await this.repo.save(bid);
     await this.productService.updateBid(productId, dto.amount);
+
+    this.gateway?.broadcastNewBid(productId, bid);
+    this.gateway?.broadcastBidUpdate(productId, {
+      currentBid: dto.amount,
+      totalBids: bid.product.totalBids,
+    });
 
     return bid;
   }

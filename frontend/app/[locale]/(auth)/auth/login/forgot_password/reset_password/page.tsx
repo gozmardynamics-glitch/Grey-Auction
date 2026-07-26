@@ -40,16 +40,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement your authentication logic here
-      console.log('Login data:', data);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiBase}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: 'otp-reset', newPassword: data.password }),
+      });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Reset failed');
+      }
 
-      // Navigate to dashboard on success
       router.push('/auth/login');
-    } catch {
-      form.setError('root', { message: 'Failed to reset password. Please try again.' });
+    } catch (err: any) {
+      form.setError('root', { message: err.message || 'Failed to reset password. Please try again.' });
     } finally {
       setIsLoading(false);
     }

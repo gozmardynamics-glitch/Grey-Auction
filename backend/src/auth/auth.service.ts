@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from './entities/user.entity';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, CompleteProfileDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -71,6 +71,44 @@ export class AuthService {
 
     const token = this.generateToken(user);
     return { user: this.sanitizeUser(user), token };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (user) {
+      // In production: send email with reset token
+      const resetToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '1h' });
+      return { resetToken };
+    }
+    return null;
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    let payload: { sub: string };
+    try {
+      payload = this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.save(user);
+    return { user: this.sanitizeUser(user) };
+  }
+
+  async completeProfile(userId: string, dto: CompleteProfileDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    if (dto.name) user.name = dto.name;
+    if (dto.phone !== undefined) (user as any).phone = dto.phone;
+    if (dto.address !== undefined) (user as any).address = dto.address;
+
+    await this.userRepository.save(user);
+    return { user: this.sanitizeUser(user) };
   }
 
   private generateToken(user: User): string {
