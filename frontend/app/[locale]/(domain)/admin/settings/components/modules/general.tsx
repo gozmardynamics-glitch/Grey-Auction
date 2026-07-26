@@ -52,9 +52,19 @@ export default function GeneralSettings() {
     },
   });
 
-  const onSaveSiteConfig = (data: SiteConfigValues) => {
-    console.log('Saving site config:', data);
-    toast.success('Site configuration saved.');
+  const onSaveSiteConfig = async (data: SiteConfigValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/general`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'siteConfig', ...data }),
+      });
+      toast.success('Site configuration saved.');
+    } catch (error) {
+      console.error('Failed to save site config:', error);
+      toast.error('Failed to save site configuration.');
+    }
   };
 
   // ─── Timezone Form ─────────────────────────────────────────────────
@@ -67,9 +77,19 @@ export default function GeneralSettings() {
     },
   });
 
-  const onSaveTimezone = (data: TimezoneFormatValues) => {
-    console.log('Saving timezone:', data);
-    toast.success('Timezone and format saved.');
+  const onSaveTimezone = async (data: TimezoneFormatValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/general`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'timezone', ...data }),
+      });
+      toast.success('Timezone and format saved.');
+    } catch (error) {
+      console.error('Failed to save timezone:', error);
+      toast.error('Failed to save timezone settings.');
+    }
   };
 
   // ─── Language Form ─────────────────────────────────────────────────
@@ -81,9 +101,19 @@ export default function GeneralSettings() {
     },
   });
 
-  const onSaveLanguage = (data: LanguageValues) => {
-    console.log('Saving language:', data);
-    toast.success('Language settings saved.');
+  const onSaveLanguage = async (data: LanguageValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/general`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'language', ...data }),
+      });
+      toast.success('Language settings saved.');
+    } catch (error) {
+      console.error('Failed to save language:', error);
+      toast.error('Failed to save language settings.');
+    }
   };
 
   // ─── Country Form ──────────────────────────────────────────────────
@@ -95,9 +125,19 @@ export default function GeneralSettings() {
     },
   });
 
-  const onSaveCountry = (data: CountryValues) => {
-    console.log('Saving country:', data);
-    toast.success('Country settings saved.');
+  const onSaveCountry = async (data: CountryValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/general`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'country', ...data }),
+      });
+      toast.success('Country settings saved.');
+    } catch (error) {
+      console.error('Failed to save country:', error);
+      toast.error('Failed to save country settings.');
+    }
   };
 
   return (

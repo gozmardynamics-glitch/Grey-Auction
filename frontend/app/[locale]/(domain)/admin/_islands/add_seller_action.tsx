@@ -19,8 +19,17 @@ export default function AddSellerAction() {
       <AddSellerDialog
         open={addSellerOpen}
         onOpenChange={setAddSellerOpen}
-        onSubmit={(data) => {
-          console.log('Add seller:', data);
+        onSubmit={async (data) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/sellers/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            });
+          } catch (error) {
+            console.error('Failed to add seller:', error);
+          }
         }}
       />
     </>

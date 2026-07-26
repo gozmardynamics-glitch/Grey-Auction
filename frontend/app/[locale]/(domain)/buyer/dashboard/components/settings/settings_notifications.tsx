@@ -16,9 +16,19 @@ export default function SettingsNotifications() {
     );
   };
 
-  const onSave = () => {
-    console.log('Saving notification preferences:', preferences);
-    toast.success('Notification preferences saved.');
+  const onSave = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/notifications`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences }),
+      });
+      toast.success('Notification preferences saved.');
+    } catch (error) {
+      console.error('Failed to save notification preferences:', error);
+      toast.error('Failed to save notification preferences.');
+    }
   };
 
   return (

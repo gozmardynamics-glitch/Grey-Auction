@@ -33,9 +33,19 @@ export default function PrivacyPolicyPage() {
     },
   });
 
-  const onSubmit = (data: PrivacyPolicyValues) => {
-    console.log('Saving terms & conditions:', data);
-    toast.success('Terms & Conditions saved.');
+  const onSubmit = async (data: PrivacyPolicyValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/content/privacy-policy`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      toast.success('Privacy Policy saved.');
+    } catch (error) {
+      console.error('Failed to save privacy policy:', error);
+      toast.error('Failed to save privacy policy.');
+    }
   };
 
   return (

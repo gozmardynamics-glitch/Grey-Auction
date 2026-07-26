@@ -36,9 +36,19 @@ export default function TermsAndConditionsPage() {
     },
   });
 
-  const onSubmit = (data: TermsAndConditionsValues) => {
-    console.log('Saving terms & conditions:', data);
-    toast.success('Terms & Conditions saved.');
+  const onSubmit = async (data: TermsAndConditionsValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/content/terms-and-conditions`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      toast.success('Terms & Conditions saved.');
+    } catch (error) {
+      console.error('Failed to save terms & conditions:', error);
+      toast.error('Failed to save terms & conditions.');
+    }
   };
 
   return (

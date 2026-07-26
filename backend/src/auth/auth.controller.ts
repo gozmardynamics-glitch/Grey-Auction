@@ -63,4 +63,30 @@ export class AuthController {
     const result = await this.authService.completeProfile(user.id, dto);
     return { success: true, message: 'Profile updated', data: result };
   }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change password' })
+  async changePassword(
+    @Body() dto: { currentPassword: string; newPassword: string },
+    @CurrentUser() user: any,
+  ) {
+    const result = await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+    return { success: true, message: 'Password changed', data: result };
+  }
+
+  @Post('send-otp')
+  @ApiOperation({ summary: 'Send email verification OTP' })
+  async sendOtp(@Body() dto: { email: string }) {
+    const result = await this.authService.sendOtp(dto.email);
+    return { success: true, message: 'OTP sent', data: result };
+  }
+
+  @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify email OTP' })
+  async verifyOtp(@Body() dto: { email: string; otp: string }) {
+    const result = await this.authService.verifyOtp(dto.email, dto.otp);
+    return { success: true, message: 'Email verified', data: result };
+  }
 }

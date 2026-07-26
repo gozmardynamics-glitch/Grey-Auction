@@ -29,7 +29,7 @@ export default function SellersTable({
 
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [activateOpen, setActivateOpen] = useState(false);
-  const [_actionSeller, setActionSeller] = useState<Seller | null>(null);
+  const [actionSeller, setActionSeller] = useState<Seller | null>(null);
 
   const columns = useMemo(
     () =>
@@ -74,7 +74,15 @@ export default function SellersTable({
       <SuspendSellerDialog
         open={suspendOpen}
         onOpenChange={setSuspendOpen}
-        onConfirm={() => {
+        onConfirm={async () => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/sellers/${actionSeller?.id}/suspend`, {
+              method: 'POST',
+            });
+          } catch (error) {
+            console.error('Failed to suspend seller:', error);
+          }
           setSuspendOpen(false);
         }}
       />
@@ -82,7 +90,15 @@ export default function SellersTable({
       <ActivateSellerDialog
         open={activateOpen}
         onOpenChange={setActivateOpen}
-        onConfirm={() => {
+        onConfirm={async () => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/sellers/${actionSeller?.id}/activate`, {
+              method: 'POST',
+            });
+          } catch (error) {
+            console.error('Failed to activate seller:', error);
+          }
           setActivateOpen(false);
         }}
       />

@@ -26,7 +26,7 @@ export default function BuyersTable({
 
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [activateOpen, setActivateOpen] = useState(false);
-  const [_actionBuyer, setActionBuyer] = useState<Buyer | null>(null);
+  const [actionBuyer, setActionBuyer] = useState<Buyer | null>(null);
 
   const columns = useMemo(
     () =>
@@ -71,7 +71,15 @@ export default function BuyersTable({
       <SuspendUserDialog
         open={suspendOpen}
         onOpenChange={setSuspendOpen}
-        onConfirm={() => {
+        onConfirm={async () => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/buyers/${actionBuyer?.id}/suspend`, {
+              method: 'PATCH',
+            });
+          } catch (error) {
+            console.error('Failed to suspend buyer:', error);
+          }
           setSuspendOpen(false);
         }}
       />
@@ -79,7 +87,15 @@ export default function BuyersTable({
       <ActivateUserDialog
         open={activateOpen}
         onOpenChange={setActivateOpen}
-        onConfirm={() => {
+        onConfirm={async () => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/buyers/${actionBuyer?.id}/activate`, {
+              method: 'PATCH',
+            });
+          } catch (error) {
+            console.error('Failed to activate buyer:', error);
+          }
           setActivateOpen(false);
         }}
       />

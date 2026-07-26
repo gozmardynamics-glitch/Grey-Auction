@@ -40,9 +40,19 @@ export default function EmailSettings() {
     },
   });
 
-  const onSaveSmtp = (data: SmtpConfigValues) => {
-    console.log('Saving SMTP config:', data);
-    toast.success('SMTP configuration saved.');
+  const onSaveSmtp = async (data: SmtpConfigValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'smtp', ...data }),
+      });
+      toast.success('SMTP configuration saved.');
+    } catch (error) {
+      console.error('Failed to save SMTP config:', error);
+      toast.error('Failed to save SMTP configuration.');
+    }
   };
 
   // ─── Mailing Form ──────────────────────────────────────────────────
@@ -54,9 +64,19 @@ export default function EmailSettings() {
     },
   });
 
-  const onSaveMailing = (data: MailingConfigValues) => {
-    console.log('Saving mailing config:', data);
-    toast.success('Mailing settings saved.');
+  const onSaveMailing = async (data: MailingConfigValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/email`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'mailing', ...data }),
+      });
+      toast.success('Mailing settings saved.');
+    } catch (error) {
+      console.error('Failed to save mailing config:', error);
+      toast.error('Failed to save mailing settings.');
+    }
   };
 
   return (

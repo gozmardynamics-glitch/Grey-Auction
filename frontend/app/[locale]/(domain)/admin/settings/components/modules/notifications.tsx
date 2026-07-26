@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Label, Switch } from '@/shared/components/common';
+import { toast } from 'sonner';
+import { Button, Label, Switch } from '@/shared/components/common';
 
 interface NotificationItem {
   key: string;
@@ -47,6 +48,21 @@ export default function NotificationsSettings() {
     );
   };
 
+  const onSave = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/notifications`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notifications }),
+      });
+      toast.success('Notification settings saved.');
+    } catch (error) {
+      console.error('Failed to save notifications:', error);
+      toast.error('Failed to save notification settings.');
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {notifications.map((item) => (
@@ -66,6 +82,9 @@ export default function NotificationsSettings() {
           />
         </div>
       ))}
+      <div className="pt-2">
+        <Button onClick={onSave}>Save Changes</Button>
+      </div>
     </div>
   );
 }

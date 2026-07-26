@@ -53,14 +53,34 @@ export default function SettingsProfile() {
     },
   });
 
-  const onSaveProfile = (data: BuyerProfileValues) => {
-    console.log('Saving profile:', data);
-    toast.success('Profile information saved.');
+  const onSaveProfile = async (data: BuyerProfileValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      toast.success('Profile information saved.');
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast.error('Failed to save profile information.');
+    }
   };
 
-  const onSaveAddress = (data: BuyerAddressValues) => {
-    console.log('Saving address:', data);
-    toast.success('Address information saved.');
+  const onSaveAddress = async (data: BuyerAddressValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: data }),
+      });
+      toast.success('Address information saved.');
+    } catch (error) {
+      console.error('Failed to save address:', error);
+      toast.error('Failed to save address information.');
+    }
   };
 
   return (

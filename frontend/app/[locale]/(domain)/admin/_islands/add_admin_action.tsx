@@ -19,8 +19,17 @@ export default function AddAdminAction() {
       <AddAdminDialog
         open={addAdminOpen}
         onOpenChange={setAddAdminOpen}
-        onSubmit={(data) => {
-          console.log('Add admin:', data);
+        onSubmit={async (data) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/auth/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...data, role: 'admin' }),
+            });
+          } catch (error) {
+            console.error('Failed to add admin:', error);
+          }
         }}
       />
     </>

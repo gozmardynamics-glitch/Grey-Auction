@@ -98,15 +98,25 @@ export default function SettingsSecurity() {
     met: req.test(newPasswordValue || ''),
   }));
 
-  const onSubmitPassword = () => {
-    setPasswordModalOpen(false);
-    form.reset();
-    setShowNewPassword(false);
-    setSuccessConfig({
-      title: 'Password Changed Successfully',
-      message: 'Your password has been updated successfully.',
-    });
-    setSuccessOpen(true);
+  const onSubmitPassword = async (data: BuyerChangePasswordValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      setPasswordModalOpen(false);
+      form.reset();
+      setShowNewPassword(false);
+      setSuccessConfig({
+        title: 'Password Changed Successfully',
+        message: 'Your password has been updated successfully.',
+      });
+      setSuccessOpen(true);
+    } catch (error) {
+      console.error('Failed to change password:', error);
+    }
   };
 
   const resetPinModal = () => {
@@ -154,9 +164,17 @@ export default function SettingsSecurity() {
     setShowDeletePassword(false);
   };
 
-  const handleDeleteAccount = () => {
-    // TODO: call delete account API
-    console.log('Deleting account:', { reason: deleteReason });
+  const handleDeleteAccount = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/delete-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: deleteReason, password: deletePassword }),
+      });
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+    }
     setDeleteModalOpen(false);
     resetDeleteModal();
   };

@@ -111,6 +111,40 @@ export class AuthService {
     return { user: this.sanitizeUser(user) };
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) throw new UnauthorizedException('Current password is incorrect');
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.save(user);
+    return { user: this.sanitizeUser(user) };
+  }
+
+  async sendOtp(email: string) {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) return null;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    (user as any).otpCode = otp;
+    (user as any).otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    await this.userRepository.save(user);
+    return { otp };
+  }
+
+  async verifyOtp(email: string, otp: string) {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new BadRequestException('User not found');
+    if ((user as any).otpCode !== otp) throw new BadRequestException('Invalid OTP');
+    if (new Date() > (user as any).otpExpiry) throw new BadRequestException('OTP expired');
+    user.isEmailVerified = true;
+    (user as any).otpCode = null;
+    (user as any).otpExpiry = null;
+    await this.userRepository.save(user);
+    return { user: this.sanitizeUser(user) };
+  }
+
   private generateToken(user: User): string {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return this.jwtService.sign(payload);

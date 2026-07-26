@@ -19,8 +19,17 @@ export default function AddBuyerAction() {
       <AddUserDialog
         open={addUserOpen}
         onOpenChange={setAddUserOpen}
-        onSubmit={(data) => {
-          console.log('Add user:', data);
+        onSubmit={async (data) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/auth/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...data, role: 'buyer' }),
+            });
+          } catch (error) {
+            console.error('Failed to add buyer:', error);
+          }
         }}
       />
     </>

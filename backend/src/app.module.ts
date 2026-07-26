@@ -9,6 +9,11 @@ import { ProductModule } from './products/product.module';
 import { RoomModule } from './rooms/room.module';
 import { BidModule } from './bids/bid.module';
 import { CategoryModule } from './categories/category.module';
+import { BannerModule } from './banners/banner.module';
+import { FaqModule } from './faqs/faq.module';
+import { TicketModule } from './tickets/ticket.module';
+import { SettingsModule } from './settings/settings.module';
+import { ContentModule } from './content/content.module';
 
 @Module({
   imports: [
@@ -21,6 +26,11 @@ import { CategoryModule } from './categories/category.module';
     RoomModule,
     BidModule,
     CategoryModule,
+    BannerModule,
+    FaqModule,
+    TicketModule,
+    SettingsModule,
+    ContentModule,
   ],
 })
 export class AppModule {}

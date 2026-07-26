@@ -19,8 +19,17 @@ export default function AddBannerAction() {
       <AddBannerDialog
         open={addBannerOpen}
         onOpenChange={setAddBannerOpen}
-        onSubmit={(data) => {
-          console.log('Add banner:', data);
+        onSubmit={async (data) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/banners`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            });
+          } catch (error) {
+            console.error('Failed to add banner:', error);
+          }
         }}
       />
     </>

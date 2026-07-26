@@ -42,9 +42,19 @@ export default function SecuritySettings() {
     },
   });
 
-  const onSaveAuth = (data: AuthenticationValues) => {
-    console.log('Saving authentication:', data);
-    toast.success('Authentication settings saved.');
+  const onSaveAuth = async (data: AuthenticationValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/security`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'authentication', ...data }),
+      });
+      toast.success('Authentication settings saved.');
+    } catch (error) {
+      console.error('Failed to save authentication:', error);
+      toast.error('Failed to save authentication settings.');
+    }
   };
 
   // ─── Advanced Form ─────────────────────────────────────────────────
@@ -57,9 +67,19 @@ export default function SecuritySettings() {
     },
   });
 
-  const onSaveAdvanced = (data: SecurityAdvancedValues) => {
-    console.log('Saving security advanced:', data);
-    toast.success('Advanced security settings saved.');
+  const onSaveAdvanced = async (data: SecurityAdvancedValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/settings/security`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: 'advanced', ...data }),
+      });
+      toast.success('Advanced security settings saved.');
+    } catch (error) {
+      console.error('Failed to save advanced security:', error);
+      toast.error('Failed to save advanced security settings.');
+    }
   };
 
   return (

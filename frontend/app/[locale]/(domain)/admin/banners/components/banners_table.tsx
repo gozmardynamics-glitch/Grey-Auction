@@ -67,8 +67,17 @@ export default function BannersTable({
           setDeleteBanner(banner);
           setDeleteOpen(true);
         }}
-        onSave={(banner) => {
-          console.log('Save banner:', banner);
+        onSave={async (banner) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/banners/${banner.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(banner),
+            });
+          } catch (error) {
+            console.error('Failed to save banner:', error);
+          }
           setDetailsOpen(false);
         }}
       />
@@ -76,8 +85,15 @@ export default function BannersTable({
       <DeleteBannerDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        onConfirm={() => {
-          console.log('Delete banner:', deleteBanner);
+        onConfirm={async () => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/banners/${deleteBanner?.id}`, {
+              method: 'DELETE',
+            });
+          } catch (error) {
+            console.error('Failed to delete banner:', error);
+          }
           setDeleteOpen(false);
         }}
       />

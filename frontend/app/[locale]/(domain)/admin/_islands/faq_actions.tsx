@@ -31,15 +31,33 @@ export default function FaqActions() {
       <AddFaqDialog
         open={addFaqOpen}
         onOpenChange={setAddFaqOpen}
-        onSubmit={(data) => {
-          console.log('Add FAQ:', data);
+        onSubmit={async (data) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/faqs`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            });
+          } catch (error) {
+            console.error('Failed to add FAQ:', error);
+          }
         }}
       />
       <AddCategoryDialog
         open={addCategoryOpen}
         onOpenChange={setAddCategoryOpen}
-        onSubmit={(data) => {
-          console.log('Add category:', data);
+        onSubmit={async (data) => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/faqs`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...data, type: 'category' }),
+            });
+          } catch (error) {
+            console.error('Failed to add category:', error);
+          }
         }}
       />
     </>

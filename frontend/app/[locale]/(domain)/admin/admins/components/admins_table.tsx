@@ -64,8 +64,15 @@ export default function AdminsTable({
       <DeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        onConfirm={() => {
-          console.log('Delete admin:', deleteAdmin);
+        onConfirm={async () => {
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            await fetch(`${apiBase}/admin/admins/${deleteAdmin?.id}`, {
+              method: 'DELETE',
+            });
+          } catch (error) {
+            console.error('Failed to delete admin:', error);
+          }
           setDeleteOpen(false);
         }}
         title="Delete User"
