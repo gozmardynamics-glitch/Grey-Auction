@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, Plus} from 'lucide-react';
 import {
   Card,
@@ -51,6 +51,26 @@ export default function SellerPaymentSettings() {
   const [showDetails, setShowDetails] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        const res = await fetch(`${apiBase}/seller/payment-accounts`);
+        if (res.ok) {
+          const json = await res.json();
+          const data = json.data ?? json;
+          if (Array.isArray(data)) {
+            setAccounts(data);
+          }
+        }
+      } catch (error) {
+        console.error('[API] Failed to fetch payment accounts:', error);
+      }
+    };
+    fetchAccounts();
+  }, [refreshKey]);
 
   const handleSelectAccount = (account: BankAccount) => {
     setSelectedAccount(account);
@@ -71,7 +91,7 @@ export default function SellerPaymentSettings() {
   };
 
   const handleAddAccountSuccess = () => {
-    // TODO: refresh accounts from API
+    setRefreshKey((k) => k + 1);
   };
 
   const maskedNumber = (num: string) =>

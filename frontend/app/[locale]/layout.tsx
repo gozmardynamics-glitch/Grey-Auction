@@ -1,7 +1,6 @@
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-// import { headers } from 'next/headers';
 import { routing } from '@/i18n/routing';
 import { Providers } from '../providers';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -34,16 +33,8 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // CSP nonce (uncomment when CSP is enabled in middleware)
-  // const nonce = (await headers()).get('x-nonce') ?? '';
-
   return (
     <html lang={locale} suppressHydrationWarning>
-      {/* Uncomment when CSP is enabled:
-      <head>
-        <meta property="csp-nonce" content={nonce} />
-      </head>
-      */}
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

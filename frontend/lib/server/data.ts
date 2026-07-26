@@ -14,158 +14,882 @@ async function apiFetch(path: string, options?: RequestInit): Promise<any> {
   }
 }
 
-import {
-  dummyAuctions,
-  categories,
-  faqCategories,
-} from '@/app/[locale]/(website)/models/data';
+// ─── Inline Mock Data ─────────────────────────────────────────────────────
 
-import {
-  DUMMY_AUCTIONS,
-  DUMMY_BIDS,
-  DUMMY_BUYERS,
-  DUMMY_SELLERS,
-  DUMMY_ADMINS,
-  DUMMY_CATEGORIES,
-  DUMMY_BANNERS,
-  DUMMY_FAQS,
-  DUMMY_PAYMENTS,
-  DUMMY_BIDDING_ROOMS,
-  DUMMY_TICKETS,
-} from '@/app/[locale]/(domain)/admin/models/data';
+const now = new Date();
+const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+const isoSevenDays = sevenDaysFromNow.toISOString();
+const isoDay1 = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString();
+const isoDay3 = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+const isoDay5 = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
+const isoDay10 = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString();
+const isoDay14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-import {
-  DUMMY_LISTINGS,
-  DUMMY_SALES,
-  DUMMY_BIDDING_ROOMS as SELLER_BIDDING_ROOMS,
-  DUMMY_CONVERSATIONS,
-} from '@/app/[locale]/(domain)/seller/models';
+const mockAuctions = [
+  {
+    id: 'auc-001',
+    slug: '2022-toyota-camry-hybrid',
+    title: '2022 Toyota Camry Hybrid',
+    description: 'Excellent condition hybrid vehicle with low mileage. Full service history, single owner.',
+    category: 'transport',
+    subCategory: 'sedan',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    currentBid: 2500000,
+    startingBid: 2000000,
+    totalBids: 12,
+    timeLeft: '2 days 5 hours',
+    endTime: isoDay1,
+    endTimeIso: isoDay1,
+    status: 'active',
+    location: { city: 'Lagos', country: 'Nigeria', countryCode: 'NG' },
+    year: 2022,
+    mileage: 14000,
+    engineVolume: 2487,
+    fuelType: 'Hybrid',
+    sellerId: 'seller-001',
+    sellerName: 'John Doe',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: true,
+    specs: '2022 · 14,000 km · 2,487 cm3 · Hybrid',
+    watchersCount: 34,
+  },
+  {
+    id: 'auc-002',
+    slug: 'macbook-pro-16-m3',
+    title: 'MacBook Pro 16" M3 Pro',
+    description: 'Latest MacBook Pro with M3 Pro chip, 18GB RAM, 512GB SSD. Like new condition.',
+    category: 'electronics',
+    subCategory: 'laptops',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    currentBid: 1850000,
+    startingBid: 1500000,
+    totalBids: 8,
+    timeLeft: '1 day 12 hours',
+    endTime: isoDay3,
+    endTimeIso: isoDay3,
+    status: 'active',
+    location: { city: 'Abuja', country: 'Nigeria', countryCode: 'NG' },
+    year: 2024,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-002',
+    sellerName: 'Tech Store NG',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    trending: true,
+    specs: 'M3 Pro · 18GB RAM · 512GB SSD · Space Gray',
+    watchersCount: 52,
+  },
+  {
+    id: 'auc-003',
+    slug: 'iphone-15-pro-max',
+    title: 'iPhone 15 Pro Max 256GB',
+    description: 'Brand new iPhone 15 Pro Max, 256GB, Natural Titanium. Factory sealed.',
+    category: 'electronics',
+    subCategory: 'phones',
+    images: ['/placeholder.svg'],
+    currentBid: 980000,
+    startingBid: 850000,
+    totalBids: 15,
+    timeLeft: '3 days 8 hours',
+    endTime: isoDay5,
+    endTimeIso: isoDay5,
+    status: 'active',
+    location: { city: 'Port Harcourt', country: 'Nigeria', countryCode: 'NG' },
+    year: 2024,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-003',
+    sellerName: 'Mobile World',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'buy',
+    isNew: true,
+    specs: '256GB · Natural Titanium · 6.7" · Pro Max',
+    watchersCount: 41,
+  },
+  {
+    id: 'auc-004',
+    slug: 'luxury-designer-watch',
+    title: 'Luxury Designer Chronograph Watch',
+    description: 'Authentic designer chronograph watch, brand new with box and papers.',
+    category: 'fashion',
+    subCategory: 'accessories',
+    images: ['/placeholder.svg'],
+    currentBid: 450000,
+    startingBid: 350000,
+    totalBids: 6,
+    timeLeft: '5 days 2 hours',
+    endTime: isoSevenDays,
+    endTimeIso: isoSevenDays,
+    status: 'active',
+    location: { city: 'Kano', country: 'Nigeria', countryCode: 'NG' },
+    year: 2024,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-004',
+    sellerName: 'Luxury Hub NG',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    specs: 'Swiss Movement · Leather Strap · Sapphire Crystal',
+    watchersCount: 18,
+  },
+  {
+    id: 'auc-005',
+    slug: 'construction-equipment-bundle',
+    title: 'Heavy Construction Equipment Bundle',
+    description: 'Heavy duty construction equipment including excavator and bulldozer. Well maintained.',
+    category: 'construction',
+    subCategory: 'heavy-machinery',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    currentBid: 3200000,
+    startingBid: 2800000,
+    totalBids: 4,
+    timeLeft: '4 days 14 hours',
+    endTime: isoDay10,
+    endTimeIso: isoDay10,
+    status: 'active',
+    location: { city: 'Ibadan', country: 'Nigeria', countryCode: 'NG' },
+    year: 2021,
+    mileage: 5000,
+    engineVolume: 6800,
+    fuelType: 'Diesel',
+    sellerId: 'seller-005',
+    sellerName: 'BuildMart Nigeria',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: true,
+    specs: 'Heavy Duty · 2021 Model · Full Service History',
+    watchersCount: 9,
+  },
+  {
+    id: 'auc-006',
+    slug: 'professional-camera-kit',
+    title: 'Professional Camera Kit',
+    description: 'Complete photography kit with Sony A7IV camera, lenses, and accessories.',
+    category: 'electronics',
+    subCategory: 'cameras',
+    images: ['/placeholder.svg'],
+    currentBid: 780000,
+    startingBid: 650000,
+    totalBids: 9,
+    timeLeft: '6 days 10 hours',
+    endTime: isoDay14,
+    endTimeIso: isoDay14,
+    status: 'active',
+    location: { city: 'Enugu', country: 'Nigeria', countryCode: 'NG' },
+    year: 2023,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-006',
+    sellerName: 'Photo Pro NG',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    trending: true,
+    specs: 'Sony A7IV · Full Frame · 4K Video · Weather Sealed',
+    watchersCount: 27,
+  },
+  {
+    id: 'auc-007',
+    slug: 'mercedes-benz-c300',
+    title: '2021 Mercedes Benz C300 AMG Line',
+    description: 'Premium German sedan with AMG styling package. Panoramic roof, ambient lighting.',
+    category: 'transport',
+    subCategory: 'sedan',
+    images: ['/placeholder.svg', '/placeholder.svg', '/placeholder.svg'],
+    currentBid: 8500000,
+    startingBid: 7500000,
+    totalBids: 7,
+    timeLeft: '3 days 20 hours',
+    endTime: isoDay3,
+    endTimeIso: isoDay3,
+    status: 'active',
+    location: { city: 'Lagos', country: 'Nigeria', countryCode: 'NG' },
+    year: 2021,
+    mileage: 32000,
+    engineVolume: 1991,
+    fuelType: 'Petrol',
+    sellerId: 'seller-007',
+    sellerName: 'Premium Autos',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    featured: true,
+    specs: '2021 · 32,000 km · 1,991 cm3 · Petrol · AMG',
+    watchersCount: 63,
+  },
+  {
+    id: 'auc-008',
+    slug: 'toyota-hilux-2023',
+    title: '2023 Toyota Hilux Double Cabin',
+    description: 'Rugged and reliable pickup truck. 4x4, low mileage, perfect for Nigerian roads.',
+    category: 'transport',
+    subCategory: 'pickup',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    currentBid: 12800000,
+    startingBid: 11500000,
+    totalBids: 11,
+    timeLeft: '4 days 6 hours',
+    endTime: isoDay5,
+    endTimeIso: isoDay5,
+    status: 'active',
+    location: { city: 'Abuja', country: 'Nigeria', countryCode: 'NG' },
+    year: 2023,
+    mileage: 8000,
+    engineVolume: 2755,
+    fuelType: 'Diesel',
+    sellerId: 'seller-008',
+    sellerName: 'AutoDealers NG',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: true,
+    specs: '2023 · 8,000 km · 2,755 cm3 · Diesel · 4x4',
+    watchersCount: 39,
+  },
+  {
+    id: 'auc-009',
+    slug: 'samsung-galaxy-s24-ultra',
+    title: 'Samsung Galaxy S24 Ultra 512GB',
+    description: 'Latest flagship Samsung phone with S Pen. Titanium frame, Galaxy AI features.',
+    category: 'electronics',
+    subCategory: 'phones',
+    images: ['/placeholder.svg'],
+    currentBid: 850000,
+    startingBid: 750000,
+    totalBids: 14,
+    timeLeft: '2 days 16 hours',
+    endTime: isoDay1,
+    endTimeIso: isoDay1,
+    status: 'active',
+    location: { city: 'Lagos', country: 'Nigeria', countryCode: 'NG' },
+    year: 2024,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-009',
+    sellerName: 'Gadget Hub',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: true,
+    specs: '512GB · Titanium Gray · S Pen · Galaxy AI',
+    watchersCount: 48,
+  },
+  {
+    id: 'auc-010',
+    slug: 'designer-italian-sofa',
+    title: 'Luxury Italian Leather Sofa Set',
+    description: 'Premium 5-seater Italian leather sofa set. Perfect for living room or office.',
+    category: 'real-estate',
+    subCategory: 'furniture',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    currentBid: 650000,
+    startingBid: 500000,
+    totalBids: 5,
+    timeLeft: '7 days 4 hours',
+    endTime: isoSevenDays,
+    endTimeIso: isoSevenDays,
+    status: 'active',
+    location: { city: 'Lagos', country: 'Nigeria', countryCode: 'NG' },
+    year: 2024,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-010',
+    sellerName: 'Home Elegance',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    specs: 'Italian Leather · 5-Seater · Premium Build',
+    watchersCount: 22,
+  },
+  {
+    id: 'auc-011',
+    slug: 'nigerian-art-collection',
+    title: 'Contemporary Nigerian Art Collection',
+    description: 'Stunning original artwork from renowned Nigerian contemporary artist. Oil on canvas.',
+    category: 'art',
+    subCategory: 'paintings',
+    images: ['/placeholder.svg'],
+    currentBid: 890000,
+    startingBid: 750000,
+    totalBids: 11,
+    timeLeft: '8 days 12 hours',
+    endTime: isoDay10,
+    endTimeIso: isoDay10,
+    status: 'active',
+    location: { city: 'Benin City', country: 'Nigeria', countryCode: 'NG' },
+    year: 2024,
+    mileage: null,
+    engineVolume: null,
+    fuelType: null,
+    sellerId: 'seller-011',
+    sellerName: 'Art Gallery NG',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    trending: true,
+    specs: 'Oil on Canvas · 24" x 36" · Certificate of Authenticity',
+    watchersCount: 45,
+  },
+  {
+    id: 'auc-012',
+    slug: 'honda-crv-2023',
+    title: '2023 Honda CR-V Sport Touring',
+    description: 'Family SUV in excellent condition. Panoramic sunroof, Honda Sensing safety suite.',
+    category: 'transport',
+    subCategory: 'suv',
+    images: ['/placeholder.svg', '/placeholder.svg'],
+    currentBid: 9500000,
+    startingBid: 8500000,
+    totalBids: 9,
+    timeLeft: '5 days 22 hours',
+    endTime: isoDay5,
+    endTimeIso: isoDay5,
+    status: 'active',
+    location: { city: 'Lagos', country: 'Nigeria', countryCode: 'NG' },
+    year: 2023,
+    mileage: 18000,
+    engineVolume: 1498,
+    fuelType: 'Petrol',
+    sellerId: 'seller-012',
+    sellerName: 'CarHub Nigeria',
+    buyerId: null,
+    imageUrl: '/placeholder.svg',
+    auctionType: 'bid',
+    isNew: false,
+    specs: '2023 · 18,000 km · 1,498 cm3 · Petrol · AWD',
+    watchersCount: 31,
+  },
+];
 
-import { SELLER_DUMMY_PAYMENTS } from '@/app/[locale]/(domain)/seller/models/data';
+const mockCategories = [
+  {
+    id: 'cat-001',
+    name: 'Transport',
+    slug: 'transport',
+    description: 'Cars, trucks, motorcycles and all things that move',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-001', name: 'Cars', slug: 'cars' },
+      { id: 'sub-002', name: 'SUVs', slug: 'suvs' },
+      { id: 'sub-003', name: 'Trucks', slug: 'trucks' },
+      { id: 'sub-004', name: 'Motorcycles', slug: 'motorcycles' },
+    ],
+    productCount: 142,
+    isActive: true,
+  },
+  {
+    id: 'cat-002',
+    name: 'Electronics',
+    slug: 'electronics',
+    description: 'Phones, laptops, cameras and all electronics',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-005', name: 'Phones', slug: 'phones' },
+      { id: 'sub-006', name: 'Laptops', slug: 'laptops' },
+      { id: 'sub-007', name: 'Cameras', slug: 'cameras' },
+      { id: 'sub-008', name: 'TV & Audio', slug: 'tv-audio' },
+    ],
+    productCount: 98,
+    isActive: true,
+  },
+  {
+    id: 'cat-003',
+    name: 'Agriculture',
+    slug: 'agriculture',
+    description: 'Tractors, harvesters and farming equipment',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-009', name: 'Tractors', slug: 'tractors' },
+      { id: 'sub-010', name: 'Harvesters', slug: 'harvesters' },
+      { id: 'sub-011', name: 'Livestock', slug: 'livestock' },
+    ],
+    productCount: 56,
+    isActive: true,
+  },
+  {
+    id: 'cat-004',
+    name: 'Construction',
+    slug: 'construction',
+    description: 'Heavy machinery, tools and construction equipment',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-012', name: 'Excavators', slug: 'excavators' },
+      { id: 'sub-013', name: 'Bulldozers', slug: 'bulldozers' },
+      { id: 'sub-014', name: 'Cranes', slug: 'cranes' },
+      { id: 'sub-015', name: 'Tools', slug: 'tools' },
+    ],
+    productCount: 73,
+    isActive: true,
+  },
+  {
+    id: 'cat-005',
+    name: 'Fashion',
+    slug: 'fashion',
+    description: 'Clothing, shoes, bags and accessories',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-016', name: 'Clothing', slug: 'clothing' },
+      { id: 'sub-017', name: 'Shoes', slug: 'shoes' },
+      { id: 'sub-018', name: 'Bags', slug: 'bags' },
+      { id: 'sub-019', name: 'Watches', slug: 'watches' },
+    ],
+    productCount: 85,
+    isActive: true,
+  },
+  {
+    id: 'cat-006',
+    name: 'Real Estate',
+    slug: 'real-estate',
+    description: 'Land, houses, apartments and commercial properties',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-020', name: 'Residential', slug: 'residential' },
+      { id: 'sub-021', name: 'Commercial', slug: 'commercial' },
+      { id: 'sub-022', name: 'Land', slug: 'land' },
+    ],
+    productCount: 64,
+    isActive: true,
+  },
+  {
+    id: 'cat-007',
+    name: 'Art',
+    slug: 'art',
+    description: 'Paintings, sculptures and collectibles',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-023', name: 'Paintings', slug: 'paintings' },
+      { id: 'sub-024', name: 'Sculptures', slug: 'sculptures' },
+      { id: 'sub-025', name: 'Collectibles', slug: 'collectibles' },
+    ],
+    productCount: 42,
+    isActive: true,
+  },
+  {
+    id: 'cat-008',
+    name: 'Music',
+    slug: 'music',
+    description: 'Instruments, audio equipment and music gear',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-026', name: 'Instruments', slug: 'instruments' },
+      { id: 'sub-027', name: 'Audio Equipment', slug: 'audio-equipment' },
+      { id: 'sub-028', name: 'Studio Gear', slug: 'studio-gear' },
+    ],
+    productCount: 38,
+    isActive: true,
+  },
+  {
+    id: 'cat-009',
+    name: 'Sports',
+    slug: 'sports',
+    description: 'Sports equipment, fitness gear and outdoor items',
+    imageUrl: '/placeholder.svg',
+    subCategories: [
+      { id: 'sub-029', name: 'Fitness', slug: 'fitness' },
+      { id: 'sub-030', name: 'Outdoor', slug: 'outdoor' },
+      { id: 'sub-031', name: 'Team Sports', slug: 'team-sports' },
+    ],
+    productCount: 51,
+    isActive: true,
+  },
+];
+
+const mockBanners = [
+  {
+    id: 'banner-001',
+    title: 'Summer Auction Bonanza',
+    imageUrl: '/placeholder.svg',
+    link: '/auctions?category=electronics',
+    position: 'hero',
+    isActive: true,
+  },
+  {
+    id: 'banner-002',
+    title: 'Luxury Cars Live Auction',
+    imageUrl: '/placeholder.svg',
+    link: '/auctions?category=transport',
+    position: 'secondary',
+    isActive: true,
+  },
+  {
+    id: 'banner-003',
+    title: 'Become a Seller Today',
+    imageUrl: '/placeholder.svg',
+    link: '/auth/seller/register',
+    position: 'cta',
+    isActive: true,
+  },
+];
+
+const mockFaqs = [
+  {
+    id: 'faq-001',
+    category: 'General',
+    question: 'What is GreyAuction?',
+    answer: 'GreyAuction is Nigeria\'s premier online auction platform where you can buy and sell items through transparent bidding.',
+    order: 1,
+    isActive: true,
+  },
+  {
+    id: 'faq-002',
+    category: 'Bidding',
+    question: 'How does bidding work?',
+    answer: 'Place a bid on any active auction. If your bid is the highest when the auction ends, you win the item. You can set a maximum bid for automatic bidding.',
+    order: 2,
+    isActive: true,
+  },
+  {
+    id: 'faq-003',
+    category: 'Payment',
+    question: 'What payment methods are supported?',
+    answer: 'We accept credit/debit cards (Visa, Mastercard), bank transfers, and selected local Nigerian payment methods.',
+    order: 3,
+    isActive: true,
+  },
+  {
+    id: 'faq-004',
+    category: 'Shipping',
+    question: 'How is delivery handled?',
+    answer: 'We partner with reliable logistics companies across Nigeria. Delivery is arranged after successful payment confirmation.',
+    order: 4,
+    isActive: true,
+  },
+  {
+    id: 'faq-005',
+    category: 'Account',
+    question: 'Do I need an account to bid?',
+    answer: 'Yes, you need a verified account to place bids. Registration is free and takes only a few minutes.',
+    order: 5,
+    isActive: true,
+  },
+];
+
+const mockTestimonials = [
+  {
+    id: 'test-001',
+    name: 'Amina Ibrahim',
+    role: 'Buyer',
+    company: 'Lagos',
+    text: 'I won my first auction within minutes! The bidding process was fast, transparent, and I got a great deal on a Toyota Camry.',
+    rating: 5,
+    imageUrl: '/placeholder.svg',
+  },
+  {
+    id: 'test-002',
+    name: 'Chidi Okonkwo',
+    role: 'Seller',
+    company: 'Abuja',
+    text: 'GreyAuction helped me sell my equipment quickly and at a fair price. The platform is professional and secure.',
+    rating: 5,
+    imageUrl: '/placeholder.svg',
+  },
+  {
+    id: 'test-003',
+    name: 'Folake Adeyemi',
+    role: 'Buyer',
+    company: 'Ibadan',
+    text: 'Bidding is fast, simple, and transparent. I won my first auction in minutes and the delivery was seamless.',
+    rating: 4,
+    imageUrl: '/placeholder.svg',
+  },
+];
+
+const mockFaqCategories = [
+  {
+    name: 'General',
+    emoji: '\uD83D\uDCE6',
+    items: [
+      {
+        question: 'What is GreyAuction?',
+        answer: 'GreyAuction is Nigeria\'s premier online auction platform that allows users to buy and sell items through transparent bidding in a secure environment.',
+      },
+      {
+        question: 'Do I need an account to browse items?',
+        answer: 'No, you can browse items freely. However, you need an account to place bids, make purchases, or list items for sale.',
+      },
+      {
+        question: 'Is the platform free to use?',
+        answer: 'Browsing and creating an account is free. A small commission is charged on successful auction sales.',
+      },
+      {
+        question: 'What countries do you support?',
+        answer: 'We currently support Nigeria, with more countries coming soon.',
+      },
+      {
+        question: 'How do I contact support?',
+        answer: 'You can reach our support team via the Contact Us page, email at info@greyauction.com, or call +2347081436524.',
+      },
+    ],
+  },
+  {
+    name: 'Bidding & Auctions',
+    emoji: '\u26A1',
+    items: [
+      {
+        question: 'How does bidding work?',
+        answer: 'Place a bid on any active auction. If your bid is the highest when the auction ends, you win the item. You can set a maximum bid and the system will automatically bid on your behalf up to that amount.',
+      },
+      {
+        question: 'What is a reserve price?',
+        answer: 'A reserve price is the minimum amount a seller is willing to accept. If bidding does not reach the reserve price, the item will not be sold.',
+      },
+      {
+        question: 'Can I cancel a bid?',
+        answer: 'Bids are binding and generally cannot be cancelled. Please review all item details carefully before placing a bid.',
+      },
+    ],
+  },
+  {
+    name: 'Buying & Payments',
+    emoji: '\uD83D\uDCB0',
+    items: [
+      {
+        question: 'What happens after I win an auction?',
+        answer: 'You will receive a notification and invoice. Payment must be completed within the specified timeframe to secure your purchase.',
+      },
+      {
+        question: 'What payment methods are supported?',
+        answer: 'We accept credit/debit cards (Visa, Mastercard), bank transfers, and selected local Nigerian payment methods.',
+      },
+      {
+        question: 'Is my payment secure?',
+        answer: 'Yes, all payments are processed through secure, encrypted channels. We never store your full card details.',
+      },
+    ],
+  },
+  {
+    name: 'Delivery & Inspection',
+    emoji: '\uD83D\uDCCB',
+    items: [
+      {
+        question: 'Can I inspect an item before delivery?',
+        answer: 'Yes, inspection can be arranged for certain items. Contact the seller through the platform to schedule an inspection.',
+      },
+      {
+        question: 'Who handles delivery?',
+        answer: 'Delivery is arranged between buyer and seller. We partner with reliable logistics companies across Nigeria.',
+      },
+    ],
+  },
+  {
+    name: 'Payments & Withdrawals',
+    emoji: '\uD83D\uDCB3',
+    items: [
+      {
+        question: 'How do I withdraw my earnings as a seller?',
+        answer: 'Navigate to your seller dashboard and request a withdrawal. Funds are typically transferred to your registered bank account within 3-5 business days.',
+      },
+      {
+        question: 'Are there any fees for withdrawals?',
+        answer: 'Standard withdrawals are free. Express withdrawals may incur a small processing fee.',
+      },
+      {
+        question: 'What currency are transactions in?',
+        answer: 'All transactions on the platform are in Nigerian Naira (NGN).',
+      },
+    ],
+  },
+];
 
 // ─── Website ─────────────────────────────────────────────────────────────
 
 export async function getAuctions() {
   const data = await apiFetch('/auctions');
-  return data ?? dummyAuctions;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockAuctions;
 }
 
 export async function getAuctionBySlug(slug: string) {
   const data = await apiFetch(`/auctions/${slug}`);
-  return data ?? dummyAuctions.find((a) => a.id === slug) ?? dummyAuctions[0];
+  if (data) return data;
+  return mockAuctions.find((a) => a.slug === slug || a.id === slug) || null;
 }
 
 export async function getFeaturedAuctions() {
   const data = await apiFetch('/auctions/featured');
-  return data ?? dummyAuctions;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockAuctions.slice(0, 8);
 }
 
 export async function getCategories() {
   const data = await apiFetch('/categories');
-  return data ?? categories;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockCategories;
+}
+
+export async function getRelatedAuctions(category: string) {
+  const data = await apiFetch(`/auctions/related?category=${category}`);
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockAuctions.filter(
+    (a) => a.category?.toLowerCase() === category?.toLowerCase()
+  );
+}
+
+export async function getAuctionsByCategory(category: string) {
+  const data = await apiFetch(`/auctions?category=${category}`);
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockAuctions.filter(
+    (a) => a.category?.toLowerCase() === category?.toLowerCase()
+  );
+}
+
+export async function getBanners() {
+  const data = await apiFetch('/banners');
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockBanners;
+}
+
+export async function getFaqs() {
+  const data = await apiFetch('/faqs');
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockFaqs;
+}
+
+export async function getTestimonials() {
+  const data = await apiFetch('/testimonials');
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockTestimonials;
 }
 
 export async function getFaqCategories() {
   const data = await apiFetch('/faqs');
-  return data ?? faqCategories;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockFaqCategories;
 }
 
 export async function getCartItems() {
-  return dummyAuctions.slice(0, 2);
+  const data = await apiFetch('/cart');
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getOrderItems() {
-  return dummyAuctions.slice(0, 2).map((a) => ({
-    name: a.title,
-    price: a.currentBid,
-  }));
+  const data = await apiFetch('/orders');
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getWishlistItems() {
   const data = await apiFetch('/wishlist');
-  return data ?? dummyAuctions;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────
 
 export async function getAdminAuctions() {
   const data = await apiFetch('/admin/auctions');
-  return data ?? DUMMY_AUCTIONS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockAuctions;
 }
 
 export async function getAdminBids() {
   const data = await apiFetch('/admin/bids');
-  return data ?? DUMMY_BIDS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getAdminBuyers() {
   const data = await apiFetch('/admin/buyers');
-  return data ?? DUMMY_BUYERS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getAdminSellers() {
   const data = await apiFetch('/admin/sellers');
-  return data ?? DUMMY_SELLERS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getAdminAdmins() {
   const data = await apiFetch('/admin/admins');
-  return data ?? DUMMY_ADMINS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getAdminCategories() {
   const data = await apiFetch('/admin/categories');
-  return data ?? DUMMY_CATEGORIES;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockCategories;
 }
 
 export async function getAdminBanners() {
   const data = await apiFetch('/admin/banners');
-  return data ?? DUMMY_BANNERS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockBanners;
 }
 
 export async function getAdminFaqs() {
   const data = await apiFetch('/admin/faqs');
-  return data ?? DUMMY_FAQS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return mockFaqs;
 }
 
 export async function getAdminPayments() {
   const data = await apiFetch('/admin/payments');
-  return data ?? DUMMY_PAYMENTS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getAdminBiddingRooms() {
   const data = await apiFetch('/admin/rooms');
-  return data ?? DUMMY_BIDDING_ROOMS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getAdminTickets() {
   const data = await apiFetch('/admin/tickets');
-  return data ?? DUMMY_TICKETS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 // ─── Seller ─────────────────────────────────────────────────────────────
 
 export async function getSellerListings() {
   const data = await apiFetch('/seller/listings');
-  return data ?? DUMMY_LISTINGS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getSellerPayments() {
   const data = await apiFetch('/seller/payments');
-  return data ?? SELLER_DUMMY_PAYMENTS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getSellerSales() {
   const data = await apiFetch('/seller/sales');
-  return data ?? DUMMY_SALES;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getSellerBiddingRooms() {
   const data = await apiFetch('/seller/rooms');
-  return data ?? SELLER_BIDDING_ROOMS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }
 
 export async function getSellerConversations() {
   const data = await apiFetch('/seller/conversations');
-  return data ?? DUMMY_CONVERSATIONS;
+  if (data && Array.isArray(data) && data.length > 0) return data;
+  return [];
 }

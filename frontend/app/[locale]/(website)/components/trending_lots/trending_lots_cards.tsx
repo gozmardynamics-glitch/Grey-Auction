@@ -127,7 +127,7 @@ export function TrendingLotsCards({
 
           {/* Countdown Timer - Bottom Left */}
           <div className="absolute bottom-4 left-4 bg-background rounded-2xl px-3 py-2 shadow-lg">
-            <div className="flex items-center gap-2 text-sm font-semibold">
+            <div className="flex items-center gap-2 text-[8px] font-semibold">
               <span className="text-muted-foreground tabular-nums">
                 {String(timeRemaining.days).padStart(2, '0')}
               </span>

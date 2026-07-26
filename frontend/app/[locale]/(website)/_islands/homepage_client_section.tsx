@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/redux/store';
 import { setSelectedCategory } from '@/redux/slices/categories.slice';
 import { Skeleton } from '@/shared/components/common';
@@ -40,19 +41,21 @@ export default function HomepageClientSection({
   categories,
 }: HomepageClientSectionProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const selectedCategory =
     useAppSelector((state) => state.categories.selectedCategory) ||
-    categories[0].slug;
+    categories[0]?.slug ||
+    '';
 
   const handleCategoryClick = (categorySlug: string) => {
-    console.log('Navigate to category:', categorySlug);
+    router.push(`/auctions?category=${categorySlug}`);
   };
 
   const handleSubCategoryClick = (
     categorySlug: string,
     subCategorySlug: string
   ) => {
-    console.log('Navigate to sub-category:', categorySlug, subCategorySlug);
+    router.push(`/auctions?category=${categorySlug}&subCategory=${subCategorySlug}`);
   };
 
   return (
@@ -63,7 +66,7 @@ export default function HomepageClientSection({
       <CategoriesCarousel
         selectedCategory={selectedCategory}
         onCategorySelect={(categorySlug) =>
-          dispatch(setSelectedCategory(categorySlug || categories[0].slug))
+          dispatch(setSelectedCategory(categorySlug || categories[0]?.slug || ''))
         }
       />
       <FeaturedCosmeticsAuctions

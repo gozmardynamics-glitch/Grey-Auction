@@ -13,7 +13,7 @@ export const dataSourceOptions: DataSourceOptions = {
   database: process.env.DB_DATABASE || 'greyauction',
   entities: [resolve(__dirname, '..', '**', '*.entity.{ts,js}')],
   migrations: [resolve(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
-  synchronize: process.env.NODE_ENV !== 'production',
+  synchronize: false,
   logging: process.env.NODE_ENV === 'development',
 };
 

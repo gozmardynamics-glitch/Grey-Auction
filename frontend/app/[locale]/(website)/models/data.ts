@@ -10,18 +10,18 @@ import {
 } from '.';
 
 const trustedBrands: Brand[] = [
-  { id: '1', name: 'Brand 1', logo: '/car.svg' },
-  { id: '2', name: 'Brand 2', logo: '/car.svg' },
-  { id: '3', name: 'Brand 3', logo: '/car.svg' },
-  { id: '4', name: 'Brand 4', logo: '/car.svg' },
-  { id: '5', name: 'Brand 5', logo: '/car.svg' },
-  { id: '6', name: 'Brand 6', logo: '/car.svg' },
-  { id: '7', name: 'Brand 7', logo: '/car.svg' },
-  { id: '8', name: 'Brand 8', logo: '/car.svg' },
-  { id: '9', name: 'Brand 9', logo: '/car.svg' },
-  { id: '10', name: 'Brand 10', logo: '/car.svg' },
-  { id: '11', name: 'Brand 11', logo: '/car.svg' },
-  { id: '12', name: 'Brand 12', logo: '/car.svg' },
+  { id: '1', name: 'Toyota', logo: '/car.svg', initials: 'T', color: 'bg-red-500' },
+  { id: '2', name: 'BMW', logo: '/car.svg', initials: 'B', color: 'bg-blue-500' },
+  { id: '3', name: 'Mercedes', logo: '/car.svg', initials: 'M', color: 'bg-green-500' },
+  { id: '4', name: 'Ford', logo: '/car.svg', initials: 'F', color: 'bg-yellow-500' },
+  { id: '5', name: 'Honda', logo: '/car.svg', initials: 'H', color: 'bg-purple-500' },
+  { id: '6', name: 'Audi', logo: '/car.svg', initials: 'A', color: 'bg-pink-500' },
+  { id: '7', name: 'Volkswagen', logo: '/car.svg', initials: 'V', color: 'bg-indigo-500' },
+  { id: '8', name: 'Porsche', logo: '/car.svg', initials: 'P', color: 'bg-orange-500' },
+  { id: '9', name: 'Hyundai', logo: '/car.svg', initials: 'H', color: 'bg-teal-500' },
+  { id: '10', name: 'Volvo', logo: '/car.svg', initials: 'V', color: 'bg-cyan-500' },
+  { id: '11', name: 'Nissan', logo: '/car.svg', initials: 'N', color: 'bg-rose-500' },
+  { id: '12', name: 'Ferrari', logo: '/car.svg', initials: 'F', color: 'bg-emerald-500' },
 ];
 
 const categories: Category[] = [

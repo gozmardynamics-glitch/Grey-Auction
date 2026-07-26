@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { dataSourceOptions } from './config/database.config';
+import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { SellerModule } from './seller/seller.module';
@@ -19,6 +20,7 @@ import { ContentModule } from './content/content.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(dataSourceOptions),
+    CommonModule,
     AuthModule,
     AdminModule,
     SellerModule,

@@ -10,6 +10,32 @@ import {
 } from '@/shared/components/common';
 import { trustedBrands } from '../models/data';
 
+function BrandLogo({ brand }: { brand: (typeof trustedBrands)[number] }) {
+  const isPlaceholder = brand.logo === '/car.svg';
+
+  if (!isPlaceholder) {
+    return (
+      <div className="relative w-24 h-16 rounded-xl">
+        <Image
+          src={brand.logo}
+          alt={brand.name}
+          fill
+          className="object-contain"
+          sizes="100px"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold ${brand.color ?? 'bg-gray-500'}`}
+    >
+      {brand.initials ?? brand.name.charAt(0)}
+    </div>
+  );
+}
+
 export default function TrustedBrands() {
   const plugin = useRef(
     Autoplay({
@@ -51,15 +77,7 @@ export default function TrustedBrands() {
                 className="pl-4 basis-1/3 sm:basis-1/4 md:basis-1/6 lg:basis-[12.5%]"
               >
                 <div className="flex items-center justify-center p-2 grayscale hover:grayscale-0 transition-all duration-300 opacity-60 hover:opacity-100">
-                  <div className="relative w-24 h-16 rounded-xl">
-                    <Image
-                      src={brand.logo}
-                      alt={brand.name}
-                      fill
-                      className="object-contain"
-                      sizes="100px"
-                    />
-                  </div>
+                  <BrandLogo brand={brand} />
                 </div>
               </CarouselItem>
             ))}

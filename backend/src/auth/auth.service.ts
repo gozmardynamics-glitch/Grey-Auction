@@ -1,17 +1,21 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from './entities/user.entity';
 import { LoginDto, RegisterDto, CompleteProfileDto } from './dto/auth.dto';
+import { EmailService } from '../common/email/email.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -30,6 +34,10 @@ export class AuthService {
     });
 
     await this.userRepository.save(user);
+
+    this.emailService.sendWelcomeEmail(user.email, user.name).catch((err) => {
+      this.logger.error(`Failed to send welcome email: ${err.message}`);
+    });
 
     const token = this.generateToken(user);
     return { user: this.sanitizeUser(user), token };
@@ -76,8 +84,11 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     if (user) {
-      // In production: send email with reset token
       const resetToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '1h' });
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+      this.emailService.sendPasswordResetEmail(email, resetLink).catch((err) => {
+        this.logger.error(`Failed to send password reset email: ${err.message}`);
+      });
       return { resetToken };
     }
     return null;
@@ -130,6 +141,9 @@ export class AuthService {
     (user as any).otpCode = otp;
     (user as any).otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await this.userRepository.save(user);
+    this.emailService.sendOtpEmail(email, otp).catch((err) => {
+      this.logger.error(`Failed to send OTP email: ${err.message}`);
+    });
     return { otp };
   }
 

@@ -61,7 +61,7 @@ export default function RelatedLots({ selectedCategory }: RelatedLotsProps) {
           {filteredAuctions.map((auction) => (
             <CarouselItem
               key={auction.id}
-              className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+              className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/5"
             >
               <TrendingLotsCards
                 auction={auction}

@@ -12,6 +12,8 @@ interface Brand {
   id: string;
   name: string;
   logo: string;
+  initials?: string;
+  color?: string;
 }
 
 interface TrustBadge {

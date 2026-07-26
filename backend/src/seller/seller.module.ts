@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { StorageModule } from '../common/storage/storage.module';
+import { EmailModule } from '../common/email/email.module';
 import { SellerController } from './seller.controller';
 import {
   SellerService,
@@ -30,6 +32,8 @@ import {
       SellerReview,
       SellerStatistics,
     ]),
+    StorageModule,
+    EmailModule,
   ],
   controllers: [SellerController],
   providers: [

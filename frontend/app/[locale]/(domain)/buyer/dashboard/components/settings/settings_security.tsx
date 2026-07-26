@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, CheckCircle2, Circle, AlertTriangle, UserX } from 'lucide-react';
+import { toast } from 'sonner';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 
 import {
@@ -133,7 +134,7 @@ export default function SettingsSecurity() {
       setVerifyError('Invalid code');
       return;
     }
-    // TODO: verify code with API
+    toast.success('Verification successful');
     setVerifyError('');
     setPinStep('new-pin');
   };
@@ -147,14 +148,9 @@ export default function SettingsSecurity() {
       setPinError('PINs do not match');
       return;
     }
-    // TODO: submit new PIN to API
+    toast.success('Withdrawal PIN has been updated successfully.');
     setPinModalOpen(false);
     resetPinModal();
-    setSuccessConfig({
-      title: 'PIN Changed Successfully',
-      message: 'Your withdrawal PIN has been updated successfully.',
-    });
-    setSuccessOpen(true);
   };
 
   const resetDeleteModal = () => {

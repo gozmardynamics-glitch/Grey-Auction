@@ -60,7 +60,7 @@ export default function TrendingLots({ selectedCategory }: TrendingLotsProps) {
         {filteredAuctions.map((auction) => (
           <CarouselItem
             key={auction.id}
-            className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+            className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/5"
           >
             <TrendingLotsCards
               auction={auction}

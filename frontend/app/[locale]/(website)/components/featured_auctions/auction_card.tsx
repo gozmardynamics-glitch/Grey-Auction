@@ -125,7 +125,7 @@ export function AuctionCard({
 
           {/* Timer */}
           <div className="absolute bottom-1.5 left-1.5 rounded-lg bg-background px-1.5 py-0.5 shadow-lg sm:bottom-2 sm:left-2 sm:rounded-xl sm:px-2 sm:py-1">
-            <div className="flex items-center gap-0.5 text-[10px] font-semibold text-muted-foreground sm:gap-1 sm:text-xs">
+            <div className="flex items-center gap-0.5 text-[6px] font-semibold text-muted-foreground sm:gap-1 sm:text-[7px]">
               <span className="tabular-nums">{String(timeRemaining.days).padStart(2, '0')}</span>
               <span>days</span>
               <span>:</span>
@@ -252,7 +252,7 @@ export function AuctionCard({
           </div>
 
           <div className="absolute bottom-4 left-4 rounded-2xl bg-background px-3 py-2 shadow-lg">
-            <div className="flex items-center gap-2 text-sm font-semibold">
+            <div className="flex items-center gap-2 text-[8px] font-semibold">
               <span className="text-muted-foreground tabular-nums">
                 {String(timeRemaining.days).padStart(2, '0')}
               </span>

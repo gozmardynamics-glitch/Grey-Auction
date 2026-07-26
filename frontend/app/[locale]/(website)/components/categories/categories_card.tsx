@@ -101,22 +101,22 @@ export function CategoriesCard({
 
           {/* Countdown Timer - Bottom Left */}
           <div className="absolute bottom-2 left-1 md:bottom-4 bg-background rounded-xl md:rounded-2xl p-1.5 md:p-2 shadow-lg">
-            <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs font-semibold">
-              <span className="text-secondary-foreground font-bold text-xs md:text-sm tabular-nums">
+            <div className="flex items-center gap-1 md:gap-2 text-[6px] md:text-[7px] font-semibold">
+              <span className="text-secondary-foreground font-bold text-[7px] md:text-[8px] tabular-nums">
                 {String(timeRemaining.days).padStart(2, '0')}
               </span>
               <span className="hidden md:inline text-muted-foreground">
                 days
               </span>
               <span className="text-muted-foreground">:</span>
-              <span className="text-secondary-foreground font-bold text-xs md:text-sm tabular-nums">
+              <span className="text-secondary-foreground font-bold text-[7px] md:text-[8px] tabular-nums">
                 {String(timeRemaining.hours).padStart(2, '0')}
               </span>
               <span className="hidden md:inline text-muted-foreground">
                 hrs
               </span>
               <span className="text-muted-foreground">:</span>
-              <span className="text-secondary-foreground font-bold text-xs md:text-sm tabular-nums">
+              <span className="text-secondary-foreground font-bold text-[7px] md:text-[8px] tabular-nums">
                 {String(timeRemaining.minutes).padStart(2, '0')}
               </span>
               <span className="hidden md:inline text-muted-foreground">

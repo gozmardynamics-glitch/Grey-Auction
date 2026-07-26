@@ -13,6 +13,7 @@ import {
   HttpStatus,
   UploadedFile,
   UseInterceptors,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,6 +24,7 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { StorageService } from '../common/storage/storage.service';
 import { SellerService } from './services/seller.service';
 import { SellerDocumentService } from './services/seller-document.service';
 import { SellerPayoutService } from './services/seller-payout.service';
@@ -65,17 +67,22 @@ import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { CurrentAdmin } from '../admin/decorators/current-admin.decorator';
 import { Seller } from './entities/seller.entity';
 import { Admin, AdminRole } from '../admin/entities/admin.entity';
+import { EmailService } from '../common/email/email.service';
 import { StatisticsPeriod } from './entities/seller-statistics.entity';
 
 @ApiTags('Sellers')
 @Controller('sellers')
 export class SellerController {
+  private readonly logger = new Logger(SellerController.name);
+
   constructor(
     private readonly sellerService: SellerService,
     private readonly documentService: SellerDocumentService,
     private readonly payoutService: SellerPayoutService,
     private readonly reviewService: SellerReviewService,
     private readonly statisticsService: SellerStatisticsService,
+    private readonly storageService: StorageService,
+    private readonly emailService: EmailService,
   ) {}
 
   // ==========================================
@@ -227,6 +234,10 @@ export class SellerController {
   ) {
     const seller = await this.sellerService.approve(id, approveDto, admin.id);
 
+    this.emailService.sendSellerVerificationEmail(seller.email, seller.business_name, 'approved').catch((err) => {
+      this.logger.error(`Failed to send seller approval email: ${err.message}`);
+    });
+
     return {
       success: true,
       message: 'Seller approved successfully',
@@ -247,6 +258,15 @@ export class SellerController {
     @CurrentAdmin() admin: Admin,
   ) {
     const seller = await this.sellerService.reject(id, rejectDto, admin.id);
+
+    this.emailService.sendSellerVerificationEmail(
+      seller.email,
+      seller.business_name,
+      'rejected',
+      rejectDto.rejection_reason,
+    ).catch((err) => {
+      this.logger.error(`Failed to send seller rejection email: ${err.message}`);
+    });
 
     return {
       success: true,
@@ -335,14 +355,7 @@ export class SellerController {
     @Body() uploadDto: UploadDocumentDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    // TODO: Upload file to S3/GCS and get URL
-    const fileData = {
-      url: `https://storage.example.com/documents/${file.filename}`,
-      filename: file.originalname,
-      size: file.size,
-      mimetype: file.mimetype,
-      hash: 'sha256-hash', // TODO: Calculate hash
-    };
+    const fileData = await this.storageService.uploadFile(file, 'documents');
 
     const document = await this.documentService.upload(
       seller.id,
