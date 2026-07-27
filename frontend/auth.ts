@@ -1,10 +1,8 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import Google from 'next-auth/providers/google';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
-    Google,
     Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -50,31 +48,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role;
         token.backendToken = user.backendToken;
-      }
-
-      if (account?.provider === 'google') {
-        try {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/oauth/google`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                idToken: account.id_token,
-                accessToken: account.access_token,
-              }),
-            }
-          );
-
-          if (res.ok) {
-            const json = await res.json();
-            const data = json.data ?? json;
-            token.role = data.user.role;
-            token.backendToken = data.token;
-          }
-        } catch {
-          // Backend unavailable
-        }
       }
 
       return token;
