@@ -1,8 +1,8 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm ci
-COPY . .
+COPY backend/ .
 RUN npm run build
 
 FROM node:22-alpine
