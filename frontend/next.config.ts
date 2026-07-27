@@ -9,7 +9,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: https:",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' http://localhost:4000 https:",
+  "connect-src 'self' https://*.sslip.io https:",
   "frame-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
