@@ -1,0 +1,8 @@
+node_modules
+.git
+.next
+dist
+*.md
+*.png
+.playwright-mcp
+.kilo
