@@ -3,19 +3,18 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Providers } from '../providers';
-import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/shared/components/common/sonner';
 import { CookieConsent } from '@/shared/components/common/cookie_consent';
 
-const geistSans = Geist({
+const fontSans = {
   variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+  style: { fontFamily: "'Geist', 'Geist Fallback', system-ui, -apple-system, sans-serif" },
+};
 
-const geistMono = Geist_Mono({
+const fontMono = {
   variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+  style: { fontFamily: "'Geist Mono', 'Geist Mono Fallback', 'Courier New', monospace" },
+};
 
 export default async function LocaleLayout({
   children,
@@ -37,7 +36,7 @@ export default async function LocaleLayout({
     <html lang={locale} suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${fontSans.variable} ${fontMono.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
           <Providers>
