@@ -10,11 +10,11 @@ import {
   Card,
   CardContent,
   CardFooter,
+  CountdownTimer,
 } from '@/shared/components/common';
 
 import { Auction } from '../../models';
 import { formatCurrency } from '@/shared/utils/helpers';
-import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { toggleWishlist } from '@/redux/slices/wishlist.slice';
 
@@ -35,7 +35,6 @@ export function CategoriesCard({
   const wishlistItems = useAppSelector((state) => state.wishlist.items);
   const isWishlisted = wishlistItems.includes(auction.id);
   const [isAnimating, setIsAnimating] = useState(false);
-  const timeRemaining = useCountdown(auction.endTime);
 
   const handleWishlistClick = () => {
     const wasWishlisted = isWishlisted;
@@ -101,28 +100,7 @@ export function CategoriesCard({
 
           {/* Countdown Timer - Bottom Left */}
           <div className="absolute bottom-2 left-1 md:bottom-4 bg-background rounded-xl md:rounded-2xl p-1.5 md:p-2 shadow-lg">
-            <div className="flex items-center gap-1 md:gap-2 text-[6px] md:text-[7px] font-semibold">
-              <span className="text-secondary-foreground font-bold text-[7px] md:text-[8px] tabular-nums">
-                {String(timeRemaining.days).padStart(2, '0')}
-              </span>
-              <span className="hidden md:inline text-muted-foreground">
-                days
-              </span>
-              <span className="text-muted-foreground">:</span>
-              <span className="text-secondary-foreground font-bold text-[7px] md:text-[8px] tabular-nums">
-                {String(timeRemaining.hours).padStart(2, '0')}
-              </span>
-              <span className="hidden md:inline text-muted-foreground">
-                hrs
-              </span>
-              <span className="text-muted-foreground">:</span>
-              <span className="text-secondary-foreground font-bold text-[7px] md:text-[8px] tabular-nums">
-                {String(timeRemaining.minutes).padStart(2, '0')}
-              </span>
-              <span className="hidden md:inline text-muted-foreground">
-                mins
-              </span>
-            </div>
+            <CountdownTimer endTime={auction.endTime} size="sm" className="text-[6px] md:text-[7px]" />
           </div>
           {/* Action Icons */}
           <div className="flex gap-1 md:gap-2 absolute top-2 right-2 md:top-4 md:right-4 flex-col">

@@ -14,10 +14,12 @@ import {
 import {
   Button,
   Card,
+  CountdownTimer,
   Label,
   RadioGroup,
   RadioGroupItem,
   Separator,
+  SharedImageGallery,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -39,8 +41,6 @@ import {
 } from '@/redux/slices/bidding.slice';
 import type { Auction, AuctionDetail } from '../../models';
 
-import ImageGallery from './components/image_gallery';
-import CountdownTimer from './components/countdown_timer';
 import LiveAuctionCard from './components/live_auction_card';
 import ActiveAuctionCard from './components/active_auction_card';
 import AuctionDetailsGrid from './components/auction_details_grid';
@@ -170,7 +170,7 @@ export default function ProductDetailsClient({
     <div className="min-h-screen overflow-x-hidden px-4 py-8 space-y-8">
       {/* ─── Top Section: Gallery + Info ─────────────────────────────── */}
       <div className="mb-10 grid gap-8 lg:grid-cols-2">
-        <ImageGallery images={images} />
+        <SharedImageGallery images={images} />
 
         {/* Auction Info */}
         <div className="space-y-6">
@@ -211,7 +211,7 @@ export default function ProductDetailsClient({
           </div>
 
           {/* Time Left */}
-          <CountdownTimer />
+          <CountdownTimer endTime={auction.endTime} size="md" />
 
           <Separator />
 

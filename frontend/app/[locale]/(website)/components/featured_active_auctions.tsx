@@ -1,9 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { Button, Card, CardContent } from '@/shared/components/common';
+import { Button, Card, CardContent, CountdownTimer } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
-import { useCountdown } from '@/shared/hooks/useCountdown';
 import { Auction, categoryGradients } from '../models/index';
 
 interface FeaturedActiveAuctionsProps {
@@ -47,7 +46,6 @@ function FeaturedAuctionCard({
   auction: Auction;
   index: number;
 }) {
-  const timeRemaining = useCountdown(auction.endTime);
   const gradientClass = getGradientForCategory(auction.category);
 
   return (
@@ -83,28 +81,7 @@ function FeaturedAuctionCard({
 
             {/* Countdown Timer (only for first card) */}
             {index === 0 && (
-              <div className="flex items-center gap-4">
-                <div className="text-center bg-background backdrop-blur-sm rounded-lg px-6 py-4">
-                  <div className="text-2xl font-bold tabular-nums">
-                    {String(timeRemaining.days).padStart(2, '0')}
-                  </div>
-                  <div className="text-xs">Days</div>
-                </div>
-                <div className="text-2xl font-bold">:</div>
-                <div className="text-center bg-background backdrop-blur-sm rounded-lg px-6 py-4">
-                  <div className="text-2xl font-bold tabular-nums">
-                    {String(timeRemaining.hours).padStart(2, '0')}
-                  </div>
-                  <div className="text-xs">Hours</div>
-                </div>
-                <div className="text-2xl font-bold">:</div>
-                <div className="text-center bg-background backdrop-blur-sm rounded-lg px-6 py-4">
-                  <div className="text-2xl font-bold tabular-nums">
-                    {String(timeRemaining.minutes).padStart(2, '0')}
-                  </div>
-                  <div className="text-xs">Mins</div>
-                </div>
-              </div>
+              <CountdownTimer endTime={auction.endTime} size="lg" />
             )}
 
             {/* CTA Button */}

@@ -12,6 +12,7 @@ export * from './chart';
 export * from './checkbox';
 export * from './collapsible';
 export * from './confirm_action_dialog';
+export * from './countdown_timer';
 export * from './data_table';
 export * from './delete_dialog';
 export * from './date_range_picker'
@@ -23,6 +24,7 @@ export * from './error_fallback';
 export * from './field';
 export * from './filter_input';
 export * from './form';
+export * from './image_gallery';
 export * from './input';
 export * from './input-otp';
 export * from './label';
