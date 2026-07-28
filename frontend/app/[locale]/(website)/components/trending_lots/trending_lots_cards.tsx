@@ -11,6 +11,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
+  Rating,
 } from '@/shared/components/common';
 
 import { Auction } from '../../models';
@@ -170,6 +171,16 @@ export function TrendingLotsCards({
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
+        )}
+
+        {/* Seller */}
+        {auction.sellerName && (
+          <p className="text-xs text-muted-foreground">{auction.sellerName}</p>
+        )}
+
+        {/* Rating */}
+        {auction.rating != null && auction.reviewCount != null && (
+          <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
         )}
 
         {/* Current Bid */}

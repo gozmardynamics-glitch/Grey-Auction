@@ -11,6 +11,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
+  Rating,
 } from '@/shared/components/common';
 
 import { Auction } from '../../models';
@@ -164,6 +165,14 @@ export function AuctionCard({
                 <span>{getCountryFlag(auction.location.countryCode)}</span>
               </div>
             )}
+            {auction.sellerName && (
+              <p className="text-xs text-muted-foreground">
+                {auction.sellerName}
+              </p>
+            )}
+            {auction.rating != null && auction.reviewCount != null && (
+              <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
+            )}
             <div className="flex items-center gap-1.5 pt-0.5 sm:gap-2 sm:pt-1">
               <span className="text-xs text-muted-foreground sm:text-sm">
                 Current bid:
@@ -288,6 +297,12 @@ export function AuctionCard({
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
+        )}
+        {auction.sellerName && (
+          <p className="text-xs text-muted-foreground">{auction.sellerName}</p>
+        )}
+        {auction.rating != null && auction.reviewCount != null && (
+          <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
         )}
         <div className="flex items-center gap-2 pt-1">
           <p className="text-xs text-muted-foreground">Current bid:</p>

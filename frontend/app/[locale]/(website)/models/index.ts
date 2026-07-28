@@ -47,6 +47,8 @@ interface Auction {
   auctionType: 'bid' | 'buy';
   specs?: string;
   watchersCount?: number;
+  rating?: number;
+  reviewCount?: number;
 }
 
 interface TimeRemaining {

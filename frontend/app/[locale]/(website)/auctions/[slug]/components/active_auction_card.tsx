@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAppSelector } from '@/redux/store';
+import { useAppSelector, useAppDispatch } from '@/redux/store';
 import {
   Button,
   Card,
@@ -13,13 +13,16 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  Switch,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/shared/components/common';
 import { ChevronRight, Info, Minus, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { setAutoBid } from '@/redux/slices/bidding.slice';
 
 interface ActiveAuctionCardProps {
   bidType: string;
@@ -40,12 +43,24 @@ export default function ActiveAuctionCard({
   onAutoBid,
   onBuyNow,
 }: ActiveAuctionCardProps) {
+  const dispatch = useAppDispatch();
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [autoBidEnabled, setAutoBidEnabled] = useState(false);
+  const [autoBidMaxAmount, setAutoBidMaxAmount] = useState(0);
   const currentBid = useAppSelector((state) => state.bidding.currentBid);
   const bidError = useAppSelector((state) => state.bidding.bidError);
   const isBidding = useAppSelector((state) => state.bidding.isBidding);
   const autoBid = useAppSelector((state) => state.bidding.autoBid);
   const bidHistory = useAppSelector((state) => state.bidding.bidHistory);
+
+  const handleSetAutoBid = () => {
+    if (autoBidMaxAmount <= currentBid) {
+      toast.error('Maximum bid must be higher than current bid');
+      return;
+    }
+    dispatch(setAutoBid({ enabled: true, maxAmount: autoBidMaxAmount }));
+    toast.success(`Auto-bid set for ${formatCurrency(autoBidMaxAmount)}`);
+  };
 
   const auctionFee = currentBid * 0.19;
   const vatBid = 0;
@@ -153,6 +168,85 @@ export default function ActiveAuctionCard({
           Buy Now For &#8358;50M
         </Button>
       </div>
+
+      {/* Auto-Bid Toggle */}
+      <div className="flex items-center justify-between">
+        <Label htmlFor="auto-bid-switch" className="text-sm font-medium cursor-pointer">
+          Enable Auto-Bidding
+        </Label>
+        <Switch
+          id="auto-bid-switch"
+          checked={autoBidEnabled}
+          onCheckedChange={setAutoBidEnabled}
+        />
+      </div>
+
+      {/* Auto-Bid Settings */}
+      {autoBidEnabled && (
+        <div className="space-y-4 rounded-lg border p-4">
+          <div>
+            <Label htmlFor="auto-bid-max" className="text-sm">
+              Your Maximum Bid (&#8358;)
+            </Label>
+            <div className="mt-1.5 flex items-center gap-1 rounded-lg border px-3">
+              <span className="text-sm text-muted-foreground">&#8358;</span>
+              <Input
+                id="auto-bid-max"
+                type="number"
+                value={autoBidMaxAmount || ''}
+                onChange={(e) => setAutoBidMaxAmount(Number(e.target.value))}
+                placeholder="Enter max bid"
+                className="h-10 border-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-medium text-foreground">
+              Bid Increments
+            </p>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="pb-1.5 text-left font-medium">Current Bid</th>
+                  <th className="pb-1.5 text-right font-medium">Increment</th>
+                </tr>
+              </thead>
+              <tbody className="text-muted-foreground">
+                <tr className="border-b">
+                  <td className="py-1.5">&#8358;0 - &#8358;50,000</td>
+                  <td className="py-1.5 text-right">&#8358;1,000</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-1.5">&#8358;50,001 - &#8358;500,000</td>
+                  <td className="py-1.5 text-right">&#8358;5,000</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-1.5">&#8358;500,001 - &#8358;5,000,000</td>
+                  <td className="py-1.5 text-right">&#8358;25,000</td>
+                </tr>
+                <tr>
+                  <td className="py-1.5">&#8358;5,000,001+</td>
+                  <td className="py-1.5 text-right">&#8358;100,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            We'll automatically bid for you up to your maximum
+          </p>
+
+          <Button
+            variant="default"
+            size="default"
+            className="w-full"
+            onClick={handleSetAutoBid}
+          >
+            Set Auto-Bid
+          </Button>
+        </div>
+      )}
 
       {/* Error Display */}
       {bidError && (

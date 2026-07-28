@@ -11,7 +11,7 @@ const PlayStoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M3.61 1.814L13.793 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .61-.92zm1.335-.754l11.29 6.465L13.7 10.06 4.945 1.06zM16.235 8.525L19.59 10.44a1 1 0 0 1 0 1.72l-3.355 1.915L13.35 12l2.885-3.475zM4.945 22.94l8.755-9 2.535 3.035L4.945 22.94z" />
   </svg>
 );
-import { Button, Logo } from '@/shared/components/common';
+import { Button, Logo, NewsletterForm } from '@/shared/components/common';
 
 export default function Footer() {
   return (
@@ -38,8 +38,10 @@ export default function Footer() {
               </div>
             </div>
 
+            <NewsletterForm />
+
             {/* App Store Buttons */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mt-6">
               <Button variant="outline"  size='xl' className="[&_svg:not([class*='size-'])]:size-7 flex items-center gap-2 py-2 rounded-lg px-4 h-auto">
                 <AppleIcon className="text-primary" />
                 <p className="flex flex-col text-left">

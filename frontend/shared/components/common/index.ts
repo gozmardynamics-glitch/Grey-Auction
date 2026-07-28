@@ -31,10 +31,12 @@ export * from './logout-dialog'
 export * from './modal';
 export * from './modal_stats_card'
 export * from './navigation-menu';
+export * from './newsletter_form';
 export * from './notification_widget';
 export * from './pagination';
 export * from './popover';
 export * from './radio-group';
+export * from './rating';
 export * from './scroll_area';
 export * from './select';
 export * from './separator';
