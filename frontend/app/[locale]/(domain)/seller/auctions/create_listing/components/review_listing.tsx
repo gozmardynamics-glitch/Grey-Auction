@@ -137,6 +137,20 @@ export default function ReviewListing({
                     ? pricingAndTerms.inspectionDuration
                     : 'N/A'}
                 </div>
+                {pricingAndTerms.auctionStartDate && (
+                  <div>
+                    <span className="font-medium">Start Date:</span>{' '}
+                    {new Date(pricingAndTerms.auctionStartDate).toLocaleString()}
+                  </div>
+                )}
+                {pricingAndTerms.auctionType && (
+                  <div>
+                    <span className="font-medium">Auction Type:</span>{' '}
+                    {pricingAndTerms.auctionType === 'live'
+                      ? 'Live Auction'
+                      : 'Timed Auction'}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

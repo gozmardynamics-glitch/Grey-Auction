@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { Card, CardContent } from '@/shared/components/common/card';
@@ -15,10 +15,11 @@ import {
 } from '@/shared/components/common/select';
 
 import { TablePagination } from '@/shared/components/common/table_pagination';
+import { Breadcrumbs } from '@/shared/components/common/breadcrumbs';
+import type { BreadcrumbItemData } from '@/shared/components/common/breadcrumbs';
 import { LayoutGrid, List, Funnel, X } from 'lucide-react';
 
 import FilterSidebar from './filter_sidebar';
-import { StatusTabs, type StatusTabKey, STATUS_TAB_KEYS } from './status_tabs';
 import { AuctionCard } from '../components/featured_auctions/auction_card';
 import {
   setFilters,
@@ -52,32 +53,8 @@ export default function AuctionListingClient({
   const mobileFiltersOpen = useAppSelector((state) => state.ui.mobileFiltersOpen);
   const auctions = useAppSelector((state) => state.auctions.auctions);
 
-  const [activeStatusTab, setActiveStatusTab] = useState<StatusTabKey>('all');
-
-  const now = useMemo(() => Date.now(), []);
-
   const filteredAuctions = useMemo(() => {
     let result = [...auctions];
-
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-
-    if (activeStatusTab === 'closing-soon') {
-      result = result.filter(
-        (a) =>
-          a.status !== 'sold' &&
-          new Date(a.endTime).getTime() - now <= twentyFourHours
-      );
-    } else if (activeStatusTab === 'new-today') {
-      result = result.filter((a) => {
-        if (!a.createdAt) return false;
-        return now - new Date(a.createdAt).getTime() <= twentyFourHours;
-      });
-    } else if (activeStatusTab === 'no-reserve') {
-      result = result.filter(
-        (a) => a.status !== 'sold' && a.hasReservePrice === false
-      );
-    }
-
     if (filters.categories.length > 0) {
       result = result.filter((a) => filters.categories.includes(a.category || ''));
     }
@@ -87,7 +64,7 @@ export default function AuctionListingClient({
       result.sort((a, b) => b.currentBid - a.currentBid);
     }
     return result;
-  }, [auctions, filters, activeStatusTab, now]);
+  }, [auctions, filters]);
 
   const activeFilterCount = useMemo(
     () =>
@@ -98,34 +75,25 @@ export default function AuctionListingClient({
     [filters]
   );
 
-  const tabCounts = useMemo(() => {
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    return {
-      all: auctions.length,
-      'closing-soon': auctions.filter(
-        (a) =>
-          a.status !== 'sold' &&
-          new Date(a.endTime).getTime() - now <= twentyFourHours
-      ).length,
-      'new-today': auctions.filter((a) => {
-        if (!a.createdAt) return false;
-        return now - new Date(a.createdAt).getTime() <= twentyFourHours;
-      }).length,
-      'no-reserve': auctions.filter(
-        (a) => a.status !== 'sold' && a.hasReservePrice === false
-      ).length,
-    };
-  }, [auctions, now]);
-
-  const statusTabs = useMemo(
-    () =>
-      (Object.keys(STATUS_TAB_KEYS) as StatusTabKey[]).map((key) => ({
-        key,
-        label: STATUS_TAB_KEYS[key],
-        count: tabCounts[key],
-      })),
-    [tabCounts]
-  );
+  const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
+    const items: BreadcrumbItemData[] = [
+      { label: 'Home', href: '/' },
+      { label: 'Auctions' },
+    ];
+    if (filters.categories.length > 0) {
+      const categorySlug = filters.categories[0];
+      const displayName = categorySlug
+        .split('-')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      items.splice(1, 0, {
+        label: displayName,
+        href: `/auctions?category=${categorySlug}`,
+      });
+      items[items.length - 1] = { label: displayName };
+    }
+    return items;
+  }, [filters.categories]);
 
   // Initialize auctions data in Redux
   useEffect(() => {
@@ -251,6 +219,8 @@ export default function AuctionListingClient({
 
           {/* ─── Main Content ─────────────────────────────────────── */}
           <div className="min-w-0 flex-1">
+            <Breadcrumbs items={breadcrumbItems} />
+
             {/* Mobile Title + Filter Icon */}
             <div className="mb-4 flex items-center justify-between lg:hidden">
               <h1 className="text-xl font-bold text-foreground">Auctions</h1>
@@ -265,12 +235,6 @@ export default function AuctionListingClient({
               </Button>
             </div>
 
-            {/* Status Tabs */}
-            <StatusTabs
-              tabs={statusTabs}
-              activeTab={activeStatusTab}
-              onTabChange={setActiveStatusTab}
-            />
             {/* Toolbar */}
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">

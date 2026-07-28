@@ -106,6 +106,9 @@ export const pricingAndTermsSchema = z.object({
   allowInspection: z.boolean(),
   inspectionAddress: z.string(),
   inspectionDuration: z.enum(['1 day', '3 days', '7 days']),
+  auctionStartDate: z.string().optional(),
+  timezone: z.string().optional(),
+  auctionType: z.enum(['timed', 'live']).optional(),
 }).superRefine((data, ctx) => {
   if (data.hasReservePrice && !data.reservePrice) {
     ctx.addIssue({
@@ -127,6 +130,22 @@ export const pricingAndTermsSchema = z.object({
       message: 'Inspection address is required',
       path: ['inspectionAddress'],
     });
+  }
+  if (data.auctionStartDate) {
+    const startDate = new Date(data.auctionStartDate);
+    if (isNaN(startDate.getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Invalid start date',
+        path: ['auctionStartDate'],
+      });
+    } else if (startDate <= new Date()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Start date must be in the future',
+        path: ['auctionStartDate'],
+      });
+    }
   }
 });
 

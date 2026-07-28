@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Heart,
   Share2,
@@ -14,19 +14,15 @@ import {
 import {
   Button,
   Card,
-  CountdownTimer,
   Label,
   RadioGroup,
   RadioGroupItem,
-  Rating,
   Separator,
-  SharedImageGallery,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
   TypographyH3,
-  ShareButtons,
 } from '@/shared/components/common';
 
 import { formatCurrency } from '@/shared/utils/helpers';
@@ -42,7 +38,11 @@ import {
   setAutoBid,
 } from '@/redux/slices/bidding.slice';
 import type { Auction, AuctionDetail } from '../../models';
+import type { BreadcrumbItemData } from '@/shared/components/common/breadcrumbs';
+import { Breadcrumbs } from '@/shared/components/common/breadcrumbs';
 
+import ImageGallery from './components/image_gallery';
+import CountdownTimer from './components/countdown_timer';
 import LiveAuctionCard from './components/live_auction_card';
 import ActiveAuctionCard from './components/active_auction_card';
 import AuctionDetailsGrid from './components/auction_details_grid';
@@ -65,7 +65,6 @@ export default function ProductDetailsClient({
   auctionDetails,
 }: ProductDetailsClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const dispatch = useAppDispatch();
   const currentBid = useAppSelector((state) => state.bidding.currentBid);
   const bidHistory = useAppSelector((state) => state.bidding.bidHistory);
@@ -82,13 +81,6 @@ export default function ProductDetailsClient({
 
   const auctionId = auction.id;
   const auctionStatus = auction.status;
-
-  const shareUrl = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}${pathname}`;
-    }
-    return pathname;
-  }, [pathname]);
 
   // Initialize auction state
   useEffect(() => {
@@ -176,11 +168,26 @@ export default function ProductDetailsClient({
     router.push('/checkout');
   }, [router]);
 
+  const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
+    const categoryDisplay = auction.category
+      ? auction.category.charAt(0).toUpperCase() + auction.category.slice(1)
+      : '';
+    return [
+      { label: 'Home', href: '/' },
+      { label: 'Auctions', href: '/auctions' },
+      ...(categoryDisplay
+        ? [{ label: categoryDisplay, href: `/auctions?category=${auction.category}` }]
+        : []),
+      { label: auction.title },
+    ];
+  }, [auction.category, auction.title]);
+
   return (
     <div className="min-h-screen overflow-x-hidden px-4 py-8 space-y-8">
+      <Breadcrumbs items={breadcrumbItems} />
       {/* ─── Top Section: Gallery + Info ─────────────────────────────── */}
       <div className="mb-10 grid gap-8 lg:grid-cols-2">
-        <SharedImageGallery images={images} />
+        <ImageGallery images={images} />
 
         {/* Auction Info */}
         <div className="space-y-6">
@@ -193,11 +200,6 @@ export default function ProductDetailsClient({
             <span className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               Lot: # 25896742
             </span>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {auction.rating != null && auction.reviewCount != null && (
-                <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="md" />
-              )}
-            </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground border px-2 sm:px-3 py-1 rounded-full">
                 <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bids:{' '}
@@ -226,7 +228,7 @@ export default function ProductDetailsClient({
           </div>
 
           {/* Time Left */}
-          <CountdownTimer endTime={auction.endTime} size="md" />
+          <CountdownTimer />
 
           <Separator />
 
@@ -371,18 +373,19 @@ export default function ProductDetailsClient({
             >
               <Heart className="h-4 w-4 text-primary" /> Add to Wishlist
             </Button>
-          <Button
-            variant="link"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            <CircleQuestionMark className="h-4 w-4 text-primary" /> Ask about
-            product
-          </Button>
-          <ShareButtons
-            url={shareUrl}
-            title={auction.title}
-            description={auction.description}
-          />
+            <Button
+              variant="link"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <CircleQuestionMark className="h-4 w-4 text-primary" /> Ask about
+              product
+            </Button>
+            <Button
+              variant="link"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <Share2 className="h-4 w-4 text-primary" /> Share
+            </Button>
           </div>
         </div>
       </div>
