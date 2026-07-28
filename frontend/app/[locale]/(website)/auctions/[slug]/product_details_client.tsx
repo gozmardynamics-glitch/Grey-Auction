@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Heart,
   Share2,
@@ -25,6 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   TypographyH3,
+  ShareButtons,
 } from '@/shared/components/common';
 
 import { formatCurrency } from '@/shared/utils/helpers';
@@ -63,6 +64,7 @@ export default function ProductDetailsClient({
   auctionDetails,
 }: ProductDetailsClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useAppDispatch();
   const currentBid = useAppSelector((state) => state.bidding.currentBid);
   const bidHistory = useAppSelector((state) => state.bidding.bidHistory);
@@ -79,6 +81,13 @@ export default function ProductDetailsClient({
 
   const auctionId = auction.id;
   const auctionStatus = auction.status;
+
+  const shareUrl = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}${pathname}`;
+    }
+    return pathname;
+  }, [pathname]);
 
   // Initialize auction state
   useEffect(() => {
@@ -356,19 +365,18 @@ export default function ProductDetailsClient({
             >
               <Heart className="h-4 w-4 text-primary" /> Add to Wishlist
             </Button>
-            <Button
-              variant="link"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              <CircleQuestionMark className="h-4 w-4 text-primary" /> Ask about
-              product
-            </Button>
-            <Button
-              variant="link"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              <Share2 className="h-4 w-4 text-primary" /> Share
-            </Button>
+          <Button
+            variant="link"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <CircleQuestionMark className="h-4 w-4 text-primary" /> Ask about
+            product
+          </Button>
+          <ShareButtons
+            url={shareUrl}
+            title={auction.title}
+            description={auction.description}
+          />
           </div>
         </div>
       </div>

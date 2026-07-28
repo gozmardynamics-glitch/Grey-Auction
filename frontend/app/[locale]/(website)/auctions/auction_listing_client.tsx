@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { Card, CardContent } from '@/shared/components/common/card';
@@ -18,6 +18,7 @@ import { TablePagination } from '@/shared/components/common/table_pagination';
 import { LayoutGrid, List, Funnel, X } from 'lucide-react';
 
 import FilterSidebar from './filter_sidebar';
+import { StatusTabs, type StatusTabKey, STATUS_TAB_KEYS } from './status_tabs';
 import { AuctionCard } from '../components/featured_auctions/auction_card';
 import {
   setFilters,
@@ -51,8 +52,32 @@ export default function AuctionListingClient({
   const mobileFiltersOpen = useAppSelector((state) => state.ui.mobileFiltersOpen);
   const auctions = useAppSelector((state) => state.auctions.auctions);
 
+  const [activeStatusTab, setActiveStatusTab] = useState<StatusTabKey>('all');
+
+  const now = useMemo(() => Date.now(), []);
+
   const filteredAuctions = useMemo(() => {
     let result = [...auctions];
+
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+    if (activeStatusTab === 'closing-soon') {
+      result = result.filter(
+        (a) =>
+          a.status !== 'sold' &&
+          new Date(a.endTime).getTime() - now <= twentyFourHours
+      );
+    } else if (activeStatusTab === 'new-today') {
+      result = result.filter((a) => {
+        if (!a.createdAt) return false;
+        return now - new Date(a.createdAt).getTime() <= twentyFourHours;
+      });
+    } else if (activeStatusTab === 'no-reserve') {
+      result = result.filter(
+        (a) => a.status !== 'sold' && a.hasReservePrice === false
+      );
+    }
+
     if (filters.categories.length > 0) {
       result = result.filter((a) => filters.categories.includes(a.category || ''));
     }
@@ -62,7 +87,7 @@ export default function AuctionListingClient({
       result.sort((a, b) => b.currentBid - a.currentBid);
     }
     return result;
-  }, [auctions, filters]);
+  }, [auctions, filters, activeStatusTab, now]);
 
   const activeFilterCount = useMemo(
     () =>
@@ -71,6 +96,35 @@ export default function AuctionListingClient({
       filters.brands.length +
       (filters.priceRange[0] > 0 || filters.priceRange[1] < 50000000 ? 1 : 0),
     [filters]
+  );
+
+  const tabCounts = useMemo(() => {
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    return {
+      all: auctions.length,
+      'closing-soon': auctions.filter(
+        (a) =>
+          a.status !== 'sold' &&
+          new Date(a.endTime).getTime() - now <= twentyFourHours
+      ).length,
+      'new-today': auctions.filter((a) => {
+        if (!a.createdAt) return false;
+        return now - new Date(a.createdAt).getTime() <= twentyFourHours;
+      }).length,
+      'no-reserve': auctions.filter(
+        (a) => a.status !== 'sold' && a.hasReservePrice === false
+      ).length,
+    };
+  }, [auctions, now]);
+
+  const statusTabs = useMemo(
+    () =>
+      (Object.keys(STATUS_TAB_KEYS) as StatusTabKey[]).map((key) => ({
+        key,
+        label: STATUS_TAB_KEYS[key],
+        count: tabCounts[key],
+      })),
+    [tabCounts]
   );
 
   // Initialize auctions data in Redux
@@ -211,6 +265,12 @@ export default function AuctionListingClient({
               </Button>
             </div>
 
+            {/* Status Tabs */}
+            <StatusTabs
+              tabs={statusTabs}
+              activeTab={activeStatusTab}
+              onTabChange={setActiveStatusTab}
+            />
             {/* Toolbar */}
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">

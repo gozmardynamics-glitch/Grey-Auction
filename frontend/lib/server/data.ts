@@ -54,6 +54,8 @@ const mockAuctions = [
     isNew: true,
     specs: '2022 · 14,000 km · 2,487 cm3 · Hybrid',
     watchersCount: 34,
+    hasReservePrice: true,
+    createdAt: now.toISOString(),
   },
   {
     id: 'auc-002',
@@ -84,6 +86,8 @@ const mockAuctions = [
     trending: true,
     specs: 'M3 Pro · 18GB RAM · 512GB SSD · Space Gray',
     watchersCount: 52,
+    hasReservePrice: false,
+    createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'auc-003',
@@ -113,6 +117,8 @@ const mockAuctions = [
     isNew: true,
     specs: '256GB · Natural Titanium · 6.7" · Pro Max',
     watchersCount: 41,
+    hasReservePrice: false,
+    createdAt: now.toISOString(),
   },
   {
     id: 'auc-004',
@@ -142,6 +148,8 @@ const mockAuctions = [
     isNew: false,
     specs: 'Swiss Movement · Leather Strap · Sapphire Crystal',
     watchersCount: 18,
+    hasReservePrice: true,
+    createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'auc-005',
@@ -171,6 +179,8 @@ const mockAuctions = [
     isNew: true,
     specs: 'Heavy Duty · 2021 Model · Full Service History',
     watchersCount: 9,
+    hasReservePrice: true,
+    createdAt: now.toISOString(),
   },
   {
     id: 'auc-006',
@@ -201,6 +211,8 @@ const mockAuctions = [
     trending: true,
     specs: 'Sony A7IV · Full Frame · 4K Video · Weather Sealed',
     watchersCount: 27,
+    hasReservePrice: false,
+    createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'auc-007',
@@ -231,6 +243,8 @@ const mockAuctions = [
     featured: true,
     specs: '2021 · 32,000 km · 1,991 cm3 · Petrol · AMG',
     watchersCount: 63,
+    hasReservePrice: true,
+    createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'auc-008',
@@ -260,6 +274,8 @@ const mockAuctions = [
     isNew: true,
     specs: '2023 · 8,000 km · 2,755 cm3 · Diesel · 4x4',
     watchersCount: 39,
+    hasReservePrice: false,
+    createdAt: now.toISOString(),
   },
   {
     id: 'auc-009',
@@ -289,6 +305,8 @@ const mockAuctions = [
     isNew: true,
     specs: '512GB · Titanium Gray · S Pen · Galaxy AI',
     watchersCount: 48,
+    hasReservePrice: true,
+    createdAt: now.toISOString(),
   },
   {
     id: 'auc-010',
@@ -318,6 +336,8 @@ const mockAuctions = [
     isNew: false,
     specs: 'Italian Leather · 5-Seater · Premium Build',
     watchersCount: 22,
+    hasReservePrice: false,
+    createdAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'auc-011',
@@ -348,6 +368,8 @@ const mockAuctions = [
     trending: true,
     specs: 'Oil on Canvas · 24" x 36" · Certificate of Authenticity',
     watchersCount: 45,
+    hasReservePrice: true,
+    createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'auc-012',
@@ -377,6 +399,8 @@ const mockAuctions = [
     isNew: false,
     specs: '2023 · 18,000 km · 1,498 cm3 · Petrol · AWD',
     watchersCount: 31,
+    hasReservePrice: false,
+    createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 

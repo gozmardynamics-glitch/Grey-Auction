@@ -40,6 +40,7 @@ export * from './radio-group';
 export * from './scroll_area';
 export * from './select';
 export * from './separator';
+export * from './share_buttons';
 export * from './sheet';
 export * from './sidebar';
 export * from './skeleton';
