@@ -11,11 +11,12 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  CountdownTimer,
+  Rating,
 } from '@/shared/components/common';
 
 import { Auction } from '../../models';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { toggleWishlist } from '@/redux/slices/wishlist.slice';
 
@@ -40,6 +41,7 @@ export function AuctionCard({
   const wishlistItems = useAppSelector((state) => state.wishlist.items);
   const isWishlisted = wishlistItems.includes(auction.id);
   const [isAnimating, setIsAnimating] = useState(false);
+  const timeRemaining = useCountdown(auction.endTime);
 
   const handleWishlistClick = () => {
     const wasWishlisted = isWishlisted;
@@ -124,7 +126,16 @@ export function AuctionCard({
 
           {/* Timer */}
           <div className="absolute bottom-1.5 left-1.5 rounded-lg bg-background px-1.5 py-0.5 shadow-lg sm:bottom-2 sm:left-2 sm:rounded-xl sm:px-2 sm:py-1">
-            <CountdownTimer endTime={auction.endTime} size="sm" className="text-[6px] sm:text-[7px]" />
+            <div className="flex items-center gap-0.5 text-[6px] font-semibold text-muted-foreground sm:gap-1 sm:text-[7px]">
+              <span className="tabular-nums">{String(timeRemaining.days).padStart(2, '0')}</span>
+              <span>days</span>
+              <span>:</span>
+              <span className="tabular-nums">{String(timeRemaining.hours).padStart(2, '0')}</span>
+              <span>hrs</span>
+              <span>:</span>
+              <span className="tabular-nums">{String(timeRemaining.minutes).padStart(2, '0')}</span>
+              <span>mins</span>
+            </div>
           </div>
 
           {/* Badges */}
@@ -153,6 +164,14 @@ export function AuctionCard({
                 </span>
                 <span>{getCountryFlag(auction.location.countryCode)}</span>
               </div>
+            )}
+            {auction.sellerName && (
+              <p className="text-xs text-muted-foreground">
+                {auction.sellerName}
+              </p>
+            )}
+            {auction.rating != null && auction.reviewCount != null && (
+              <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
             )}
             <div className="flex items-center gap-1.5 pt-0.5 sm:gap-2 sm:pt-1">
               <span className="text-xs text-muted-foreground sm:text-sm">
@@ -242,7 +261,22 @@ export function AuctionCard({
           </div>
 
           <div className="absolute bottom-4 left-4 rounded-2xl bg-background px-3 py-2 shadow-lg">
-            <CountdownTimer endTime={auction.endTime} size="sm" />
+            <div className="flex items-center gap-2 text-[8px] font-semibold">
+              <span className="text-muted-foreground tabular-nums">
+                {String(timeRemaining.days).padStart(2, '0')}
+              </span>
+              <span className="text-muted-foreground">days</span>
+              <span className="text-muted-foreground">:</span>
+              <span className="text-muted-foreground tabular-nums">
+                {String(timeRemaining.hours).padStart(2, '0')}
+              </span>
+              <span className="text-muted-foreground">hrs</span>
+              <span className="text-muted-foreground">:</span>
+              <span className="text-muted-foreground tabular-nums">
+                {String(timeRemaining.minutes).padStart(2, '0')}
+              </span>
+              <span className="text-muted-foreground">mins</span>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -263,6 +297,12 @@ export function AuctionCard({
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
+        )}
+        {auction.sellerName && (
+          <p className="text-xs text-muted-foreground">{auction.sellerName}</p>
+        )}
+        {auction.rating != null && auction.reviewCount != null && (
+          <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
         )}
         <div className="flex items-center gap-2 pt-1">
           <p className="text-xs text-muted-foreground">Current bid:</p>

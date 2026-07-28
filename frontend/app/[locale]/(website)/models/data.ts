@@ -108,6 +108,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: '2022 · 14,000 km · 2,487 cm3 · Hybrid',
+    rating: 4.8,
+    reviewCount: 124,
   },
   {
     id: '2',
@@ -132,6 +134,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'M3 Pro · 16GB RAM · 512GB SSD · Space Gray',
+    rating: 4.5,
+    reviewCount: 89,
   },
   {
     id: '3',
@@ -155,6 +159,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'buy',
     specs: '256GB · Titanium · 6.7" · Pro Max',
+    rating: 4.2,
+    reviewCount: 56,
   },
   {
     id: '4',
@@ -178,6 +184,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'Designer · Swiss Movement · Leather Strap · Limited Edition',
+    rating: 4.9,
+    reviewCount: 203,
   },
   {
     id: '5',
@@ -202,6 +210,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'Heavy Duty · 2021 Model · Full Service History',
+    rating: 3.8,
+    reviewCount: 34,
   },
   {
     id: '6',
@@ -227,6 +237,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'Full Frame · 4K Video · Dual Card Slots · Weather Sealed',
+    rating: 4.6,
+    reviewCount: 78,
   },
   {
     id: '7',
@@ -250,6 +262,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'Nationwide Coverage · GPS Tracking · Insured Delivery',
+    rating: 4.0,
+    reviewCount: 42,
   },
   {
     id: '8',
@@ -275,6 +289,8 @@ const dummyAuctions: Auction[] = [
     auctionType: 'bid',
     specs: 'Oil on Canvas · 24" x 36" · Certificate of Authenticity',
     watchersCount: 45,
+    rating: 4.7,
+    reviewCount: 156,
   },
   {
     id: '9',
@@ -299,6 +315,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'M3 Pro · 16GB RAM · 512GB SSD · Space Gray',
+    rating: 4.5,
+    reviewCount: 89,
   },
   {
     id: '10',
@@ -324,6 +342,8 @@ const dummyAuctions: Auction[] = [
     },
     auctionType: 'bid',
     specs: 'Full Frame · 4K Video · Dual Card Slots · Weather Sealed',
+    rating: 4.6,
+    reviewCount: 78,
   },
 ];
 

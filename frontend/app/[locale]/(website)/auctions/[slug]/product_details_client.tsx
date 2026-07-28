@@ -18,6 +18,7 @@ import {
   Label,
   RadioGroup,
   RadioGroupItem,
+  Rating,
   Separator,
   SharedImageGallery,
   Tooltip,
@@ -192,6 +193,11 @@ export default function ProductDetailsClient({
             <span className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               Lot: # 25896742
             </span>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {auction.rating != null && auction.reviewCount != null && (
+                <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="md" />
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground border px-2 sm:px-3 py-1 rounded-full">
                 <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bids:{' '}

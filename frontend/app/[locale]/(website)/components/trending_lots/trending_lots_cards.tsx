@@ -11,11 +11,12 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  CountdownTimer,
+  Rating,
 } from '@/shared/components/common';
 
 import { Auction } from '../../models';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { toggleWishlist } from '@/redux/slices/wishlist.slice';
 
@@ -36,6 +37,7 @@ export function TrendingLotsCards({
   const wishlistItems = useAppSelector((state) => state.wishlist.items);
   const isWishlisted = wishlistItems.includes(auction.id);
   const [isAnimating, setIsAnimating] = useState(false);
+  const timeRemaining = useCountdown(auction.endTime);
 
   const handleWishlistClick = () => {
     const wasWishlisted = isWishlisted;
@@ -126,7 +128,22 @@ export function TrendingLotsCards({
 
           {/* Countdown Timer - Bottom Left */}
           <div className="absolute bottom-4 left-4 bg-background rounded-2xl px-3 py-2 shadow-lg">
-            <CountdownTimer endTime={auction.endTime} size="sm" />
+            <div className="flex items-center gap-2 text-[8px] font-semibold">
+              <span className="text-muted-foreground tabular-nums">
+                {String(timeRemaining.days).padStart(2, '0')}
+              </span>
+              <span className="text-muted-foreground">days</span>
+              <span className="text-muted-foreground">:</span>
+              <span className="text-muted-foreground tabular-nums">
+                {String(timeRemaining.hours).padStart(2, '0')}
+              </span>
+              <span className="text-muted-foreground">hrs</span>
+              <span className="text-muted-foreground">:</span>
+              <span className="text-muted-foreground tabular-nums">
+                {String(timeRemaining.minutes).padStart(2, '0')}
+              </span>
+              <span className="text-muted-foreground">mins</span>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -154,6 +171,16 @@ export function TrendingLotsCards({
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
+        )}
+
+        {/* Seller */}
+        {auction.sellerName && (
+          <p className="text-xs text-muted-foreground">{auction.sellerName}</p>
+        )}
+
+        {/* Rating */}
+        {auction.rating != null && auction.reviewCount != null && (
+          <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
         )}
 
         {/* Current Bid */}
