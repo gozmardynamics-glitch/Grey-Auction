@@ -65,6 +65,13 @@ type AuctionDuration =
 
 type InspectionDuration = '1 day' | '3 days' | '7 days';
 
+type AuctionType = 'timed' | 'live';
+
+type TimezoneOption = {
+  value: string;
+  label: string;
+};
+
 interface PricingAndTermsData {
   startingPrice: string;
   bidIncrement: string;
@@ -77,6 +84,9 @@ interface PricingAndTermsData {
   allowInspection: boolean;
   inspectionAddress: string;
   inspectionDuration: InspectionDuration;
+  auctionStartDate?: string;
+  timezone?: string;
+  auctionType?: AuctionType;
 }
 
 interface CreateListingFormData {
@@ -140,6 +150,18 @@ const INSPECTION_DURATIONS: InspectionDuration[] = [
   '7 days',
 ];
 
+const TIMEZONE_OPTIONS: TimezoneOption[] = [
+  { value: 'Africa/Lagos', label: 'West Africa Time (WAT, UTC+1)' },
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'Eastern Time (ET, UTC-5)' },
+  { value: 'Europe/Berlin', label: 'Central European Time (CET, UTC+1)' },
+];
+
+const AUCTION_TYPE_OPTIONS: { value: AuctionType; label: string; description: string }[] = [
+  { value: 'timed', label: 'Timed Auction', description: 'Fixed end time' },
+  { value: 'live', label: 'Live Auction', description: 'Requires bidding room + real-time' },
+];
+
 const DEFAULT_FORM_DATA: CreateListingFormData = {
   auctionDetails: {
     productName: '',
@@ -180,6 +202,9 @@ const DEFAULT_FORM_DATA: CreateListingFormData = {
     allowInspection: true,
     inspectionAddress: '',
     inspectionDuration: '3 days',
+    auctionStartDate: '',
+    timezone: 'Africa/Lagos',
+    auctionType: 'timed',
   },
 };
 
@@ -629,6 +654,8 @@ export type {
   CreateListingFormData,
   AuctionDuration,
   InspectionDuration,
+  AuctionType,
+  TimezoneOption,
   // Sale
   Sale,
   SaleStatus,
@@ -659,6 +686,8 @@ export {
   SUB_CATEGORIES,
   AUCTION_DURATIONS,
   INSPECTION_DURATIONS,
+  TIMEZONE_OPTIONS,
+  AUCTION_TYPE_OPTIONS,
   DEFAULT_FORM_DATA,
   specFields,
   DUMMY_LISTINGS,

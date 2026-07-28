@@ -59,13 +59,18 @@ export default function CreateListingPage() {
 
       const { auctionDetails, pricingAndTerms, lotAndInventory } = formData;
 
+      // Use start date if provided, otherwise start now
+      const startTime = pricingAndTerms.auctionStartDate
+        ? new Date(pricingAndTerms.auctionStartDate)
+        : new Date();
+
       // Calculate end time from auction duration
       const durationMap: Record<string, number> = {
         '1 day': 1, '3 days': 3, '7 days': 7, '14 days': 14,
         '27 days': 27, '1 month': 30, '2 months': 60, '3 months': 90,
       };
       const days = durationMap[pricingAndTerms.auctionDuration] || 7;
-      const endTime = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      const endTime = new Date(startTime.getTime() + days * 24 * 60 * 60 * 1000);
 
       // Map form images to File[] (imagePreviews are data URLs, skip for now)
       const imageFiles: File[] = [];

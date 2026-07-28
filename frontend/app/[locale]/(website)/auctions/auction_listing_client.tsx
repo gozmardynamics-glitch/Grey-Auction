@@ -15,6 +15,8 @@ import {
 } from '@/shared/components/common/select';
 
 import { TablePagination } from '@/shared/components/common/table_pagination';
+import { Breadcrumbs } from '@/shared/components/common/breadcrumbs';
+import type { BreadcrumbItemData } from '@/shared/components/common/breadcrumbs';
 import { LayoutGrid, List, Funnel, X } from 'lucide-react';
 
 import FilterSidebar from './filter_sidebar';
@@ -72,6 +74,26 @@ export default function AuctionListingClient({
       (filters.priceRange[0] > 0 || filters.priceRange[1] < 50000000 ? 1 : 0),
     [filters]
   );
+
+  const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
+    const items: BreadcrumbItemData[] = [
+      { label: 'Home', href: '/' },
+      { label: 'Auctions' },
+    ];
+    if (filters.categories.length > 0) {
+      const categorySlug = filters.categories[0];
+      const displayName = categorySlug
+        .split('-')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      items.splice(1, 0, {
+        label: displayName,
+        href: `/auctions?category=${categorySlug}`,
+      });
+      items[items.length - 1] = { label: displayName };
+    }
+    return items;
+  }, [filters.categories]);
 
   // Initialize auctions data in Redux
   useEffect(() => {
@@ -197,6 +219,8 @@ export default function AuctionListingClient({
 
           {/* ─── Main Content ─────────────────────────────────────── */}
           <div className="min-w-0 flex-1">
+            <Breadcrumbs items={breadcrumbItems} />
+
             {/* Mobile Title + Filter Icon */}
             <div className="mb-4 flex items-center justify-between lg:hidden">
               <h1 className="text-xl font-bold text-foreground">Auctions</h1>

@@ -13,11 +13,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/shared/components/common';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/common/select';
 import { Checkbox } from '@/shared/components/common/checkbox';
 import {
   RadioGroup,
@@ -29,12 +37,14 @@ import {
   AuctionDuration,
   INSPECTION_DURATIONS,
   InspectionDuration,
+  TIMEZONE_OPTIONS,
+  AUCTION_TYPE_OPTIONS,
 } from '../../../models';
 import {
   pricingAndTermsSchema,
   PricingAndTermsValues,
 } from '../../../models/schema';
-import { Info } from 'lucide-react';
+import { Info, Clock, AlertTriangle } from 'lucide-react';
 
 interface PricingAndTermsFormProps {
   defaultValues: PricingAndTermsValues;
@@ -61,6 +71,22 @@ export default function PricingAndTermsForm({
     control: form.control,
     name: 'allowInspection',
   });
+  const auctionStartDate = useWatch({
+    control: form.control,
+    name: 'auctionStartDate',
+  });
+
+  const startDateWarning = (() => {
+    if (!auctionStartDate) return null;
+    const start = new Date(auctionStartDate);
+    if (isNaN(start.getTime())) return null;
+    const now = new Date();
+    const diffMs = start.getTime() - now.getTime();
+    if (diffMs <= 0) return null;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (diffHours < 1) return 'Auction will start immediately';
+    return null;
+  })();
 
   return (
     <Form {...form}>
@@ -369,6 +395,119 @@ export default function PricingAndTermsForm({
               </>
             )}
           </Card>
+        </div>
+
+        {/* Auction Scheduling */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold">Auction Scheduling</h3>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="auctionStartDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Auction Start Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="datetime-local"
+                      className="bg-background"
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormDescription className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Auction will automatically start at this date and time
+                  </FormDescription>
+                  {startDateWarning && (
+                    <p className="flex items-center gap-1.5 text-amber-500 text-sm mt-1">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {startDateWarning}
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="timezone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Timezone</FormLabel>
+                  <Select
+                    value={field.value ?? 'Africa/Lagos'}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {TIMEZONE_OPTIONS.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Auction Type */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Auction Type</h3>
+
+          <FormField
+            control={form.control}
+            name="auctionType"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value ?? 'timed'}
+                    onValueChange={(value) =>
+                      field.onChange(value as 'timed' | 'live')
+                    }
+                    className="flex flex-col gap-3 sm:flex-row"
+                  >
+                    {AUCTION_TYPE_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className={cn(
+                          'flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors flex-1',
+                          field.value === option.value
+                            ? 'border-primary bg-primary/5'
+                            : 'border-input bg-background hover:bg-muted'
+                        )}
+                        onClick={() => field.onChange(option.value)}
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`auction-type-${option.value}`}
+                          className="mt-0.5"
+                        />
+                        <div>
+                          <p className="font-medium text-sm">{option.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {option.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {/* Navigation */}

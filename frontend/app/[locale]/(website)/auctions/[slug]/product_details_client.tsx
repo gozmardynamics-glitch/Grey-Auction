@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Heart,
@@ -38,6 +38,8 @@ import {
   setAutoBid,
 } from '@/redux/slices/bidding.slice';
 import type { Auction, AuctionDetail } from '../../models';
+import type { BreadcrumbItemData } from '@/shared/components/common/breadcrumbs';
+import { Breadcrumbs } from '@/shared/components/common/breadcrumbs';
 
 import ImageGallery from './components/image_gallery';
 import CountdownTimer from './components/countdown_timer';
@@ -166,8 +168,23 @@ export default function ProductDetailsClient({
     router.push('/checkout');
   }, [router]);
 
+  const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
+    const categoryDisplay = auction.category
+      ? auction.category.charAt(0).toUpperCase() + auction.category.slice(1)
+      : '';
+    return [
+      { label: 'Home', href: '/' },
+      { label: 'Auctions', href: '/auctions' },
+      ...(categoryDisplay
+        ? [{ label: categoryDisplay, href: `/auctions?category=${auction.category}` }]
+        : []),
+      { label: auction.title },
+    ];
+  }, [auction.category, auction.title]);
+
   return (
     <div className="min-h-screen overflow-x-hidden px-4 py-8 space-y-8">
+      <Breadcrumbs items={breadcrumbItems} />
       {/* ─── Top Section: Gallery + Info ─────────────────────────────── */}
       <div className="mb-10 grid gap-8 lg:grid-cols-2">
         <ImageGallery images={images} />
