@@ -627,77 +627,241 @@ export class AIOrchestratorService {
 
 #### 4.2.3 Provider Implementations
 
+All providers implement the `AIProvider` interface. OpenAI-compatible providers share a base class since they all use the same `/v1/chat/completions` protocol.
+
 ```typescript
-// backend/src/common/ai/providers/openai.provider.ts (NEW)
+// backend/src/common/ai/providers/openai-compatible.base.ts (NEW)
+// Base class for ALL OpenAI-compatible providers (OpenAI, DeepSeek, Qwen, GLM, etc.)
 @Injectable()
-export class OpenAIProvider implements AIProvider {
+export abstract class OpenAICompatibleProvider implements AIProvider {
+  abstract name: string;
+  abstract baseUrl: string;
+  
+  async chat(messages, options) {
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: options?.model || this.defaultModel,
+        messages,
+        temperature: options?.temperature,
+        max_tokens: options?.maxTokens,
+        response_format: options?.responseFormat === 'json_object' 
+          ? { type: 'json_object' } : undefined,
+      }),
+    });
+    const json = await response.json();
+    return json.choices[0].message.content;
+  }
+  
+  async chatStream(messages, options) { /* SSE streaming */ }
+  async healthCheck() { /* GET /models */ }
+}
+
+// --- Western Providers ---
+
+// backend/src/common/ai/providers/openai.provider.ts (NEW)
+export class OpenAIProvider extends OpenAICompatibleProvider {
   name = 'openai';
   baseUrl = 'https://api.openai.com/v1';
-  
-  async chat(messages, options) { /* OpenAI SDK */ }
   async analyzeImage(imageUrl, prompt) { /* Vision API */ }
   async generateImage(prompt, options) { /* DALL-E */ }
   async embed(text) { /* text-embedding-3 */ }
 }
 
 // backend/src/common/ai/providers/claude.provider.ts (NEW)
-@Injectable()
 export class ClaudeProvider implements AIProvider {
   name = 'claude';
   baseUrl = 'https://api.anthropic.com/v1';
-  // Anthropic SDK implementation
+  // Anthropic SDK (non-OpenAI-compatible, custom implementation)
 }
 
 // backend/src/common/ai/providers/gemini.provider.ts (NEW)
-@Injectable()
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
   baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-  // Google AI SDK implementation
+  // Google AI SDK (non-OpenAI-compatible, custom implementation)
 }
+
+// --- Chinese Providers (all OpenAI-compatible) ---
+
+// backend/src/common/ai/providers/deepseek.provider.ts (NEW)
+export class DeepSeekProvider extends OpenAICompatibleProvider {
+  name = 'deepseek';
+  baseUrl = 'https://api.deepseek.com/v1';
+  // Models: deepseek-chat (V3), deepseek-reasoner (R1), deepseek-v3.1, deepseek-coder
+  // Strengths: Best-in-class Chinese + English, reasoning (R1), coding
+  // Pricing: ~$0.27/M input, ~$1.10/M output (V3) — extremely competitive
+}
+
+// backend/src/common/ai/providers/qwen.provider.ts (NEW)
+export class QwenProvider extends OpenAICompatibleProvider {
+  name = 'qwen';
+  baseUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
+  // Models: qwen-turbo, qwen-plus, qwen-max, qwen-vl-max (vision), qwen-coder-turbo
+  // Strengths: Strong multilingual, vision-capable, competitive pricing
+  // Pricing: ~$0.40/M input, ~$1.20/M output (Max)
+}
+
+// backend/src/common/ai/providers/zhipu.provider.ts (NEW)  
+export class ZhiPuProvider extends OpenAICompatibleProvider {
+  name = 'zhipu';
+  baseUrl = 'https://open.bigmodel.cn/api/paas/v4';
+  // Zhipu AI / Z.AI — makers of GLM (ChatGLM) and LongCat
+  // Models: glm-4-plus, glm-4-flash, glm-4v-plus (vision), glm-4-long (1M context)
+  // Strengths: 1M token context window, strong Chinese, vision
+  // Pricing: ~$0.70/M input, ~$0.70/M output (Flash)
+}
+
+// backend/src/common/ai/providers/moonshot.provider.ts (NEW)
+export class MoonshotProvider extends OpenAICompatibleProvider {
+  name = 'moonshot';
+  baseUrl = 'https://api.moonshot.cn/v1';
+  // Moonshot AI / Kimi
+  // Models: moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k
+  // Strengths: Long context (128K), strong Chinese reading comprehension
+  // Pricing: ~$1.60/M input, ~$1.60/M output
+}
+
+// backend/src/common/ai/providers/minimax.provider.ts (NEW)
+export class MiniMaxProvider extends OpenAICompatibleProvider {
+  name = 'minimax';
+  baseUrl = 'https://api.minimax.chat/v1';
+  // MiniMax / Hailuo AI / Mimi
+  // Models: abab6.5s-chat, abab7-chat-preview, MiniMax-M1
+  // Strengths: Strong multimodal, competitive pricing, good for creative tasks
+  // Pricing: ~$0.50/M input, ~$1.00/M output
+}
+
+// backend/src/common/ai/providers/stepfun.provider.ts (NEW)
+export class StepFunProvider extends OpenAICompatibleProvider {
+  name = 'stepfun';
+  baseUrl = 'https://api.stepfun.com/v1';
+  // StepFun / Jieyue Xingchen
+  // Models: step-2-16k, step-1-flash, step-1v-vision, step-2-1m (1M context)
+  // Strengths: 1M context, vision, fast inference
+  // Pricing: ~$0.35/M input, ~$1.00/M output
+}
+
+// --- Nvidia & Infrastructure ---
+
+// backend/src/common/ai/providers/nvidia.provider.ts (NEW)
+export class NvidiaNIMProvider extends OpenAICompatibleProvider {
+  name = 'nvidia';
+  baseUrl = 'https://integrate.api.nvidia.com/v1';
+  // Nvidia NIM (Nvidia Inference Microservices)
+  // Models: nemotron-4-340b, llama-3.1-nemotron-70b, nvidia/llama-3.1-nemotron-ultra-253b
+  // Strengths: Self-hostable via NIM containers, enterprise-grade, fine-tuned LLaMA variants
+  // Pricing: Free tier available via Nvidia AI Catalog, pay-as-you-go for production
+}
+
+// --- Universal Proxy ---
 
 // backend/src/common/ai/providers/openrouter.provider.ts (NEW)
-@Injectable()
-export class OpenRouterProvider implements AIProvider {
+export class OpenRouterProvider extends OpenAICompatibleProvider {
   name = 'openrouter';
   baseUrl = 'https://openrouter.ai/api/v1';
-  // OpenAI-compatible API, routes to 200+ models
+  // Unified API for 200+ models including all Chinese providers
+  // Use when you want a single API key for every model
 }
 
-// backend/src/common/ai/providers/local.provider.ts (NEW)
-@Injectable()
-export class LocalProvider implements AIProvider {
-  name = 'local';
-  baseUrl = 'http://localhost:11434';  // Ollama default
-  // Ollama API (OpenAI-compatible)
+// --- Custom / Self-Hosted ---
+
+// backend/src/common/ai/providers/custom.provider.ts (NEW)
+export class CustomOpenAIProvider extends OpenAICompatibleProvider {
+  name = 'custom';
+  baseUrl = '';  // Set by admin via LLM Registry
+  // Generic OpenAI-compatible endpoint
+  // Use for: vLLM, LiteLLM, Ollama, LM Studio, LocalAI, llama.cpp server,
+  //          text-generation-webui (oobabooga), Aphrodite Engine, SGLang,
+  //          or any self-hosted OpenAI-compatible API
+  // Base URL examples:
+  //   vLLM:            http://10.0.0.5:8000/v1
+  //   Ollama:          http://localhost:11434/v1
+  //   LiteLLM proxy:   http://localhost:4000/v1
+  //   LM Studio:       http://localhost:1234/v1
+  //   LocalAI:         http://localhost:8080/v1
+  //   llama.cpp:       http://localhost:8080/v1
 }
 ```
 
 ---
 
+### 4.2.4 Complete Provider Inventory
+
+| # | Provider | Origin | API Type | Top Models | Best For | Pricing Tier |
+|---|----------|--------|----------|-----------|----------|-------------|
+| 1 | **OpenAI** | US | OpenAI | gpt-4o, gpt-4o-mini, o4-mini | All-around, JSON mode | $$$$ |
+| 2 | **Claude** | US | Anthropic | opus-4, sonnet-4, haiku-3.5 | Reasoning, safety, long context | $$$ |
+| 3 | **Gemini** | US | Gemini | 2.5-pro, 2.5-flash | Vision, embeddings, multimodal | $$ |
+| 4 | **DeepSeek** | CN | OpenAI-compat | V3.1, R1, Coder | Chinese+English, reasoning, coding | $ |
+| 5 | **Qwen** | CN | OpenAI-compat | max, plus, turbo, vl-max | Multilingual, vision, coding | $ |
+| 6 | **Zhipu/GLM** | CN | OpenAI-compat | glm-4-plus, glm-4-flash, LongCat | 1M context, Chinese, vision | $$ |
+| 7 | **Moonshot/Kimi** | CN | OpenAI-compat | v1-8k, v1-32k, v1-128k | Long Chinese docs, reading | $$ |
+| 8 | **MiniMax/Mimi** | CN | OpenAI-compat | abab7-chat, MiniMax-M1 | Creative, multimodal, competitive | $ |
+| 9 | **StepFun** | CN | OpenAI-compat | step-2-16k, step-1-flash, step-2-1M | Fast inference, 1M context | $ |
+| 10 | **Nvidia NIM** | US | OpenAI-compat | nemotron-340b, nemotron-ultra-253b | Enterprise self-host, fine-tuned LLaMA | Free-$ |
+| 11 | **OpenRouter** | US | OpenAI-compat | All 200+ models | Single API for everything | $–$$$$ |
+| 12 | **Custom API** | — | OpenAI-compat | Any self-hosted model | Total flexibility, offline capable | Free-$ |
+
+---
+
+### 4.2.5 Custom Provider Registration Flow
+
+The super admin can register ANY OpenAI-compatible endpoint in 30 seconds:
+
+```
+1. Navigate to: Admin > AI > Providers > [+ Add Provider]
+2. Select type: "Custom OpenAI-Compatible API"
+3. Fill in:
+   - Display Name:    "Local LLaMA 3.1 70B on vLLM"
+   - Base URL:        "http://10.0.0.5:8000/v1"
+   - API Key:         "sk-local-not-needed" (optional for local)
+   - Headers (JSON):  {} 
+   - Tier:            "production" | "development"
+4. Click "Test Connection" → green checkmark confirms it works
+5. Click "Discover Models" → auto-fetches available models from /v1/models
+6. Review discovered models, set pricing estimates, activate desired ones
+7. Click "Save Provider" → instantly available for feature assignment
+```
+
+This means ANY self-hosted or third-party model becomes a first-class citizen:
+- **vLLM** / **SGLang** / **Aphrodite** — for production self-hosting
+- **Ollama** / **LM Studio** — for local development
+- **LiteLLM Proxy** — for unified access to multiple backends
+- **llama.cpp server** — for CPU/edge deployment
+- **text-generation-webui** — for experimental models
+- **Together AI** / **Fireworks** / **Groq** / **Replicate** — as hosted providers
+- **Any HuggingFace TGI endpoint** — via the OpenAI-compatible /v1 adapter
+
+---
+
 ### 4.3 Feature-to-Model Mapping
 
-This table defines which AI feature is assigned to which section and its default model recommendation:
+This table defines which AI feature is assigned to which section and its default model recommendation. Chinese models are bolded as primary options where they outperform Western alternatives:
 
-| Feature Key | Section | Function | Default Primary | Default Fallback | Quality |
-|-------------|---------|----------|-----------------|------------------|---------|
-| `auction_description_generator` | seller | Generate auction descriptions from specs | GPT-4o / Claude Sonnet | Claude Haiku | premium |
-| `image_captioning` | seller | Auto-tag uploaded images | Gemini Flash | GPT-4o-mini | standard |
-| `image_auto_tagging` | system | Extract keywords from images | Gemini Flash | Claude Haiku | draft |
-| `pricing_recommendation` | seller | Suggest starting bid & reserve | Claude Sonnet | GPT-4o-mini | standard |
-| `smart_search` | public | Semantic search via embeddings | text-embedding-3 | Gemini embedding | standard |
-| `chatbot_assistant` | public | Answer FAQs, guide users | Claude Haiku | GPT-4o-mini | standard |
-| `personalized_recommendations` | buyer | "You might like" suggestions | text-embedding-3 | Gemini embedding | standard |
-| `content_moderation` | system | Flag inappropriate content | GPT-4o-mini | Claude Haiku | standard |
-| `fraud_detection` | system | Flag suspicious bids/accounts | Claude Sonnet | GPT-4o | premium |
-| `document_ocr` | admin | Extract data from KYC docs | GPT-4o | Gemini Pro Vision | standard |
-| `email_campaign_generator` | admin | Generate newsletter content | Claude Sonnet | GPT-4o-mini | standard |
-| `title_optimizer` | seller | Improve listing titles | GPT-4o-mini | Claude Haiku | draft |
-| `translation` | system | Auto-translate listings | GPT-4o-mini | Claude Haiku | standard |
-| `bid_prediction` | buyer | Estimate final auction price | Claude Sonnet | GPT-4o | premium |
-| `dynamic_pricing` | admin | Adjust buyer premium | Claude Sonnet | GPT-4o | premium |
-| `listing_quality_score` | seller | Score listing completeness | GPT-4o-mini | Claude Haiku | draft |
-| `category_suggestion` | seller | Suggest best category | GPT-4o-mini | Claude Haiku | draft |
+| Feature Key | Section | Default Primary | Default Fallback | Tertiary | Quality |
+|-------------|---------|-----------------|------------------|----------|---------|
+| `auction_description_generator` | seller | GPT-4o / Claude Sonnet | **DeepSeek V3.1** | **Qwen Max** | premium |
+| `image_captioning` | seller | Gemini Flash | **Qwen VL Max** | GPT-4o-mini | standard |
+| `image_auto_tagging` | system | Gemini Flash | **Zhipu GLM-4V** | **Qwen VL** | draft |
+| `pricing_recommendation` | seller | Claude Sonnet | **DeepSeek R1** | GPT-4o-mini | standard |
+| `smart_search` | public | text-embedding-3 | Gemini embedding | **Qwen embedding** | standard |
+| `chatbot_assistant` | public | **DeepSeek V3.1** | Claude Haiku | GPT-4o-mini | standard |
+| `personalized_recommendations` | buyer | text-embedding-3 | Gemini embedding | **Qwen embedding** | standard |
+| `content_moderation` | system | GPT-4o-mini | **Qwen Turbo** | Claude Haiku | standard |
+| `fraud_detection` | system | Claude Sonnet | **DeepSeek R1** | GPT-4o | premium |
+| `document_ocr` | admin | GPT-4o | Gemini Pro Vision | **Zhipu GLM-4V** | standard |
+| `email_campaign_generator` | admin | Claude Sonnet | **DeepSeek V3.1** | GPT-4o-mini | standard |
+| `title_optimizer` | seller | **Qwen Turbo** | GPT-4o-mini | Claude Haiku | draft |
+| `translation` | system | **DeepSeek V3.1** | GPT-4o-mini | **Qwen Turbo** | standard |
+| `bid_prediction` | buyer | Claude Sonnet | **DeepSeek R1** | GPT-4o | premium |
+| `dynamic_pricing` | admin | Claude Sonnet | **DeepSeek R1** | GPT-4o | premium |
+| `listing_quality_score` | seller | **Qwen Turbo** | GPT-4o-mini | Claude Haiku | draft |
+| `category_suggestion` | seller | **Qwen Turbo** | GPT-4o-mini | **MiniMax Mimi** | draft |
 
 ---
 
@@ -757,11 +921,12 @@ frontend/app/[locale]/(domain)/admin/ai/
 │  AI Dashboard                                    [Settings] │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │ Providers │  │  Models  │  │ Features │  │ 30d Cost │   │
-│  │    5 ✅   │  │   22 ✅  │  │   17 ✅  │  │ $12.47   │   │
+│  │  Providers │  │  Models  │  │ Features │  │ 30d Cost │   │
+│  │   12 ✅    │  │   45 ✅  │  │   17 ✅  │  │ $28.15   │   │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 │                                                             │
-│  Provider Health:  OpenAI ✅  Claude ✅  Gemini ✅  Local ⚠️ │
+│  Provider Health:  OpenAI ✅  Claude ✅  Gemini ✅  DeepSeek ✅  Qwen ✅  Zhipu ✅  │
+│  Moonshot ✅  MiniMax ✅  StepFun ✅  Nvidia ✅  OpenRouter ✅  Custom API ✅  │
 │                                                             │
 │  ┌─ Today's Usage ──────────────────────────────────────┐  │
 │  │  ████████████████████████████████  847 requests       │  │
@@ -781,38 +946,48 @@ frontend/app/[locale]/(domain)/admin/ai/
 
 ### 4.5 Per-Section LLM Deployment Strategy
 
-Different application sections get different LLM configurations optimized for their use case:
+Different application sections get different LLM configurations optimized for their use case. Chinese models are highlighted for their cost/performance sweet spots:
 
 #### Public Website (Buyer-facing)
 | Feature | Model Strategy | Rationale |
 |---------|---------------|-----------|
 | Smart Search | Embedding (cheap, fast) | High volume, latency-sensitive |
-| Chatbot | Claude Haiku or GPT-4o-mini | Fast responses, low cost |
+| Chatbot | **DeepSeek V3.1** (primary) | Best-in-class multilingual + 10x cheaper than GPT-4o |
 | Recommendations | Embedding + cosine similarity | Batch pre-computed, no real-time LLM |
-| Translation | GPT-4o-mini | Occasional use, good quality |
+| Translation | **Qwen Turbo** or DeepSeek V3.1 | Chinese models excel at EN↔CN↔AR translation |
 
 #### Seller Dashboard
 | Feature | Model Strategy | Rationale |
 |---------|---------------|-----------|
-| Description Generator | Claude Sonnet or GPT-4o | Quality matters — better listings sell |
-| Image Captioning | Gemini Flash | Fast, good at vision, cheap |
-| Pricing Recommendation | Claude Sonnet | Structured JSON output, reliable |
-| Title Optimizer | GPT-4o-mini | Low stakes, fast |
+| Description Generator | GPT-4o / Claude Sonnet | Quality matters — better listings sell |
+| Image Captioning | Gemini Flash / **Qwen VL Max** | Fast multimodal, cheap |
+| Pricing Recommendation | Claude Sonnet / **DeepSeek R1** | Reasoning + structured JSON output |
+| Title Optimizer | **Qwen Turbo** | Low stakes, fast, $0.20/M tokens |
 
 #### Admin Panel
 | Feature | Model Strategy | Rationale |
 |---------|---------------|-----------|
-| Content Moderation | GPT-4o-mini | High volume, needs fast turnaround |
-| Document OCR | GPT-4o or Gemini Pro | Accuracy critical for KYC |
-| Fraud Detection | Claude Sonnet | Reasoning capabilities matter |
-| Email Campaigns | Claude Sonnet | Creative writing, marketing tone |
+| Content Moderation | **Qwen Turbo** / GPT-4o-mini | High volume, fast turnaround |
+| Document OCR | GPT-4o / **Zhipu GLM-4V** | Accuracy critical for KYC |
+| Fraud Detection | Claude Sonnet / **DeepSeek R1** | Reasoning capabilities matter |
+| Email Campaigns | Claude Sonnet / **DeepSeek V3.1** | Creative writing at low cost |
 
 #### System / Background Jobs
 | Feature | Model Strategy | Rationale |
 |---------|---------------|-----------|
-| Auto-tagging images | Gemini Flash | Runs on every upload, must be fast/cheap |
-| Listing Quality Score | GPT-4o-mini | Batch process, low stakes |
-| Dynamic Pricing | Claude Sonnet | Complex reasoning, occasional |
+| Auto-tagging images | Gemini Flash / **StepFun-1v** | Runs on every upload, fast+cheap |
+| Listing Quality Score | **Qwen Turbo** | Batch process, ~$0.20/M tokens |
+| Dynamic Pricing | Claude Sonnet / **DeepSeek R1** | Complex reasoning, occasional |
+
+#### Cost-optimized Nigerian market configuration
+| Tier | Primary | Fallback | Monthly Cost (est.) |
+|------|---------|----------|---------------------|
+| Premium (fraud, pricing, OCR) | DeepSeek R1 / Claude Sonnet | GPT-4o | ~$15/mo |
+| Standard (descriptions, chatbot, moderation) | DeepSeek V3.1 / Qwen Turbo | GPT-4o-mini | ~$8/mo |
+| Draft (titles, quality scores, tags) | Qwen Turbo | MiniMax Mimi | ~$3/mo |
+| Embeddings (search, recommendations) | text-embedding-3 | Qwen embedding | ~$2/mo |
+
+**Total estimated AI cost: ~$28/month** for the full 17-feature suite on Chinese models, vs ~$200+/month on Western-only models.
 
 ---
 
@@ -820,20 +995,20 @@ Different application sections get different LLM configurations optimized for th
 
 | # | Task | Files/Scope | Hrs |
 |---|------|------------|-----|
-| P4.1 | **LLM Registry backend** — entities, migrations, CRUD endpoints | `backend/src/ai-registry/` | 8h |
-| P4.2 | **Provider implementations** — OpenAI, Claude, Gemini, OpenRouter, Local | `backend/src/common/ai/providers/` | 8h |
-| P4.3 | **AI Orchestrator** — routing, fallback, rate limiting, logging | `backend/src/common/ai/services/` | 6h |
-| P4.4 | **Super Admin AI settings UI** — provider CRUD, model CRUD, health checks | `frontend/.../admin/ai/` | 8h |
-| P4.5 | **Feature config UI** — per-feature model assignment, prompts, toggles | `frontend/.../admin/ai/features/` | 4h |
-| P4.6 | **Usage dashboard** — charts, cost analytics, usage logs | `frontend/.../admin/ai/usage/` | 4h |
+| P4.1 | **LLM Registry backend** — entities, migrations, CRUD endpoints, auto-discovery | `backend/src/ai-registry/` | 8h |
+| P4.2 | **Provider implementations** — OpenAI, Claude, Gemini, DeepSeek, Qwen, Zhipu, Moonshot, MiniMax, StepFun, Nvidia, OpenRouter, Custom API | `backend/src/common/ai/providers/` | 10h |
+| P4.3 | **AI Orchestrator** — routing, fallback chains, rate limiting, usage logging | `backend/src/common/ai/services/` | 6h |
+| P4.4 | **Super Admin AI settings UI** — provider/model CRUD, health dashboard, custom provider wizard | `frontend/.../admin/ai/` | 8h |
+| P4.5 | **Feature config UI** — per-feature model assignment, prompts, quality toggles | `frontend/.../admin/ai/features/` | 4h |
+| P4.6 | **Usage dashboard** — charts, cost analytics, usage logs, cost-per-model breakdown | `frontend/.../admin/ai/usage/` | 4h |
 | P4.7 | **Auction description generator** — seller flow integration | `frontend/.../seller/auctions/create/` | 3h |
 | P4.8 | **Image captioning + auto-tagging** — upload pipeline integration | `frontend/.../seller/auctions/create/` | 4h |
 | P4.9 | **AI chatbot widget** — floating chat on public pages | `frontend/shared/components/ai/chatbot.tsx` | 5h |
 | P4.10 | **Smart search** — vector embeddings + pgvector setup | `backend/src/search/` | 6h |
 | P4.11 | **Content moderation** — listing submission pipeline | `backend/src/products/` | 3h |
-| P4.12 | **Additional features** — pricing, fraud, OCR, email, translation | Various | 18h |
+| P4.12 | **Additional features** — pricing, fraud, OCR, email, translation, title optimizer | Various | 18h |
 
-**Total AI implementation: ~77 hours (2 weeks full-time)**
+**Total AI implementation: ~79 hours (2 weeks full-time)**
 
 ---
 
