@@ -203,20 +203,24 @@
 
 ### Phase 4 — AI Features (Week 4-5)
 
-> **Goal:** Differentiate from competitors with AI-powered tools. Model-agnostic architecture.
+> **Goal:** Differentiate from competitors with AI-powered tools. Model-agnostic architecture with LLM Registry, per-section model assignment, fallback chains, and full super admin control panel.
+
+> **Architecture:** See §4 below for the complete AI design — 4 database entities, 5 provider implementations, 17 feature configs, orchestrator service with automatic fallback, and a super admin dashboard for managing the entire AI stack.
 
 | # | Task | Dependencies | Effort |
 |---|------|-------------|--------|
-| P4.1 | **AI provider abstraction layer** — `AIService` with pluggable backends (OpenAI, Claude, Gemini, OpenRouter, local) | None | 6h |
-| P4.2 | **AI admin settings panel** — provider selection, model picker, API key management, usage dashboard | P4.1 | 4h |
-| P4.3 | **AI lot description generator** — generate descriptions from bullet points + specification input | P4.1 | 3h |
-| P4.4 | **AI image captioning + auto-tagging** — auto-generate keywords/tags from uploaded images | P4.1 | 4h |
-| P4.5 | **AI pricing recommendations** — suggest starting bid + reserve price based on similar lots | P4.1 | 3h |
-| P4.6 | **Smart search** — semantic/vector search via embeddings + pgvector or Pinecone | P4.1 | 6h |
-| P4.7 | **AI chatbot / virtual assistant** — answer FAQs, guide users through registration/bidding | P4.1 | 5h |
-| P4.8 | **Personalized recommendations** — "You might like" based on browsing + bid history embeddings | P4.1, P4.6 | 5h |
-| P4.9 | **AI content moderation** — auto-flag inappropriate listings, images, descriptions | P4.1 | 3h |
-| P4.10 | **AI fraud detection** — ML classifier for suspicious bids, accounts, seller behavior | P4.1 | 6h |
+| P4.1 | **LLM Registry backend** — 4 entities, migrations, CRUD API, provider health checks | None | 8h |
+| P4.2 | **Provider implementations** — OpenAI, Claude, Gemini, OpenRouter, Local (Ollama) | P4.1 | 8h |
+| P4.3 | **AI Orchestrator** — routing, fallback chains, rate limiting, usage logging | P4.1, P4.2 | 6h |
+| P4.4 | **Super Admin AI settings UI** — provider/model CRUD, health dashboard | P4.3 | 8h |
+| P4.5 | **Feature config UI** — per-feature model assignment, prompts, quality toggles | P4.4 | 4h |
+| P4.6 | **Usage dashboard** — charts, cost analytics, token tracking | P4.4 | 4h |
+| P4.7 | **Auction description generator** — seller listing form integration | P4.3 | 3h |
+| P4.8 | **Image captioning + auto-tagging** — upload pipeline | P4.3 | 4h |
+| P4.9 | **AI chatbot widget** — floating assistant on public pages | P4.3 | 5h |
+| P4.10 | **Smart search** — vector embeddings + pgvector | P4.3 | 6h |
+| P4.11 | **Content moderation** — auto-flag pipeline | P4.3 | 3h |
+| P4.12 | **Additional features** — pricing, fraud, OCR, email, translation, title optimizer | P4.3 | 18h |
 
 ### Phase 5 — Platform Maturity (Week 6-7)
 
@@ -249,15 +253,271 @@
 
 ---
 
-## 4. AI Architecture — Model Agnostic Design
+## 4. AI Architecture — Model Agnostic Design (Expanded)
 
-### 4.1 Provider Interface
+### 4.0 Philosophy
+
+Every AI feature in GreyAuction is built on a **pluggable provider model**. No single LLM vendor is hard-coded. The super admin controls which provider powers which feature through a central **LLM Registry**. This means:
+
+- **Sections are independent**: The chatbot can use Claude while image tagging uses Gemini while fraud detection runs on a local model — simultaneously.
+- **Vendor lock-in is impossible**: Swap any provider with a single dropdown change in the admin panel.
+- **Cost optimization**: Route expensive features (fraud detection) to cheap models (Haiku/Flash) and creative features (description generation) to premium models (Opus/GPT-4o).
+- **Fallback chains**: If primary model fails, secondary/tertiary models pick up automatically.
+- **Privacy-first**: Sensitive data (KYC documents) can be routed to local/self-hosted models only.
+
+---
+
+### 4.1 LLM Registry — Database Schema
+
+The LLM Registry is a super-admin managed catalogue of all available providers, models, and their capabilities. It is the **single source of truth** for AI configuration.
+
+#### 4.1.1 Entity: `llm_providers`
 
 ```typescript
-// backend/src/common/ai/ai.interface.ts
+// backend/src/ai-registry/entities/llm-provider.entity.ts (NEW)
+@Entity('llm_providers')
+export class LLMProvider {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  name: string;                    // 'openai', 'claude', 'gemini', 'openrouter', 'local-ollama'
+
+  @Column()
+  displayName: string;             // 'OpenAI', 'Anthropic Claude', 'Google Gemini'
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column()
+  baseUrl: string;                 // 'https://api.openai.com/v1'
+
+  @Column({ nullable: true })
+  apiKey: string;                  // Encrypted at rest via crypto-js
+
+  @Column({ nullable: true })
+  organizationId: string;          // For OpenAI org accounts
+
+  @Column({ default: true })
+  isActive: boolean;               // Enable/disable entire provider
+
+  @Column({ default: 3 })
+  maxRetries: number;              // Retry count for transient failures
+
+  @Column({ default: 30000 })
+  timeoutMs: number;               // Request timeout
+
+  @Column({ type: 'jsonb', default: '{}' })
+  headers: Record<string, string>; // Custom headers (for OpenRouter auth, etc.)
+
+  @Column({ default: 'production' })
+  tier: 'production' | 'development' | 'testing';
+
+  @OneToMany(() => LLMModel, model => model.provider, { cascade: true })
+  models: LLMModel[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
+```
+
+#### 4.1.2 Entity: `llm_models`
+
+```typescript
+// backend/src/ai-registry/entities/llm-model.entity.ts (NEW)
+@Entity('llm_models')
+export class LLMModel {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @ManyToOne(() => LLMProvider, provider => provider.models)
+  provider: LLMProvider;
+
+  @Column()
+  modelId: string;                 // 'gpt-4o', 'claude-opus-4-20250514'
+
+  @Column()
+  displayName: string;             // 'GPT-4o', 'Claude Opus 4'
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column('simple-array')
+  capabilities: string[];          // ['chat', 'image', 'embedding', 'json', 'vision', 'streaming']
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  contextWindow: number;           // Token limit (e.g., 128000)
+
+  @Column({ type: 'int', default: 4096 })
+  maxOutputTokens: number;         // Max response tokens
+
+  // Pricing per 1M tokens (input / output)
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
+  pricePerMillionInput: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
+  pricePerMillionOutput: number;
+
+  @Column({ default: 0.7 })
+  defaultTemperature: number;
+
+  @Column({ default: false })
+  supportsJsonMode: boolean;
+
+  @Column({ default: false })
+  supportsStreaming: boolean;
+
+  @Column({ default: 0 })
+  priority: number;                // Sort order in dropdowns
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+```
+
+#### 4.1.3 Entity: `ai_feature_configs`
+
+This is the **per-section LLM assignment** table — each AI feature can use a different model.
+
+```typescript
+// backend/src/ai-registry/entities/ai-feature-config.entity.ts (NEW)
+@Entity('ai_feature_configs')
+export class AIFeatureConfig {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  featureKey: string;              // 'auction_description_generator', 'image_captioning', etc.
+
+  @Column()
+  displayName: string;             // 'Auction Description Generator'
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column()
+  section: string;                 // 'seller', 'buyer', 'admin', 'public', 'system'
+
+  @ManyToOne(() => LLMModel)
+  primaryModel: LLMModel;          // Preferred model for this feature
+
+  @ManyToOne(() => LLMModel, { nullable: true })
+  fallbackModel: LLMModel;         // Model to use if primary fails
+
+  @ManyToOne(() => LLMModel, { nullable: true })
+  tertiaryModel: LLMModel;         // Last-resort model
+
+  @Column({ default: true })
+  isEnabled: boolean;              // Toggle feature on/off
+
+  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0.7 })
+  temperature: number;
+
+  @Column({ type: 'int', default: 2048 })
+  maxTokens: number;
+
+  @Column({ type: 'text', nullable: true })
+  systemPrompt: string;            // Custom system prompt per feature
+
+  @Column({ default: false })
+  requireApproval: boolean;        // Require human approval before applying AI output
+
+  @Column({ default: 'standard' })
+  qualityLevel: 'draft' | 'standard' | 'premium';  // Controls model choice + temperature
+
+  @Column({ default: false })
+  logPrompts: boolean;             // Store prompts for debugging/audit
+
+  @Column({ default: false })
+  logResponses: boolean;           // Store responses for debugging/audit
+
+  @Column({ default: 5 })
+  rateLimitPerMinute: number;      // Requests per minute
+
+  @Column({ default: 1000 })
+  rateLimitPerDay: number;         // Requests per day
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
+```
+
+#### 4.1.4 Entity: `ai_usage_logs`
+
+```typescript
+// backend/src/ai-registry/entities/ai-usage-log.entity.ts (NEW)
+@Entity('ai_usage_logs')
+export class AIUsageLog {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  featureKey: string;
+
+  @Column()
+  modelId: string;
+
+  @Column()
+  providerName: string;
+
+  @Column({ nullable: true })
+  userId: string;
+
+  @Column()
+  promptTokens: number;
+
+  @Column()
+  completionTokens: number;
+
+  @Column()
+  totalTokens: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 8 })
+  estimatedCost: number;           // Calculated from model pricing
+
+  @Column({ type: 'int' })
+  latencyMs: number;
+
+  @Column()
+  success: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  errorMessage: string;
+
+  @Column({ nullable: true })
+  resourceId: string;              // Related auction ID, user ID, etc.
+
+  @CreateDateColumn()
+  timestamp: Date;
+}
+```
+
+---
+
+### 4.2 Provider Interface & Service Layer
+
+#### 4.2.1 Provider Interface (Expanded)
+
+```typescript
+// backend/src/common/ai/interfaces/ai-provider.interface.ts (NEW)
 export interface AIChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | AIContentPart[];
+}
+
+export interface AIContentPart {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string; detail?: 'low' | 'high' | 'auto' };
 }
 
 export interface AICompletionOptions {
@@ -266,84 +526,370 @@ export interface AICompletionOptions {
   maxTokens?: number;
   systemPrompt?: string;
   responseFormat?: 'text' | 'json_object';
+  stop?: string[];
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+}
+
+export interface AIModelInfo {
+  id: string;
+  displayName: string;
+  capabilities: string[];
+  contextWindow: number;
+  maxOutputTokens: number;
 }
 
 export interface AIProvider {
   readonly name: string;
-  readonly models: string[];
+  readonly baseUrl: string;
+  
+  // Core
+  listModels(): Promise<AIModelInfo[]>;
   chat(messages: AIChatMessage[], options?: AICompletionOptions): Promise<string>;
   chatJSON<T>(messages: AIChatMessage[], options?: AICompletionOptions): Promise<T>;
+  chatStream(messages: AIChatMessage[], options?: AICompletionOptions): AsyncIterable<string>;
+  
+  // Multi-modal
+  analyzeImage?(imageUrl: string, prompt: string): Promise<string>;
+  generateImage?(prompt: string, options?: ImageOptions): Promise<ImageResult>;
+  
+  // Embeddings
+  embed?(text: string): Promise<number[]>;
+  embedBatch?(texts: string[]): Promise<number[][]>;
+  
+  // Health
+  healthCheck(): Promise<boolean>;
 }
 
-export interface AIImageProvider extends AIProvider {
-  caption(imageUrl: string): Promise<string>;
-  tag(imageUrl: string): Promise<string[]>;
+export interface ImageOptions {
+  size?: '1024x1024' | '1792x1024' | '1024x1792';
+  quality?: 'standard' | 'hd';
+  style?: 'vivid' | 'natural';
 }
 
-export interface AIEmbeddingProvider extends AIProvider {
-  embed(text: string): Promise<number[]>;
-  embedBatch(texts: string[]): Promise<number[][]>;
+export interface ImageResult {
+  url: string;
+  revisedPrompt?: string;
 }
 ```
 
-### 4.2 Supported Providers
-
-| Provider | Models | Capabilities |
-|----------|--------|-------------|
-| **OpenAI** | gpt-4o, gpt-4o-mini, dall-e-3, text-embedding-3 | Chat, JSON, images, embeddings |
-| **Claude** (Anthropic) | claude-opus-4, claude-sonnet-4, claude-haiku-3.5 | Chat, JSON, images |
-| **Gemini** (Google) | gemini-2.5-pro, gemini-2.5-flash | Chat, JSON, images, embeddings |
-| **OpenRouter** | 200+ models via unified API | All capabilities |
-| **Local** | Ollama, LM Studio | Chat, embeddings (offline) |
-
-### 4.3 Admin Settings Schema
+#### 4.2.2 AI Orchestrator Service
 
 ```typescript
-// backend/src/settings/ai-settings.entity.ts (new)
-@Entity('ai_settings')
-export class AISettings {
-  id: number;
-  
-  // Provider selection
-  provider: 'openai' | 'claude' | 'gemini' | 'openrouter' | 'local';
-  apiKey: string;       // encrypted at rest
-  baseUrl: string;       // for OpenRouter/local
-  
-  // Model selection per feature
-  chatModel: string;
-  imageModel: string;
-  embeddingModel: string;
-  
-  // Parameters
-  temperature: number;   // 0.0 - 2.0
-  maxTokens: number;
-  systemPrompt: string;
-  
-  // Usage tracking
-  totalTokens: number;
-  totalCost: number;
-  lastUsedAt: Date;
+// backend/src/common/ai/services/ai-orchestrator.service.ts (NEW)
+@Injectable()
+export class AIOrchestratorService {
+  constructor(
+    private readonly registryService: LLMRegistryService,
+    private readonly usageLogService: AIUsageLogService,
+  ) {}
+
+  // Main entry point — all AI features call this
+  async execute(
+    featureKey: string,
+    input: AIFeatureInput,
+    userId?: string,
+  ): Promise<AIFeatureOutput> {
+    const config = await this.registryService.getFeatureConfig(featureKey);
+    if (!config || !config.isEnabled) {
+      throw new AIFeatureDisabledException(featureKey);
+    }
+
+    // Check rate limits
+    await this.checkRateLimit(featureKey);
+
+    const start = Date.now();
+    let result: AIFeatureOutput;
+    let attemptModel = config.primaryModel;
+
+    // Try primary, then fallback, then tertiary
+    for (const model of [config.primaryModel, config.fallbackModel, config.tertiaryModel]) {
+      if (!model) continue;
+      attemptModel = model;
+      try {
+        const provider = this.registryService.getProviderInstance(model.provider);
+        result = await this.executeOnModel(provider, model, config, input);
+        await this.logUsage(featureKey, model, start, true, userId);
+        return result;
+      } catch (error) {
+        this.logger.warn(`Model ${model.modelId} failed for ${featureKey}: ${error.message}`);
+        // Continue to fallback
+      }
+    }
+
+    // All models failed
+    await this.logUsage(featureKey, attemptModel, start, false, userId);
+    throw new AIAllModelsFailedException(featureKey);
+  }
 }
 ```
 
-### 4.4 AI Feature — Implementation Priority
+#### 4.2.3 Provider Implementations
 
-| # | Feature | Provider Required | Hrs | Dependencies |
-|---|---------|------------------|-----|-------------|
-| AI1 | Lot description generator | Chat | 3h | P4.1 |
-| AI2 | Image captioning + auto-tagging | Image + Chat | 4h | P4.1 |
-| AI3 | Pricing recommendations | Chat (JSON) | 3h | P4.1 |
-| AI4 | Smart search | Embedding | 6h | P4.1, pgvector |
-| AI5 | AI chatbot / virtual assistant | Chat | 5h | P4.1 |
-| AI6 | Personalized recommendations | Embedding | 5h | P4.1, P4.4 |
-| AI7 | Content moderation | Chat (JSON) | 3h | P4.1 |
-| AI8 | Fraud detection | Chat + ML | 6h | P4.1 |
-| AI9 | AI document OCR (KYC) | Image | 3h | P4.1 |
-| AI10 | AI email campaign generator | Chat | 3h | P4.1 |
-| AI11 | Auction title optimizer | Chat | 2h | P4.1 |
-| AI12 | Translation (listing auto-translate) | Chat | 3h | P4.1 |
-| AI13 | Bid prediction (estimated final price) | Chat + ML | 4h | P4.1 |
-| AI14 | Dynamic pricing (buyer premium adjustment) | Chat | 3h | P4.1 |
+```typescript
+// backend/src/common/ai/providers/openai.provider.ts (NEW)
+@Injectable()
+export class OpenAIProvider implements AIProvider {
+  name = 'openai';
+  baseUrl = 'https://api.openai.com/v1';
+  
+  async chat(messages, options) { /* OpenAI SDK */ }
+  async analyzeImage(imageUrl, prompt) { /* Vision API */ }
+  async generateImage(prompt, options) { /* DALL-E */ }
+  async embed(text) { /* text-embedding-3 */ }
+}
+
+// backend/src/common/ai/providers/claude.provider.ts (NEW)
+@Injectable()
+export class ClaudeProvider implements AIProvider {
+  name = 'claude';
+  baseUrl = 'https://api.anthropic.com/v1';
+  // Anthropic SDK implementation
+}
+
+// backend/src/common/ai/providers/gemini.provider.ts (NEW)
+@Injectable()
+export class GeminiProvider implements AIProvider {
+  name = 'gemini';
+  baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+  // Google AI SDK implementation
+}
+
+// backend/src/common/ai/providers/openrouter.provider.ts (NEW)
+@Injectable()
+export class OpenRouterProvider implements AIProvider {
+  name = 'openrouter';
+  baseUrl = 'https://openrouter.ai/api/v1';
+  // OpenAI-compatible API, routes to 200+ models
+}
+
+// backend/src/common/ai/providers/local.provider.ts (NEW)
+@Injectable()
+export class LocalProvider implements AIProvider {
+  name = 'local';
+  baseUrl = 'http://localhost:11434';  // Ollama default
+  // Ollama API (OpenAI-compatible)
+}
+```
+
+---
+
+### 4.3 Feature-to-Model Mapping
+
+This table defines which AI feature is assigned to which section and its default model recommendation:
+
+| Feature Key | Section | Function | Default Primary | Default Fallback | Quality |
+|-------------|---------|----------|-----------------|------------------|---------|
+| `auction_description_generator` | seller | Generate auction descriptions from specs | GPT-4o / Claude Sonnet | Claude Haiku | premium |
+| `image_captioning` | seller | Auto-tag uploaded images | Gemini Flash | GPT-4o-mini | standard |
+| `image_auto_tagging` | system | Extract keywords from images | Gemini Flash | Claude Haiku | draft |
+| `pricing_recommendation` | seller | Suggest starting bid & reserve | Claude Sonnet | GPT-4o-mini | standard |
+| `smart_search` | public | Semantic search via embeddings | text-embedding-3 | Gemini embedding | standard |
+| `chatbot_assistant` | public | Answer FAQs, guide users | Claude Haiku | GPT-4o-mini | standard |
+| `personalized_recommendations` | buyer | "You might like" suggestions | text-embedding-3 | Gemini embedding | standard |
+| `content_moderation` | system | Flag inappropriate content | GPT-4o-mini | Claude Haiku | standard |
+| `fraud_detection` | system | Flag suspicious bids/accounts | Claude Sonnet | GPT-4o | premium |
+| `document_ocr` | admin | Extract data from KYC docs | GPT-4o | Gemini Pro Vision | standard |
+| `email_campaign_generator` | admin | Generate newsletter content | Claude Sonnet | GPT-4o-mini | standard |
+| `title_optimizer` | seller | Improve listing titles | GPT-4o-mini | Claude Haiku | draft |
+| `translation` | system | Auto-translate listings | GPT-4o-mini | Claude Haiku | standard |
+| `bid_prediction` | buyer | Estimate final auction price | Claude Sonnet | GPT-4o | premium |
+| `dynamic_pricing` | admin | Adjust buyer premium | Claude Sonnet | GPT-4o | premium |
+| `listing_quality_score` | seller | Score listing completeness | GPT-4o-mini | Claude Haiku | draft |
+| `category_suggestion` | seller | Suggest best category | GPT-4o-mini | Claude Haiku | draft |
+
+---
+
+### 4.4 Super Admin AI Settings Panel
+
+The super admin manages all AI configuration through a dedicated settings interface.
+
+#### 4.4.1 Backend API Endpoints
+
+```
+# LLM Provider Management (Super Admin only)
+GET    /api/admin/ai/providers              — List all providers
+POST   /api/admin/ai/providers              — Add new provider
+PATCH  /api/admin/ai/providers/:id          — Update provider (API key, base URL, headers)
+DELETE /api/admin/ai/providers/:id          — Remove provider
+POST   /api/admin/ai/providers/:id/models   — Add model to provider
+PATCH  /api/admin/ai/providers/:id/models/:mid — Update model (pricing, capabilities, active)
+DELETE /api/admin/ai/providers/:id/models/:mid — Remove model
+POST   /api/admin/ai/providers/:id/health   — Test provider connection
+
+# Feature Configuration (Super Admin only)
+GET    /api/admin/ai/features               — List all feature configs
+PATCH  /api/admin/ai/features/:id           — Update feature (assign model, toggle, system prompt)
+POST   /api/admin/ai/features/:id/test      — Test feature with sample input
+
+# Usage & Analytics (Super Admin only)
+GET    /api/admin/ai/usage                  — Usage logs (filter by date, feature, model)
+GET    /api/admin/ai/usage/summary          — Aggregated: total tokens, cost, by provider/feature
+GET    /api/admin/ai/usage/by-model         — Cost breakdown per model
+GET    /api/admin/ai/usage/by-feature       — Usage volume per feature
+```
+
+#### 4.4.2 Frontend: AI Settings Pages
+
+```
+frontend/app/[locale]/(domain)/admin/ai/
+├── page.tsx                          — AI Dashboard (usage overview, health status)
+├── providers/
+│   ├── page.tsx                      — List all providers with status indicators
+│   ├── [providerId]/
+│   │   ├── page.tsx                  — Edit provider (API key, base URL, headers)
+│   │   └── models/
+│   │       ├── page.tsx              — List models for this provider
+│   │       └── [modelId]/page.tsx    — Edit model (pricing, capabilities, active toggle)
+├── features/
+│   ├── page.tsx                      — List all 17 AI features with current model assignment
+│   └── [featureKey]/page.tsx         — Configure feature (model dropdown, temperature, prompts)
+└── usage/
+    ├── page.tsx                      — Usage dashboard (charts: tokens by day, cost by model)
+    └── logs/page.tsx                 — Raw usage logs with filters
+```
+
+#### 4.4.3 AI Dashboard Wireframe
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AI Dashboard                                    [Settings] │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Providers │  │  Models  │  │ Features │  │ 30d Cost │   │
+│  │    5 ✅   │  │   22 ✅  │  │   17 ✅  │  │ $12.47   │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│                                                             │
+│  Provider Health:  OpenAI ✅  Claude ✅  Gemini ✅  Local ⚠️ │
+│                                                             │
+│  ┌─ Today's Usage ──────────────────────────────────────┐  │
+│  │  ████████████████████████████████  847 requests       │  │
+│  │  23,450 tokens  │  $0.89  │  avg 278ms               │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ┌─ Feature Usage (7d) ─────────────────────────────────┐  │
+│  │  auction_description   ████████████████  342 calls    │  │
+│  │  image_captioning      ██████  89 calls               │  │
+│  │  chatbot_assistant     ██████████  215 calls           │  │
+│  │  content_moderation    ████  56 calls                 │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 4.5 Per-Section LLM Deployment Strategy
+
+Different application sections get different LLM configurations optimized for their use case:
+
+#### Public Website (Buyer-facing)
+| Feature | Model Strategy | Rationale |
+|---------|---------------|-----------|
+| Smart Search | Embedding (cheap, fast) | High volume, latency-sensitive |
+| Chatbot | Claude Haiku or GPT-4o-mini | Fast responses, low cost |
+| Recommendations | Embedding + cosine similarity | Batch pre-computed, no real-time LLM |
+| Translation | GPT-4o-mini | Occasional use, good quality |
+
+#### Seller Dashboard
+| Feature | Model Strategy | Rationale |
+|---------|---------------|-----------|
+| Description Generator | Claude Sonnet or GPT-4o | Quality matters — better listings sell |
+| Image Captioning | Gemini Flash | Fast, good at vision, cheap |
+| Pricing Recommendation | Claude Sonnet | Structured JSON output, reliable |
+| Title Optimizer | GPT-4o-mini | Low stakes, fast |
+
+#### Admin Panel
+| Feature | Model Strategy | Rationale |
+|---------|---------------|-----------|
+| Content Moderation | GPT-4o-mini | High volume, needs fast turnaround |
+| Document OCR | GPT-4o or Gemini Pro | Accuracy critical for KYC |
+| Fraud Detection | Claude Sonnet | Reasoning capabilities matter |
+| Email Campaigns | Claude Sonnet | Creative writing, marketing tone |
+
+#### System / Background Jobs
+| Feature | Model Strategy | Rationale |
+|---------|---------------|-----------|
+| Auto-tagging images | Gemini Flash | Runs on every upload, must be fast/cheap |
+| Listing Quality Score | GPT-4o-mini | Batch process, low stakes |
+| Dynamic Pricing | Claude Sonnet | Complex reasoning, occasional |
+
+---
+
+### 4.6 Implementation Priority & Effort
+
+| # | Task | Files/Scope | Hrs |
+|---|------|------------|-----|
+| P4.1 | **LLM Registry backend** — entities, migrations, CRUD endpoints | `backend/src/ai-registry/` | 8h |
+| P4.2 | **Provider implementations** — OpenAI, Claude, Gemini, OpenRouter, Local | `backend/src/common/ai/providers/` | 8h |
+| P4.3 | **AI Orchestrator** — routing, fallback, rate limiting, logging | `backend/src/common/ai/services/` | 6h |
+| P4.4 | **Super Admin AI settings UI** — provider CRUD, model CRUD, health checks | `frontend/.../admin/ai/` | 8h |
+| P4.5 | **Feature config UI** — per-feature model assignment, prompts, toggles | `frontend/.../admin/ai/features/` | 4h |
+| P4.6 | **Usage dashboard** — charts, cost analytics, usage logs | `frontend/.../admin/ai/usage/` | 4h |
+| P4.7 | **Auction description generator** — seller flow integration | `frontend/.../seller/auctions/create/` | 3h |
+| P4.8 | **Image captioning + auto-tagging** — upload pipeline integration | `frontend/.../seller/auctions/create/` | 4h |
+| P4.9 | **AI chatbot widget** — floating chat on public pages | `frontend/shared/components/ai/chatbot.tsx` | 5h |
+| P4.10 | **Smart search** — vector embeddings + pgvector setup | `backend/src/search/` | 6h |
+| P4.11 | **Content moderation** — listing submission pipeline | `backend/src/products/` | 3h |
+| P4.12 | **Additional features** — pricing, fraud, OCR, email, translation | Various | 18h |
+
+**Total AI implementation: ~77 hours (2 weeks full-time)**
+
+---
+
+### 4.7 AI Module Directory Structure
+
+```
+backend/src/
+├── ai-registry/                        # NEW — LLM Registry module
+│   ├── ai-registry.module.ts
+│   ├── ai-registry.controller.ts       # Super admin CRUD endpoints
+│   ├── ai-registry.service.ts
+│   ├── entities/
+│   │   ├── llm-provider.entity.ts
+│   │   ├── llm-model.entity.ts
+│   │   ├── ai-feature-config.entity.ts
+│   │   └── ai-usage-log.entity.ts
+│   └── dto/
+│       ├── create-provider.dto.ts
+│       ├── update-provider.dto.ts
+│       ├── create-model.dto.ts
+│       ├── update-feature-config.dto.ts
+│       └── usage-query.dto.ts
+│
+├── common/ai/                          # NEW — AI abstraction layer
+│   ├── ai.module.ts
+│   ├── interfaces/
+│   │   └── ai-provider.interface.ts
+│   ├── services/
+│   │   ├── ai-orchestrator.service.ts
+│   │   ├── ai-usage-log.service.ts
+│   │   └── ai-rate-limiter.service.ts
+│   ├── providers/
+│   │   ├── openai.provider.ts
+│   │   ├── claude.provider.ts
+│   │   ├── gemini.provider.ts
+│   │   ├── openrouter.provider.ts
+│   │   └── local.provider.ts
+│   └── decorators/
+│       └── ai-feature.decorator.ts     // @AIFeature('auction_description_generator')
+
+frontend/
+├── app/[locale]/(domain)/admin/ai/     # NEW — AI settings pages
+│   ├── page.tsx
+│   ├── providers/
+│   ├── features/
+│   └── usage/
+│
+├── shared/components/ai/               # NEW — Shared AI components
+│   ├── chatbot.tsx                     # Floating chatbot widget
+│   ├── ai-generate-button.tsx          # "Generate with AI" button
+│   ├── ai-loading-spinner.tsx          # Animated AI thinking indicator
+│   └── ai-output-card.tsx              # Displays AI-generated content
+│
+└── shared/hooks/
+    └── use-ai-feature.ts              # React hook for calling AI features
+```
 
 ---
 
@@ -390,7 +936,7 @@ export class AISettings {
 | Server (localhost) | `h10omo6wpn33at3mi598jjcb` |
 | PostgreSQL DB | `wn8nr8wayebka3m5kkzn0fy0` |
 | Backend App | `g112l4qdo6f1ghvr6sxa5l0j` |
-| Frontend App | `fq7kp4aybdk0hdl1fhtlq3vc` |
+| Frontend App | `oar0eucfauq9kydbbpp3xejd` (recreated 2026-07-27) |
 | Coolify Dashboard | `https://coolify.gozmar.com` |
 | GitHub Repo | `https://github.com/gozmardynamics-glitch/Grey-Auction` |
 
