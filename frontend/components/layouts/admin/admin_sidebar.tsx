@@ -21,6 +21,7 @@ import {
   File,
   NotepadTextDashed,
   Ticket,
+  Cpu,
 } from 'lucide-react';
 
 import {
@@ -88,6 +89,15 @@ const navGroups: NavGroup[] = [
         label: 'Privacy Policy',
         path: '/admin/privacy-policy',
       },
+    ],
+  },
+  {
+    label: 'AI & AUTOMATION',
+    items: [
+      { icon: Cpu, label: 'AI Dashboard', path: '/admin/ai' },
+      { icon: Cpu, label: 'AI Providers', path: '/admin/ai/providers' },
+      { icon: Cpu, label: 'AI Features', path: '/admin/ai/features' },
+      { icon: Cpu, label: 'AI Usage', path: '/admin/ai/usage' },
     ],
   },
 ];

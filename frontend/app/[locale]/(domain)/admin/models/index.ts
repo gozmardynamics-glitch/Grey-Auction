@@ -574,6 +574,78 @@ interface BuyerTransactionDetail {
     title: string;
   };
 }
+// ─── AI ───────────────────────────────────────────────────────────────────
+
+interface LLMProvider {
+  id: string;
+  name: string;
+  displayName: string;
+  baseUrl: string;
+  apiKey: string;
+  headers?: Record<string, string>;
+  isActive: boolean;
+  tier: 'production' | 'development' | 'testing';
+  models?: LLMModel[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface LLMModel {
+  id: string;
+  modelId: string;
+  displayName: string;
+  capabilities: string[];
+  contextWindow: number;
+  maxOutputTokens: number;
+  inputPricePerMillion: number;
+  outputPricePerMillion: number;
+  defaultTemperature: number;
+  isActive: boolean;
+  providerId: string;
+  provider?: LLMProvider;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AIFeatureConfig {
+  id: string;
+  featureKey: string;
+  section: string;
+  displayName: string;
+  description?: string;
+  isEnabled: boolean;
+  quality: 'premium' | 'standard' | 'draft';
+  systemPrompt?: string;
+  temperature: number;
+  maxTokens: number;
+  rateLimitPerMinute: number;
+  rateLimitPerDay: number;
+  primaryModel?: LLMModel;
+  primaryModelId?: string;
+  fallbackModel?: LLMModel;
+  fallbackModelId?: string;
+  tertiaryModel?: LLMModel;
+  tertiaryModelId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AIUsageLog {
+  id: string;
+  featureKey: string;
+  modelId?: string;
+  providerName?: string;
+  userId?: string;
+  promptTokens: number;
+  completionTokens: number;
+  estimatedCost: number;
+  latencyMs: number;
+  success: boolean;
+  errorMessage?: string;
+  attemptNumber?: number;
+  createdAt: string;
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────
 
 export type {
@@ -647,5 +719,10 @@ export type {
   BuyerTimelineStep,
   PaymentDetail,
   PaymentHistoryItem,
+  // AI
+  LLMProvider,
+  LLMModel,
+  AIFeatureConfig,
+  AIUsageLog,
 };
 

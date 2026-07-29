@@ -5,6 +5,7 @@ import { routing } from '@/i18n/routing';
 import { Providers } from '../providers';
 import { Toaster } from '@/shared/components/common/sonner';
 import { CookieConsent } from '@/shared/components/common/cookie_consent';
+import ChatbotWrapper from '@/shared/components/ai/chatbot-wrapper';
 
 const fontSans = {
   variable: '--font-geist-sans',
@@ -43,6 +44,7 @@ export default async function LocaleLayout({
             {children}
             <Toaster richColors position="top-right" />
             <CookieConsent />
+            <ChatbotWrapper />
           </Providers>
         </NextIntlClientProvider>
       </body>
