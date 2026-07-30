@@ -646,6 +646,76 @@ interface AIUsageLog {
   createdAt: string;
 }
 
+// ─── Agents ────────────────────────────────────────────────────────────────
+
+interface AgentInstance {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  description?: string;
+  systemPrompt?: string;
+  modelId: string;
+  providerName: string;
+  isEnabled: boolean;
+  status: string;
+  toolIds?: string[];
+  triggerEvents?: string[];
+  totalExecutions: number;
+  successRate: number;
+  avgLatencyMs: number;
+  mcpEndpoint?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AgentTool {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string;
+  category: string;
+  endpoint: string;
+  httpMethod: string;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+  isEnabled: boolean;
+  totalCalls: number;
+  successRate: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AgentWorkflow {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string;
+  trigger: string;
+  triggerEvent?: string;
+  cronExpression?: string;
+  steps: Record<string, unknown>[];
+  isEnabled: boolean;
+  status: string;
+  totalRuns: number;
+  lastRunAt?: string;
+  lastError?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AgentMetric {
+  id: string;
+  agentId: string;
+  agentName: string;
+  eventType: string;
+  payload?: Record<string, unknown>;
+  latencyMs: number;
+  success: boolean;
+  errorMessage?: string;
+  createdAt: string;
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────
 
 export type {
@@ -724,5 +794,10 @@ export type {
   LLMModel,
   AIFeatureConfig,
   AIUsageLog,
+  // Agents
+  AgentInstance,
+  AgentTool,
+  AgentWorkflow,
+  AgentMetric,
 };
 

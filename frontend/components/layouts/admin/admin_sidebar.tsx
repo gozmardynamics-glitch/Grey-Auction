@@ -98,6 +98,9 @@ const navGroups: NavGroup[] = [
       { icon: Cpu, label: 'AI Providers', path: '/admin/ai/providers' },
       { icon: Cpu, label: 'AI Features', path: '/admin/ai/features' },
       { icon: Cpu, label: 'AI Usage', path: '/admin/ai/usage' },
+      { icon: Cpu, label: 'Agent Studio', path: '/admin/agents' },
+      { icon: Cpu, label: 'Agent Tools', path: '/admin/agents/tools' },
+      { icon: Cpu, label: 'Workflows', path: '/admin/agents/workflows' },
     ],
   },
 ];
