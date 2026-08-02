@@ -86,127 +86,88 @@ export function AuctionCard({
   if (viewMode === 'list') {
     return (
       <Card className="group flex flex-row overflow-hidden transition-shadow duration-300 hover:shadow-lg">
-        {/* Image */}
-        <div className="relative h-auto w-[120px] shrink-0 overflow-hidden bg-muted sm:w-[220px]">
+        <div className="relative h-auto w-[130px] shrink-0 overflow-hidden bg-muted-foreground sm:w-[200px]">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 120px, 220px"
+            sizes="(max-width: 640px) 130px, 200px"
           />
 
-          {/* Action Icons */}
-          <div className="absolute right-1.5 top-1.5 flex flex-col gap-1 sm:right-2 sm:top-2 sm:gap-1.5">
+          <div className="absolute right-1.5 top-1.5 flex gap-1">
             <Button
               onClick={handleWishlistClick}
               variant="outline"
               size="icon"
-              className={`rounded-full bg-background p-1 shadow-lg transition-transform hover:scale-105 sm:p-1.5 ${isAnimating ? 'animate-heartPop' : ''}`}
+              className={`h-6 w-6 rounded-full bg-background p-0 shadow transition-transform hover:scale-105 ${isAnimating ? 'animate-heartPop' : ''}`}
               aria-label="Add to wishlist"
             >
-              <Heart
-                className={`h-3 w-3 transition-colors sm:h-3.5 sm:w-3.5 ${
-                  isWishlisted
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-muted-foreground'
-                }`}
-              />
+              <Heart className={`h-3 w-3 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
             </Button>
             <Button
               onClick={handleShareClick}
               variant="outline"
               size="icon"
-              className="rounded-full bg-background p-1 shadow-lg transition-transform hover:scale-105 sm:p-1.5"
+              className="h-6 w-6 rounded-full bg-background p-0 shadow transition-transform hover:scale-105"
               aria-label="Share auction"
             >
-              <Share2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <Share2 className="h-3 w-3 text-muted-foreground" />
             </Button>
           </div>
 
-          {/* Timer */}
-          <div className="absolute bottom-1.5 left-1.5 rounded-md bg-background px-1 py-0.5 shadow-lg sm:bottom-2 sm:left-2 sm:rounded-lg sm:px-1.5 sm:py-0.5">
-            <div className="flex items-center gap-0.5 text-[6px] font-semibold text-muted-foreground sm:gap-1 sm:text-[7px]">
+          <div className="absolute bottom-1.5 left-1.5 rounded-md bg-background px-1.5 py-0.5 shadow">
+            <div className="flex items-center gap-0.5 text-[7px] font-semibold text-muted-foreground">
               <span className="tabular-nums">{String(timeRemaining.days).padStart(2, '0')}</span>
-              <span>days</span>
-              <span>:</span>
+              <span>d</span>
               <span className="tabular-nums">{String(timeRemaining.hours).padStart(2, '0')}</span>
-              <span>hrs</span>
-              <span>:</span>
+              <span>h</span>
               <span className="tabular-nums">{String(timeRemaining.minutes).padStart(2, '0')}</span>
-              <span>mins</span>
+              <span>m</span>
             </div>
           </div>
 
-          {/* Badges */}
           {auction.isNew && (
-            <div className="absolute left-1.5 top-1.5 rounded-full bg-badge px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground sm:left-2 sm:top-2 sm:px-2 sm:text-xs">
+            <div className="absolute left-1.5 top-1.5 rounded-full bg-badge px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
               New
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
+        <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 sm:flex-row sm:items-center sm:gap-4 sm:p-3">
           <div className="min-w-0 flex-1 space-y-0.5">
-            <h3 className="text-sm font-bold text-primary line-clamp-1 sm:text-base">
-              {auction.title}
-            </h3>
+            <h3 className="text-[13px] font-bold text-primary line-clamp-1 sm:text-sm">{auction.title}</h3>
             {auction.specs && (
-              <p className="text-[11px] text-muted-foreground line-clamp-1 sm:text-xs">
-                {auction.specs}
-              </p>
+              <p className="text-[10px] leading-tight text-muted-foreground line-clamp-1 sm:text-[11px]">{auction.specs}</p>
             )}
             {auction.location && (
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground sm:gap-1.5 sm:text-xs">
-                <span>
-                  {auction.location.city}, {auction.location.country}
-                </span>
-                <span>{getCountryFlag(auction.location.countryCode)}</span>
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                <span className="truncate">{auction.location.city}, {auction.location.country}</span>
+                <span className="text-xs shrink-0">{getCountryFlag(auction.location.countryCode)}</span>
               </div>
             )}
             {auction.sellerName && (
-              <p className="text-[11px] text-muted-foreground">
-                {auction.sellerName}
-              </p>
+              <p className="text-[10px] text-muted-foreground sm:text-[11px]">{auction.sellerName}</p>
             )}
             {auction.rating != null && auction.reviewCount != null && (
               <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
             )}
-            <div className="flex items-center gap-1.5 pt-0.5">
-              <span className="text-[11px] text-muted-foreground sm:text-xs">
-                Current bid:
-              </span>
-              <span className="text-xs font-bold text-foreground sm:text-sm">
-                {formatCurrency(auction.currentBid)}
-              </span>
+            <div className="flex items-baseline gap-1 pt-0.5">
+              <span className="text-[10px] text-muted-foreground sm:text-[11px]">Current bid:</span>
+              <span className="text-xs font-bold text-foreground sm:text-sm">{formatCurrency(auction.currentBid)}</span>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="mt-2 flex shrink-0 items-center gap-2 sm:mt-0 sm:self-end">
             {auction.status === 'active' ? (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-primary text-primary sm:size-default"
-                  onClick={handleBuyNowClick}
-                >
-                  Buy Now
-                </Button>
-                <Button variant="default" size="sm" onClick={handleBidClick}>
-                  Bid Now
-                </Button>
+                <Button variant="outline" size="sm" className="border-primary text-primary text-xs" onClick={handleBuyNowClick}>Buy Now</Button>
+                <Button variant="default" size="sm" className="text-xs" onClick={handleBidClick}>Bid Now</Button>
               </>
             ) : auction.status === 'live' ? (
-              <Button variant="default" size="sm" onClick={handleBidClick}>
-                Join Live Auction
-              </Button>
+              <Button variant="default" size="sm" className="text-xs" onClick={handleBidClick}>Join Live Auction</Button>
             ) : auction.status === 'new' ? (
-              <Button variant="default" size="sm" onClick={handleBidClick}>
-                Bid Now
-              </Button>
+              <Button variant="default" size="sm" className="text-xs" onClick={handleBidClick}>Bid Now</Button>
             ) : null}
           </div>
         </div>
@@ -214,11 +175,11 @@ export function AuctionCard({
     );
   }
 
-  // ─── Grid View (existing) ────────────────────────────────────────
+  // ─── Grid View ───────────────────────────────────────────────────
   return (
     <Card className="group overflow-hidden transition-shadow duration-300 hover:shadow-lg">
       <CardHeader className="relative p-0">
-        <div className="relative h-48 overflow-hidden bg-muted-foreground">
+        <div className="relative h-44 overflow-hidden bg-muted-foreground">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
@@ -228,7 +189,7 @@ export function AuctionCard({
           />
 
           {auction.isNew && (
-            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-badge px-2 py-1 text-xs font-semibold text-primary-foreground">
+            <div className="absolute left-2 top-2 rounded-full bg-badge px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
               New
             </div>
           )}
@@ -238,14 +199,12 @@ export function AuctionCard({
               onClick={handleWishlistClick}
               variant="outline"
               size="icon"
-              className={`rounded-full bg-background shadow-lg transition-transform duration-300 hover:scale-105 ${isAnimating ? 'animate-heartPop' : ''}`}
+              className={`h-7 w-7 rounded-full bg-background shadow transition-transform duration-300 hover:scale-105 ${isAnimating ? 'animate-heartPop' : ''}`}
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`h-3.5 w-3.5 transition-colors ${
-                  isWishlisted
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-muted-foreground'
+                className={`h-3.5 w-3.5 ${
+                  isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
                 }`}
               />
             </Button>
@@ -253,108 +212,69 @@ export function AuctionCard({
               onClick={handleShareClick}
               variant="outline"
               size="icon"
-              className="rounded-full bg-background shadow-lg transition-transform duration-300 hover:scale-105"
+              className="h-7 w-7 rounded-full bg-background shadow transition-transform duration-300 hover:scale-105"
               aria-label="Share auction"
             >
-              <Share2 className="h-3.5 w-3.5" />
+              <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </div>
 
-          <div className="absolute bottom-2 left-2 rounded-xl bg-background px-2 py-1 shadow-lg">
-            <div className="flex items-center gap-1 text-[7px] font-semibold">
-              <span className="text-muted-foreground tabular-nums">
-                {String(timeRemaining.days).padStart(2, '0')}
-              </span>
-              <span className="text-muted-foreground">days</span>
-              <span className="text-muted-foreground">:</span>
-              <span className="text-muted-foreground tabular-nums">
-                {String(timeRemaining.hours).padStart(2, '0')}
-              </span>
-              <span className="text-muted-foreground">hrs</span>
-              <span className="text-muted-foreground">:</span>
-              <span className="text-muted-foreground tabular-nums">
-                {String(timeRemaining.minutes).padStart(2, '0')}
-              </span>
-              <span className="text-muted-foreground">mins</span>
+          <div className="absolute bottom-1.5 left-1.5 rounded-lg bg-background px-1.5 py-0.5 shadow">
+            <div className="flex items-center gap-0.5 text-[7px] font-semibold text-muted-foreground">
+              <span className="tabular-nums">{String(timeRemaining.days).padStart(2, '0')}</span>
+              <span>d</span>
+              <span className="tabular-nums">{String(timeRemaining.hours).padStart(2, '0')}</span>
+              <span>h</span>
+              <span className="tabular-nums">{String(timeRemaining.minutes).padStart(2, '0')}</span>
+              <span>m</span>
             </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-1 p-2.5">
-        <h3 className="text-sm font-bold text-primary line-clamp-1">
-          {auction.title}
-        </h3>
+      <CardContent className="space-y-0.5 p-2">
+        <h3 className="text-[13px] font-bold text-primary line-clamp-1">{auction.title}</h3>
         {auction.specs && (
-          <p className="text-[11px] text-muted-foreground leading-tight">{auction.specs}</p>
+          <p className="text-[10px] leading-tight text-muted-foreground line-clamp-1">{auction.specs}</p>
         )}
         {auction.location && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span>
-              {auction.location.city}, {auction.location.country}
-            </span>
-            <span className="text-sm">{getCountryFlag(auction.location.countryCode)}</span>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="truncate">{auction.location.city}, {auction.location.country}</span>
+            <span className="text-xs shrink-0">{getCountryFlag(auction.location.countryCode)}</span>
           </div>
         )}
         {auction.sellerName && (
-          <p className="text-[11px] text-muted-foreground">{auction.sellerName}</p>
+          <p className="text-[10px] text-muted-foreground">{auction.sellerName}</p>
         )}
         {auction.rating != null && auction.reviewCount != null && (
           <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
         )}
-        <div className="flex items-center gap-1.5 pt-0.5">
-          <p className="text-[11px] text-muted-foreground">Current bid:</p>
-          <p className="text-xs font-bold text-foreground">
-            {formatCurrency(auction.currentBid)}
-          </p>
+        <div className="flex items-baseline gap-1 pt-0.5">
+          <span className="text-[10px] text-muted-foreground">Current bid:</span>
+          <span className="text-xs font-bold text-foreground">{formatCurrency(auction.currentBid)}</span>
         </div>
       </CardContent>
 
-      <CardFooter className="flex w-full gap-1.5 p-2.5 pt-0">
+      <CardFooter className="flex w-full gap-1.5 p-2 pt-0">
         {auction.status === 'active' ? (
           <>
-            <Button
-              variant="outline"
-              size="default"
-              className="flex-1 border-primary font-medium text-primary text-sm"
-              onClick={handleBuyNowClick}
-            >
+            <Button variant="outline" size="sm" className="flex-1 border-primary text-primary text-xs" onClick={handleBuyNowClick}>
               Buy Now
             </Button>
-            <Button
-              variant="default"
-              size="default"
-              className="flex-1 text-sm"
-              onClick={handleBidClick}
-            >
+            <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleBidClick}>
               Bid Now
             </Button>
           </>
         ) : auction.status === 'live' ? (
-          <Button
-            variant="default"
-            size="default"
-            className="flex-1 text-sm"
-            onClick={handleBidClick}
-          >
+          <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleBidClick}>
             Join Live Auction
           </Button>
         ) : auction.status === 'new' ? (
-          <Button
-            variant="default"
-            size="default"
-            className="flex-1 text-sm"
-            onClick={handleBidClick}
-          >
+          <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleBidClick}>
             Bid Now
           </Button>
         ) : auction.status === 'sold' ? (
-          <Button
-            variant="default"
-            size="default"
-            className="flex-1 text-sm"
-            onClick={handleBidClick}
-          >
+          <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleBidClick}>
             View
           </Button>
         ) : null}

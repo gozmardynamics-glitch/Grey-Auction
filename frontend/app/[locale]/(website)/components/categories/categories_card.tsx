@@ -74,9 +74,9 @@ export function CategoriesCard({
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group h-full">
-      <div className="grid grid-cols-[100px_1fr] md:grid-cols-2 h-full">
+      <div className="grid grid-cols-[120px_1fr] md:grid-cols-2 h-full">
         {/* Left Side - Image */}
-        <div className="relative h-full min-h-[110px] md:min-h-full w-full rounded-l-md bg-muted-foreground">
+        <div className="relative h-full min-h-[120px] md:min-h-full w-full bg-muted-foreground">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
@@ -86,194 +86,98 @@ export function CategoriesCard({
 
           {/* New Badge */}
           {auction.isNew && (
-            <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-purple-600 text-primary-foreground px-2 py-0.5 md:px-3 md:py-1.5 rounded-full text-xs font-semibold">
+            <div className="absolute left-1.5 top-1.5 md:left-3 md:top-3 rounded-full bg-purple-600 px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground md:px-2 md:py-1 md:text-xs">
               New
             </div>
           )}
 
           {/* Watchers Count Badge */}
           {auction.watchersCount && auction.watchersCount > 0 && (
-            <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-secondary text-muted-foreground px-1.5 py-0.5 md:px-2 md:py-1 rounded-md text-xs font-bold flex items-center gap-1">
-              ⭐ {auction.watchersCount}
+            <div className="absolute left-1.5 top-8 md:left-3 md:top-10 flex items-center gap-1 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground md:px-2 md:py-1 md:text-xs">
+              {auction.watchersCount}
             </div>
           )}
 
           {/* Countdown Timer - Bottom Left */}
-          <div className="absolute bottom-2 left-1 md:bottom-2 bg-background rounded-lg md:rounded-xl p-1 md:p-1.5 shadow-lg">
+          <div className="absolute bottom-1.5 left-1.5 md:bottom-2 md:left-2 rounded-lg bg-background px-1.5 py-0.5 shadow md:rounded-xl md:px-2 md:py-1">
             <CountdownTimer endTime={auction.endTime} size="sm" className="text-[6px] md:text-[7px]" />
           </div>
-          {/* Action Icons */}
-          <div className="flex gap-1 md:gap-2 absolute top-2 right-2 md:top-4 md:right-4 flex-col">
-            {/* Wishlist */}
+
+          {/* Action Icons - Bottom Right */}
+          <div className="absolute bottom-1.5 right-1.5 flex gap-1 md:bottom-2 md:right-2 md:gap-1.5">
             <Button
               onClick={handleWishlistClick}
               variant="outline"
-              className={`rounded-full h-7 w-7 md:h-10 md:w-10 transition-colors ${isAnimating ? 'animate-heartPop' : ''}`}
+              className={`h-7 w-7 rounded-full transition-colors hover:scale-105 md:h-8 md:w-8 ${isAnimating ? 'animate-heartPop' : ''}`}
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`w-3.5 h-3.5 md:w-5 md:h-5 transition-colors ${
-                  isWishlisted
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-muted-foreground'
+                className={`h-3.5 w-3.5 md:h-4 md:w-4 ${
+                  isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
                 }`}
               />
             </Button>
-
-            {/* Share */}
             <Button
               onClick={handleShareClick}
               variant="outline"
-              className="rounded-full h-7 w-7 md:h-10 md:w-10 transition-colors"
+              className="h-7 w-7 rounded-full transition-colors hover:scale-105 md:h-8 md:w-8"
               aria-label="Share auction"
             >
-              <Share2 className="w-3.5 h-3.5 md:w-5 md:h-5 text-muted-foreground" />
+              <Share2 className="h-3.5 w-3.5 text-muted-foreground md:h-4 md:w-4" />
             </Button>
           </div>
         </div>
 
         {/* Right Side - Content */}
         <div className="flex flex-col w-full">
-          <CardContent className="space-y-0.5 md:space-y-1.5 p-2 md:py-3 md:px-3">
-            {/* Header with Actions */}
-            <div className="flex items-start justify-between gap-2 md:gap-4">
-              <div className="flex-1 space-y-0.5 md:space-y-1">
-                {/* Title */}
-                <h3 className="text-sm md:text-base font-bold text-primary line-clamp-1 md:line-clamp-2">
-                  {auction.title}
-                </h3>
-
-                {/* Specs */}
-                {auction.specs && (
-                  <p className="text-[11px] md:text-xs text-muted-foreground leading-tight line-clamp-1">
-                    {auction.specs}
-                  </p>
-                )}
-
-                {/* Location */}
-                {auction.location && (
-                  <div className="flex items-center gap-1 md:gap-1.5 text-[11px] md:text-xs text-muted-foreground">
-                    <span>
-                      {auction.location.city}, {auction.location.country}
-                    </span>
-                    <span className="text-sm">{getCountryFlag(auction.location.countryCode)}</span>
-                  </div>
-                )}
+          <CardContent className="space-y-0.5 p-2 md:p-3">
+            <h3 className="text-[13px] font-bold text-primary line-clamp-1 md:text-sm md:line-clamp-2">
+              {auction.title}
+            </h3>
+            {auction.specs && (
+              <p className="text-[10px] leading-tight text-muted-foreground line-clamp-1 md:text-[11px]">
+                {auction.specs}
+              </p>
+            )}
+            {auction.location && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground md:text-[11px]">
+                <span className="truncate">
+                  {auction.location.city}, {auction.location.country}
+                </span>
+                <span className="text-xs shrink-0">{getCountryFlag(auction.location.countryCode)}</span>
               </div>
-            </div>
-
-            {/* Current Bid */}
-            <div className="flex items-center gap-1 md:gap-1.5 w-full">
-              <p className="text-[11px] md:text-xs text-muted-foreground">
-                Current bid:
-              </p>
-              <p className="text-xs md:text-sm font-bold text-foreground">
+            )}
+            <div className="flex items-baseline gap-1 pt-0.5">
+              <span className="text-[10px] text-muted-foreground md:text-[11px]">Current bid:</span>
+              <span className="text-xs font-bold text-foreground md:text-sm">
                 {formatCurrency(auction.currentBid)}
-              </p>
+              </span>
             </div>
           </CardContent>
 
-          {/* Footer with Buttons */}
-          <CardFooter className="flex flex-col gap-1 md:gap-1 items-center justify-end h-full p-2 pt-0 md:p-4 md:pt-0">
-            {auction.status === 'active' && (
-              <div className="flex gap-2 md:flex-col md:gap-1 w-full">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 md:hidden"
-                  onClick={handleActionClick}
-                >
+          <CardFooter className="mt-auto flex gap-1.5 p-2 pt-0 md:p-3 md:pt-0">
+            {auction.status === 'active' ? (
+              <>
+                <Button variant="outline" size="sm" className="flex-1 border-primary text-primary text-xs md:text-sm" onClick={handleActionClick}>
                   Buy Now
                 </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="flex-1 md:hidden"
-                  onClick={handleActionClick}
-                >
+                <Button variant="default" size="sm" className="flex-1 text-xs md:text-sm" onClick={handleActionClick}>
                   Bid Now
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="hidden md:flex w-full"
-                  onClick={handleActionClick}
-                >
-                  Buy Now
-                </Button>
-                <Button
-                  variant="default"
-                  size="lg"
-                  className="hidden md:flex w-full"
-                  onClick={handleActionClick}
-                >
-                  Bid Now
-                </Button>
-              </div>
-            )}
-
-            {auction.status === 'live' && (
-              <div className="w-full">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleActionClick}
-                  className="w-full md:hidden"
-                >
-                  Bid Now
-                </Button>
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={handleActionClick}
-                  className="w-full hidden md:flex"
-                >
-                  Bid Now
-                </Button>
-              </div>
-            )}
-
-            {auction.status === 'new' && (
-              <div className="w-full">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleActionClick}
-                  className="w-full md:hidden"
-                >
-                  Bid Now
-                </Button>
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={handleActionClick}
-                  className="w-full hidden md:flex"
-                >
-                  Bid Now
-                </Button>
-              </div>
-            )}
-
-            {auction.status === 'sold' && (
-              <div className="w-full">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleActionClick}
-                  className="w-full md:hidden"
-                >
-                  View
-                </Button>
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={handleActionClick}
-                  className="w-full hidden md:flex"
-                >
-                  View
-                </Button>
-              </div>
-            )}
+              </>
+            ) : auction.status === 'live' ? (
+              <Button variant="default" size="sm" className="flex-1 text-xs md:text-sm" onClick={handleActionClick}>
+                Join Live
+              </Button>
+            ) : auction.status === 'new' ? (
+              <Button variant="default" size="sm" className="flex-1 text-xs md:text-sm" onClick={handleActionClick}>
+                Bid Now
+              </Button>
+            ) : auction.status === 'sold' ? (
+              <Button variant="default" size="sm" className="flex-1 text-xs md:text-sm" onClick={handleActionClick}>
+                View
+              </Button>
+            ) : null}
           </CardFooter>
         </div>
       </div>

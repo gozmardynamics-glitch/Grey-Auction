@@ -78,8 +78,7 @@ export function TrendingLotsCards({
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
       <CardHeader className="p-0 relative">
-        {/* Image */}
-        <div className="relative h-48 bg-muted-foreground overflow-hidden">
+        <div className="relative h-44 bg-muted-foreground overflow-hidden">
           <Image
             src={auction.imageUrl}
             alt={auction.title}
@@ -88,157 +87,91 @@ export function TrendingLotsCards({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
 
-          {/* New Badge */}
           {auction.isNew && (
-            <div className="absolute top-2 left-2 bg-badge text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+            <div className="absolute left-2 top-2 rounded-full bg-badge px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
               New
             </div>
           )}
 
-          {/* Action Icons - Top Right */}
           <div className="absolute right-2 top-2 flex gap-1.5">
-            {/* Wishlist */}
             <Button
               onClick={handleWishlistClick}
               variant="outline"
               size="icon"
-              className={`bg-background rounded-full shadow-lg hover:scale-105 transition-transform duration-300 ${isAnimating ? 'animate-heartPop' : ''}`}
+              className={`h-7 w-7 rounded-full bg-background shadow transition-transform duration-300 hover:scale-105 ${isAnimating ? 'animate-heartPop' : ''}`}
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`h-3.5 w-3.5 transition-colors ${
-                  isWishlisted
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-muted-foreground'
-                }`}
+                className={`h-3.5 w-3.5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`}
               />
             </Button>
-
-            {/* Share */}
             <Button
               onClick={handleShareClick}
               variant="outline"
               size="icon"
-              className="bg-background rounded-full shadow-lg hover:scale-105 transition-transform duration-300"
+              className="h-7 w-7 rounded-full bg-background shadow transition-transform duration-300 hover:scale-105"
               aria-label="Share auction"
             >
-              <Share2 className="h-3.5 w-3.5" />
+              <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </div>
 
-          {/* Countdown Timer - Bottom Left */}
-          <div className="absolute bottom-2 left-2 bg-background rounded-xl px-2 py-1 shadow-lg">
-            <div className="flex items-center gap-1 text-[7px] font-semibold">
-              <span className="text-muted-foreground tabular-nums">
-                {String(timeRemaining.days).padStart(2, '0')}
-              </span>
-              <span className="text-muted-foreground">days</span>
-              <span className="text-muted-foreground">:</span>
-              <span className="text-muted-foreground tabular-nums">
-                {String(timeRemaining.hours).padStart(2, '0')}
-              </span>
-              <span className="text-muted-foreground">hrs</span>
-              <span className="text-muted-foreground">:</span>
-              <span className="text-muted-foreground tabular-nums">
-                {String(timeRemaining.minutes).padStart(2, '0')}
-              </span>
-              <span className="text-muted-foreground">mins</span>
+          <div className="absolute bottom-1.5 left-1.5 rounded-lg bg-background px-1.5 py-0.5 shadow">
+            <div className="flex items-center gap-0.5 text-[7px] font-semibold text-muted-foreground">
+              <span className="tabular-nums">{String(timeRemaining.days).padStart(2, '0')}</span>
+              <span>d</span>
+              <span className="tabular-nums">{String(timeRemaining.hours).padStart(2, '0')}</span>
+              <span>h</span>
+              <span className="tabular-nums">{String(timeRemaining.minutes).padStart(2, '0')}</span>
+              <span>m</span>
             </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-2.5 space-y-1">
-        {/* Title */}
-        <h3 className="text-sm font-bold text-primary line-clamp-1">
-          {auction.title}
-        </h3>
-
-        {/* Specs */}
+      <CardContent className="p-2 space-y-0.5">
+        <h3 className="text-[13px] font-bold text-primary line-clamp-1">{auction.title}</h3>
         {auction.specs && (
-          <p className="text-[11px] text-muted-foreground leading-tight truncate">
-            {auction.specs}
-          </p>
+          <p className="text-[10px] leading-tight text-muted-foreground line-clamp-1">{auction.specs}</p>
         )}
-
-        {/* Location */}
         {auction.location && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span>
-              {auction.location.city}, {auction.location.country}
-            </span>
-            <span className="text-sm">
-              {getCountryFlag(auction.location.countryCode)}
-            </span>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="truncate">{auction.location.city}, {auction.location.country}</span>
+            <span className="text-xs shrink-0">{getCountryFlag(auction.location.countryCode)}</span>
           </div>
         )}
-
-        {/* Seller */}
         {auction.sellerName && (
-          <p className="text-[11px] text-muted-foreground">{auction.sellerName}</p>
+          <p className="text-[10px] text-muted-foreground">{auction.sellerName}</p>
         )}
-
-        {/* Rating */}
         {auction.rating != null && auction.reviewCount != null && (
           <Rating rating={auction.rating} reviewCount={auction.reviewCount} size="sm" />
         )}
-
-        {/* Current Bid */}
-        <div className="pt-0.5 flex items-center gap-1.5">
-          <p className="text-[11px] text-muted-foreground">Current bid:</p>
-          <p className="text-xs font-bold text-foreground">
-            {formatCurrency(auction.currentBid)}
-          </p>
+        <div className="flex items-baseline gap-1 pt-0.5">
+          <span className="text-[10px] text-muted-foreground">Current bid:</span>
+          <span className="text-xs font-bold text-foreground">{formatCurrency(auction.currentBid)}</span>
         </div>
       </CardContent>
 
-      <CardFooter className="p-2.5 pt-0 w-full flex gap-1.5">
-        {/* Action Button */}
+      <CardFooter className="p-2 pt-0 w-full flex gap-1.5">
         {auction.status === 'active' ? (
           <>
-            <Button
-              variant="outline"
-              size="default"
-              className="flex-1 border-primary text-primary font-medium text-sm"
-              onClick={handleActionClick}
-            >
+            <Button variant="outline" size="sm" className="flex-1 border-primary text-primary text-xs" onClick={handleActionClick}>
               Buy Now
             </Button>
-
-            <Button
-              variant="default"
-              size="default"
-              className="flex-1 text-sm"
-              onClick={handleActionClick}
-            >
+            <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleActionClick}>
               Bid Now
             </Button>
           </>
         ) : auction.status === 'live' ? (
-          <Button
-            variant="default"
-            size="lg"
-            className="flex-1"
-            onClick={handleActionClick}
-          >
+          <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleActionClick}>
             Join Live Auction
           </Button>
         ) : auction.status === 'new' ? (
-          <Button
-            variant="default"
-            size="lg"
-            className="flex-1"
-            onClick={handleActionClick}
-          >
+          <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleActionClick}>
             Bid Now
           </Button>
         ) : auction.status === 'sold' ? (
-          <Button
-            variant="default"
-            size="lg"
-            className="flex-1"
-            onClick={handleActionClick}
-          >
+          <Button variant="default" size="sm" className="flex-1 text-xs" onClick={handleActionClick}>
             View
           </Button>
         ) : null}
