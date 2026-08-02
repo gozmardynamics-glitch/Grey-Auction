@@ -99,7 +99,7 @@ export function CategoriesCard({
           )}
 
           {/* Countdown Timer - Bottom Left */}
-          <div className="absolute bottom-2 left-1 md:bottom-4 bg-background rounded-xl md:rounded-2xl p-1.5 md:p-2 shadow-lg">
+          <div className="absolute bottom-2 left-1 md:bottom-2 bg-background rounded-lg md:rounded-xl p-1 md:p-1.5 shadow-lg">
             <CountdownTimer endTime={auction.endTime} size="sm" className="text-[6px] md:text-[7px]" />
           </div>
           {/* Action Icons */}
@@ -112,7 +112,7 @@ export function CategoriesCard({
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`w-4 h-4 md:w-6 md:h-6 transition-colors ${
+                className={`w-3.5 h-3.5 md:w-5 md:h-5 transition-colors ${
                   isWishlisted
                     ? 'fill-red-500 text-red-500'
                     : 'text-muted-foreground'
@@ -127,49 +127,47 @@ export function CategoriesCard({
               className="rounded-full h-7 w-7 md:h-10 md:w-10 transition-colors"
               aria-label="Share auction"
             >
-              <Share2 className="w-4 h-4 md:w-6 md:h-6 text-muted-foreground" />
+              <Share2 className="w-3.5 h-3.5 md:w-5 md:h-5 text-muted-foreground" />
             </Button>
           </div>
         </div>
 
         {/* Right Side - Content */}
         <div className="flex flex-col w-full">
-          <CardContent className="space-y-1 md:space-y-3 p-2 md:py-4">
+          <CardContent className="space-y-0.5 md:space-y-1.5 p-2 md:py-3 md:px-3">
             {/* Header with Actions */}
             <div className="flex items-start justify-between gap-2 md:gap-4">
-              <div className="flex-1 space-y-1 md:space-y-1.5">
+              <div className="flex-1 space-y-0.5 md:space-y-1">
                 {/* Title */}
-                <h3 className="text-sm md:text-lg font-bold text-primary line-clamp-1 md:line-clamp-2">
+                <h3 className="text-sm md:text-base font-bold text-primary line-clamp-1 md:line-clamp-2">
                   {auction.title}
                 </h3>
 
                 {/* Specs */}
                 {auction.specs && (
-                  <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
+                  <p className="text-[11px] md:text-xs text-muted-foreground leading-tight line-clamp-1">
                     {auction.specs}
                   </p>
                 )}
 
                 {/* Location */}
                 {auction.location && (
-                  <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1 md:gap-1.5 text-[11px] md:text-xs text-muted-foreground">
                     <span>
                       {auction.location.city}, {auction.location.country}
                     </span>
-                    <span className="text-sm md:text-base">
-                      {getCountryFlag(auction.location.countryCode)}
-                    </span>
+                    <span className="text-sm">{getCountryFlag(auction.location.countryCode)}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Current Bid */}
-            <div className="flex items-center gap-1 md:gap-2 w-full">
-              <p className="text-xs md:text-sm text-muted-foreground">
+            <div className="flex items-center gap-1 md:gap-1.5 w-full">
+              <p className="text-[11px] md:text-xs text-muted-foreground">
                 Current bid:
               </p>
-              <p className="text-sm md:text-lg font-bold text-foreground">
+              <p className="text-xs md:text-sm font-bold text-foreground">
                 {formatCurrency(auction.currentBid)}
               </p>
             </div>

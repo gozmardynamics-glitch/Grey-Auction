@@ -333,26 +333,20 @@ export class SellerReviewService {
   async getRatingBreakdown(
     sellerId: string,
   ): Promise<{ [key: number]: number }> {
-    const reviews = await this.reviewRepository.find({
-      where: {
-        seller_id: sellerId,
-        status: ReviewStatus.ACTIVE,
-        deleted_at: null,
-      },
-    });
+    const raw = await this.reviewRepository
+      .createQueryBuilder('review')
+      .select('review.rating', 'rating')
+      .addSelect('COUNT(*)', 'count')
+      .where('review.seller_id = :sellerId', { sellerId })
+      .andWhere('review.status = :status', { status: ReviewStatus.ACTIVE })
+      .andWhere('review.deleted_at IS NULL')
+      .groupBy('review.rating')
+      .getRawMany();
 
-    const breakdown: { [key: number]: number } = {
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    };
-
-    reviews.forEach((review) => {
-      breakdown[review.rating] = (breakdown[review.rating] || 0) + 1;
-    });
-
+    const breakdown: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of raw) {
+      breakdown[row.rating] = parseInt(row.count, 10) || 0;
+    }
     return breakdown;
   }
 
@@ -397,23 +391,34 @@ export class SellerReviewService {
     reviews_with_response: number;
     response_rate: number;
   }> {
-    const reviews = await this.reviewRepository.find({
-      where: {
-        seller_id: sellerId,
-        status: ReviewStatus.ACTIVE,
-        deleted_at: null,
-      },
-    });
+    const raw = await this.reviewRepository
+      .createQueryBuilder('review')
+      .select('COUNT(review.id)', 'total_reviews')
+      .addSelect('AVG(review.rating)', 'average_rating')
+      .addSelect(
+        'SUM(CASE WHEN review.rating >= 4 THEN 1 ELSE 0 END)',
+        'positive_reviews',
+      )
+      .addSelect(
+        'SUM(CASE WHEN review.rating <= 2 THEN 1 ELSE 0 END)',
+        'negative_reviews',
+      )
+      .addSelect(
+        'SUM(CASE WHEN review.response IS NOT NULL THEN 1 ELSE 0 END)',
+        'reviews_with_response',
+      )
+      .where('review.seller_id = :sellerId', { sellerId })
+      .andWhere('review.status = :status', { status: ReviewStatus.ACTIVE })
+      .andWhere('review.deleted_at IS NULL')
+      .getRawOne();
 
-    const total_reviews = reviews.length;
-    const average_rating = await this.calculateAverageRating(sellerId);
+    const total_reviews = parseInt(raw.total_reviews, 10) || 0;
+    const average_rating = parseFloat(raw.average_rating) || 0;
+    const positive_reviews = parseInt(raw.positive_reviews, 10) || 0;
+    const negative_reviews = parseInt(raw.negative_reviews, 10) || 0;
+    const reviews_with_response = parseInt(raw.reviews_with_response, 10) || 0;
+    const response_rate = total_reviews > 0 ? (reviews_with_response / total_reviews) * 100 : 0;
     const rating_breakdown = await this.getRatingBreakdown(sellerId);
-
-    const positive_reviews = reviews.filter((r) => r.isPositive()).length;
-    const negative_reviews = reviews.filter((r) => r.isNegative()).length;
-    const reviews_with_response = reviews.filter((r) => r.has_response).length;
-    const response_rate =
-      total_reviews > 0 ? (reviews_with_response / total_reviews) * 100 : 0;
 
     return {
       total_reviews,

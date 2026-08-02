@@ -70,7 +70,10 @@ export class Room {
   @Column({ nullable: true })
   inviteCode: string;
 
-  @ManyToOne(() => User, { nullable: true, eager: true })
+  @Column('simple-array', { default: '' })
+  invitedUserIds: string[];
+
+  @ManyToOne(() => User, { nullable: true })
   createdBy: User;
 
   @Column()
@@ -97,7 +100,7 @@ export class RoomParticipant {
   @Column()
   roomId: string;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User)
   user: User;
 
   @Column()

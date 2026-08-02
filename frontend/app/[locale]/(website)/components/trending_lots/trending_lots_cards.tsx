@@ -96,7 +96,7 @@ export function TrendingLotsCards({
           )}
 
           {/* Action Icons - Top Right */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <div className="absolute right-2 top-2 flex gap-1.5">
             {/* Wishlist */}
             <Button
               onClick={handleWishlistClick}
@@ -106,7 +106,7 @@ export function TrendingLotsCards({
               aria-label="Add to wishlist"
             >
               <Heart
-                className={`h-4 w-4 transition-colors ${
+                className={`h-3.5 w-3.5 transition-colors ${
                   isWishlisted
                     ? 'fill-red-500 text-red-500'
                     : 'text-muted-foreground'
@@ -122,13 +122,13 @@ export function TrendingLotsCards({
               className="bg-background rounded-full shadow-lg hover:scale-105 transition-transform duration-300"
               aria-label="Share auction"
             >
-              <Share2 className="w-5 h-5" />
+              <Share2 className="h-3.5 w-3.5" />
             </Button>
           </div>
 
           {/* Countdown Timer - Bottom Left */}
-          <div className="absolute bottom-4 left-4 bg-background rounded-2xl px-3 py-2 shadow-lg">
-            <div className="flex items-center gap-2 text-[8px] font-semibold">
+          <div className="absolute bottom-2 left-2 bg-background rounded-xl px-2 py-1 shadow-lg">
+            <div className="flex items-center gap-1 text-[7px] font-semibold">
               <span className="text-muted-foreground tabular-nums">
                 {String(timeRemaining.days).padStart(2, '0')}
               </span>
@@ -148,26 +148,26 @@ export function TrendingLotsCards({
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-2.5 space-y-1">
         {/* Title */}
-        <h3 className="text-base font-bold text-primary line-clamp-1">
+        <h3 className="text-sm font-bold text-primary line-clamp-1">
           {auction.title}
         </h3>
 
         {/* Specs */}
         {auction.specs && (
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="text-[11px] text-muted-foreground leading-tight truncate">
             {auction.specs}
           </p>
         )}
 
         {/* Location */}
         {auction.location && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <span>
               {auction.location.city}, {auction.location.country}
             </span>
-            <span className="text-base">
+            <span className="text-sm">
               {getCountryFlag(auction.location.countryCode)}
             </span>
           </div>
@@ -175,7 +175,7 @@ export function TrendingLotsCards({
 
         {/* Seller */}
         {auction.sellerName && (
-          <p className="text-xs text-muted-foreground">{auction.sellerName}</p>
+          <p className="text-[11px] text-muted-foreground">{auction.sellerName}</p>
         )}
 
         {/* Rating */}
@@ -184,15 +184,15 @@ export function TrendingLotsCards({
         )}
 
         {/* Current Bid */}
-        <div className="pt-1 flex items-center gap-2">
-          <p className="text-xs text-muted-foreground">Current bid:</p>
+        <div className="pt-0.5 flex items-center gap-1.5">
+          <p className="text-[11px] text-muted-foreground">Current bid:</p>
           <p className="text-xs font-bold text-foreground">
             {formatCurrency(auction.currentBid)}
           </p>
         </div>
       </CardContent>
 
-      <CardFooter className="p-3 pt-0 w-full flex gap-2">
+      <CardFooter className="p-2.5 pt-0 w-full flex gap-1.5">
         {/* Action Button */}
         {auction.status === 'active' ? (
           <>

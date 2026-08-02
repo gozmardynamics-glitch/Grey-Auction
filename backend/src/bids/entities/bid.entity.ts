@@ -8,19 +8,19 @@ export class Bid {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Product, { eager: true })
+  @ManyToOne(() => Product)
   product: Product;
 
   @Column()
   productId: string;
 
-  @ManyToOne(() => Room, { nullable: true, eager: true })
+  @ManyToOne(() => Room, { nullable: true })
   room: Room;
 
   @Column({ nullable: true })
   roomId: string;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User)
   bidder: User;
 
   @Column()

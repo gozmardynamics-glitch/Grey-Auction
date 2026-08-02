@@ -1,11 +1,19 @@
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { Manrope } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { Providers } from '../providers';
 import { Toaster } from '@/shared/components/common/sonner';
 import { CookieConsent } from '@/shared/components/common/cookie_consent';
 import ChatbotWrapper from '@/shared/components/ai/chatbot-wrapper';
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+  weight: ['200', '300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+});
 
 const fontSans = {
   variable: '--font-geist-sans',
@@ -37,7 +45,7 @@ export default async function LocaleLayout({
     <html lang={locale} suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${fontSans.variable} ${fontMono.variable} antialiased`}
+        className={`${manrope.variable} ${fontSans.variable} ${fontMono.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
           <Providers>

@@ -109,7 +109,7 @@ export class AIService {
     return this.findFeatureById(id);
   }
 
-  async findUsageLogs(query: { dateFrom?: string; dateTo?: string; feature?: string }) {
+  async findUsageLogs(query: { dateFrom?: string; dateTo?: string; feature?: string; page?: number; limit?: number }) {
     const where: any = {};
     if (query.dateFrom || query.dateTo) {
       where.createdAt = Between(
@@ -120,20 +120,38 @@ export class AIService {
     if (query.feature) {
       where.featureKey = query.feature;
     }
-    return this.usageRepo.find({ where, order: { createdAt: 'DESC' }, take: 500 });
+    const page = query.page || 1;
+    const limit = query.limit || 50;
+    return this.usageRepo.find({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
   }
 
   async findUsageSummary() {
-    const logs = await this.usageRepo.find();
-    const totalTokens = logs.reduce((sum, l) => sum + l.promptTokens + l.completionTokens, 0);
-    const totalCost = logs.reduce((sum, l) => sum + Number(l.estimatedCost), 0);
+    const raw = await this.usageRepo
+      .createQueryBuilder('log')
+      .select('SUM(log.promptTokens + log.completionTokens)', 'totalTokens')
+      .addSelect('SUM(log.estimatedCost)', 'totalCost')
+      .addSelect('log.providerName', 'providerName')
+      .groupBy('log.providerName')
+      .getRawMany();
+
+    let totalTokens = 0;
+    let totalCost = 0;
     const byProvider: Record<string, { tokens: number; cost: number }> = {};
-    for (const l of logs) {
-      const key = l.providerName || 'unknown';
-      if (!byProvider[key]) byProvider[key] = { tokens: 0, cost: 0 };
-      byProvider[key].tokens += l.promptTokens + l.completionTokens;
-      byProvider[key].cost += Number(l.estimatedCost);
+
+    for (const row of raw) {
+      const tokens = parseInt(row.totalTokens, 10) || 0;
+      const cost = parseFloat(row.totalCost) || 0;
+      const key = row.providerName || 'unknown';
+      totalTokens += tokens;
+      totalCost += cost;
+      byProvider[key] = { tokens, cost };
     }
+
     return { totalTokens, totalCost, byProvider };
   }
 

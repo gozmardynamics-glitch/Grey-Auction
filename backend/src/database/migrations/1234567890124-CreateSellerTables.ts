@@ -3,108 +3,135 @@ import { MigrationInterface, QueryRunner, Table, TableIndex, TableForeignKey } f
 export class CreateSellerTables1234567890124 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // ==========================================
-    // CREATE ENUMS
+    // CREATE ENUMS (idempotent — safe to re-run)
     // ==========================================
 
     // Business Type Enum
     await queryRunner.query(`
-      CREATE TYPE seller_business_type_enum AS ENUM (
-        'INDIVIDUAL',
-        'SOLE_PROPRIETORSHIP',
-        'LLC',
-        'CORPORATION',
-        'PARTNERSHIP'
-      );
+      DO $$ BEGIN
+        CREATE TYPE seller_business_type_enum AS ENUM (
+          'INDIVIDUAL',
+          'SOLE_PROPRIETORSHIP',
+          'LLC',
+          'CORPORATION',
+          'PARTNERSHIP'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Verification Status Enum
     await queryRunner.query(`
-      CREATE TYPE seller_verification_status_enum AS ENUM (
-        'PENDING',
-        'UNDER_REVIEW',
-        'APPROVED',
-        'REJECTED',
-        'SUSPENDED'
-      );
+      DO $$ BEGIN
+        CREATE TYPE seller_verification_status_enum AS ENUM (
+          'PENDING',
+          'UNDER_REVIEW',
+          'APPROVED',
+          'REJECTED',
+          'SUSPENDED'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Seller Status Enum
     await queryRunner.query(`
-      CREATE TYPE seller_status_enum AS ENUM (
-        'ACTIVE',
-        'INACTIVE',
-        'SUSPENDED',
-        'BANNED'
-      );
+      DO $$ BEGIN
+        CREATE TYPE seller_status_enum AS ENUM (
+          'ACTIVE',
+          'INACTIVE',
+          'SUSPENDED',
+          'BANNED'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Payout Method Enum
     await queryRunner.query(`
-      CREATE TYPE seller_payout_method_enum AS ENUM (
-        'BANK_TRANSFER',
-        'MOBILE_MONEY',
-        'CRYPTO',
-        'CHECK'
-      );
+      DO $$ BEGIN
+        CREATE TYPE seller_payout_method_enum AS ENUM (
+          'BANK_TRANSFER',
+          'MOBILE_MONEY',
+          'CRYPTO',
+          'CHECK'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Document Type Enum
     await queryRunner.query(`
-      CREATE TYPE document_type_enum AS ENUM (
-        'BUSINESS_LICENSE',
-        'TAX_CERTIFICATE',
-        'ID_CARD',
-        'PASSPORT',
-        'PROOF_OF_ADDRESS',
-        'BANK_STATEMENT',
-        'CERTIFICATE_OF_INCORPORATION',
-        'MEMORANDUM_OF_ASSOCIATION',
-        'OTHER'
-      );
+      DO $$ BEGIN
+        CREATE TYPE document_type_enum AS ENUM (
+          'BUSINESS_LICENSE',
+          'TAX_CERTIFICATE',
+          'ID_CARD',
+          'PASSPORT',
+          'PROOF_OF_ADDRESS',
+          'BANK_STATEMENT',
+          'CERTIFICATE_OF_INCORPORATION',
+          'MEMORANDUM_OF_ASSOCIATION',
+          'OTHER'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Document Verification Status Enum
     await queryRunner.query(`
-      CREATE TYPE document_verification_status_enum AS ENUM (
-        'PENDING',
-        'UNDER_REVIEW',
-        'APPROVED',
-        'REJECTED',
-        'EXPIRED'
-      );
+      DO $$ BEGIN
+        CREATE TYPE document_verification_status_enum AS ENUM (
+          'PENDING',
+          'UNDER_REVIEW',
+          'APPROVED',
+          'REJECTED',
+          'EXPIRED'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Payout Status Enum
     await queryRunner.query(`
-      CREATE TYPE payout_status_enum AS ENUM (
-        'PENDING',
-        'PROCESSING',
-        'COMPLETED',
-        'FAILED',
-        'CANCELLED',
-        'REVERSED'
-      );
+      DO $$ BEGIN
+        CREATE TYPE payout_status_enum AS ENUM (
+          'PENDING',
+          'PROCESSING',
+          'COMPLETED',
+          'FAILED',
+          'CANCELLED',
+          'REVERSED'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Review Status Enum
     await queryRunner.query(`
-      CREATE TYPE review_status_enum AS ENUM (
-        'ACTIVE',
-        'HIDDEN',
-        'FLAGGED',
-        'REMOVED'
-      );
+      DO $$ BEGIN
+        CREATE TYPE review_status_enum AS ENUM (
+          'ACTIVE',
+          'HIDDEN',
+          'FLAGGED',
+          'REMOVED'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // Statistics Period Enum
     await queryRunner.query(`
-      CREATE TYPE statistics_period_enum AS ENUM (
-        'DAILY',
-        'WEEKLY',
-        'MONTHLY',
-        'QUARTERLY',
-        'YEARLY'
-      );
+      DO $$ BEGIN
+        CREATE TYPE statistics_period_enum AS ENUM (
+          'DAILY',
+          'WEEKLY',
+          'MONTHLY',
+          'QUARTERLY',
+          'YEARLY'
+        );
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `);
 
     // ==========================================

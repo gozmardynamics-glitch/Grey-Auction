@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between } from 'typeorm';
+import { Repository, ILike, Between, EntityManager } from 'typeorm';
 import { Product, ProductStatus } from './entities/product.entity';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
 
@@ -45,6 +45,17 @@ export class ProductService {
 
   async findById(id: string): Promise<Product> {
     const product = await this.repo.findOne({ where: { id }, relations: ['seller'] });
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
+
+  async findByIdWithLock(id: string, manager?: EntityManager): Promise<Product> {
+    const repo = manager ? manager.getRepository(Product) : this.repo;
+    const product = await repo.findOne({
+      where: { id },
+      relations: ['seller'],
+      lock: { mode: 'pessimistic_write' },
+    });
     if (!product) throw new NotFoundException('Product not found');
     return product;
   }
@@ -97,8 +108,9 @@ export class ProductService {
     return this.repo.save(product);
   }
 
-  async updateBid(productId: string, amount: number): Promise<void> {
-    await this.repo.update(productId, {
+  async updateBid(productId: string, amount: number, manager?: EntityManager): Promise<void> {
+    const repo = manager ? manager.getRepository(Product) : this.repo;
+    await repo.update(productId, {
       currentBid: amount,
       totalBids: () => 'total_bids + 1',
     });

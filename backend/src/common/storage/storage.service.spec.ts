@@ -12,6 +12,7 @@ jest.mock('fs', () => ({
 jest.mock('fs/promises', () => ({
   writeFile: jest.fn().mockResolvedValue(undefined),
   unlink: jest.fn().mockResolvedValue(undefined),
+  mkdir: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe('StorageService', () => {

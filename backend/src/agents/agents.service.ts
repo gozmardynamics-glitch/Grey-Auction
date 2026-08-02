@@ -100,12 +100,23 @@ export class AgentsService {
   }
 
   async getDashboardStats() {
-    const [agents, tools, workflows, metrics] = await Promise.all([
+    const [agents, tools, workflows] = await Promise.all([
       this.agentRepo.find(),
       this.toolRepo.find(),
       this.workflowRepo.find(),
-      this.metricRepo.find({ order: { createdAt: 'DESC' }, take: 500 }),
     ]);
+
+    const [metricAgg, recentMetrics] = await Promise.all([
+      this.metricRepo
+        .createQueryBuilder('m')
+        .select('COUNT(m.id)', 'totalMetrics')
+        .addSelect('SUM(CASE WHEN m.success = true THEN 1 ELSE 0 END)', 'successCount')
+        .addSelect('SUM(m.totalExecutions)', 'totalExecutions')
+        .getRawOne(),
+      this.metricRepo.find({ order: { createdAt: 'DESC' }, take: 50 }),
+    ]);
+
+    const totalExecutions = agents.reduce((s, a) => s + Number(a.totalExecutions), 0);
 
     return {
       totalAgents: agents.length,
@@ -115,10 +126,10 @@ export class AgentsService {
       activeTools: tools.filter(t => t.isEnabled).length,
       totalWorkflows: workflows.length,
       activeWorkflows: workflows.filter(w => w.isEnabled).length,
-      totalExecutions: agents.reduce((s, a) => s + Number(a.totalExecutions), 0),
-      recentMetrics: metrics.slice(0, 50),
-      successRate: metrics.length > 0
-        ? (metrics.filter(m => m.success).length / metrics.length * 100).toFixed(1) + '%'
+      totalExecutions,
+      recentMetrics,
+      successRate: (parseInt(metricAgg?.totalMetrics, 10) || 0) > 0
+        ? (((parseInt(metricAgg?.successCount, 10) || 0) / (parseInt(metricAgg?.totalMetrics, 10) || 1)) * 100).toFixed(1) + '%'
         : 'N/A',
     };
   }

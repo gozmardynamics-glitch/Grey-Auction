@@ -334,36 +334,40 @@ export class SellerPayoutService {
     average_payout: number;
     last_payout_date: Date | null;
   }> {
-    const payouts = await this.payoutRepository.find({
-      where: { seller_id: sellerId },
-    });
-
-    const total_payouts = payouts.length;
-    const completed = payouts.filter((p) => p.status === PayoutStatus.COMPLETED);
-    const pending = payouts.filter((p) => p.status === PayoutStatus.PENDING);
-    const failed = payouts.filter((p) => p.status === PayoutStatus.FAILED);
-
-    const total_amount = payouts.reduce((sum, p) => sum + p.net_amount, 0);
-    const pending_amount = pending.reduce((sum, p) => sum + p.net_amount, 0);
-    const completed_amount = completed.reduce((sum, p) => sum + p.net_amount, 0);
-    const failed_count = failed.length;
-    const average_payout = total_payouts > 0 ? total_amount / total_payouts : 0;
-
-    const last_payout_date =
-      completed.length > 0
-        ? completed.sort(
-            (a, b) => b.completed_at.getTime() - a.completed_at.getTime(),
-          )[0].completed_at
-        : null;
+    const raw = await this.payoutRepository
+      .createQueryBuilder('payout')
+      .select('COUNT(payout.id)', 'total_payouts')
+      .addSelect('SUM(payout.net_amount)', 'total_amount')
+      .addSelect(
+        'SUM(CASE WHEN payout.status = :pending THEN payout.net_amount ELSE 0 END)',
+        'pending_amount',
+      )
+      .addSelect(
+        'SUM(CASE WHEN payout.status = :completed THEN payout.net_amount ELSE 0 END)',
+        'completed_amount',
+      )
+      .addSelect(
+        'SUM(CASE WHEN payout.status = :failed THEN 1 ELSE 0 END)',
+        'failed_count',
+      )
+      .addSelect('AVG(payout.net_amount)', 'average_payout')
+      .addSelect('MAX(payout.completed_at)', 'last_payout_date')
+      .where('payout.seller_id = :sellerId', { sellerId })
+      .setParameters({
+        pending: PayoutStatus.PENDING,
+        completed: PayoutStatus.COMPLETED,
+        failed: PayoutStatus.FAILED,
+      })
+      .getRawOne();
 
     return {
-      total_payouts,
-      total_amount,
-      pending_amount,
-      completed_amount,
-      failed_count,
-      average_payout,
-      last_payout_date,
+      total_payouts: parseInt(raw.total_payouts, 10) || 0,
+      total_amount: parseFloat(raw.total_amount) || 0,
+      pending_amount: parseFloat(raw.pending_amount) || 0,
+      completed_amount: parseFloat(raw.completed_amount) || 0,
+      failed_count: parseInt(raw.failed_count, 10) || 0,
+      average_payout: parseFloat(raw.average_payout) || 0,
+      last_payout_date: raw.last_payout_date || null,
     };
   }
 

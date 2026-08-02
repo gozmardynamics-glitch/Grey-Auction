@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Bid } from './entities/bid.entity';
 import { PlaceBidDto } from './dto/bid.dto';
+import { Product } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
 import { AuctionGateway } from './gateways/auction.gateway';
 
@@ -13,42 +14,51 @@ export class BidService {
     private readonly repo: Repository<Bid>,
     private readonly productService: ProductService,
     @Optional() private readonly gateway?: AuctionGateway,
+    @Inject(DataSource) private readonly dataSource?: DataSource,
   ) {}
 
   async placeBid(productId: string, userId: string, dto: PlaceBidDto): Promise<Bid> {
-    const product = await this.productService.findById(productId);
+    return this.dataSource.transaction(async (manager) => {
+      const product = await manager.findOne(Product, {
+        where: { id: productId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (dto.amount <= product.currentBid) {
-      throw new BadRequestException('Bid must be higher than current bid');
-    }
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
 
-    if (dto.amount < product.startingBid) {
-      throw new BadRequestException('Bid must be at least the starting bid');
-    }
+      if (dto.amount <= product.currentBid) {
+        throw new BadRequestException('Bid must be higher than current bid');
+      }
 
-    // Mark previous winning bid as outbid
-    await this.repo.update(
-      { productId, isWinningBid: true },
-      { isWinningBid: false },
-    );
+      if (dto.amount < product.startingBid) {
+        throw new BadRequestException('Bid must be at least the starting bid');
+      }
 
-    const bid = this.repo.create({
-      productId,
-      bidderId: userId,
-      amount: dto.amount,
-      isWinningBid: true,
+      await manager.update(Bid, { productId, isWinningBid: true }, { isWinningBid: false });
+
+      const bid = manager.create(Bid, {
+        productId,
+        bidderId: userId,
+        amount: dto.amount,
+        isWinningBid: true,
+      });
+
+      await manager.save(bid);
+
+      product.currentBid = dto.amount;
+      product.totalBids = product.totalBids + 1;
+      await manager.save(product);
+
+      this.gateway?.broadcastNewBid(productId, bid);
+      this.gateway?.broadcastBidUpdate(productId, {
+        currentBid: dto.amount,
+        totalBids: product.totalBids,
+      });
+
+      return bid;
     });
-
-    await this.repo.save(bid);
-    await this.productService.updateBid(productId, dto.amount);
-
-    this.gateway?.broadcastNewBid(productId, bid);
-    this.gateway?.broadcastBidUpdate(productId, {
-      currentBid: dto.amount,
-      totalBids: bid.product.totalBids,
-    });
-
-    return bid;
   }
 
   async getAuctionBids(productId: string): Promise<Bid[]> {

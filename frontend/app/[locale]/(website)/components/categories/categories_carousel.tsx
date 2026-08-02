@@ -115,7 +115,7 @@ export default function CategoriesCarousel({
           <CarouselContent className="-ml-4">
             {pages.map((page, pageIndex) => (
               <CarouselItem key={pageIndex} className="basis-[95%] pl-4">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                   {page.map((auction) => (
                     <CategoriesCard
                       key={auction.id}

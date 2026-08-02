@@ -24,7 +24,7 @@ export class AuthService {
       throw new ConflictException('Email already registered');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const user = this.userRepository.create({
       email: dto.email,
@@ -70,7 +70,7 @@ export class AuthService {
       user = this.userRepository.create({
         email: profile.email,
         name: profile.name,
-        passwordHash: await bcrypt.hash(Math.random().toString(36), 10),
+        passwordHash: await bcrypt.hash(Math.random().toString(36), 12),
         role: UserRole.BIDDER,
         isEmailVerified: true,
       });
@@ -105,7 +105,7 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { id: payload.sub } });
     if (!user) throw new UnauthorizedException('User not found');
 
-    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.save(user);
     return { user: this.sanitizeUser(user) };
   }
@@ -129,7 +129,7 @@ export class AuthService {
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) throw new UnauthorizedException('Current password is incorrect');
 
-    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.save(user);
     return { user: this.sanitizeUser(user) };
   }

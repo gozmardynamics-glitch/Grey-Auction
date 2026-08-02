@@ -1,6 +1,9 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module, OnApplicationShutdown } from '@nestjs/common';
+import { TypeOrmModule, InjectDataSource } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { DataSource } from 'typeorm';
 import { dataSourceOptions } from './config/database.config';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
@@ -17,11 +20,17 @@ import { SettingsModule } from './settings/settings.module';
 import { ContentModule } from './content/content.module';
 import { AIModule } from './ai/ai.module';
 import { AgentsModule } from './agents/agents.module';
+import { InviteModule } from './invites/invite.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(dataSourceOptions),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     CommonModule,
     AuthModule,
     AdminModule,
@@ -37,6 +46,22 @@ import { AgentsModule } from './agents/agents.module';
     ContentModule,
     AIModule,
     AgentsModule,
+    InviteModule,
+    AuditModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule implements OnApplicationShutdown {
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+
+  async onApplicationShutdown(signal?: string) {
+    if (this.dataSource && this.dataSource.isInitialized) {
+      await this.dataSource.destroy();
+    }
+  }
+}

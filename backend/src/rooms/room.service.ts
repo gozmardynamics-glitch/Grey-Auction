@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Room, RoomStatus, RoomParticipant } from './entities/room.entity';
+import { Room, RoomStatus, RoomParticipant, RoomType } from './entities/room.entity';
 import { CreateRoomDto, JoinRoomDto } from './dto/room.dto';
 
 @Injectable()
@@ -53,6 +53,18 @@ export class RoomService {
 
   async joinRoom(roomId: string, userId: string, dto: JoinRoomDto): Promise<RoomParticipant> {
     const room = await this.findById(roomId);
+
+    if (room.type === RoomType.PRIVATE) {
+      if (room.createdById !== userId && !room.invitedUserIds.includes(userId)) {
+        if (room.allowInviteCode && dto.inviteCode) {
+          if (dto.inviteCode !== room.inviteCode) {
+            throw new ForbiddenException('Invalid invite code');
+          }
+        } else {
+          throw new ForbiddenException('Private room requires an invite');
+        }
+      }
+    }
 
     const existing = await this.participantRepo.findOne({
       where: { roomId, userId },

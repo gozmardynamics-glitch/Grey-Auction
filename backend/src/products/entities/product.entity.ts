@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 
 export enum ProductStatus {
@@ -16,6 +16,11 @@ export enum AuctionType {
   DIRECT_SALE = 'direct_sale',
   OPEN_AUCTION = 'open_auction',
   EXCLUSIVE = 'exclusive_auction',
+}
+
+export enum ProductVisibility {
+  PUBLIC = 'public',
+  PRIVATE = 'private',
 }
 
 @Entity('products')
@@ -77,7 +82,10 @@ export class Product {
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.DRAFT })
   status: ProductStatus;
 
-  @ManyToOne(() => User, { nullable: true, eager: true })
+  @Column({ type: 'enum', enum: ProductVisibility, default: ProductVisibility.PUBLIC })
+  visibility: ProductVisibility;
+
+  @ManyToOne(() => User, { nullable: true })
   seller: User;
 
   @Column()
@@ -91,6 +99,9 @@ export class Product {
 
   @Column({ nullable: true })
   rejectionReason: string;
+
+  @VersionColumn()
+  version: number;
 
   @CreateDateColumn()
   createdAt: Date;

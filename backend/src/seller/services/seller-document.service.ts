@@ -242,39 +242,31 @@ export class SellerDocumentService {
    * Check and update expired documents
    */
   async checkExpiredDocuments(): Promise<number> {
-    const documents = await this.documentRepository.find({
-      where: {
-        verification_status: DocumentVerificationStatus.APPROVED,
-        deleted_at: null,
-      },
-    });
+    const result = await this.documentRepository
+      .createQueryBuilder()
+      .update(SellerDocument)
+      .set({ verification_status: DocumentVerificationStatus.EXPIRED })
+      .where('verification_status = :status', { status: DocumentVerificationStatus.APPROVED })
+      .andWhere('expires_at < NOW()')
+      .andWhere('expires_at IS NOT NULL')
+      .andWhere('deleted_at IS NULL')
+      .execute();
 
-    let expiredCount = 0;
-
-    for (const doc of documents) {
-      if (doc.is_expired) {
-        doc.verification_status = DocumentVerificationStatus.EXPIRED;
-        await this.documentRepository.save(doc);
-        expiredCount++;
-      }
-    }
-
-    return expiredCount;
+    return result.affected || 0;
   }
 
   /**
    * Get documents expiring soon (within 30 days)
    */
   async findExpiringSoon(): Promise<SellerDocument[]> {
-    const documents = await this.documentRepository.find({
-      where: {
-        verification_status: DocumentVerificationStatus.APPROVED,
-        deleted_at: null,
-      },
-      relations: ['seller'],
-    });
-
-    return documents.filter((doc) => doc.needsRenewal());
+    return this.documentRepository
+      .createQueryBuilder('doc')
+      .leftJoinAndSelect('doc.seller', 'seller')
+      .where('doc.verification_status = :status', { status: DocumentVerificationStatus.APPROVED })
+      .andWhere('doc.expires_at IS NOT NULL')
+      .andWhere('doc.expires_at BETWEEN NOW() AND NOW() + INTERVAL \'30 days\'')
+      .andWhere('doc.deleted_at IS NULL')
+      .getMany();
   }
 
   // ==========================================
