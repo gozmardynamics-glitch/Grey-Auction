@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Headers, RawBodyRequest, Req } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Headers, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { ClerkService } from './clerk.service';
@@ -109,7 +109,22 @@ export class AuthController {
 
   @Post('clerk/webhook')
   @ApiOperation({ summary: 'Clerk webhook — sync user.created/user.updated' })
-  async clerkWebhook(@Body() body: any) {
+  async clerkWebhook(
+    @Body() body: any,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+    @Req() req: any,
+  ) {
+    // Verify signature when CLERK_WEBHOOK_SIGNING_SECRET is configured
+    if (req.rawBody && Buffer.isBuffer(req.rawBody)) {
+      const { verified } = await this.clerkService.verifyWebhookSignature(
+        req.rawBody,
+        headers,
+      );
+      if (!verified && process.env.CLERK_WEBHOOK_SIGNING_SECRET) {
+        throw new UnauthorizedException('Invalid webhook signature');
+      }
+    }
+
     const type: string = body?.type || '';
     const data = body?.data || {};
 

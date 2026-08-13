@@ -7,11 +7,21 @@ import { json } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // Required for Clerk webhook signature verification
+  });
 
   app.use(helmet());
   app.use(compression());
-  app.use(json({ limit: '5mb' }));
+  // Capture the raw body for Clerk webhook signature verification
+  app.use(
+    json({
+      limit: '5mb',
+      verify: (req: any, _res, buf) => {
+        (req as any).rawBody = buf;
+      },
+    }),
+  );
 
   const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
   app.enableCors({

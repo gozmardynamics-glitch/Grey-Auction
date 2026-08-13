@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createClerkClient, verifyToken as clerkVerifyToken } from '@clerk/backend';
+import { verifyWebhook } from '@clerk/backend/webhooks';
 import { User, UserRole } from './entities/user.entity';
 
 export interface ClerkClaims {
@@ -45,6 +46,53 @@ export class ClerkService {
 
   isEnabled(): boolean {
     return this.enabled;
+  }
+
+  /**
+   * Verify a Clerk webhook signature (Standard Webhooks / Svix).
+   *
+   * When CLERK_WEBHOOK_SIGNING_SECRET is not set, verification is disabled
+   * and this returns `false` WITHOUT a verified event (dev mode).
+   *
+   * @returns { verified: boolean, event: any | null } — verified=true when
+   * the signature is valid and the event payload was verified.
+   */
+  async verifyWebhookSignature(
+    rawBody: Buffer,
+    headers: Record<string, string | string[] | undefined>,
+  ): Promise<{ verified: boolean; event: any | null }> {
+    const signingSecret =
+      process.env.CLERK_WEBHOOK_SIGNING_SECRET ||
+      process.env.CLERK_WEBHOOK_SECRET;
+
+    if (!signingSecret) {
+      // Verification disabled (dev) — treat as unverified, caller may accept
+      return { verified: false, event: null };
+    }
+
+    const headerValue = (name: string): string => {
+      const v = headers[name];
+      return Array.isArray(v) ? v[0] : (v as string) || '';
+    };
+
+    try {
+      const webReq = new Request('https://clerk.webhook.local/', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'svix-id': headerValue('svix-id'),
+          'svix-timestamp': headerValue('svix-timestamp'),
+          'svix-signature': headerValue('svix-signature'),
+        },
+        body: new Uint8Array(rawBody),
+      });
+
+      const event = await verifyWebhook(webReq, { signingSecret });
+      return { verified: true, event };
+    } catch (error: any) {
+      this.logger.warn(`Webhook signature verification failed: ${error.message}`);
+      return { verified: false, event: null };
+    }
   }
 
   /**
