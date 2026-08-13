@@ -33,6 +33,9 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  clerkId: string; // Clerk user ID (null for legacy local accounts)
+
   @CreateDateColumn()
   createdAt: Date;
 

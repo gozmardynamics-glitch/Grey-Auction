@@ -2,17 +2,17 @@
 
 import type { ReactNode } from 'react';
 import { Provider } from 'react-redux';
-import { SessionProvider } from 'next-auth/react';
+import { ClerkProvider } from '@clerk/nextjs';
 import { store } from '@/redux/store';
 import { AuthSync } from './auth-sync';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <ClerkProvider>
       <Provider store={store}>
         <AuthSync />
         {children}
       </Provider>
-    </SessionProvider>
+    </ClerkProvider>
   );
 }

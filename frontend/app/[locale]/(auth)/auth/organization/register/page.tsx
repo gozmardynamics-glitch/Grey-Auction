@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Check,
 } from 'lucide-react';
+import { useUser, useOrganizationList, SignUp } from '@clerk/nextjs';
 
 import {
   Button,
@@ -200,12 +201,48 @@ function SectionHeading({ icon: Icon, title, subtitle }: SectionHeadingProps) {
 // ---------------------------------------------------------------------------
 
 export default function OrganizationRegisterPage() {
+  const { isSignedIn, isLoaded: userLoaded, user } = useUser();
+  const { createOrganization, isLoaded: orgsLoaded } = useOrganizationList();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [demoNote, setDemoNote] = useState(false);
+
+  // Skip the account step — account creation is handled by Clerk sign-up
+  useEffect(() => {
+    if (isSignedIn && step === 0) {
+      setStep(1);
+    }
+  }, [isSignedIn, step]);
+
+  // ─── Clerk: render sign-up when no authenticated user ───────────
+  if (userLoaded && !isSignedIn) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <Building2 className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold">Register Your Organization</h1>
+          <p className="text-sm text-muted-foreground">
+            Create the organization account first — agency details come next.
+          </p>
+        </div>
+        <SignUp
+          unsafeMetadata={{ role: 'seller' }}
+          appearance={{
+            elements: {
+              rootBox: 'w-full max-w-md',
+              card: 'shadow-none border border-border',
+            },
+          }}
+          fallbackRedirectUrl="/auth/organization/register"
+        />
+      </div>
+    );
+  }
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -315,6 +352,28 @@ export default function OrganizationRegisterPage() {
     } catch {
       isDemo = true;
     }
+
+    // ─── Clerk: create the organization + invite secondary contact ──
+    try {
+      if (orgsLoaded && createOrganization) {
+        const org = await createOrganization({ name: form.agencyName });
+
+        // Invite the secondary contact as an organization member via backend
+        if (form.secondaryContactEmail && form.secondaryContactEmail.includes('@')) {
+          const apiBase =
+            process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+          await fetch(`${apiBase}/auth/clerk/invite-member`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              organizationId: org.id,
+              email: form.secondaryContactEmail,
+              role: 'org:admin',
+            }),
+          }).catch(() => {});
+        }
+      }
+    } catch {}
 
     setSubmitting(false);
     setDemoNote(isDemo);

@@ -1,6 +1,7 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Headers, RawBodyRequest, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { ClerkService } from './clerk.service';
 import { LoginDto, RegisterDto, OauthGoogleDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -8,7 +9,10 @@ import { CurrentUser } from './decorators/current-user.decorator';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly clerkService: ClerkService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -88,5 +92,42 @@ export class AuthController {
   async verifyOtp(@Body() dto: { email: string; otp: string }) {
     const result = await this.authService.verifyOtp(dto.email, dto.otp);
     return { success: true, message: 'Email verified', data: result };
+  }
+
+  @Post('clerk/invite-member')
+  @ApiOperation({ summary: 'Invite a user to a Clerk organization (org sellers)' })
+  async clerkInviteMember(
+    @Body() dto: { organizationId: string; email: string; role?: string },
+  ) {
+    const result = await this.clerkService.inviteMember(
+      dto.organizationId,
+      dto.email,
+      dto.role || 'org:member',
+    );
+    return { success: true, data: result };
+  }
+
+  @Post('clerk/webhook')
+  @ApiOperation({ summary: 'Clerk webhook — sync user.created/user.updated' })
+  async clerkWebhook(@Body() body: any) {
+    const type: string = body?.type || '';
+    const data = body?.data || {};
+
+    if (type === 'user.created' || type === 'user.updated') {
+      const email = data?.email_addresses?.[0]?.email_address || '';
+      const name = `${data?.first_name || ''} ${data?.last_name || ''}`.trim();
+      const role = data?.public_metadata?.role || 'buyer';
+
+      if (data?.id && email) {
+        await this.clerkService.syncUser({
+          sub: data.id,
+          email,
+          name: name || email.split('@')[0],
+          role,
+        });
+      }
+    }
+
+    return { success: true, message: 'Webhook processed' };
   }
 }
