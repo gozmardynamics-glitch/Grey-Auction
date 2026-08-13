@@ -37,6 +37,7 @@ export * from './newsletter_form';
 export * from './notification_widget';
 export * from './pagination';
 export * from './popover';
+export * from './price_breakdown';
 export * from './radio-group';
 export * from './rating';
 export * from './scroll_area';

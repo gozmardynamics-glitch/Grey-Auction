@@ -7,6 +7,13 @@ export enum ProviderTier {
   TESTING = 'testing',
 }
 
+export enum ProviderStatus {
+  UNKNOWN = 'unknown',
+  HEALTHY = 'healthy',
+  DEGRADED = 'degraded',
+  DOWN = 'down',
+}
+
 @Entity('llm_providers')
 export class LLMProvider {
   @PrimaryGeneratedColumn('uuid')
@@ -32,6 +39,18 @@ export class LLMProvider {
 
   @Column({ type: 'enum', enum: ProviderTier, default: ProviderTier.PRODUCTION })
   tier: ProviderTier;
+
+  @Column({ type: 'enum', enum: ProviderStatus, default: ProviderStatus.UNKNOWN })
+  status: ProviderStatus;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastCheckedAt: Date;
+
+  @Column({ type: 'int', nullable: true })
+  lastLatencyMs: number;
+
+  @Column({ type: 'int', default: 0 })
+  consecutiveFailures: number;
 
   @OneToMany(() => LLMModel, (model) => model.provider, { cascade: true })
   models: LLMModel[];

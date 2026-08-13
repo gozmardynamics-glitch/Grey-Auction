@@ -22,6 +22,9 @@ const MODULE_MAP: Record<BuyerModuleKey, React.ComponentType> = {
   'my-bids': dynamic(() => import('../dashboard/modules/my_bids'), {
     loading: moduleLoader,
   }),
+  invitations: dynamic(() => import('../dashboard/modules/invitations'), {
+    loading: moduleLoader,
+  }),
   wishlist: dynamic(() => import('../dashboard/modules/wishlist'), {
     loading: moduleLoader,
   }),

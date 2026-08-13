@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { LLMProvider } from './entities/llm-provider.entity';
+import { LLMProvider, ProviderStatus } from './entities/llm-provider.entity';
 import { LLMModel } from './entities/llm-model.entity';
 import { AIFeatureConfig } from './entities/ai-feature-config.entity';
 import { AIUsageLog } from './entities/ai-usage-log.entity';
@@ -27,6 +27,47 @@ export class AIService {
       relations: ['models'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async recordHealth(providerId: string, result: { success: boolean; latencyMs?: number; modelCount?: number }) {
+    const provider = await this.findProviderById(providerId);
+
+    let consecutiveFailures = provider.consecutiveFailures || 0;
+    let status: ProviderStatus;
+
+    if (result.success) {
+      status = ProviderStatus.HEALTHY;
+      consecutiveFailures = 0;
+    } else {
+      consecutiveFailures += 1;
+      status = consecutiveFailures >= 3 ? ProviderStatus.DOWN : ProviderStatus.DEGRADED;
+    }
+
+    await this.providerRepo.update(providerId, {
+      status,
+      consecutiveFailures,
+      lastCheckedAt: new Date(),
+      lastLatencyMs: result.latencyMs ?? null,
+    });
+
+    return this.findProviderById(providerId);
+  }
+
+  async healthSummary() {
+    const providers = await this.findAllProviders();
+    return providers.map((p) => ({
+      id: p.id,
+      name: p.name,
+      displayName: p.displayName,
+      baseUrl: p.baseUrl,
+      tier: p.tier,
+      isActive: p.isActive,
+      status: p.status,
+      lastCheckedAt: p.lastCheckedAt,
+      lastLatencyMs: p.lastLatencyMs,
+      consecutiveFailures: p.consecutiveFailures,
+      modelCount: p.models?.length || 0,
+    }));
   }
 
   async findProviderById(id: string) {

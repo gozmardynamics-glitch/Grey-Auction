@@ -2,6 +2,7 @@ import { Button } from '@/shared/components/common';
 
 import PaymentsTable from './components/payments_table';
 import PaymentStats from './components/payments_stats_card';
+import InvoicesView from './_islands/invoices_view';
 import { DatePickerSimple } from '@/shared/components/common/date_picker';
 import { PAYMENT_TAB_FILTERS } from '../models/data';
 import { getAdminPayments } from '@/lib/server/data';
@@ -28,6 +29,9 @@ export default async function Payments() {
       </div>
 
       <PaymentsTable data={payments} tabFilters={PAYMENT_TAB_FILTERS} />
+
+      {/* Invoices & Receipts */}
+      <InvoicesView />
     </div>
   );
 }

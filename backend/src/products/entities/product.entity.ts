@@ -10,6 +10,7 @@ export enum ProductStatus {
   SOLD = 'sold',
   EXPIRED = 'expired',
   CLOSED = 'closed',
+  WITHDRAWN = 'withdrawn',
 }
 
 export enum AuctionType {
@@ -69,6 +70,13 @@ export class Product {
 
   @Column({ default: false })
   hasReservePrice: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: ['hidden', 'exposed'],
+    default: 'hidden',
+  })
+  reservePriceVisibility: 'hidden' | 'exposed';
 
   @Column({ default: false })
   allowBuyNow: boolean;

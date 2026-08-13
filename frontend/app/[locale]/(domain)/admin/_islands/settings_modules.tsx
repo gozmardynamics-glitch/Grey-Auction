@@ -23,6 +23,7 @@ const MODULE_MAP: Record<SettingsModuleKey, React.ComponentType> = {
   email: dynamic(() => import('../settings/components/modules/email'), { loading: settingsLoader }),
   'roles-permission': dynamic(() => import('../settings/components/modules/roles_and_permissions'), { loading: settingsLoader }),
   payments: dynamic(() => import('../settings/components/modules/payments'), { loading: settingsLoader }),
+  fees: dynamic(() => import('../settings/components/modules/fees'), { loading: settingsLoader }),
   auctions: dynamic(() => import('../settings/components/modules/auctions'), { loading: settingsLoader }),
   notifications: dynamic(() => import('../settings/components/modules/notifications'), { loading: settingsLoader }),
   preferences: dynamic(() => import('../settings/components/modules/preferences'), { loading: settingsLoader }),

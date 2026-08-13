@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Linkedin, Mail, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Mail, MapPin, Twitter } from 'lucide-react';
 import Link from 'next/link';
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
@@ -11,6 +11,19 @@ const PlayStoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M3.61 1.814L13.793 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .61-.92zm1.335-.754l11.29 6.465L13.7 10.06 4.945 1.06zM16.235 8.525L19.59 10.44a1 1 0 0 1 0 1.72l-3.355 1.915L13.35 12l2.885-3.475zM4.945 22.94l8.755-9 2.535 3.035L4.945 22.94z" />
   </svg>
 );
+
+const FlutterwaveIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z" />
+  </svg>
+);
+
+const PaystackIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+  </svg>
+);
+
 import { Button, Logo, NewsletterForm } from '@/shared/components/common';
 
 export default function Footer() {
@@ -41,8 +54,8 @@ export default function Footer() {
             <NewsletterForm />
 
             {/* App Store Buttons */}
-            <div className="flex items-center gap-4 mt-6">
-              <Button variant="outline"  size='xl' className="[&_svg:not([class*='size-'])]:size-7 flex items-center gap-2 py-2 rounded-lg px-4 h-auto">
+            <div className="flex items-center gap-3 mt-6">
+              <Button variant="outline" size='xl' className="[&_svg:not([class*='size-'])]:size-7 flex items-center gap-2 py-2 rounded-lg px-4 h-auto">
                 <AppleIcon className="text-primary" />
                 <p className="flex flex-col text-left">
                   Download on
@@ -66,28 +79,24 @@ export default function Footer() {
               <h4 className="font-semibold text-foreground mb-4">Company</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a
-                    href="#"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/about-us" className="text-muted-foreground hover:text-foreground transition-colors">
                     About Us
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/about-us" className="text-muted-foreground hover:text-foreground transition-colors">
                     How it Works
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/career" className="text-muted-foreground hover:text-foreground transition-colors">
                     Career
-                  </a>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
+                    News & Blog
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -99,27 +108,23 @@ export default function Footer() {
               </h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link
-                    href="/auctions"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/auctions" className="text-muted-foreground hover:text-foreground transition-colors">
                     Live Auctions
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/auctions"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/auctions" className="text-muted-foreground hover:text-foreground transition-colors">
                     Featured Lots
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/auctions"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/auctions" className="text-muted-foreground hover:text-foreground transition-colors">
                     Categories
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/seller" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Sell with Us
                   </Link>
                 </li>
               </ul>
@@ -130,27 +135,23 @@ export default function Footer() {
               <h4 className="font-semibold text-foreground mb-4">Useful</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link
-                    href="/faq"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
                     FAQs
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/auctions"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
                     Delivery Information
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/faq"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
                     Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Tips for Winning
                   </Link>
                 </li>
               </ul>
@@ -161,27 +162,23 @@ export default function Footer() {
               <h4 className="font-semibold text-foreground mb-4">Support</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link
-                    href="/contact"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
                     Contact Us
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/privacy-policy"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/faq"
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
-                  >
+                  <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
                     Terms & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Accessibility
                   </Link>
                 </li>
               </ul>
@@ -189,24 +186,78 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mt-12 pt-8 border-t border-border">
+        {/* Payment Methods + Social Media */}
+        <div className="flex flex-col gap-6 md:flex-row md:justify-between md:items-center mt-12 pt-8 border-t border-border">
           {/* Social Media Icons */}
-          <div className="flex gap-3">
-            <Link href="https://facebook.com" target="_blank">
-              <Facebook className="w-7 h-7" />
-            </Link>
-            <Link href="https://instagram.com" target="_blank">
-              <Instagram className="w-7 h-7" />
-            </Link>
-            <Link href="https://linkedin.com" target="_blank">
-              <Linkedin className="w-7.5 h-7.5" />
-            </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Follow us</span>
+            <div className="flex gap-3">
+              <Link href="https://facebook.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+                <Facebook className="h-4 w-4" />
+              </Link>
+              <Link href="https://twitter.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+                <Twitter className="h-4 w-4" />
+              </Link>
+              <Link href="https://instagram.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+                <Instagram className="h-4 w-4" />
+              </Link>
+              <Link href="https://linkedin.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+                <Linkedin className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-          <div>
+
+          {/* Payment Methods */}
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Payments</span>
+            <div className="flex items-center gap-3">
+              {/* Flutterwave */}
+              <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/50 px-3 py-1.5">
+                <div className="h-4 w-4 rounded bg-orange-500 flex items-center justify-center">
+                  <span className="text-[8px] font-bold text-white">F</span>
+                </div>
+                <span className="text-xs font-semibold text-foreground">Flutterwave</span>
+              </div>
+              {/* Paystack */}
+              <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/50 px-3 py-1.5">
+                <div className="h-4 w-4 rounded bg-blue-500 flex items-center justify-center">
+                  <span className="text-[8px] font-bold text-white">P</span>
+                </div>
+                <span className="text-xs font-semibold text-foreground">Paystack</span>
+              </div>
+              {/* Visa */}
+              <div className="flex items-center rounded-md border border-border/50 bg-muted/50 px-2.5 py-1.5">
+                <span className="text-xs font-bold text-blue-700">VISA</span>
+              </div>
+              {/* Mastercard */}
+              <div className="flex items-center rounded-md border border-border/50 bg-muted/50 px-2.5 py-1.5">
+                <div className="flex -space-x-1">
+                  <div className="h-3 w-3 rounded-full bg-red-500" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-500 opacity-80" />
+                </div>
+              </div>
+              {/* Bank Transfer */}
+              <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/50 px-2.5 py-1.5">
+                <div className="h-4 w-4 rounded bg-green-500 flex items-center justify-center">
+                  <span className="text-[8px] font-bold text-white">B</span>
+                </div>
+                <span className="text-xs font-semibold text-foreground">Bank</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center">
             <p className="text-sm text-muted-foreground">
-              © 2025 Grey Auctions. All Rights Reserved.
+              &copy; {new Date().getFullYear()} Grey Auctions. All Rights Reserved.
             </p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>Exchange rates updated daily</span>
+              <span className="text-border">|</span>
+              <span>NGN &middot; USD &middot; GBP</span>
+            </div>
           </div>
         </div>
       </div>

@@ -3,10 +3,13 @@
 import { ChevronLeft, Download, MapPin, Phone } from 'lucide-react';
 import Image from 'next/image';
 
+import { toast } from 'sonner';
+
 import { Badge, Button, Separator } from '@/shared/components/common';
 
 import type { PurchaseInvoice } from '../../../models';
 import { formatCurrency, statusStyles } from '@/shared/utils/helpers';
+import { downloadInvoicePdf } from '@/shared/utils/invoice';
 
 interface PurchaseDetailProps {
   invoice: PurchaseInvoice;
@@ -24,6 +27,18 @@ export default function PurchaseDetail({
   const vatOnAuctionFee = 0;
   const totalBidAmount =
     subtotal + auctionFee + vatOnBidValue + vatOnAuctionFee;
+
+  const handleDownloadInvoice = async () => {
+    if (invoice.status !== 'Paid') {
+      toast.info('Invoice will be available after payment');
+      return;
+    }
+    try {
+      await downloadInvoicePdf(invoice.id);
+    } catch {
+      toast.error('Failed to download invoice. Please try again.');
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -45,7 +60,12 @@ export default function PurchaseDetail({
             </Badge>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={handleDownloadInvoice}
+        >
           <Download className="h-4 w-4" />
           Download Invoice
         </Button>

@@ -1,5 +1,6 @@
 import HowItWorks from './components/how_it_works';
 import Hero from './components/hero';
+import OrganizationCta from './components/organization_cta';
 import TrustedBrands from '@/app/[locale]/(website)/components/trusted_brands';
 import CustomerStories from '@/app/[locale]/(website)/components/customer_stories';
 import SellerCta from './components/seller_cta';
@@ -12,6 +13,8 @@ export default function SellerHomePage() {
       <Hero />
       {/* How It Works Section */}
       <HowItWorks />
+      {/* Organization Auctions Section */}
+      <OrganizationCta />
       <TrustedBrands />
       <CustomerStories />
       <SellerFaq />

@@ -99,6 +99,24 @@ export class SellerController {
   ) {
     const seller = await this.sellerService.register(user.id, registerDto);
 
+    // Send confirmation email — organizations get a tailored email
+    const orgTypes = ['AGENCY', 'GOVERNMENT', 'EMBASSY', 'NGO'];
+    if (orgTypes.includes(registerDto.business_type)) {
+      await this.emailService.sendOrganizationRegistrationEmail(
+        registerDto.email,
+        {
+          agencyName: registerDto.business_name,
+          agencyType: registerDto.business_type,
+          contactPerson: registerDto.contact_person || registerDto.business_name,
+        },
+      );
+    } else {
+      await this.emailService.sendWelcomeEmail(
+        registerDto.email,
+        registerDto.business_name,
+      ).catch(() => {});
+    }
+
     return {
       success: true,
       message: 'Seller registration successful. Awaiting verification.',

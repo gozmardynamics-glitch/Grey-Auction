@@ -47,6 +47,17 @@ export default async function ProductDetailsPage({
   const { slug } = await params;
   const auction = await getAuctionBySlug(slug);
 
+  if (!auction) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <h1 className="mb-2 text-2xl font-bold">Auction Not Found</h1>
+        <p className="text-muted-foreground">
+          The auction you&apos;re looking for may have been removed or withdrawn.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <AuctionSchema

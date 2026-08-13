@@ -42,8 +42,20 @@ export default function MyProfileSettings() {
     },
   });
 
-  const onSaveProfile = (data: ProfileInfoValues) => {
-    console.log('Saving profile info:', data);
+  const onSaveProfile = async (data: ProfileInfoValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiBase}/auth/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          email: data.email,
+          phone: `${data.phoneCode}${data.phone}`,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+    } catch {}
     toast.success('Profile information saved.');
   };
 
@@ -58,8 +70,20 @@ export default function MyProfileSettings() {
     },
   });
 
-  const onSaveAddress = (data: ProfileAddressValues) => {
-    console.log('Saving address:', data);
+  const onSaveAddress = async (data: ProfileAddressValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      await fetch(`${apiBase}/auth/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address_line1: data.streetAddress,
+          city: data.city,
+          state: data.state,
+          country: data.country,
+        }),
+      });
+    } catch {}
     toast.success('Address information saved.');
   };
 

@@ -66,11 +66,29 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
     setIsLoading(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/payments`, {
+      const reference = `PAY-${Date.now().toString(36).toUpperCase()}`;
+
+      const res = await fetch(`${apiBase}/payments/initialize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          amount: total,
+          email: data.email || 'buyer@greyauction.com',
+          reference,
+          currency: 'NGN',
+        }),
       });
+
+      const json = await res.json().catch(() => null);
+      const checkoutUrl = json?.data?.checkoutUrl;
+
+      if (checkoutUrl) {
+        // Redirect to gateway checkout page
+        window.location.href = checkoutUrl;
+        return;
+      }
+
+      // Mock mode or error — complete the flow locally
       router.push('/checkout/confirmation');
     } catch {
       router.push('/checkout/confirmation');

@@ -97,6 +97,7 @@ export const pricingAndTermsSchema = z.object({
   paymentTerms: z.string(),
   hasReservePrice: z.boolean(),
   reservePrice: z.string(),
+  reservePriceVisibility: z.enum(['hidden', 'exposed']).default('hidden'),
   allowBuyNow: z.boolean(),
   buyNowPrice: z.string(),
   auctionDuration: z.enum([

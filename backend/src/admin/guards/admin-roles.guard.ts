@@ -1,13 +1,19 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AdminRole } from '../entities/admin.entity';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { Admin, AdminRole } from '../entities/admin.entity';
 import { ADMIN_ROLES_KEY } from '../decorators/admin-roles.decorator';
 
 @Injectable()
 export class AdminRolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<AdminRole[]>(ADMIN_ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -24,7 +30,26 @@ export class AdminRolesGuard implements CanActivate {
       throw new ForbiddenException('Access denied');
     }
 
-    if (!requiredRoles.includes(user.role)) {
+    // Resolve actual admin role from the admins table (users.role is 'bidder'|'seller'|'admin')
+    let effectiveRole: string = user.role;
+    if (user.email) {
+      try {
+        const admin = await this.dataSource.getRepository(Admin).findOne({
+          where: { email: user.email },
+        });
+        if (admin) {
+          if (!admin.isActive) {
+            throw new ForbiddenException('Admin account is inactive');
+          }
+          effectiveRole = admin.role;
+          request.user.adminRole = admin.role;
+        }
+      } catch {
+        // DB unavailable — fall back to JWT role
+      }
+    }
+
+    if (!requiredRoles.includes(effectiveRole as AdminRole)) {
       throw new ForbiddenException('Insufficient admin permissions');
     }
 

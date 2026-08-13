@@ -7,6 +7,17 @@ export enum InviteExpiry {
   NEVER = 'never',
 }
 
+export enum InviteMode {
+  EXCLUSIVE = 'exclusive',
+  REQUEST = 'request',
+}
+
+export enum InviteResponse {
+  PENDING = 'pending',
+  ACCEPTED = 'accepted',
+  DECLINED = 'declined',
+}
+
 @Entity('invites')
 export class Invite {
   @PrimaryGeneratedColumn('uuid')
@@ -38,6 +49,21 @@ export class Invite {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ type: 'enum', enum: InviteMode, default: InviteMode.EXCLUSIVE })
+  mode: InviteMode;
+
+  @Column({ type: 'enum', enum: InviteResponse, default: InviteResponse.PENDING })
+  response: InviteResponse;
+
+  @Column({ nullable: true })
+  inviteeEmail: string;
+
+  @Column({ nullable: true })
+  inviteeName: string;
+
+  @Column({ nullable: true })
+  respondedAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -99,7 +99,7 @@ export default function FeaturedAuctions({
       <CarouselContent className="-ml-4">
         {pages.map((page, pageIndex) => (
           <CarouselItem key={pageIndex} className="basis-full pl-4">
-            <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-3 xl:grid-cols-5">
               {page.map((auction) => (
                 <div
                   key={auction.id}

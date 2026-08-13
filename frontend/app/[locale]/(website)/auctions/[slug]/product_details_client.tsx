@@ -10,6 +10,12 @@ import {
   CircleQuestionMark,
   Radio,
   TagIcon,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   Button,
@@ -51,6 +57,8 @@ import BidHistoryTable from './components/bid_history_table';
 import PlaceBidModal from './components/place_bid_modal';
 import ProductTabsContent from './product_tabs_content';
 import RelatedLots from '../../components/related_lots/related_lots';
+import MoreFromSeller from '../../components/more_from_seller';
+import AIRecommendations from '../../components/ai_recommendations';
 import ADsCard from '../../components/ads_card';
 
 interface ProductDetailsClientProps {
@@ -78,6 +86,7 @@ export default function ProductDetailsClient({
   const [bidModalStep, setBidModalStep] = useState<'confirm' | 'success'>(
     'confirm'
   );
+  const [copied, setCopied] = useState(false);
 
   const auctionId = auction.id;
   const auctionStatus = auction.status;
@@ -168,6 +177,12 @@ export default function ProductDetailsClient({
     router.push('/checkout');
   }, [router]);
 
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
+
   const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
     const categoryDisplay = auction.category
       ? auction.category.charAt(0).toUpperCase() + auction.category.slice(1)
@@ -182,34 +197,105 @@ export default function ProductDetailsClient({
     ];
   }, [auction.category, auction.title]);
 
+  // Lot specifications (structured data)
+  const lotSpecifications = [
+    { label: 'Brand', value: auction.title?.split(' ')[0] || 'N/A' },
+    { label: 'Type', value: auction.specs || 'N/A' },
+    { label: 'Category', value: auction.category || 'N/A' },
+    { label: 'Status', value: auction.status || 'N/A' },
+    { label: 'Starting Bid', value: formatCurrency(auction.startingBid) },
+    { label: 'Current Bid', value: formatCurrency(currentBid) },
+    { label: 'Total Bids', value: String(bidHistory.length) },
+    { label: 'Seller', value: auction.sellerName || 'N/A' },
+  ];
+
   return (
     <div className="min-h-screen overflow-x-hidden px-4 py-8 space-y-8">
       <Breadcrumbs items={breadcrumbItems} />
+
+      {/* ─── Lot Navigation Bar ─────────────────────────────────────── */}
+      <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <Tag className="h-3 w-3" />
+            Lot: # {auction.id?.slice(0, 8).toUpperCase() || '25896742'}
+          </span>
+          {auction.location && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              {auction.location.city}, {auction.location.country}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <ChevronLeft className="h-3.5 w-3.5" />
+            Previous Lot
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            Next Lot
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
       {/* ─── Top Section: Gallery + Info ─────────────────────────────── */}
       <div className="mb-10 grid gap-8 lg:grid-cols-2">
-        <ImageGallery images={images} />
+        <ImageGallery
+          images={images}
+          title={auction.title}
+          auctionId={auctionId}
+        />
 
         {/* Auction Info */}
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-foreground">
-            Audi RSQ8 Performance 2025 | 02-52-97
-          </h1>
+        <div className="space-y-5">
+          {/* Title + Share */}
+          <div>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-2xl font-bold text-foreground">
+                {auction.title || 'Audi RSQ8 Performance 2025 | 02-52-97'}
+              </h1>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  onClick={handleCopyLink}
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            {/* Parent auction link */}
+            <a
+              href="/auctions"
+              className="inline-flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline"
+            >
+              Part of: Featured Auctions Collection
+              <ChevronRight className="h-3 w-3" />
+            </a>
+          </div>
 
           {/* Meta badges */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-between">
-            <span className="rounded-md border border-primary bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              Lot: # 25896742
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              Lot: # {auction.id?.slice(0, 8).toUpperCase() || '25896742'}
             </span>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground border px-2 sm:px-3 py-1 rounded-full">
-                <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bids:{' '}
-                {String(bidHistory.length).padStart(2, '0')}
-              </span>
-              <span className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground border px-2 sm:px-3 py-1 rounded-full">
-                <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Sale Status: On
-                Minimum Bid
-              </span>
-            </div>
+            <span className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
+              <Tag className="h-3.5 w-3.5" />
+              Bids: {String(bidHistory.length).padStart(2, '0')}
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5" />
+              Sale Status: On Minimum Bid
+            </span>
           </div>
 
           <Separator />
@@ -218,8 +304,9 @@ export default function ProductDetailsClient({
           <div>
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">Current Bid:</p>
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground border px-3 py-1 rounded-full">
-                <Info className="h-4 w-4" /> Seller Reserve Not Yet Met
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground border border-amber-200 bg-amber-50 px-2.5 py-1 rounded-full">
+                <Info className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-amber-800">Seller Reserve Not Yet Met</span>
               </p>
             </div>
             <p className="text-3xl font-bold text-foreground">
@@ -274,7 +361,7 @@ export default function ProductDetailsClient({
 
           {/* ─── Not logged in — prompt to register ────────────── */}
           {auctionStatus === 'active' && !isLoggedIn && (
-            <Card className="space-y-4 p-4">
+            <Card className="space-y-4 p-4 border border-border/50">
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">Your Bid:</p>
                 <RadioGroup
@@ -357,7 +444,7 @@ export default function ProductDetailsClient({
                   variant="default"
                   size="lg"
                   className="w-full"
-                  onClick={() => router.push('/auth/login')}
+                  onClick={() => router.push('/auctions')}
                 >
                   Browse Inventory
                 </Button>
@@ -365,26 +452,60 @@ export default function ProductDetailsClient({
             </Card>
           )}
 
+          {/* AI Features Card */}
+          <Card className="border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-foreground mb-1">AI-Powered Insights</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Get AI-generated recommendations and market analysis for this item.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                    <Sparkles className="h-3 w-3" />
+                    Price Estimate
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                    <Sparkles className="h-3 w-3" />
+                    Similar Items
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                    <Sparkles className="h-3 w-3" />
+                    Market Analysis
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* Action Links */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 flex-wrap">
             <Button
               variant="link"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer p-0"
             >
               <Heart className="h-4 w-4 text-primary" /> Add to Wishlist
             </Button>
             <Button
               variant="link"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer p-0"
             >
-              <CircleQuestionMark className="h-4 w-4 text-primary" /> Ask about
-              product
+              <CircleQuestionMark className="h-4 w-4 text-primary" /> Ask about product
             </Button>
             <Button
               variant="link"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground cursor-pointer p-0"
+              onClick={handleCopyLink}
             >
-              <Share2 className="h-4 w-4 text-primary" /> Share
+              {copied ? (
+                <Check className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <Share2 className="h-4 w-4 text-primary" />
+              )}
+              {copied ? 'Copied!' : 'Share'}
             </Button>
           </div>
         </div>
@@ -392,9 +513,24 @@ export default function ProductDetailsClient({
 
       <Separator />
 
-      {/* ─── Auction Details + Sale Info ──────────────────────────────── */}
+      {/* ─── Lot Specifications + Sale Info ──────────────────────────────── */}
       <div className="mb-10 grid gap-8 lg:grid-cols-2">
-        <AuctionDetailsGrid details={auctionDetails} />
+        <AuctionDetailsGrid
+          details={auctionDetails}
+          specifications={lotSpecifications}
+          location={auction.location ? {
+            city: auction.location.city,
+            country: auction.location.country,
+            countryCode: auction.location.countryCode,
+            address: 'Victoria Island, Lagos',
+          } : undefined}
+          lotId={`#${auction.id?.slice(0, 8).toUpperCase() || '25896742'}`}
+          sellerName={auction.sellerName || 'Grey Automobile'}
+          parentAuction={{
+            name: 'Featured Auctions',
+            slug: 'featured',
+          }}
+        />
         <AuctionSaleInfo />
       </div>
 
@@ -406,14 +542,27 @@ export default function ProductDetailsClient({
           <ProductTabsContent />
         </section>
 
-        <section className="min-w-0 space-y-9 p-2">
-          <TypographyH3>Bid History</TypographyH3>
+        <section className="min-w-0 space-y-6 p-2">
           <BidHistoryTable variant="summary" />
           <ADsCard />
         </section>
       </div>
 
       <RelatedLots selectedCategory={auction?.category || null} />
+
+      {/* More from this Seller */}
+      <MoreFromSeller
+        sellerId={auction.sellerId || 'seller1'}
+        sellerName={auction.sellerName || 'Seller'}
+        currentAuctionId={auctionId}
+      />
+
+      {/* AI-Powered Recommendations */}
+      <AIRecommendations
+        currentAuctionId={auctionId}
+        category={auction.category || 'transport'}
+        sellerId={auction.sellerId || 'seller1'}
+      />
 
       {/* ─── Place a Bid Modal ────────────────────────────────────────── */}
       <PlaceBidModal

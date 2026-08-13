@@ -10,6 +10,7 @@ import { UpdateProviderDto } from './dto/update-provider.dto';
 import { CreateModelDto } from './dto/create-model.dto';
 import { CreateFeatureConfigDto } from './dto/create-feature-config.dto';
 import { UpdateFeatureConfigDto } from './dto/update-feature-config.dto';
+import { PROVIDER_PRESETS } from './provider-presets';
 
 @ApiTags('Admin - AI')
 @Controller('admin/ai')
@@ -24,6 +25,19 @@ export class AIController {
   async findAllProviders() {
     const providers = await this.service.findAllProviders();
     return { success: true, data: providers };
+  }
+
+  @Get('providers/presets')
+  @ApiOperation({ summary: 'List provider presets (base URLs)' })
+  async getProviderPresets() {
+    return { success: true, data: PROVIDER_PRESETS };
+  }
+
+  @Get('providers/health/summary')
+  @ApiOperation({ summary: 'Get provider health summary' })
+  async healthSummary() {
+    const summary = await this.service.healthSummary();
+    return { success: true, data: summary };
   }
 
   @Post('providers')
@@ -83,9 +97,10 @@ export class AIController {
   }
 
   @Post('providers/:id/health')
-  @ApiOperation({ summary: 'Test provider connection' })
+  @ApiOperation({ summary: 'Test provider connection and record health' })
   async healthCheck(@Param('id') id: string) {
     const provider = await this.service.findProviderById(id);
+    const startTime = Date.now();
     try {
       const url = provider.baseUrl.replace(/\/$/, '') + '/models';
       const resp = await fetch(url, {
@@ -96,9 +111,22 @@ export class AIController {
         signal: AbortSignal.timeout(10000),
       });
       const data = await resp.json();
-      return { success: true, message: 'Connection successful', data: { status: resp.status, modelCount: data?.data?.length || 0 } };
+      const latencyMs = Date.now() - startTime;
+      const modelCount = data?.data?.length || 0;
+      const updated = await this.service.recordHealth(id, { success: resp.ok, latencyMs, modelCount });
+      return {
+        success: true,
+        message: 'Connection successful',
+        data: { status: updated.status, latency: latencyMs, modelCount },
+      };
     } catch (err: any) {
-      return { success: false, message: err.message || 'Connection failed' };
+      const latencyMs = Date.now() - startTime;
+      const updated = await this.service.recordHealth(id, { success: false, latencyMs });
+      return {
+        success: false,
+        message: err.message || 'Connection failed',
+        data: { status: updated.status, latency: latencyMs },
+      };
     }
   }
 

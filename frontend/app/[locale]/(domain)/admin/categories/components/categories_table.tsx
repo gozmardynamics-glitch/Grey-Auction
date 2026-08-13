@@ -43,7 +43,14 @@ export default function CategoriesTable({
           setDeleteOpen(true);
         },
         (category) => {
-          console.log('Toggle status:', category.id, category.status === 'Active' ? 'Inactive' : 'Active');
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+          fetch(`${apiBase}/categories/${category.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              isActive: category.status === 'Active' ? false : true,
+            }),
+          }).catch(() => {});
         }
       ),
     []
@@ -73,7 +80,15 @@ export default function CategoriesTable({
           setDeleteOpen(true);
         }}
         onSave={(category) => {
-          console.log('Save category:', category);
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+          fetch(`${apiBase}/categories/${category.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: (category as any).category || (category as any).name,
+              description: (category as any).description,
+            }),
+          }).catch(() => {});
           setDetailsOpen(false);
         }}
       />
@@ -83,7 +98,12 @@ export default function CategoriesTable({
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={() => {
-          console.log('Delete category:', deleteCategory?.id);
+          if (deleteCategory) {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            fetch(`${apiBase}/categories/${deleteCategory.id}`, {
+              method: 'DELETE',
+            }).catch(() => {});
+          }
           setDeleteOpen(false);
         }}
       />

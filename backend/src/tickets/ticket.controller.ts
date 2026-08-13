@@ -24,7 +24,7 @@ export class TicketController {
   @Post(':id/messages')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async sendMessage(@Param('id') id: string, @Body() dto: { content: string }, @Body('userId') userId: string) {
-    return this.service.sendMessage(id, userId, dto.content);
+  async sendMessage(@Param('id') id: string, @Body() dto: { content: string; userId?: string }) {
+    return this.service.sendMessage(id, dto.userId || '', dto.content);
   }
 }

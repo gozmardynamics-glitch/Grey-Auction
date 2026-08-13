@@ -228,6 +228,198 @@ export class EmailService {
     await this.sendEmail({ to, subject, html });
   }
 
+  async sendRoomInviteEmail(
+    to: string,
+    data: {
+      inviterName: string;
+      roomName: string;
+      inviteLink: string;
+      startTime: Date;
+      expiresAt: Date;
+      isPrivate: boolean;
+    },
+  ): Promise<void> {
+    const subject = `${data.inviterName} invited you to a ${
+      data.isPrivate ? 'private' : ''
+    } auction — ${data.roomName}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1a1a2e; padding: 24px; text-align: center;">
+          <h1 style="color: #e94560; margin: 0;">GreyAuction</h1>
+          <p style="color: #ffffff; margin: 8px 0 0; font-size: 14px;">
+            ${
+              data.isPrivate
+                ? '🔒 Exclusive Private Auction Invitation'
+                : 'You\u2019ve been invited to an auction'
+            }
+          </p>
+        </div>
+        <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0;">
+          <h2 style="color: #1a1a2e;">You're Invited!</h2>
+          <p style="color: #333; line-height: 1.6;">
+            <strong>${data.inviterName}</strong> has personally invited you to
+            participate in <strong>${data.roomName}</strong>.
+          </p>
+          <p style="color: #333; line-height: 1.6;">
+            Auction starts: <strong>${data.startTime.toLocaleString()}</strong>
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.inviteLink}"
+               style="background: #e94560; color: #ffffff; padding: 14px 36px;
+                      text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Accept Invitation
+            </a>
+          </div>
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            This invitation expires on ${data.expiresAt.toLocaleString()}
+          </p>
+        </div>
+        <div style="padding: 20px; text-align: center; background: #f8f8f8;">
+          <p style="color: #999; font-size: 11px; margin: 0;">
+            GreyAuction — Bid smart, buy better.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
+
+  async sendOrganizationRegistrationEmail(
+    to: string,
+    data: {
+      agencyName: string;
+      agencyType: string;
+      contactPerson: string;
+    },
+  ): Promise<void> {
+    const subject = `Welcome to GreyAuction — ${data.agencyName} registration received`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1a1a2e; padding: 24px; text-align: center;">
+          <h1 style="color: #e94560; margin: 0;">GreyAuction</h1>
+          <p style="color: #ffffff; margin: 8px 0 0; font-size: 14px;">
+            Organization Auction Registration
+          </p>
+        </div>
+        <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0;">
+          <h2 style="color: #1a1a2e;">Registration Received</h2>
+          <p style="color: #333; line-height: 1.6;">
+            Thank you for registering <strong>${data.agencyName}</strong>
+            (${data.agencyType}) with GreyAuction.
+          </p>
+          <p style="color: #333; line-height: 1.6;">
+            Our team will reach out to <strong>${data.contactPerson}</strong> to confirm
+            your registration and discuss your auction requirements.
+          </p>
+          <div style="background: #f0f7ff; border: 1px solid #cce5ff; padding: 15px;
+                      border-radius: 5px; margin: 20px 0;">
+            <strong>Next steps:</strong>
+            <ol style="margin: 10px 0 0; padding-left: 20px; color: #333;">
+              <li>Our team will contact you to verify your organization</li>
+              <li>Once confirmed, you can list items for auction</li>
+              <li>You may also request our free consultant listing service</li>
+            </ol>
+          </div>
+          <p style="color: #666; font-size: 12px;">
+            Questions? Reply to this email or contact our support team.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
+
+  async sendInvoiceEmail(
+    to: string,
+    data: {
+      invoiceNumber: string;
+      total: number;
+      pdfUrl: string;
+      itemTitle: string;
+    },
+  ): Promise<void> {
+    const subject = `Your GreyAuction Invoice ${data.invoiceNumber}`;
+    const total = new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+    }).format(data.total);
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1a1a2e; padding: 20px; text-align: center;">
+          <h1 style="color: #e94560; margin: 0;">GreyAuction</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0;">
+          <h2 style="color: #1a1a2e;">Invoice ${data.invoiceNumber}</h2>
+          <p style="color: #333; line-height: 1.6;">
+            Congratulations on winning <strong>${data.itemTitle}</strong>! Please find your
+            invoice details below.
+          </p>
+          <div style="background: #f0f7ff; border: 1px solid #cce5ff; padding: 15px;
+                      border-radius: 5px; margin: 20px 0; text-align: center;">
+            <strong style="font-size: 20px; color: #1a1a2e;">${total}</strong>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.pdfUrl}"
+               style="background: #e94560; color: #ffffff; padding: 12px 30px;
+                      text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Download Invoice
+            </a>
+          </div>
+          <p style="color: #666; font-size: 12px;">
+            Please complete payment to finalize your purchase. Contact support for assistance.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
+
+  async sendReceiptEmail(
+    to: string,
+    data: {
+      invoiceNumber: string;
+      total: number;
+      paymentMethod: string;
+    },
+  ): Promise<void> {
+    const subject = `Payment Received — Invoice ${data.invoiceNumber}`;
+    const total = new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+    }).format(data.total);
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1a1a2e; padding: 20px; text-align: center;">
+          <h1 style="color: #e94560; margin: 0;">GreyAuction</h1>
+        </div>
+        <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0;">
+          <h2 style="color: #1a1a2e;">Payment Received</h2>
+          <p style="color: #333; line-height: 1.6;">
+            We've received your payment for invoice
+            <strong>${data.invoiceNumber}</strong>. Thank you!
+          </p>
+          <div style="background: #f0f7ff; border: 1px solid #cce5ff; padding: 15px;
+                      border-radius: 5px; margin: 20px 0; text-align: center;">
+            <strong style="font-size: 20px; color: #1a1a2e;">${total}</strong>
+            <p style="margin: 8px 0 0; color: #666; font-size: 13px;">
+              Paid via ${data.paymentMethod}
+            </p>
+          </div>
+          <p style="color: #666; font-size: 12px;">
+            Your item will be released shortly. The GreyAuction Team
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
+
   private logEmail(options: SendEmailOptions): void {
     this.logger.log('──────────────────────────────────────────');
     this.logger.log(`📧 EMAIL (${this.isProduction ? 'PROD-FALLBACK' : 'DEV'})`);

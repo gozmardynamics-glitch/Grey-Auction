@@ -1,5 +1,6 @@
 import { getFeaturedAuctions, getCategories } from '@/lib/server/data';
 import HomepageClientSection from './_islands/homepage_client_section';
+import TrustStatsBanner from './components/trust_stats_banner';
 import JoinAuction from './components/join_auction';
 import TrustedBrands from './components/trusted_brands';
 import CustomerStories from './components/customer_stories';
@@ -14,6 +15,7 @@ export default async function WebsitePage() {
   return (
     <div className="px-4 py-6 sm:px-0 space-y-24">
       <HomepageClientSection auctions={auctions} categories={categories} />
+      <TrustStatsBanner />
       <JoinAuction />
       <TrustedBrands />
       <CustomerStories />

@@ -7,11 +7,13 @@ import { AIUsageLog } from './entities/ai-usage-log.entity';
 import { AIService } from './ai.service';
 import { AIController } from './ai.controller';
 import { AIExecuteController, AIPublicExecuteController } from './ai-execute.controller';
+import { AIOrchestratorService } from '../common/ai/services/ai-orchestrator.service';
+import { AIUsageLogService } from '../common/ai/services/ai-usage-log.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([LLMProvider, LLMModel, AIFeatureConfig, AIUsageLog])],
   controllers: [AIController, AIExecuteController, AIPublicExecuteController],
-  providers: [AIService],
-  exports: [AIService, TypeOrmModule],
+  providers: [AIService, AIOrchestratorService, AIUsageLogService],
+  exports: [AIService, AIOrchestratorService, TypeOrmModule],
 })
 export class AIModule {}

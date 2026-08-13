@@ -5,6 +5,7 @@ export { default as EmailSettings } from './email';
 export { default as RolesPermissionSettings } from './roles_and_permissions';
 export { default as AuctionsSettings } from './auctions';
 export { default as PaymentsSettings } from './payments';
+export { default as FeesSettings } from './fees';
 export { default as NotificationsSettings } from './notifications';
 export { default as PreferencesSettings } from './preferences';
 export { default as SecuritySettings } from './security';

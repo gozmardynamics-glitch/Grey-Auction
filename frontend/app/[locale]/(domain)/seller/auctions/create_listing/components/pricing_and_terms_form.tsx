@@ -199,25 +199,75 @@ export default function PricingAndTermsForm({
             />
 
             {hasReservePrice && (
-              <FormField
-                control={form.control}
-                name="reservePrice"
-                render={({ field }) => (
-                  <FormItem className="max-w-md">
-                    <FormLabel required>Reserve Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="₦0.00"
-                        className="bg-background"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="reservePrice"
+                  render={({ field }) => (
+                    <FormItem className="max-w-md">
+                      <FormLabel required>Reserve Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="₦0.00"
+                          className="bg-background"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Reserve price visibility */}
+                <FormField
+                  control={form.control}
+                  name="reservePriceVisibility"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reserve Price Visibility</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="flex flex-wrap gap-3"
+                        >
+                          <div className="flex items-center gap-2 rounded-lg border border-border p-3">
+                            <RadioGroupItem value="hidden" id="rp-hidden" />
+                            <div>
+                              <label
+                                htmlFor="rp-hidden"
+                                className="text-sm font-medium cursor-pointer"
+                              >
+                                Hidden
+                              </label>
+                              <p className="text-[11px] text-muted-foreground">
+                                Bidders won&apos;t see your minimum price
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-lg border border-border p-3">
+                            <RadioGroupItem value="exposed" id="rp-exposed" />
+                            <div>
+                              <label
+                                htmlFor="rp-exposed"
+                                className="text-sm font-medium cursor-pointer"
+                              >
+                                Exposed
+                              </label>
+                              <p className="text-[11px] text-muted-foreground">
+                                Show bidders the minimum price
+                              </p>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
           </div>
 

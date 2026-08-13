@@ -1,8 +1,9 @@
-import { User, Shield, Heart, MessageSquare, Settings, BaggageClaim, Wallet, LayoutDashboard } from 'lucide-react';
+import { User, Shield, Heart, MessageSquare, Settings, BaggageClaim, Wallet, LayoutDashboard, Mail } from 'lucide-react';
 
 export const BUYER_MODULES = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'my-bids', label: 'My Bids', icon: User },
+  { key: 'invitations', label: 'Invitations', icon: Mail },
   { key: 'wishlist', label: 'Wishlist', icon: Heart },
   { key: 'chats', label: 'Chats', icon: Shield },
   { key: 'purchases', label: 'Purchases', icon: BaggageClaim },

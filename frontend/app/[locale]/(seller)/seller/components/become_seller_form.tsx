@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock } from 'lucide-react';
-import { Card } from '@/shared/components/common';
+import { useRouter } from 'next/navigation';
+import { Clock, Building2, UserRound, ArrowRight } from 'lucide-react';
+import { Card, Button } from '@/shared/components/common';
+import { cn } from '@/lib/utils';
 
 import type {
   BecomeSellerFormData,
@@ -40,7 +42,11 @@ interface BecomeSellerFormProps {
 export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
   isActive,
 }) => {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const [sellerType, setSellerType] = useState<'individual' | 'organization'>(
+    'individual'
+  );
   const [formData, setFormData] =
     useState<BecomeSellerFormData>(DEFAULT_FORM_DATA);
 
@@ -71,10 +77,91 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
   };
 
   return (
-    <Card
-      className={`w-full rounded-2xl border-primary/20 bg-card p-6 shadow-lg lg:p-8 ${isActive ? 'border-blue-500 shadow-lg shadow-blue-500/20' : 'border-border'}`}
-    >
-      {/* Header */}
+    <div className="w-full space-y-4">
+      {/* Seller type selector */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setSellerType('individual')}
+          className={cn(
+            'flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all',
+            sellerType === 'individual'
+              ? 'border-primary bg-primary/5'
+              : 'border-border hover:border-primary/40 hover:bg-accent'
+          )}
+        >
+          <UserRound
+            className={cn(
+              'mt-0.5 h-5 w-5',
+              sellerType === 'individual' ? 'text-primary' : 'text-muted-foreground'
+            )}
+          />
+          <span>
+            <span className="block text-sm font-semibold text-foreground">
+              Individual / Business
+            </span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Register as a personal seller or small business.
+            </span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSellerType('organization')}
+          className={cn(
+            'flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all',
+            sellerType === 'organization'
+              ? 'border-primary bg-primary/5'
+              : 'border-border hover:border-primary/40 hover:bg-accent'
+          )}
+        >
+          <Building2
+            className={cn(
+              'mt-0.5 h-5 w-5',
+              sellerType === 'organization'
+                ? 'text-primary'
+                : 'text-muted-foreground'
+            )}
+          />
+          <span>
+            <span className="block text-sm font-semibold text-foreground">
+              Organization / Government / Embassy
+            </span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              For agencies, companies, firms, government bodies, embassies & NGOs.
+            </span>
+          </span>
+        </button>
+      </div>
+
+      {sellerType === 'organization' && (
+        <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Registering an organization?
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Use our dedicated organization registration form for a smoother
+              setup.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="shrink-0 bg-primary hover:bg-primary-2"
+            onClick={() => router.push('/auth/organization/register')}
+          >
+            Use the Organization registration form
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      <Card
+        className={`w-full rounded-2xl border-primary/20 bg-card p-6 shadow-lg lg:p-8 ${isActive ? 'border-blue-500 shadow-lg shadow-blue-500/20' : 'border-border'}`}
+      >
+        {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">Become a Seller</h2>
@@ -140,6 +227,7 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
           onBack={handleBack}
         />
       )}
-    </Card>
+      </Card>
+    </div>
   );
 };

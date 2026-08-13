@@ -19,6 +19,10 @@ export enum SellerBusinessType {
   LLC = 'LLC',
   CORPORATION = 'CORPORATION',
   PARTNERSHIP = 'PARTNERSHIP',
+  AGENCY = 'AGENCY',
+  GOVERNMENT = 'GOVERNMENT',
+  EMBASSY = 'EMBASSY',
+  NGO = 'NGO',
 }
 
 /**
@@ -105,6 +109,50 @@ export class Seller {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   website: string;
+
+  // ==========================================
+  // Organization / Contact Person
+  // ==========================================
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  contact_person: string; // Name of the person responsible
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  contact_person_title: string; // e.g. Procurement Officer
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  contact_person_email: string;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  contact_person_phone: string;
+
+  // Secondary contact — recommended for organizations (account co-management)
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  secondary_contact_name: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  secondary_contact_title: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  secondary_contact_email: string;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  secondary_contact_phone: string;
+
+  // ==========================================
+  // Auction Preferences
+  // ==========================================
+  @Column({
+    type: 'enum',
+    enum: ['public', 'private'],
+    default: 'public',
+  })
+  auction_visibility: 'public' | 'private';
+
+  @Column({ type: 'boolean', default: false })
+  consultant_listing: boolean; // Platform lists items on behalf (free)
+
+  @Column({ type: 'text', nullable: true })
+  consultant_notes: string; // Notes for platform consultant
 
   // ==========================================
   // Address

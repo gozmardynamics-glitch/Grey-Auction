@@ -2,6 +2,7 @@ import { Module, OnApplicationShutdown } from '@nestjs/common';
 import { TypeOrmModule, InjectDataSource } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { dataSourceOptions } from './config/database.config';
@@ -22,11 +23,15 @@ import { AIModule } from './ai/ai.module';
 import { AgentsModule } from './agents/agents.module';
 import { InviteModule } from './invites/invite.module';
 import { AuditModule } from './audit/audit.module';
+import { FeeModule } from './fees/fee.module';
+import { PaymentModule } from './payments/payment.module';
+import { InvoiceModule } from './invoices/invoice.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(dataSourceOptions),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 100,
@@ -48,6 +53,9 @@ import { AuditModule } from './audit/audit.module';
     AgentsModule,
     InviteModule,
     AuditModule,
+    FeeModule,
+    InvoiceModule,
+    PaymentModule,
   ],
   providers: [
     {

@@ -8,6 +8,7 @@ import {
   FileText,
   Activity,
   Bell,
+  Percent,
 } from 'lucide-react';
 import { SlidersHorizontal } from 'lucide-react';
 
@@ -17,6 +18,7 @@ export const SETTINGS_MODULES = [
   { key: 'roles-permission', label: 'Roles & Permission', icon: ShieldCheck },
   { key: 'auctions', label: 'Auctions', icon: Gavel },
   { key: 'payments', label: 'Payments', icon: CreditCard },
+  { key: 'fees', label: 'Fees & Charges', icon: Percent },
   { key: 'notifications', label: 'Notifications', icon: Bell },
   { key: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
   { key: 'security', label: 'Security', icon: Lock },

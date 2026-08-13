@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AgentsService } from './agents.service';
 import { AgentOrchestratorService } from './agent-orchestrator.service';
@@ -114,8 +114,8 @@ export class AgentsController {
   async executeWorkflow(@Param('id') id: string) { return { success: true, data: await this.service.executeWorkflow(id) }; }
 
   @Get('metrics')
-  @ApiOperation({ summary: 'Get agent metrics' })
-  async findMetrics(@Param('agentId') agentId?: string) { return { success: true, data: await this.service.findMetrics(agentId) }; }
+  @ApiOperation({ summary: 'Get agent metrics (optional agentId query param)' })
+  async findMetrics(@Query('agentId') agentId?: string) { return { success: true, data: await this.service.findMetrics(agentId) }; }
 
   @Post('analyze')
   @ApiOperation({ summary: 'Run gap analysis and optimization scan' })

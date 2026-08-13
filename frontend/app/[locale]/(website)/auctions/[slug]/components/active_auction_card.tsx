@@ -9,7 +9,7 @@ import {
   Label,
   RadioGroup,
   RadioGroupItem,
-  Separator,
+  PriceBreakdown,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -61,11 +61,6 @@ export default function ActiveAuctionCard({
     dispatch(setAutoBid({ enabled: true, maxAmount: autoBidMaxAmount }));
     toast.success(`Auto-bid set for ${formatCurrency(autoBidMaxAmount)}`);
   };
-
-  const auctionFee = currentBid * 0.19;
-  const vatBid = 0;
-  const vatFee = 0;
-  const totalBid = currentBid + auctionFee + vatBid + vatFee;
 
   return (
     <Card className="space-y-4 p-4">
@@ -300,34 +295,8 @@ export default function ActiveAuctionCard({
           />
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="mt-2 space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Bid</span>
-              <span>{formatCurrency(currentBid)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Auction fee (19%)
-              </span>
-              <span>{formatCurrency(auctionFee)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                VAT on bid value
-              </span>
-              <span>{formatCurrency(vatBid)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                VAT on auction fee
-              </span>
-              <span>{formatCurrency(vatFee)}</span>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between text-sm font-semibold">
-              <span>Total Bid Amount</span>
-              <span>{formatCurrency(totalBid)}</span>
-            </div>
+          <div className="mt-2 rounded-lg border p-4">
+            <PriceBreakdown amount={bidAmount || currentBid} />
           </div>
         </CollapsibleContent>
       </Collapsible>

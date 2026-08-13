@@ -737,19 +737,19 @@ const mockFaqCategories = [
 // ─── Website ─────────────────────────────────────────────────────────────
 
 export async function getAuctions() {
-  const data = await apiFetch('/auctions');
+  const data = await apiFetch('/products');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return mockAuctions;
 }
 
 export async function getAuctionBySlug(slug: string) {
-  const data = await apiFetch(`/auctions/${slug}`);
+  const data = await apiFetch(`/products/${slug}`);
   if (data) return data;
   return mockAuctions.find((a) => a.slug === slug || a.id === slug) || null;
 }
 
 export async function getFeaturedAuctions() {
-  const data = await apiFetch('/auctions/featured');
+  const data = await apiFetch('/products/featured');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return mockAuctions.slice(0, 8);
 }
@@ -777,13 +777,13 @@ export async function getAuctionsByCategory(category: string) {
 }
 
 export async function getBanners() {
-  const data = await apiFetch('/banners');
+  const data = await apiFetch('/admin/banners');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return mockBanners;
 }
 
 export async function getFaqs() {
-  const data = await apiFetch('/faqs');
+  const data = await apiFetch('/admin/faqs');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return mockFaqs;
 }
@@ -851,7 +851,7 @@ export async function getAdminAdmins() {
 }
 
 export async function getAdminCategories() {
-  const data = await apiFetch('/admin/categories');
+  const data = await apiFetch('/categories');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return mockCategories;
 }
@@ -875,13 +875,13 @@ export async function getAdminPayments() {
 }
 
 export async function getAdminBiddingRooms() {
-  const data = await apiFetch('/admin/rooms');
+  const data = await apiFetch('/rooms');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return [];
 }
 
 export async function getAdminTickets() {
-  const data = await apiFetch('/admin/tickets');
+  const data = await apiFetch('/tickets');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return [];
 }
@@ -907,7 +907,7 @@ export async function getSellerSales() {
 }
 
 export async function getSellerBiddingRooms() {
-  const data = await apiFetch('/seller/rooms');
+  const data = await apiFetch('/rooms');
   if (data && Array.isArray(data) && data.length > 0) return data;
   return [];
 }

@@ -10,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  PriceBreakdown,
   Separator,
 } from '@/shared/components/common';
-import { formatCurrency } from '@/shared/utils/helpers';
 
 interface PlaceBidModalProps {
   open: boolean;
@@ -55,27 +55,7 @@ export default function PlaceBidModal({
 
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">Breakdown</h4>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Bid</span>
-                <span>{formatCurrency(bidAmount || currentBid)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Auction fee (19%)</span>
-                <span>{formatCurrency((bidAmount || currentBid) * 0.19)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">VAT on bid value</span>
-                <span>{formatCurrency(0)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">VAT on auction fee</span>
-                <span>{formatCurrency(0)}</span>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between text-sm font-semibold">
-                <span>Total Bid Amount</span>
-                <span>{formatCurrency((bidAmount || currentBid) * 1.19)}</span>
-              </div>
+              <PriceBreakdown amount={bidAmount || currentBid} />
             </div>
 
             <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">

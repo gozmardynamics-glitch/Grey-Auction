@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AIService } from '../../../ai/ai.service';
 import { LLMModel } from '../../../ai/entities/llm-model.entity';
+import { ProviderStatus } from '../../../ai/entities/llm-provider.entity';
 import { AIUsageLogService } from './ai-usage-log.service';
 import { AIProvider, ChatCompletionRequest } from '../interfaces/ai-provider.interface';
 import { OpenAICompatibleProvider } from '../providers/openai-compatible.base';
@@ -45,7 +46,15 @@ export class AIOrchestratorService {
       feature.tertiaryModel,
     ].filter(Boolean) as LLMModel[];
 
-    if (modelChain.length === 0) {
+    // Health-aware ordering: push providers marked 'down' to the end,
+    // otherwise preserve primary -> fallback -> tertiary order.
+    const orderedChain = [...modelChain].sort((a, b) => {
+      const aDown = a.provider?.status === ProviderStatus.DOWN ? 1 : 0;
+      const bDown = b.provider?.status === ProviderStatus.DOWN ? 1 : 0;
+      return aDown - bDown;
+    });
+
+    if (orderedChain.length === 0) {
       throw new Error(`No models configured for feature '${featureKey}'`);
     }
 
@@ -66,7 +75,7 @@ export class AIOrchestratorService {
     let lastError: Error | null = null;
     let attemptNumber = 0;
 
-    for (const model of modelChain) {
+    for (const model of orderedChain) {
       attemptNumber++;
       const startTime = Date.now();
 
@@ -122,7 +131,7 @@ export class AIOrchestratorService {
         });
 
         this.logger.warn(
-          `[${featureKey}] Attempt ${attemptNumber}/${modelChain.length} with ${model.modelId} failed: ${err.message}`,
+          `[${featureKey}] Attempt ${attemptNumber}/${orderedChain.length} with ${model.modelId} failed: ${err.message}`,
         );
       }
     }

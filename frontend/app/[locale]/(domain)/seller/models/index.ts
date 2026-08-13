@@ -196,6 +196,7 @@ const DEFAULT_FORM_DATA: CreateListingFormData = {
       'Payment are held in escrow until inspection is completed. Payment are held in escrow until inspection is completed. Payment are held in escrow until inspection is completed. Payment are held in escrow until inspection is completed. Payment are held in escrow until inspection is completed. ',
     hasReservePrice: false,
     reservePrice: '',
+    reservePriceVisibility: 'hidden',
     allowBuyNow: false,
     buyNowPrice: '',
     auctionDuration: '7 days',
@@ -475,6 +476,12 @@ interface BiddingRoom {
   bidders: number;
   date: string;
   status: BiddingRoomStatus;
+  type?: 'public' | 'private';
+  roomType?: 'public' | 'private';
+  requiresDeposit?: boolean;
+  depositAmount?: number;
+  allowInviteCode?: boolean;
+  inviteCode?: string;
   participants: BiddingRoomParticipant[];
   auctions: BiddingRoomAuction[];
 }

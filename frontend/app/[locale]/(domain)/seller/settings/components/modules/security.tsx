@@ -36,10 +36,26 @@ export default function SellerSecuritySettings() {
     },
   });
 
-  const onSavePassword = (data: ChangePasswordValues) => {
-    console.log('Changing password:', data);
-    toast.success('Password changed successfully.');
-    passwordForm.reset();
+  const onSavePassword = async (data: ChangePasswordValues) => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiBase}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Password change failed');
+      }
+      toast.success('Password changed successfully.');
+      passwordForm.reset();
+    } catch (err: any) {
+      toast.error(err.message || 'Password change failed. Check your current password.');
+    }
   };
 
   // ─── Withdrawal PIN Form ─────────────────────────────────────────
