@@ -192,16 +192,16 @@ export default function Footer() {
           <div className="flex items-center gap-4">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Follow us</span>
             <div className="flex gap-3">
-              <Link href="https://facebook.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+              <Link href="https://facebook.com/greyauctions" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110" aria-label="GreyAuction on Facebook">
                 <Facebook className="h-4 w-4" />
               </Link>
-              <Link href="https://twitter.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+              <Link href="https://twitter.com/greyauctions" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110" aria-label="GreyAuction on X (Twitter)">
                 <Twitter className="h-4 w-4" />
               </Link>
-              <Link href="https://instagram.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+              <Link href="https://instagram.com/greyauctions" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110" aria-label="GreyAuction on Instagram">
                 <Instagram className="h-4 w-4" />
               </Link>
-              <Link href="https://linkedin.com" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110">
+              <Link href="https://linkedin.com/company/greyauctions" target="_blank" className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:scale-110" aria-label="GreyAuction on LinkedIn">
                 <Linkedin className="h-4 w-4" />
               </Link>
             </div>
