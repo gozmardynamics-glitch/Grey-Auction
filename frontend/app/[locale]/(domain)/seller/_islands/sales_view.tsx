@@ -73,7 +73,7 @@ export default function SalesView({ sales }: SalesViewProps) {
   );
 
   const handleExport = () => {
-    console.log('Exporting sales data...');
+    
   };
 
   return (

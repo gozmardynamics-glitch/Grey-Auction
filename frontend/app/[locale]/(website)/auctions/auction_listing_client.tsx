@@ -125,12 +125,12 @@ export default function AuctionListingClient({
   );
 
   const onWishlistClick = useCallback(
-    (id: string) => console.log('Wishlist clicked:', id),
+    (_id: string) => {},
     []
   );
 
   const onShareClick = useCallback(
-    (id: string) => console.log('Share clicked:', id),
+    (_id: string) => {},
     []
   );
 

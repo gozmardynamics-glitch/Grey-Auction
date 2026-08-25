@@ -69,7 +69,7 @@ export default function SellerSecuritySettings() {
   });
 
   const onSavePin = (data: WithdrawalPinValues) => {
-    console.log('Changing withdrawal PIN:', data);
+    
     toast.success('Withdrawal PIN changed successfully.');
     pinForm.reset();
   };
@@ -83,7 +83,7 @@ export default function SellerSecuritySettings() {
   });
 
   const onSaveSecurity = (data: SecurityOptionsValues) => {
-    console.log('Saving security options:', data);
+    
     toast.success('Security options saved.');
   };
 

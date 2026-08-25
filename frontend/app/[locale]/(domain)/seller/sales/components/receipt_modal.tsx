@@ -42,7 +42,7 @@ export default function ReceiptModal({
 
   const handleDownloadReceipt = () => {
     // Replace with actual download logic
-    console.log('Downloading receipt for:', sale.saleId);
+    
   };
 
   return (

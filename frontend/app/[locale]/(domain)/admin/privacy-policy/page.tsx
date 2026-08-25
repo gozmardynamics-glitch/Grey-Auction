@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageContent: content }),
       });
-      console.log('Privacy Policy saved to API.');
+      
     } catch (error) {
       console.error('Failed to save privacy policy:', error);
     }

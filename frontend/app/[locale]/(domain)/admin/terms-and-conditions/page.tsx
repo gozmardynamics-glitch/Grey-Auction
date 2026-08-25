@@ -9,7 +9,7 @@ export default function TermsAndConditionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageContent: content }),
       });
-      console.log('Terms & Conditions saved to API.');
+      
     } catch (error) {
       console.error('Failed to save terms & conditions:', error);
     }

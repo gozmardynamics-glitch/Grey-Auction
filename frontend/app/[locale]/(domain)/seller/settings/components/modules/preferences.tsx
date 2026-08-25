@@ -47,7 +47,7 @@ export default function SellerPreferencesSettings() {
   });
 
   const onSaveLanguage = (data: LanguagePreferenceValues) => {
-    console.log('Saving language preference:', data);
+    
     toast.success('Language preference saved.');
   };
 
@@ -60,7 +60,7 @@ export default function SellerPreferencesSettings() {
   });
 
   const onSaveAppearance = (data: AppearanceValues) => {
-    console.log('Saving appearance:', data);
+    
     toast.success('Appearance settings saved.');
   };
 

@@ -126,7 +126,7 @@
     };
 
     const handleSave = () => {
-      console.log('Saving permissions:', categories);
+      
     };
 
     return (

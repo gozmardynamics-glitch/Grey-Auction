@@ -189,7 +189,7 @@ export default function SystemStatusSettings() {
             <Button
               key={action}
               variant="outline"
-              onClick={() => console.log(action)}
+              onClick={undefined}
             >
               {action}
             </Button>

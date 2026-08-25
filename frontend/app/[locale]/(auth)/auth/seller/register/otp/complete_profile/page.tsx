@@ -41,7 +41,7 @@ export default function CompleteProfilePage() {
   });
 
   const onSubmit = async (data: CompleteProfileFormValues) => {
-    console.log('Complete profile data:', data);
+    
     router.push('/auth/seller/register/otp/complete_profile/verify');
   };
 

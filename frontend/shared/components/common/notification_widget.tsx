@@ -48,7 +48,7 @@ export default function NotificationWidget() {
   );
 
   const handleRefresh = () => {
-    console.log('Refresh notifications');
+    
   };
 
   const handleViewAll = () => {

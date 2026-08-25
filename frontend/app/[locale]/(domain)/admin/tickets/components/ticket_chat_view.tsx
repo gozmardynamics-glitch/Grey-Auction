@@ -23,7 +23,7 @@ export default function TicketChatView({
 
   const handleSend = () => {
     if (!messageInput.trim()) return;
-    console.log('Sending:', messageInput);
+    
     setMessageInput('');
   };
 

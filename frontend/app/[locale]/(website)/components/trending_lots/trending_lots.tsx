@@ -65,8 +65,8 @@ export default function TrendingLots({ selectedCategory }: TrendingLotsProps) {
             <TrendingLotsCards
               auction={auction}
               onBidClick={(id) => router.push(`/auctions/${id}`)}
-              onWishlistClick={(id) => console.log('Wishlist clicked:', id)}
-              onShareClick={(id) => console.log('Share clicked:', id)}
+              onWishlistClick={undefined}
+              onShareClick={undefined}
             />
           </CarouselItem>
         ))}

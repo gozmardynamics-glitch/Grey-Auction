@@ -42,7 +42,7 @@ export default function PaymentsSettings() {
   });
 
   const onSaveGateway = (data: PaymentGatewayValues) => {
-    console.log('Saving payment gateway:', data);
+    
     toast.success('Payment gateway settings saved.');
   };
 
@@ -58,7 +58,7 @@ export default function PaymentsSettings() {
   });
 
   const onSaveWithdraw = (data: WithdrawValues) => {
-    console.log('Saving withdraw settings:', data);
+    
     toast.success('Withdraw settings saved.');
   };
 

@@ -25,12 +25,7 @@ export default function StoreSettings() {
   };
 
   const handleSave = () => {
-    console.log('Saving store settings:', {
-      shopName,
-      facebook,
-      instagram,
-      twitter,
-    });
+    
     toast.success('Store settings saved.');
   };
 

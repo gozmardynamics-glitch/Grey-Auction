@@ -90,8 +90,8 @@ export default function AIRecommendations({
               <TrendingLotsCards
                 auction={auction}
                 onBidClick={(id) => router.push(`/auctions/${id}`)}
-                onWishlistClick={(id) => console.log('Wishlist:', id)}
-                onShareClick={(id) => console.log('Share:', id)}
+                onWishlistClick={undefined}
+                onShareClick={undefined}
               />
             </CarouselItem>
           ))}

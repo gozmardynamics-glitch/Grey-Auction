@@ -133,10 +133,8 @@ export default function CategoriesCarousel({
                       key={auction.id}
                       auction={auction}
                       onBidClick={(id) => router.push(`/auctions/${id}`)}
-                      onWishlistClick={(id) =>
-                        console.log('Wishlist clicked:', id)
-                      }
-                      onShareClick={(id) => console.log('Share clicked:', id)}
+                      onWishlistClick={undefined}
+                      onShareClick={undefined}
                     />
                   ))}
                 </div>

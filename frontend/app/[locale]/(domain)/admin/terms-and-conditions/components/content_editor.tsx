@@ -22,7 +22,7 @@ export default function ContentEditor({
 
   const handleSave = () => {
     setIsSaving(true);
-    console.log(`Saving ${title}:`, content);
+    
     if (onSave) {
       onSave(content);
     }

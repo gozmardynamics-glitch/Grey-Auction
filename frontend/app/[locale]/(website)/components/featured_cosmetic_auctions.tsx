@@ -18,7 +18,7 @@ export default function FeaturedCosmeticsAuctions({
     if (onCategoryClick) {
       onCategoryClick(categorySlug);
     } else {
-      console.log('View all clicked:', categorySlug);
+      
     }
   };
 
@@ -29,7 +29,7 @@ export default function FeaturedCosmeticsAuctions({
     if (onSubCategoryClick) {
       onSubCategoryClick(categorySlug, subCategorySlug);
     } else {
-      console.log('Sub-category clicked:', categorySlug, subCategorySlug);
+      
     }
   };
 
