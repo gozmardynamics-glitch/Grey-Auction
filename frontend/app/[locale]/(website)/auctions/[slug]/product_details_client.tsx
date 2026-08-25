@@ -76,6 +76,7 @@ export default function ProductDetailsClient({
   const dispatch = useAppDispatch();
   const currentBid = useAppSelector((state) => state.bidding.currentBid);
   const bidHistory = useAppSelector((state) => state.bidding.bidHistory);
+  const autoBid = useAppSelector((state) => state.bidding.autoBid);
   const authUser = useAppSelector((state) => state.auth.user);
   const authToken = useAppSelector((state) => state.auth.token);
   const isLoggedIn = useAppSelector((state) => state.auth.isAuthenticated);
@@ -133,7 +134,14 @@ export default function ProductDetailsClient({
           'Content-Type': 'application/json',
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        body: JSON.stringify({ amount: bidAmount }),
+        body: JSON.stringify({
+          amount: bidAmount,
+          // Proxy/auto-bid ceiling — the engine keeps this bidder in the
+          // lead incrementally up to maxBid.
+          ...(autoBid.enabled && autoBid.maxAmount > bidAmount
+            ? { maxBid: autoBid.maxAmount }
+            : {}),
+        }),
       });
 
       if (!res.ok) {
@@ -157,7 +165,7 @@ export default function ProductDetailsClient({
     } finally {
       dispatch(setBidding(false));
     }
-  }, [bidAmount, auctionId, authUser, authToken, dispatch]);
+  }, [bidAmount, auctionId, authUser, authToken, autoBid, dispatch]);
 
   const handleBidModalClose = useCallback(() => {
     setBidModalOpen(false);

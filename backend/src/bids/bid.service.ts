@@ -3,9 +3,88 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Bid } from './entities/bid.entity';
 import { PlaceBidDto } from './dto/bid.dto';
-import { Product } from '../products/entities/product.entity';
+import { Product, ProductStatus } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
 import { AuctionGateway } from './gateways/auction.gateway';
+
+// ─── Auction engine constants ──────────────────────────────────────────
+// Minimum increment per current-bid level (NGN).
+export function bidStep(currentBid: number): number {
+  if (currentBid < 10000) return 500;
+  if (currentBid < 50000) return 1000;
+  if (currentBid < 100000) return 2500;
+  if (currentBid < 500000) return 5000;
+  if (currentBid < 1000000) return 10000;
+  if (currentBid < 5000000) return 25000;
+  if (currentBid < 10000000) return 50000;
+  return 100000;
+}
+
+export const ANTI_SNIPE_WINDOW_MS = 2 * 60 * 1000; // extend when < 2 min left
+export const ANTI_SNIPE_EXTEND_MS = 2 * 60 * 1000; // extend by 2 min
+
+export interface AutoBidCandidate {
+  bidderId: string;
+  maxBid: number;
+}
+
+export interface ResolvedAutoBid {
+  bidderId: string;
+  amount: number;
+  /** The bidder's proxy ceiling (their original max bid). */
+  maxBid: number;
+}
+
+/**
+ * Pure proxy-bidding resolver.
+ *
+ * Given the current price, the current leading bidder and every bidder's
+ * auto-bid ceiling, computes the incremental auto-bids that should be
+ * placed so the highest ceiling wins at the second-highest ceiling + one
+ * increment (or one increment over the current manual price).
+ */
+export function resolveAutoBids(
+  currentBid: number,
+  currentWinnerId: string,
+  candidates: AutoBidCandidate[],
+  maxRounds = 50,
+): ResolvedAutoBid[] {
+  const bids: ResolvedAutoBid[] = [];
+  let price = currentBid;
+  let winner = currentWinnerId;
+
+  for (let i = 0; i < maxRounds; i += 1) {
+    const active = candidates
+      .filter((c) => c.maxBid > price)
+      .sort((a, b) => b.maxBid - a.maxBid);
+
+    if (active.length === 0) break;
+    const highest = active[0];
+    const second = active[1];
+
+    let target: number;
+    if (second) {
+      target = Math.min(highest.maxBid, second.maxBid + bidStep(price));
+    } else if (highest.bidderId === winner) {
+      // Already winning with no competitor left — stop.
+      break;
+    } else {
+      // Outbid the current (manual) winner by one increment.
+      target = Math.min(highest.maxBid, price + bidStep(price));
+    }
+
+    if (target <= price) break;
+    price = target;
+    winner = highest.bidderId;
+    bids.push({
+      bidderId: highest.bidderId,
+      amount: price,
+      maxBid: highest.maxBid,
+    });
+  }
+
+  return bids;
+}
 
 @Injectable()
 export class BidService {
@@ -36,28 +115,87 @@ export class BidService {
         throw new BadRequestException('Bid must be at least the starting bid');
       }
 
-      await manager.update(Bid, { productId, isWinningBid: true }, { isWinningBid: false });
+      // ─── Anti-sniping: extend the auction when a bid arrives late ──
+      if (
+        product.status === ProductStatus.ACTIVE &&
+        product.endTime.getTime() - Date.now() < ANTI_SNIPE_WINDOW_MS
+      ) {
+        product.endTime = new Date(
+          product.endTime.getTime() + ANTI_SNIPE_EXTEND_MS,
+        );
+      }
 
-      const bid = manager.create(Bid, {
-        productId,
-        bidderId: userId,
-        amount: dto.amount,
-        isWinningBid: true,
-      });
+      const placed: Bid[] = [];
 
-      await manager.save(bid);
+      const placeOne = async (
+        bidderId: string,
+        amount: number,
+        isAutoBid: boolean,
+        maxBid: number | null,
+      ) => {
+        await manager.update(
+          Bid,
+          { productId, isWinningBid: true },
+          { isWinningBid: false },
+        );
+        const row = manager.create(Bid, {
+          productId,
+          bidderId,
+          amount,
+          isAutoBid,
+          maxBid,
+          isWinningBid: true,
+        });
+        await manager.save(row);
+        product.currentBid = amount;
+        product.totalBids = product.totalBids + 1;
+        placed.push(row);
+        return row;
+      };
 
-      product.currentBid = dto.amount;
-      product.totalBids = product.totalBids + 1;
+      // 1. Place the manual bid
+      await placeOne(userId, dto.amount, false, dto.maxBid ?? null);
+
+      // 2. Resolve proxy/auto-bids from every bidder's ceilings
+      if (dto.maxBid !== undefined) {
+        const rows: { bidderId: string; maxBid: string }[] =
+          await manager
+            .createQueryBuilder(Bid, 'b')
+            .select('b.bidderId', 'bidderId')
+            .addSelect('MAX(b.maxBid)', 'maxBid')
+            .where('b.productId = :productId', { productId })
+            .andWhere('b.maxBid IS NOT NULL')
+            .andWhere('b.maxBid > :amount', { amount: dto.amount })
+            .groupBy('b.bidderId')
+            .getRawMany();
+
+        const candidates = rows.map((r) => ({
+          bidderId: r.bidderId,
+          maxBid: Number(r.maxBid),
+        }));
+
+        const resolved = resolveAutoBids(
+          dto.amount,
+          userId,
+          candidates,
+        );
+
+        for (const auto of resolved) {
+          await placeOne(auto.bidderId, auto.amount, true, auto.maxBid);
+        }
+      }
+
       await manager.save(product);
 
-      this.gateway?.broadcastNewBid(productId, bid);
+      for (const bid of placed) {
+        this.gateway?.broadcastNewBid(productId, bid);
+      }
       this.gateway?.broadcastBidUpdate(productId, {
-        currentBid: dto.amount,
+        currentBid: product.currentBid,
         totalBids: product.totalBids,
       });
 
-      return bid;
+      return placed[0];
     });
   }
 

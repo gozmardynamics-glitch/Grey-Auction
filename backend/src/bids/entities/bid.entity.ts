@@ -29,6 +29,10 @@ export class Bid {
   @Column({ type: 'decimal', precision: 18, scale: 2 })
   amount: number;
 
+  /** Maximum the bidder is willing to go (proxy/auto-bid ceiling). */
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  maxBid: number | null;
+
   @Column({ default: false })
   isAutoBid: boolean;
 
