@@ -30,7 +30,9 @@ interface Auction {
   totalBids: number;
   timeLeft: string;
   endTime: Date;
-  imageUrl: string;
+  endTimeIso?: string;
+  imageUrl?: string;
+  images?: string[];
   category: string;
   sellerId: string;
   sellerName: string;

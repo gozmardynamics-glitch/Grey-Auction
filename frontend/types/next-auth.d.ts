@@ -4,7 +4,7 @@ import 'next-auth/jwt';
 declare module 'next-auth' {
   interface User {
     role?: string;
-    backendToken?: string;
+    accessToken?: string;
   }
 
   interface Session {
@@ -14,7 +14,7 @@ declare module 'next-auth' {
       email?: string | null;
       image?: string | null;
       role: string;
-      backendToken: string;
+      accessToken: string;
     };
   }
 }
@@ -22,6 +22,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     role?: string;
-    backendToken?: string;
+    accessToken?: string;
+    id?: string;
   }
 }

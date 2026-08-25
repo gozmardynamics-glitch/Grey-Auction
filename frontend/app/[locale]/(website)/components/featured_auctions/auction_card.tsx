@@ -94,7 +94,7 @@ export function AuctionCard({
       <Card className="group flex flex-row overflow-hidden border border-border/50 transition-all duration-300 hover:shadow-lg hover:border-primary/20">
         <div className="relative h-auto w-[120px] shrink-0 overflow-hidden bg-muted sm:w-[180px]">
           <Image
-            src={auction.imageUrl}
+            src={auction.imageUrl || auction.images?.[0] || '/placeholder.svg'}
             alt={auction.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -150,7 +150,7 @@ export function AuctionCard({
       {/* Image — Taller for breathing room */}
       <div className="relative h-52 overflow-hidden bg-muted">
         <Image
-          src={auction.imageUrl}
+          src={auction.imageUrl || auction.images?.[0] || '/placeholder.svg'}
           alt={auction.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"

@@ -1,8 +1,14 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 import createIntlMiddleware from 'next-intl/middleware';
+import { NextResponse } from 'next/server';
+import { decode } from 'next-auth/jwt';
 import { routing } from './i18n/routing';
 
-const isProtectedRoute = createRouteMatcher([
+const { auth } = NextAuth(authConfig);
+const intlMiddleware = createIntlMiddleware(routing);
+
+const PROTECTED_PATTERNS = [
   '/admin(.*)',
   '/seller/dashboard(.*)',
   '/seller/auctions(.*)',
@@ -17,7 +23,37 @@ const isProtectedRoute = createRouteMatcher([
   '/wishlist(.*)',
   '/room(.*)',
   '/invite(.*)',
-]);
+];
+
+function toRegExp(pattern: string): RegExp {
+  const escapePart = (p: string) => p.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&');
+  const escaped = pattern.split('(.*)').map(escapePart).join('(.*)');
+  return new RegExp('^' + escaped + '$');
+}
+
+function isProtectedRoute(pathname: string): boolean {
+  let stripped = pathname;
+  for (const locale of routing.locales) {
+    if (stripped === '/' + locale) {
+      stripped = '/';
+      break;
+    }
+    if (stripped.startsWith('/' + locale + '/')) {
+      stripped = stripped.slice(locale.length + 1);
+      break;
+    }
+  }
+  return PROTECTED_PATTERNS.some((p) => toRegExp(p).test(stripped));
+}
+
+function getPathWithoutLocale(pathname: string): string {
+  for (const locale of routing.locales) {
+    if (pathname.startsWith('/' + locale + '/') || pathname === '/' + locale) {
+      return pathname.replace('/' + locale, '') || '/';
+    }
+  }
+  return pathname;
+}
 
 const ROLE_DASHBOARDS: Record<string, string> = {
   admin: '/admin/dashboard',
@@ -25,50 +61,66 @@ const ROLE_DASHBOARDS: Record<string, string> = {
   buyer: '/buyer/dashboard',
 };
 
-const intlMiddleware = createIntlMiddleware(routing);
+export default auth(async (req) => {
+  const { nextUrl } = req;
+  const path = nextUrl.pathname;
 
-function getPathWithoutLocale(pathname: string): string {
-  for (const locale of routing.locales) {
-    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-      return pathname.replace(`/${locale}`, '') || '/';
-    }
+  // Always pass through API routes untouched
+  if (path.startsWith('/api/') || path === '/api') {
+    return NextResponse.next();
   }
-  return pathname;
-}
 
-export default clerkMiddleware(async (auth, req) => {
-  const { pathname } = req.nextUrl;
-  const pathWithoutLocale = getPathWithoutLocale(pathname);
+  const pathWithoutLocale = getPathWithoutLocale(path);
+  const session = req.auth;
+
+  // NextAuth v5 middleware does not surface custom JWT claims on req.auth.user,
+  // so decode the session JWT directly (JWE with salt = cookie name) for the role.
+  let role: string | undefined;
+  if (session?.user) {
+    const cookieName = req.cookies.get('__Secure-authjs.session-token')
+      ? '__Secure-authjs.session-token'
+      : 'authjs.session-token';
+    const cookie = req.cookies.get(cookieName)?.value;
+    if (cookie) {
+      try {
+        const decoded = (await decode({
+          token: cookie,
+          secret: process.env.AUTH_SECRET || '',
+          salt: cookieName,
+        })) as any;
+        role = decoded?.role;
+      } catch {
+        role = (session?.user as any)?.role as string | undefined;
+      }
+    }
+    if (!role) role = (session?.user as any)?.role as string | undefined;
+  }
 
   // Protect dashboard routes
-  if (isProtectedRoute(req)) {
-    const { userId, sessionClaims, redirectToSignIn } = await auth();
-
-    if (!userId) {
-      return redirectToSignIn({ returnBackUrl: req.url });
+  if (isProtectedRoute(path)) {
+    if (!session?.user) {
+      const loginUrl = new URL('/auth/login', req.url);
+      if (pathWithoutLocale && pathWithoutLocale !== '/') {
+        loginUrl.searchParams.set('redirect', pathWithoutLocale);
+      }
+      return NextResponse.redirect(loginUrl);
     }
-
-    const role = (sessionClaims?.publicMetadata?.role as string) || 'buyer';
-
-    // Role-based access control
     if (pathWithoutLocale.startsWith('/admin') && role !== 'admin') {
-      return Response.redirect(new URL('/auth/login', req.url));
+      return NextResponse.redirect(new URL('/auth/login', req.url));
     }
     if (pathWithoutLocale.startsWith('/seller') && role !== 'seller') {
-      return Response.redirect(new URL('/auth/login', req.url));
+      return NextResponse.redirect(new URL('/auth/login', req.url));
     }
     if (pathWithoutLocale.startsWith('/buyer') && role !== 'buyer') {
-      return Response.redirect(new URL('/auth/login', req.url));
+      return NextResponse.redirect(new URL('/auth/login', req.url));
     }
   }
 
   // Redirect authenticated users away from auth pages
   if (pathWithoutLocale.startsWith('/auth')) {
-    const { userId, sessionClaims } = await auth();
-    if (userId) {
-      const role = (sessionClaims?.publicMetadata?.role as string) || 'buyer';
-      const redirectTo = ROLE_DASHBOARDS[role] ?? '/';
-      return Response.redirect(new URL(redirectTo, req.url));
+    if (session?.user) {
+      const redirectTo = ROLE_DASHBOARDS[role || 'buyer'] ?? '/';
+      return NextResponse.redirect(new URL(redirectTo, req.url));
     }
   }
 

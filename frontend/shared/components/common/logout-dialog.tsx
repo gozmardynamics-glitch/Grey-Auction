@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
-import { useClerk } from '@clerk/nextjs';
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,17 @@ import { Button } from './button';
 
 export function LogoutDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { signOut } = useClerk();
   const router = useRouter();
 
   const handleLogout = async () => {
     setOpen(false);
-    await signOut();
-    router.push('/auth/login');
+    try {
+      await signOut({ callbackUrl: '/auth/login' });
+      router.refresh();
+    } catch {
+      router.push('/auth/login');
+      router.refresh();
+    }
   };
 
   return (
