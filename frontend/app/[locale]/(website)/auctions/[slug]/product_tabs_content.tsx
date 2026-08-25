@@ -1,4 +1,5 @@
 import { FileText, AlertTriangle, Scale, Download } from 'lucide-react';
+import { Button } from '@/shared/components/common';
 import ProductDetailsTabs from '../tabs';
 
 interface AuctionDescription {

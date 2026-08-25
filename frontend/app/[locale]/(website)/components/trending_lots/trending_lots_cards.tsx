@@ -92,7 +92,7 @@ export function TrendingLotsCards({
       {/* Image — Taller */}
       <div className="relative h-52 bg-muted overflow-hidden">
         <Image
-          src={auction.imageUrl}
+          src={auction.imageUrl ?? '/placeholder.svg'}
           alt={auction.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-500"

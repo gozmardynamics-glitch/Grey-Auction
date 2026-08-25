@@ -17,6 +17,8 @@ import {
   SellerReview,
   SellerStatistics,
 } from './entities';
+import { Product } from '../products/entities/product.entity';
+import { Invoice } from '../invoices/invoice.entity';
 import {
   SellerGuard,
   VerifiedSellerGuard,
@@ -31,6 +33,8 @@ import {
       SellerPayout,
       SellerReview,
       SellerStatistics,
+      Product,
+      Invoice,
     ]),
     StorageModule,
     EmailModule,

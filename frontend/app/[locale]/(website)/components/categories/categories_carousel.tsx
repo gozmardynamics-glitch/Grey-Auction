@@ -15,7 +15,7 @@ import {
 } from '@/shared/components/common';
 
 import {
-  categories,
+  categories as curatedCategories,
   dummyAuctions,
 } from '@/app/[locale]/(website)/models/data';
 import { CategoriesCard } from '../categories/categories_card';
@@ -23,14 +23,26 @@ import { CategoriesCard } from '../categories/categories_card';
 interface CategoriesSectionProps {
   selectedCategory: string | null;
   onCategorySelect: (categorySlug: string | null) => void;
+  /** Server-provided categories (real DB rows) — falls back to curated list */
+  serverCategories?: Array<{ id: string; name: string; slug: string; imageUrl?: string | null }>;
 }
 
 export default function CategoriesCarousel({
   selectedCategory,
   onCategorySelect,
+  serverCategories,
 }: CategoriesSectionProps) {
   const router = useRouter();
-  const visibleCategories = categories.slice(0, 10);
+  const sourceCategories =
+    serverCategories && serverCategories.length > 0
+      ? serverCategories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          image: c.imageUrl || '/placeholder.svg',
+        }))
+      : curatedCategories;
+  const visibleCategories = sourceCategories.slice(0, 10);
 
   const [isMobile, setIsMobile] = useState(false);
 

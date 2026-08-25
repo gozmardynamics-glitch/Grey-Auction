@@ -32,8 +32,24 @@ export class Product {
   @Column()
   title: string;
 
+  @Column({ unique: true, nullable: true })
+  slug: string;
+
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  // ─── Location (card + detail display) ───────────────────────────
+  @Column({ nullable: true })
+  city: string;
+
+  @Column({ nullable: true })
+  country: string;
+
+  @Column({ nullable: true })
+  countryCode: string;
+
+  @Column({ nullable: true })
+  lotNumber: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
   startingBid: number;

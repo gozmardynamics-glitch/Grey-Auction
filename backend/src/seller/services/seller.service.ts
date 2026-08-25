@@ -11,6 +11,8 @@ import {
   SellerVerificationStatus,
   SellerStatus,
 } from '../entities/seller.entity';
+import { Product, ProductStatus } from '../../products/entities/product.entity';
+import { Invoice } from '../../invoices/invoice.entity';
 import {
   RegisterSellerDto,
   UpdateSellerDto,
@@ -29,7 +31,46 @@ export class SellerService {
   constructor(
     @InjectRepository(Seller)
     private readonly sellerRepository: Repository<Seller>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepo: Repository<Invoice>,
   ) {}
+
+  // ==========================================
+  // SELLER SHOP (listings / sales)
+  // ==========================================
+
+  /** Products listed by the authenticated seller (their user id). */
+  async getMyListings(userId: string): Promise<Product[]> {
+    return this.productRepo.find({
+      where: { sellerId: userId },
+      relations: ['seller'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /** Sales: sold products + invoices + revenue totals. */
+  async getMySales(userId: string) {
+    const products = await this.productRepo.find({
+      where: { sellerId: userId, status: ProductStatus.SOLD },
+      order: { createdAt: 'DESC' },
+    });
+    const invoices = await this.invoiceRepo.find({
+      where: { seller_id: userId },
+      order: { issued_at: 'DESC' },
+    });
+    const totalRevenue = invoices.reduce(
+      (sum, inv) => sum + Number(inv.total || 0),
+      0,
+    );
+    return {
+      products,
+      invoices,
+      totalRevenue,
+      totalSales: products.length,
+    };
+  }
 
   // ==========================================
   // CRUD OPERATIONS

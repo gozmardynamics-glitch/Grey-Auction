@@ -23,7 +23,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: page.priority,
   }));
 
-  const auctionEntries: MetadataRoute.Sitemap = (auctions || []).map((auction: { slug: string; endTimeIso?: string; endTime?: string | Date }) => ({
+  const auctionEntries: MetadataRoute.Sitemap = (auctions || [])
+    .filter((auction: any) => auction?.slug)
+    .map((auction: any) => ({
     url: `${BASE_URL}/en/auctions/${auction.slug}`,
     lastModified: auction.endTimeIso
       ? new Date(auction.endTimeIso)

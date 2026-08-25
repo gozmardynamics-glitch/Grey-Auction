@@ -58,7 +58,8 @@ export default function PricingAndTermsForm({
   onBack,
 }: PricingAndTermsFormProps) {
   const form = useForm<PricingAndTermsValues>({
-    resolver: zodResolver(pricingAndTermsSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(pricingAndTermsSchema) as any,
     defaultValues,
   });
 

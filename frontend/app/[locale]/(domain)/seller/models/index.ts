@@ -78,6 +78,7 @@ interface PricingAndTermsData {
   paymentTerms: string;
   hasReservePrice: boolean;
   reservePrice: string;
+  reservePriceVisibility: 'hidden' | 'exposed';
   allowBuyNow: boolean;
   buyNowPrice: string;
   auctionDuration: AuctionDuration;

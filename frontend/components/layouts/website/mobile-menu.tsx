@@ -237,7 +237,7 @@ export default function MobileMenu() {
                   >
                     <div className="relative h-36 bg-muted">
                       <Image
-                        src={featuredAuction.imageUrl}
+                        src={featuredAuction.imageUrl ?? '/placeholder.svg'}
                         alt={featuredAuction.title}
                         width={400}
                         height={200}

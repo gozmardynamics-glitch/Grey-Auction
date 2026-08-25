@@ -164,7 +164,7 @@ function FeaturedAuctionCard({
           <div className="relative h-64 md:h-80">
             <div className="absolute inset-0 flex items-center justify-center">
               <Image
-                src={auction.imageUrl}
+                src={auction.imageUrl ?? '/placeholder.svg'}
                 alt={auction.title}
                 fill
                 className="object-contain drop-shadow-2xl"

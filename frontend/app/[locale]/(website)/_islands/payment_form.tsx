@@ -73,7 +73,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: total,
-          email: data.email || 'buyer@greyauction.com',
+          email: (data as any).email || 'buyer@greyauction.com',
           reference,
           currency: 'NGN',
         }),

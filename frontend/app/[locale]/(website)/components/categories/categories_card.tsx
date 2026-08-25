@@ -78,7 +78,7 @@ export function CategoriesCard({
         {/* Left Side - Image */}
         <div className="relative h-full min-h-[120px] md:min-h-full w-full bg-muted-foreground">
           <Image
-            src={auction.imageUrl}
+            src={auction.imageUrl ?? '/placeholder.svg'}
             alt={auction.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"

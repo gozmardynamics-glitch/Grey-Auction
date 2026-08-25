@@ -38,11 +38,22 @@ export class ProductController {
     return data;
   }
 
+  @Get('related')
+  @ApiOperation({ summary: 'Get related auctions by category' })
+  async getRelated(
+    @Query('category') category: string,
+    @Query('exclude') excludeId?: string,
+    @Query('limit') limit?: number,
+  ) {
+    const data = await this.productService.getRelated(category, excludeId, limit || 4);
+    return { success: true, data };
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get product by ID' })
+  @ApiOperation({ summary: 'Get product by ID or slug' })
   @ApiParam({ name: 'id' })
   async findOne(@Param('id') id: string) {
-    const product = await this.productService.findById(id);
+    const product = await this.productService.findByIdOrSlug(id);
     return { success: true, data: product };
   }
 

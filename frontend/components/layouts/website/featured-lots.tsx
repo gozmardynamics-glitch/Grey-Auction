@@ -15,7 +15,7 @@ export default function FeaturedLots() {
         >
           <div className="relative h-24 bg-muted">
             <Image
-              src={auction.imageUrl}
+              src={auction.imageUrl ?? '/placeholder.svg'}
               alt={auction.title}
               width={100}
               height={100}

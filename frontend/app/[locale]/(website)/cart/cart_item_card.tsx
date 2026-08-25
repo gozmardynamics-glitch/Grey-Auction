@@ -26,7 +26,7 @@ export function CartItemCard({ auction, onRemove }: CartItemCardProps) {
       {/* Image */}
       <div className="relative h-[120px] w-[180px] shrink-0 overflow-hidden rounded-lg bg-muted">
         <Image
-          src={auction.imageUrl}
+          src={auction.imageUrl ?? '/placeholder.svg'}
           alt={auction.title}
           fill
           className="object-cover"

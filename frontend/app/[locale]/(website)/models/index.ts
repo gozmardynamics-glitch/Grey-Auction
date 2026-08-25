@@ -23,17 +23,19 @@ interface TrustBadge {
 
 interface Auction {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   currentBid: number;
   startingBid: number;
   totalBids: number;
   timeLeft: string;
-  endTime: Date;
+  endTime: Date | string;
   endTimeIso?: string;
   imageUrl?: string;
   images?: string[];
   category: string;
+  subCategory?: string;
   sellerId: string;
   sellerName: string;
   status: 'active' | 'live' | 'new' | 'sold';
@@ -49,6 +51,11 @@ interface Auction {
   auctionType: 'bid' | 'buy';
   specs?: string;
   watchersCount?: number;
+  year?: number | null;
+  mileage?: number | null;
+  engineVolume?: number | null;
+  fuelType?: string | null;
+  buyerId?: string | null;
   rating?: number;
   reviewCount?: number;
 }

@@ -138,6 +138,36 @@ export class SellerController {
     };
   }
 
+  @Get('me/products')
+  @UseGuards(JwtAuthGuard, SellerGuard)
+  @SellerOnly()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current seller listings (products)' })
+  async getMyListings(@CurrentSeller() seller: Seller) {
+    const products = await this.sellerService.getMyListings(seller.user_id);
+    return { success: true, data: { items: products, total: products.length } };
+  }
+
+  @Get('me/sales')
+  @UseGuards(JwtAuthGuard, SellerGuard)
+  @SellerOnly()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current seller sales' })
+  async getMySales(@CurrentSeller() seller: Seller) {
+    const sales = await this.sellerService.getMySales(seller.user_id);
+    return { success: true, data: sales };
+  }
+
+  @Get('me/conversations')
+  @UseGuards(JwtAuthGuard, SellerGuard)
+  @SellerOnly()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current seller conversations' })
+  async getMyConversations() {
+    // Chat is client-side for now; the API contract returns an empty list
+    return { success: true, data: [] };
+  }
+
   @Patch('profile/me')
   @UseGuards(JwtAuthGuard, SellerGuard)
   @SellerOnly()

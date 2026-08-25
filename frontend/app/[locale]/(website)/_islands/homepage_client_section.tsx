@@ -65,6 +65,7 @@ export default function HomepageClientSection({
       <FeaturedActiveAuctions auctions={auctions} />
       <CategoriesCarousel
         selectedCategory={selectedCategory}
+        serverCategories={categories}
         onCategorySelect={(categorySlug) =>
           dispatch(setSelectedCategory(categorySlug || categories[0]?.slug || ''))
         }

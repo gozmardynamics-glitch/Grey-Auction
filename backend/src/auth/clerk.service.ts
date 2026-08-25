@@ -133,7 +133,10 @@ export class ClerkService {
       });
 
       const email = (payload.email as string) || '';
-      const role = (payload.publicMetadata?.role as string) || 'buyer';
+      const publicMetadata = payload.publicMetadata as
+        | Record<string, unknown>
+        | undefined;
+      const role = (publicMetadata?.role as string) || 'buyer';
 
       return {
         sub: payload.sub,

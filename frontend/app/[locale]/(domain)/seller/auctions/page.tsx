@@ -4,9 +4,12 @@ import { Button } from '@/shared/components/common';
 import ListingTable from './components/listings_table';
 import Link from 'next/link';
 import { getSellerListings } from '@/lib/server/data';
+import type { Listing } from '../models';
 
 export default async function MyListings() {
-  const listings = await getSellerListings();
+  // data.ts normalizes to the shared Auction shape; the table accepts a
+  // structurally compatible Listing type.
+  const listings = (await getSellerListings()) as unknown as Listing[];
 
   return (
     <div className="space-y-6">

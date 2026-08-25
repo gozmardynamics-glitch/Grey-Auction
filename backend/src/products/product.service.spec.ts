@@ -123,13 +123,96 @@ describe('ProductService', () => {
 
       const result = await service.create(createDto as any, 'seller-1');
 
-      expect(productRepository.create).toHaveBeenCalledWith({
-        ...createDto,
-        sellerId: 'seller-1',
-        status: ProductStatus.DRAFT,
-      });
+      expect(productRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...createDto,
+          sellerId: 'seller-1',
+          status: ProductStatus.DRAFT,
+        }),
+      );
+      // A slug is auto-generated on create
+      const createArg = (productRepository.create as jest.Mock).mock.calls[0][0];
+      expect(createArg.slug).toBeDefined();
+      expect(createArg.slug).toMatch(/^new-product-[a-z0-9]{4}$/);
       expect(productRepository.save).toHaveBeenCalledWith(createdProduct);
       expect(result).toEqual(createdProduct);
+    });
+
+    it('should generate a URL-safe slug', () => {
+      expect(service.generateSlug('Hello World! Auction')).toMatch(
+        /^hello-world-auction-[a-z0-9]{4}$/,
+      );
+      expect(service.generateSlug('  Spaces   & symbols  ')).toMatch(
+        /^spaces-symbols-[a-z0-9]{4}$/,
+      );
+    });
+  });
+
+  describe('findByIdOrSlug', () => {
+    const uuid = '5f5e818e-b1ee-4e25-ae8e-d503cc497657';
+    const slug = 'macbook-pro-16-m3-9fbe';
+
+    it('should look up by UUID first', async () => {
+      (productRepository.findOne as jest.Mock).mockResolvedValue(mockProduct);
+
+      await service.findByIdOrSlug(uuid);
+
+      expect(productRepository.findOne).toHaveBeenCalledWith({
+        where: { id: uuid },
+        relations: ['seller'],
+      });
+    });
+
+    it('should look up by slug when the value is not a UUID', async () => {
+      (productRepository.findOne as jest.Mock).mockResolvedValue(mockProduct);
+
+      await service.findByIdOrSlug(slug);
+
+      expect(productRepository.findOne).toHaveBeenCalledWith({
+        where: { slug },
+        relations: ['seller'],
+      });
+    });
+
+    it('should throw NotFoundException when neither id nor slug matches', async () => {
+      (productRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.findByIdOrSlug('nope')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getRelated', () => {
+    it('should query active products in the same category', async () => {
+      (productRepository.find as jest.Mock).mockResolvedValue([mockProduct]);
+
+      await service.getRelated('Electronics', 'exclude-id', 4);
+
+      expect(productRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: ProductStatus.ACTIVE,
+            category: 'Electronics',
+            id: expect.anything(),
+          }),
+          take: 4,
+        }),
+      );
+    });
+  });
+
+  describe('findAll', () => {
+    it('should default to ACTIVE status for public listing', async () => {
+      (productRepository.findAndCount as jest.Mock).mockResolvedValue([[], 0]);
+
+      await service.findAll({ page: 1, limit: 20 });
+
+      expect(productRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: ProductStatus.ACTIVE }),
+        }),
+      );
     });
   });
 

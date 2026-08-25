@@ -1,9 +1,28 @@
+import { auth } from '@/auth';
+import type { Auction } from '@/app/[locale]/(website)/models';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+/**
+ * Server-side fetch with the Auth.js session token attached when present,
+ * so admin/seller endpoints (JWT-guarded) return real data for the
+ * authenticated request that rendered the page.
+ */
 async function apiFetch(path: string, options?: RequestInit): Promise<any> {
   try {
+    let token: string | null = null;
+    try {
+      const session = await auth();
+      token = (session?.user as any)?.accessToken || null;
+    } catch {
+      token = null;
+    }
     const res = await fetch(`${API_BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: 'no-store',
       ...options,
     });
     if (!res.ok) return null;
@@ -12,6 +31,56 @@ async function apiFetch(path: string, options?: RequestInit): Promise<any> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Normalize a backend Product row into the frontend Auction shape so
+ * cards/detail pages render real data (images, location, counts...).
+ */
+function normalizeAuction(p: any): Auction {
+  const images = Array.isArray(p?.images) && p.images.length ? p.images : ['/placeholder.svg'];
+  const status: Auction['status'] =
+    p?.status === 'sold' ? 'sold' : 'active';
+  return {
+    id: p?.id || '',
+    slug: p?.slug || p?.id,
+    title: p?.title || '',
+    description: p?.description || '',
+    category: p?.category || '',
+    subCategory: p?.subCategory || '',
+    images,
+    imageUrl: images[0],
+    currentBid: Number(p?.currentBid ?? p?.startingBid ?? 0),
+    startingBid: Number(p?.startingBid ?? 0),
+    totalBids: Number(p?.totalBids ?? 0),
+    timeLeft: '',
+    endTime: p?.endTime ? new Date(p.endTime) : new Date(Date.now() + 7 * 86400000),
+    endTimeIso: p?.endTime,
+    status,
+    location: p?.city
+      ? { city: p.city, country: p.country || 'Nigeria', countryCode: p.countryCode || 'NG' }
+      : undefined,
+    sellerId: p?.sellerId || '',
+    sellerName: p?.seller?.business_name || p?.seller?.name || '',
+    auctionType: p?.auctionType === 'direct_sale' ? 'buy' : 'bid',
+    specs: p?.specifications
+      ? Object.entries(p.specifications)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(' · ')
+      : undefined,
+    watchersCount: Number(p?.watchersCount ?? 0),
+    rating: Number(p?.seller?.rating ?? 0),
+    reviewCount: Number(p?.seller?.reviewCount ?? 0),
+  };
+}
+
+/** Unwrap the many list shapes the API returns into a plain array. */
+function unwrapList(data: any): any[] | null {
+  if (!data) return null;
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.items)) return data.items;
+  if (Array.isArray(data.data)) return data.data;
+  return null;
 }
 
 // ─── Inline Mock Data ─────────────────────────────────────────────────────
@@ -25,7 +94,7 @@ const isoDay5 = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
 const isoDay10 = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString();
 const isoDay14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-const mockAuctions = [
+const mockAuctions: Auction[] = [
   {
     id: 'auc-001',
     slug: '2022-toyota-camry-hybrid',
@@ -738,83 +807,109 @@ const mockFaqCategories = [
 
 export async function getAuctions() {
   const data = await apiFetch('/products');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list.map(normalizeAuction);
   return mockAuctions;
 }
 
 export async function getAuctionBySlug(slug: string) {
-  const data = await apiFetch(`/products/${slug}`);
-  if (data) return data;
+  const data = await apiFetch(`/products/${encodeURIComponent(slug)}`);
+  if (data) return normalizeAuction(data);
   return mockAuctions.find((a) => a.slug === slug || a.id === slug) || null;
 }
 
 export async function getFeaturedAuctions() {
   const data = await apiFetch('/products/featured');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list.map(normalizeAuction);
   return mockAuctions.slice(0, 8);
 }
 
 export async function getCategories() {
   const data = await apiFetch('/categories');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list;
   return mockCategories;
 }
 
 export async function getRelatedAuctions(category: string) {
-  const data = await apiFetch(`/auctions/related?category=${category}`);
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const data = await apiFetch(
+    `/products/related?category=${encodeURIComponent(category)}`,
+  );
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list.map(normalizeAuction);
   return mockAuctions.filter(
-    (a) => a.category?.toLowerCase() === category?.toLowerCase()
+    (a) => a.category?.toLowerCase() === category?.toLowerCase(),
   );
 }
 
 export async function getAuctionsByCategory(category: string) {
-  const data = await apiFetch(`/auctions?category=${category}`);
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const data = await apiFetch(
+    `/products?category=${encodeURIComponent(category)}`,
+  );
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list.map(normalizeAuction);
   return mockAuctions.filter(
-    (a) => a.category?.toLowerCase() === category?.toLowerCase()
+    (a) => a.category?.toLowerCase() === category?.toLowerCase(),
   );
 }
 
 export async function getBanners() {
-  const data = await apiFetch('/admin/banners');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const data = await apiFetch('/banners');
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list;
   return mockBanners;
 }
 
 export async function getFaqs() {
-  const data = await apiFetch('/admin/faqs');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const data = await apiFetch('/faqs');
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list;
   return mockFaqs;
 }
 
 export async function getTestimonials() {
-  const data = await apiFetch('/testimonials');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  // No backend entity for testimonials yet — marketing copy stays client-side
   return mockTestimonials;
 }
 
 export async function getFaqCategories() {
   const data = await apiFetch('/faqs');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) {
+    // Group the flat FAQ rows into the FAQCategory shape the UI expects
+    const groups = new Map<string, { question: string; answer: string }[]>();
+    for (const faq of list) {
+      const name = (faq.category as string) || 'General';
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name)!.push({
+        question: (faq.question as string) || '',
+        answer: (faq.answer as string) || '',
+      });
+    }
+    const EMOJIS = ['📦', '💬', '💰', '🛠️', '🚚', '🔒', '⭐', '🏷️'];
+    let i = 0;
+    return Array.from(groups.entries()).map(([name, items]) => ({
+      name,
+      emoji: EMOJIS[i++ % EMOJIS.length],
+      items,
+    }));
+  }
   return mockFaqCategories;
 }
 
 export async function getCartItems() {
-  const data = await apiFetch('/cart');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  // Cart is frontend-owned state (Redux); no backend module exists
   return [];
 }
 
 export async function getOrderItems() {
-  const data = await apiFetch('/orders');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  // Orders are frontend-owned state; no backend module exists
   return [];
 }
 
 export async function getWishlistItems() {
-  const data = await apiFetch('/wishlist');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  // Wishlist is frontend-owned state (Redux); no backend module exists
   return [];
 }
 
@@ -822,98 +917,103 @@ export async function getWishlistItems() {
 
 export async function getAdminAuctions() {
   const data = await apiFetch('/admin/auctions');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list.map(normalizeAuction);
   return mockAuctions;
 }
 
 export async function getAdminBids() {
   const data = await apiFetch('/admin/bids');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getAdminBuyers() {
   const data = await apiFetch('/admin/buyers');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getAdminSellers() {
   const data = await apiFetch('/admin/sellers');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getAdminAdmins() {
   const data = await apiFetch('/admin/admins');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getAdminCategories() {
   const data = await apiFetch('/categories');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list;
   return mockCategories;
 }
 
 export async function getAdminBanners() {
   const data = await apiFetch('/admin/banners');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list;
   return mockBanners;
 }
 
 export async function getAdminFaqs() {
   const data = await apiFetch('/admin/faqs');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list;
   return mockFaqs;
 }
 
 export async function getAdminPayments() {
   const data = await apiFetch('/admin/payments');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getAdminBiddingRooms() {
   const data = await apiFetch('/rooms');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getAdminTickets() {
   const data = await apiFetch('/tickets');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 // ─── Seller ─────────────────────────────────────────────────────────────
 
 export async function getSellerListings() {
-  const data = await apiFetch('/seller/listings');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const data = await apiFetch('/sellers/me/products');
+  const list = unwrapList(data);
+  if (list && list.length > 0) return list.map(normalizeAuction);
   return [];
 }
 
 export async function getSellerPayments() {
-  const data = await apiFetch('/seller/payments');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const data = await apiFetch('/sellers/payouts/me');
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getSellerSales() {
-  const data = await apiFetch('/seller/sales');
-  if (data && Array.isArray(data) && data.length > 0) return data;
+  const data = await apiFetch('/sellers/me/sales');
+  if (data && Array.isArray(data.products)) return data.products;
   return [];
 }
 
 export async function getSellerBiddingRooms() {
   const data = await apiFetch('/rooms');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const list = unwrapList(data);
+  return list ?? [];
 }
 
 export async function getSellerConversations() {
-  const data = await apiFetch('/seller/conversations');
-  if (data && Array.isArray(data) && data.length > 0) return data;
-  return [];
+  const data = await apiFetch('/sellers/me/conversations');
+  const list = unwrapList(data);
+  return list ?? [];
 }

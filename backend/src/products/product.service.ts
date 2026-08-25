@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, EntityManager } from 'typeorm';
+import { Repository, ILike, Between, Not, EntityManager } from 'typeorm';
 import { Product, ProductStatus } from './entities/product.entity';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
 
@@ -15,16 +15,33 @@ export class ProductService {
     const product = this.repo.create({
       ...dto,
       sellerId,
+      slug: this.generateSlug(dto.title),
       status: ProductStatus.DRAFT,
     });
     return this.repo.save(product);
   }
 
+  /**
+   * Slugify a title into a URL-safe slug with a short random suffix
+   * so it stays unique across listings.
+   */
+  generateSlug(title: string): string {
+    const base = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+    const suffix = Math.random().toString(36).slice(2, 6);
+    return base ? base + '-' + suffix : 'item-' + suffix;
+  }
+
   async findAll(query: ProductQueryDto) {
+    // Public listing defaults to ACTIVE auctions unless a status is requested
     const { status, category, search, page = 1, limit = 20 } = query;
     const where: any = {};
 
     if (status) where.status = status;
+    else where.status = ProductStatus.ACTIVE;
     if (category) where.category = category;
 
     const [data, total] = await this.repo.findAndCount({
@@ -60,8 +77,43 @@ export class ProductService {
     return product;
   }
 
+  async findByIdOrSlug(idOrSlug: string): Promise<Product> {
+    // Only match the id column when the value is actually a UUID; a raw slug
+    // in the id column would raise an invalid-uuid error on PostgreSQL.
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      idOrSlug,
+    );
+    let product: Product | null = null;
+    if (isUuid) {
+      product = await this.repo.findOne({
+        where: { id: idOrSlug },
+        relations: ['seller'],
+      });
+    }
+    if (!product) {
+      product = await this.repo.findOne({
+        where: { slug: idOrSlug },
+        relations: ['seller'],
+      });
+    }
+    if (!product) throw new NotFoundException('Product not found');
+    return product;
+  }
+
   async findBySlug(id: string): Promise<Product> {
-    return this.findById(id);
+    return this.findByIdOrSlug(id);
+  }
+
+  async getRelated(category: string, excludeId?: string, take = 4): Promise<Product[]> {
+    const where: any = { status: ProductStatus.ACTIVE };
+    if (category) where.category = category;
+    if (excludeId) where.id = Not(excludeId);
+    return this.repo.find({
+      where,
+      relations: ['seller'],
+      order: { totalBids: 'DESC' },
+      take,
+    });
   }
 
   async findBySeller(sellerId: string): Promise<Product[]> {

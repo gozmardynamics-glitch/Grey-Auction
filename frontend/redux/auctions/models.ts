@@ -1,13 +1,16 @@
 export interface Auction {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   currentBid: number;
   startingBid: number;
   totalBids: number;
   timeLeft: string;
-  endTime: Date;
-  imageUrl: string;
+  endTime: Date | string;
+  endTimeIso?: string;
+  imageUrl?: string;
+  images?: string[];
   category: string;
   sellerId: string;
   sellerName: string;
