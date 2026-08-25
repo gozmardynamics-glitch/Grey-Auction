@@ -116,6 +116,65 @@ export class ProductService {
     });
   }
 
+  /**
+   * Bulk-create products from parsed CSV rows.
+   * Each row may provide: title*, description, starting_bid*, category,
+   * sub_category, end_time (ISO), city, country, country_code.
+   * Returns created products plus per-row errors for invalid rows.
+   */
+  async bulkCreate(
+    rows: Record<string, string>[],
+    sellerId: string,
+  ): Promise<{ created: Product[]; errors: { row: number; message: string }[] }> {
+    const created: Product[] = [];
+    const errors: { row: number; message: string }[] = [];
+
+    for (let i = 0; i < rows.length; i += 1) {
+      const r = rows[i];
+      const rowNumber = i + 2; // 1-based accounting for the header row
+
+      if (!r.title || r.title.length < 2) {
+        errors.push({ row: rowNumber, message: 'title is required (min 2 chars)' });
+        continue;
+      }
+      const startingBid = Number(r.starting_bid);
+      if (!r.starting_bid || Number.isNaN(startingBid) || startingBid < 0) {
+        errors.push({ row: rowNumber, message: 'starting_bid must be a positive number' });
+        continue;
+      }
+
+      const endTime = r.end_time
+        ? new Date(r.end_time)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      if (Number.isNaN(endTime.getTime())) {
+        errors.push({ row: rowNumber, message: 'end_time must be a valid ISO date' });
+        continue;
+      }
+
+      const product = await this.repo.save(
+        this.repo.create({
+          title: r.title,
+          description: r.description || '',
+          startingBid,
+          currentBid: 0,
+          category: r.category || 'Other',
+          subCategory: r.sub_category || undefined,
+          images: r.image_url ? [r.image_url] : ['/placeholder.svg'],
+          endTime,
+          status: ProductStatus.DRAFT,
+          slug: this.generateSlug(r.title),
+          sellerId,
+          city: r.city || undefined,
+          country: r.country || undefined,
+          countryCode: r.country_code || undefined,
+        }),
+      );
+      created.push(product);
+    }
+
+    return { created, errors };
+  }
+
   async findBySeller(sellerId: string): Promise<Product[]> {
     return this.repo.find({
       where: { sellerId },

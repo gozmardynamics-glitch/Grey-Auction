@@ -114,6 +114,83 @@ export class InviteService {
     return this.repo.save(invite);
   }
 
+  /**
+   * REQUEST-mode invite: the invitee requests access to the room. Records
+   * their identity and leaves the invite PENDING for the seller to approve.
+   */
+  async requestAccess(
+    token: string,
+    identity?: { name?: string; email?: string },
+  ): Promise<Invite> {
+    const invite = await this.validate(token);
+    if (invite.mode !== InviteMode.REQUEST) {
+      throw new BadRequestException(
+        'This invite does not require approval — use it directly.',
+      );
+    }
+    if (invite.response === InviteResponse.ACCEPTED) {
+      throw new BadRequestException('Access already granted for this invite');
+    }
+    if (invite.response === InviteResponse.DECLINED) {
+      throw new BadRequestException('This invite request was declined');
+    }
+
+    if (identity?.name) invite.inviteeName = identity.name;
+    if (identity?.email) invite.inviteeEmail = identity.email;
+    // The request itself does not consume usage — the seller's approval does.
+    return this.repo.save(invite);
+  }
+
+  /** Seller approves a REQUEST-mode invite (only the invite creator). */
+  async approve(id: string, userId: string): Promise<Invite> {
+    const invite = await this.repo.findOne({ where: { id } });
+    if (!invite) throw new NotFoundException('Invite not found');
+    if (invite.createdBy !== userId) {
+      throw new BadRequestException('Only the invite owner can approve');
+    }
+    if (invite.mode !== InviteMode.REQUEST) {
+      throw new BadRequestException('Only request-mode invites need approval');
+    }
+    if (new Date() > invite.expiresAt || !invite.isActive) {
+      throw new BadRequestException('Invite has expired');
+    }
+
+    invite.response = InviteResponse.ACCEPTED;
+    invite.respondedAt = new Date();
+    return this.repo.save(invite);
+  }
+
+  /** Seller rejects a REQUEST-mode invite. */
+  async reject(id: string, userId: string): Promise<Invite> {
+    const invite = await this.repo.findOne({ where: { id } });
+    if (!invite) throw new NotFoundException('Invite not found');
+    if (invite.createdBy !== userId) {
+      throw new BadRequestException('Only the invite owner can reject');
+    }
+    if (invite.mode !== InviteMode.REQUEST) {
+      throw new BadRequestException('Only request-mode invites need approval');
+    }
+    if (invite.response !== InviteResponse.PENDING) {
+      throw new BadRequestException('This request was already handled');
+    }
+
+    invite.response = InviteResponse.DECLINED;
+    invite.respondedAt = new Date();
+    return this.repo.save(invite);
+  }
+
+  /** Pending request-mode invites created by this seller. */
+  async pendingRequests(userId: string): Promise<Invite[]> {
+    return this.repo.find({
+      where: {
+        createdBy: userId,
+        mode: InviteMode.REQUEST,
+        response: InviteResponse.PENDING,
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findByProduct(productId: string): Promise<Invite[]> {
     return this.repo.find({ where: { productId }, order: { createdAt: 'DESC' } });
   }

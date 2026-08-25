@@ -1,9 +1,12 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  UseGuards, HttpCode, HttpStatus,
+  UseGuards, HttpCode, HttpStatus, UseInterceptors, UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { ProductService } from './product.service';
+import { csvToObjects, parseCsv } from './csv-parser';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -23,6 +26,32 @@ export class ProductController {
   async create(@Body() dto: CreateProductDto, @CurrentUser() user: any) {
     const product = await this.productService.create(dto, user.id);
     return { success: true, message: 'Product created', data: product };
+  }
+
+  @Post('bulk')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Bulk-create products from a CSV file' })
+  async bulkUpload(
+    @UploadedFile() file: { buffer: Buffer },
+    @CurrentUser() user: any,
+  ) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('CSV file is required');
+    }
+    const rows = parseCsv(file.buffer.toString('utf8'));
+    const { data, errors } = csvToObjects(rows);
+    if (errors.length > 0) {
+      throw new BadRequestException(errors[0]);
+    }
+    const result = await this.productService.bulkCreate(data, user.id);
+    return {
+      success: true,
+      message: `Created ${result.created.length} product(s), ${result.errors.length} row(s) failed`,
+      data: result,
+    };
   }
 
   @Get()

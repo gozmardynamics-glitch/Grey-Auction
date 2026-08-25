@@ -39,6 +39,8 @@ interface InviteData {
   expiresAt: string;
   usageCount: number;
   maxUsage: number;
+  mode?: 'exclusive' | 'request';
+  response?: 'pending' | 'accepted' | 'declined';
 }
 
 export default function InviteLandingPage({
@@ -49,11 +51,15 @@ export default function InviteLandingPage({
   const { token: inviteToken } = use(params);
   const router = useRouter();
   const isLoggedIn = useAppSelector((state) => state.auth.isAuthenticated);
+  const authName = useAppSelector((state) => state.auth.user?.name);
+  const authEmail = useAppSelector((state) => state.auth.user?.email);
   const [invite, setInvite] = useState<InviteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [joined, setJoined] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [requested, setRequested] = useState(false);
 
   const loadInvite = useCallback(async () => {
     try {
@@ -109,6 +115,32 @@ export default function InviteLandingPage({
       setJoining(false);
     }
   }, [invite, router]);
+
+  const handleRequestAccess = useCallback(async () => {
+    if (!invite) return;
+    setRequesting(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(apiBase + '/invites/request-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: invite.token,
+          name: authName || undefined,
+          email: authEmail || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Request failed');
+      }
+      setRequested(true);
+    } catch (err: any) {
+      setError(err.message || 'Could not submit your request');
+    } finally {
+      setRequesting(false);
+    }
+  }, [invite, authName, authEmail]);
 
   const handleDecline = useCallback(async () => {
     if (!invite) return;
@@ -286,6 +318,27 @@ export default function InviteLandingPage({
             </div>
           )}
           {isLoggedIn ? (
+            invite.mode === 'request' &&
+            invite.response !== 'accepted' ? (
+              <div className="space-y-2">
+                {requested || invite.response === 'pending' ? (
+                  <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
+                    <Shield className="mr-1.5 inline h-4 w-4" />
+                    Request submitted — the seller will approve your access.
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full gap-2"
+                    size="lg"
+                    onClick={handleRequestAccess}
+                    disabled={requesting}
+                  >
+                    {requesting ? 'Submitting...' : 'Request Access'}
+                    {!requesting && <ArrowRight className="h-4 w-4" />}
+                  </Button>
+                )}
+              </div>
+            ) : (
             <div className="space-y-2">
               <Button className="w-full gap-2" size="lg" onClick={handleJoin} disabled={joining}>
                 {joining ? 'Joining...' : 'Accept Invitation'}
@@ -301,6 +354,7 @@ export default function InviteLandingPage({
                 Decline
               </Button>
             </div>
+            )
           ) : (
             <div className="space-y-3">
               <Button
