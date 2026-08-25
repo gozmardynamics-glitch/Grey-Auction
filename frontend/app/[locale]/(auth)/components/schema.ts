@@ -138,56 +138,68 @@ import * as z from 'zod';
 //   city: z.string().min(1, 'City is required'),
 // });
 
-// ─── Version 2: All optional (active) ───────────────────────────────
+// ─── Version 3: Real validation (restored) ─────────────────────────
+
+const emailRule = z
+  .string()
+  .min(1, 'Email is required')
+  .email('Please enter a valid email address');
+const passwordRule = z
+  .string()
+  .min(1, 'Password is required')
+  .min(6, 'Password must be at least 6 characters');
 
 export const sellerRegisterSchema = z.object({
-  account_type: z.enum(['individual', 'business']).optional(),
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  email: z.string().optional(),
-  password: z.string().optional(),
+  account_type: z.enum(['individual', 'business']),
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: emailRule,
+  password: passwordRule,
 });
 
 export const buyerRegisterSchema = z.object({
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  email: z.string().optional(),
-  password: z.string().optional(),
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: emailRule,
+  password: passwordRule,
 });
 
-export const resetPasswordSchema = z.object({
-  password: z.string().optional(),
-  confirm_password: z.string().optional(),
-});
+export const resetPasswordSchema = z
+  .object({
+    password: passwordRule,
+    confirm_password: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: 'Passwords do not match',
+    path: ['confirm_password'],
+  });
 
 export const loginSchema = z.object({
-  email: z.string().optional(),
-  password: z.string().optional(),
+  email: emailRule,
+  password: z.string().min(1, 'Password is required'),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().optional(),
+  email: emailRule,
 });
 
-
-
 export const verificationSchema = z.object({
-  meansOfId: z.string().optional(),
+  meansOfId: z.string().min(1, 'Please select a means of ID'),
   file: z.any().optional(),
 });
 
 export const checkoutSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  phoneCode: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  country: z.string().optional(),
-  houseNumber: z.string().optional(),
-  street: z.string().optional(),
-  state: z.string().optional(),
-  city: z.string().optional(),
-  postalCode: z.string().optional(),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  phoneCode: z.string().min(1, 'Phone code is required'),
+  phone: z.string().min(1, 'Phone number is required'),
+  email: emailRule,
+  country: z.string().min(1, 'Country is required'),
+  houseNumber: z.string().min(1, 'House number is required'),
+  street: z.string().min(1, 'Street is required'),
+  state: z.string().min(1, 'State is required'),
+  city: z.string().min(1, 'City is required'),
+  postalCode: z.string().min(1, 'Postal code is required'),
   shipToDifferent: z.boolean().optional(),
   shipFirstName: z.string().optional(),
   shipLastName: z.string().optional(),
@@ -197,22 +209,35 @@ export const checkoutSchema = z.object({
   shipState: z.string().optional(),
   shipCity: z.string().optional(),
   shipPostalCode: z.string().optional(),
-  agreedToTerms: z.boolean().optional(),
+  agreedToTerms: z
+    .boolean()
+    .refine((v) => v === true, 'You must agree to the terms and conditions'),
 });
 
 export const paymentSchema = z.object({
-  cardNumber: z.string().optional(),
-  expiry: z.string().optional(),
-  cvv: z.string().optional(),
-  agreedToTerms: z.boolean().optional(),
+  cardNumber: z
+    .string()
+    .min(1, 'Card number is required')
+    .regex(/^[\d\s]{13,19}$/, 'Invalid card number'),
+  expiry: z
+    .string()
+    .min(1, 'Expiry is required')
+    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Use MM/YY format'),
+  cvv: z
+    .string()
+    .min(1, 'CVV is required')
+    .regex(/^\d{3,4}$/, 'Invalid CVV'),
+  agreedToTerms: z
+    .boolean()
+    .refine((v) => v === true, 'You must agree to the terms and conditions'),
 });
 
 export const completeProfileSchema = z.object({
-  phone: z.string().optional(),
-  country: z.string().optional(),
-  address: z.string().optional(),
-  state: z.string().optional(),
-  city: z.string().optional(),
+  phone: z.string().min(1, 'Phone number is required'),
+  country: z.string().min(1, 'Country is required'),
+  address: z.string().min(1, 'Address is required'),
+  state: z.string().min(1, 'State is required'),
+  city: z.string().min(1, 'City is required'),
 });
 
 // ─── Types ───────────────────────────────────────────────────────────

@@ -13,6 +13,9 @@ export const businessDetailsSchema = z.object({
   company: z.string().min(1, 'Company name is required'),
   registrationNumber: z.string().min(1, 'Registration number is required'),
   postalCode: z.string().min(1, 'Postal code is required'),
+  addressLine1: z.string().min(1, 'Address is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
 });
 
 export const auctionDetailsSchema = z.object({

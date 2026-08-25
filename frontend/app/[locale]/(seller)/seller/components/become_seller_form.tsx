@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, Building2, UserRound, ArrowRight } from 'lucide-react';
+import { Clock, Building2, UserRound, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, Button } from '@/shared/components/common';
 import { cn } from '@/lib/utils';
+import { useAppSelector } from '@/redux/store';
 
 import type {
   BecomeSellerFormData,
@@ -29,6 +31,9 @@ const DEFAULT_FORM_DATA: BecomeSellerFormData = {
   company: '',
   registrationNumber: '',
   postalCode: '',
+  addressLine1: '',
+  city: '',
+  state: '',
   category: '',
   numberOfItems: '',
   estimatedValue: '',
@@ -43,12 +48,15 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
   isActive,
 }) => {
   const router = useRouter();
+  const authToken = useAppSelector((state) => state.auth.token);
   const [currentStep, setCurrentStep] = useState(0);
   const [sellerType, setSellerType] = useState<'individual' | 'organization'>(
     'individual'
   );
   const [formData, setFormData] =
     useState<BecomeSellerFormData>(DEFAULT_FORM_DATA);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handlePersonalDetails = (data: PersonalDetailsValues) => {
     setFormData((prev) => ({ ...prev, ...data }));
@@ -62,14 +70,55 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
 
   const handleAuctionDetails = async (data: AuctionDetailsValues) => {
     const finalData = { ...formData, ...data };
+
+    // The seller profile endpoint requires an authenticated account
+    if (!authToken) {
+      toast.error('Please create a seller account first');
+      router.push('/auth/seller/register');
+      return;
+    }
+
+    // Build a payload that matches the backend RegisterSellerDto
+    const payload = {
+      business_name: finalData.company || finalData.fullName,
+      business_type: sellerType === 'organization' ? 'LLC' : 'INDIVIDUAL',
+      business_registration_number: finalData.registrationNumber || undefined,
+      email: finalData.email,
+      phone: finalData.phoneNumber,
+      address_line1: finalData.addressLine1,
+      city: finalData.city,
+      state: finalData.state,
+      postal_code: finalData.postalCode,
+      country: 'NG',
+      contact_person: finalData.fullName,
+    };
+
+    setSubmitting(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/sellers/register`, {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(apiBase + '/sellers/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalData),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + authToken,
+        },
+        body: JSON.stringify(payload),
       });
-    } catch {}
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast.error(json?.message || 'Registration failed. Please try again.');
+        return;
+      }
+
+      toast.success('Seller profile created — pending verification');
+      setSubmitted(true);
+    } catch {
+      toast.error('Network error — is the API running on port 3001?');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleBack = () => {
@@ -210,6 +259,9 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
             company: formData.company,
             registrationNumber: formData.registrationNumber,
             postalCode: formData.postalCode,
+            addressLine1: formData.addressLine1,
+            city: formData.city,
+            state: formData.state,
           }}
           onNext={handleBusinessDetails}
           onBack={handleBack}
@@ -228,6 +280,31 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
         />
       )}
       </Card>
+
+      {submitted && (
+        <Card className="w-full rounded-2xl border border-border bg-card p-8 shadow-lg">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <CheckCircle2 className="h-8 w-8" />
+            </span>
+            <h3 className="text-xl font-bold text-foreground">
+              Application received
+            </h3>
+            <p className="max-w-md text-sm text-muted-foreground">
+              Thank you, {formData.fullName || 'seller'}. Our team will verify
+              your details and contact you shortly. Once approved you can start
+              listing items for auction.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-2"
+              onClick={() => router.push('/seller/dashboard')}
+            >
+              Go to seller dashboard
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
