@@ -6,6 +6,7 @@ import {
   IsOptional,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   SellerBusinessType,
   SellerVerificationStatus,
@@ -21,12 +22,14 @@ export class SellerQueryDto {
   // ==========================================
   @ApiProperty({ example: 1, required: false, default: 1 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number;
 
   @ApiProperty({ example: 20, required: false, default: 20 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   limit?: number;
@@ -66,6 +69,7 @@ export class SellerQueryDto {
 
   @ApiProperty({ example: 4.0, description: 'Minimum rating', required: false })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   min_rating?: number;

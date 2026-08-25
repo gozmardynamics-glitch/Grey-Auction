@@ -1,4 +1,5 @@
 import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsDateString, IsEnum, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductStatus } from '../entities/product.entity';
 
@@ -129,11 +130,13 @@ export class ProductQueryDto {
 
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   page?: number;
 
   @ApiProperty({ required: false, default: 20 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   limit?: number;
 }

@@ -27,28 +27,17 @@ export const authApi = api.injectEndpoints({
       query: (body) => ({ url: '/auth/verify-otp', method: 'POST', body }),
     }),
 
-    resendOtp: builder.mutation<MessageResponse, { email: string }>({
-      query: (body) => ({ url: '/auth/resend-otp', method: 'POST', body }),
+    sendOtp: builder.mutation<MessageResponse, { email: string }>({
+      query: (body) => ({ url: '/auth/send-otp', method: 'POST', body }),
     }),
 
-    // ─── Profile ──────────────────────────────────────────────────
-
-    getProfile: builder.query<User, void>({
-      query: () => '/auth/profile',
-      providesTags: ['Profile'],
-    }),
-
+    // ─── Profile (backend exposes POST /auth/profile to complete it) ─
     completeProfile: builder.mutation<AuthResponse, CompleteProfileRequest>({
       query: (body) => ({
-        url: '/auth/complete-profile',
-        method: 'PATCH',
+        url: '/auth/profile',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ['Profile'],
-    }),
-
-    verifyIdentity: builder.mutation<MessageResponse, FormData>({
-      query: (body) => ({ url: '/auth/verify-identity', method: 'POST', body }),
       invalidatesTags: ['Profile'],
     }),
 
@@ -59,7 +48,7 @@ export const authApi = api.injectEndpoints({
     }),
 
     resetPassword: builder.mutation<MessageResponse, ResetPasswordRequest>({
-      query: (body) => ({ url: '/auth/reset-password', method: 'PATCH', body }),
+      query: (body) => ({ url: '/auth/reset-password', method: 'POST', body }),
     }),
   }),
 });
@@ -68,10 +57,8 @@ export const {
   useLoginMutation,
   useRegisterMutation,
   useVerifyOtpMutation,
-  useResendOtpMutation,
-  useGetProfileQuery,
+  useSendOtpMutation,
   useCompleteProfileMutation,
-  useVerifyIdentityMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } = authApi;

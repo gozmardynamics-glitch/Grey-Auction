@@ -21,12 +21,11 @@ export default function BuyerWalletModule() {
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
 
+  // Wallet backend (balances, bank accounts, PIN) is not implemented yet —
+  // these defaults render the empty states. Wire to a wallet API in a later phase.
   const walletBalance = 20000000;
-
-  // Mock: toggle to test both flows
-  // Set to null to test the add-account flow, or provide an object for the has-account flow
-  const mockBankAccount = null;
-  const mockHasPin = false;
+  const bankAccount = null;
+  const hasPin = false;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -47,7 +46,7 @@ export default function BuyerWalletModule() {
       {/* Balance Card */}
       <WalletBalanceCard
         balance={walletBalance}
-        bankAccount={mockBankAccount}
+        bankAccount={bankAccount}
         onWithdraw={() => setWithdrawOpen(true)}
         onDeposit={() => setDepositOpen(true)}
         onAddAccount={() => setWithdrawOpen(true)}
@@ -78,8 +77,8 @@ export default function BuyerWalletModule() {
         open={withdrawOpen}
         onOpenChange={setWithdrawOpen}
         balance={walletBalance}
-        bankAccount={mockBankAccount}
-        hasPin={mockHasPin}
+        bankAccount={bankAccount}
+        hasPin={hasPin}
       />
     </div>
   );
