@@ -31,7 +31,7 @@ function BrandLogo({ brand }: { brand: (typeof trustedBrands)[number] }) {
     <div
       className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold ${brand.color ?? 'bg-gray-500'}`}
     >
-      {brand.initials ?? brand.name.charAt(0)}
+      {brand.initials ?? (brand.name || 'G').charAt(0)}
     </div>
   );
 }

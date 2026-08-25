@@ -185,7 +185,7 @@ export default function ProductDetailsClient({
 
   const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
     const categoryDisplay = auction.category
-      ? auction.category.charAt(0).toUpperCase() + auction.category.slice(1)
+      ? (auction.category || 'Auction').charAt(0).toUpperCase() + (auction.category || 'Auction').slice(1)
       : '';
     return [
       { label: 'Home', href: '/' },

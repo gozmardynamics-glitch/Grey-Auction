@@ -34,7 +34,7 @@ export default function FeaturedAuctions({
     : auctions || dummyAuctions;
 
   const categoryLabel = selectedCategory
-    ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Auctions`
+    ? `${(selectedCategory || 'Featured').charAt(0).toUpperCase() + (selectedCategory || 'Featured').slice(1)} Auctions`
     : 'Featured Auctions';
 
   // Single auction view
