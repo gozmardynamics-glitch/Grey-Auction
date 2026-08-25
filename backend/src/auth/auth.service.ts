@@ -85,7 +85,7 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { email } });
     if (user) {
       const resetToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '1h' });
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login/forgot_password/reset_password?token=${resetToken}`;
       this.emailService.sendPasswordResetEmail(email, resetLink).catch((err) => {
         this.logger.error(`Failed to send password reset email: ${err.message}`);
       });

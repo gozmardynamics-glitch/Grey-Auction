@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react';
@@ -23,8 +23,9 @@ import {
   resetPasswordSchema,
 } from '../../../../components/schema';
 
-export default function LoginPage() {
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,7 +45,10 @@ export default function LoginPage() {
       const res = await fetch(`${apiBase}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: 'otp-reset', newPassword: data.password }),
+        body: JSON.stringify({
+          token: searchParams.get('token') || '',
+          newPassword: data.password,
+        }),
       });
 
       if (!res.ok) {
@@ -194,5 +198,15 @@ export default function LoginPage() {
         </form>
       </Form>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={<div className="text-sm text-muted-foreground">Loading…</div>}
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
