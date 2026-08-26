@@ -9,11 +9,17 @@ import { AIController } from './ai.controller';
 import { AIExecuteController, AIPublicExecuteController } from './ai-execute.controller';
 import { AIOrchestratorService } from '../common/ai/services/ai-orchestrator.service';
 import { AIUsageLogService } from '../common/ai/services/ai-usage-log.service';
+import { ProviderHealthMonitorService } from './provider-health-monitor.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([LLMProvider, LLMModel, AIFeatureConfig, AIUsageLog])],
   controllers: [AIController, AIExecuteController, AIPublicExecuteController],
-  providers: [AIService, AIOrchestratorService, AIUsageLogService],
+  providers: [
+    AIService,
+    AIOrchestratorService,
+    AIUsageLogService,
+    ProviderHealthMonitorService,
+  ],
   exports: [AIService, AIOrchestratorService, TypeOrmModule],
 })
 export class AIModule {}

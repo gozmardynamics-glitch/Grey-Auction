@@ -14,6 +14,13 @@ export enum ProviderStatus {
   DOWN = 'down',
 }
 
+/** Wire protocol family — determines auth style + request format. */
+export enum ProviderType {
+  OPENAI = 'openai',
+  ANTHROPIC = 'anthropic',
+  GEMINI = 'gemini',
+}
+
 @Entity('llm_providers')
 export class LLMProvider {
   @PrimaryGeneratedColumn('uuid')
@@ -39,6 +46,9 @@ export class LLMProvider {
 
   @Column({ type: 'enum', enum: ProviderTier, default: ProviderTier.PRODUCTION })
   tier: ProviderTier;
+
+  @Column({ type: 'enum', enum: ProviderType, default: ProviderType.OPENAI })
+  providerType: ProviderType;
 
   @Column({ type: 'enum', enum: ProviderStatus, default: ProviderStatus.UNKNOWN })
   status: ProviderStatus;

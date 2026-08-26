@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsBoolean, IsEnum, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProviderTier } from '../entities/llm-provider.entity';
+import { ProviderTier, ProviderType } from '../entities/llm-provider.entity';
 
 export class CreateProviderDto {
   @ApiProperty()
@@ -28,6 +28,11 @@ export class CreateProviderDto {
   @IsOptional()
   @IsEnum(ProviderTier)
   tier?: ProviderTier;
+
+  @ApiProperty({ required: false, enum: ProviderType, default: ProviderType.OPENAI })
+  @IsOptional()
+  @IsEnum(ProviderType)
+  providerType?: ProviderType;
 
   @ApiProperty({ required: false, default: true })
   @IsOptional()

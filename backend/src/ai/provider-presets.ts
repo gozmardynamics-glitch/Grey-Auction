@@ -1,16 +1,21 @@
+export type ProviderType = 'openai' | 'anthropic' | 'gemini';
+
 export interface ProviderPreset {
   name: string;
   displayName: string;
   baseUrl: string;
   docs: string;
   tier: 'production' | 'development' | 'testing';
+  providerType?: ProviderType;
 }
 
 export const PROVIDER_PRESETS: ProviderPreset[] = [
-  { name: 'openai', displayName: 'OpenAI', baseUrl: 'https://api.openai.com/v1', docs: 'https://platform.openai.com/docs', tier: 'production' },
-  { name: 'anthropic', displayName: 'Anthropic', baseUrl: 'https://api.anthropic.com/v1', docs: 'https://docs.anthropic.com', tier: 'production' },
-  { name: 'deepseek', displayName: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', docs: 'https://api-docs.deepseek.com', tier: 'production' },
-  { name: 'qwen', displayName: 'Qwen (Alibaba DashScope)', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', docs: 'https://help.aliyun.com/zh/model-studio', tier: 'production' },
+  { name: 'openai', displayName: 'OpenAI', baseUrl: 'https://api.openai.com/v1', docs: 'https://platform.openai.com/docs', tier: 'production', providerType: 'openai' },
+  { name: 'anthropic', displayName: 'Anthropic', baseUrl: 'https://api.anthropic.com/v1', docs: 'https://docs.anthropic.com', tier: 'production', providerType: 'anthropic' },
+  { name: 'deepseek', displayName: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', docs: 'https://api-docs.deepseek.com', tier: 'production', providerType: 'openai' },
+  { name: 'qwen', displayName: 'Qwen (Alibaba DashScope)', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', docs: 'https://help.aliyun.com/zh/model-studio', tier: 'production', providerType: 'openai' },
+  { name: 'wan', displayName: 'Wan (Alibaba DashScope)', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', docs: 'https://help.aliyun.com/zh/model-studio/wan', tier: 'production', providerType: 'openai' },
+  { name: 'poolside', displayName: 'Poolside', baseUrl: 'https://api.poolside.ai/v1', docs: 'https://docs.poolside.ai', tier: 'production', providerType: 'openai' },
   { name: 'zhipu', displayName: 'Zhipu GLM', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', docs: 'https://open.bigmodel.cn/dev/api', tier: 'production' },
   { name: 'moonshot', displayName: 'Moonshot Kimi', baseUrl: 'https://api.moonshot.cn/v1', docs: 'https://platform.moonshot.cn/docs', tier: 'production' },
   { name: 'openrouter', displayName: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', docs: 'https://openrouter.ai/docs', tier: 'production' },

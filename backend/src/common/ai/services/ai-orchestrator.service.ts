@@ -150,12 +150,11 @@ export class AIOrchestratorService {
       headers: provider.headers,
     };
 
-    switch (provider.name.toLowerCase()) {
-      case 'claude':
+    const type = (provider as any).providerType;
+    switch (type || provider.name.toLowerCase()) {
       case 'anthropic':
         return new ClaudeProvider(config);
       case 'gemini':
-      case 'google':
         return new GeminiProvider(config);
       default:
         return this.createGenericOpenAIProvider(config);

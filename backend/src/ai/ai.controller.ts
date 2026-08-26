@@ -11,6 +11,7 @@ import { CreateModelDto } from './dto/create-model.dto';
 import { CreateFeatureConfigDto } from './dto/create-feature-config.dto';
 import { UpdateFeatureConfigDto } from './dto/update-feature-config.dto';
 import { PROVIDER_PRESETS } from './provider-presets';
+import { ProviderStatus } from './entities/llm-provider.entity';
 
 @ApiTags('Admin - AI')
 @Controller('admin/ai')
@@ -97,37 +98,69 @@ export class AIController {
   }
 
   @Post('providers/:id/health')
-  @ApiOperation({ summary: 'Test provider connection and record health' })
+  @ApiOperation({ summary: 'Test provider connection (protocol-aware) and record health' })
   async healthCheck(@Param('id') id: string) {
     const provider = await this.service.findProviderById(id);
-    const startTime = Date.now();
-    try {
-      const url = provider.baseUrl.replace(/\/$/, '') + '/models';
-      const resp = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${provider.apiKey}`,
-          ...(provider.headers || {}),
-        },
-        signal: AbortSignal.timeout(10000),
-      });
-      const data = await resp.json();
-      const latencyMs = Date.now() - startTime;
-      const modelCount = data?.data?.length || 0;
-      const updated = await this.service.recordHealth(id, { success: resp.ok, latencyMs, modelCount });
-      return {
-        success: true,
-        message: 'Connection successful',
-        data: { status: updated.status, latency: latencyMs, modelCount },
-      };
-    } catch (err: any) {
-      const latencyMs = Date.now() - startTime;
-      const updated = await this.service.recordHealth(id, { success: false, latencyMs });
-      return {
-        success: false,
-        message: err.message || 'Connection failed',
-        data: { status: updated.status, latency: latencyMs },
-      };
-    }
+    const test = await this.service.testConnection(provider);
+    const updated = await this.service.recordHealth(id, {
+      success: test.ok,
+      latencyMs: test.latencyMs,
+      modelCount: test.modelCount,
+    });
+    return {
+      success: test.ok,
+      message: test.message,
+      data: {
+        status: test.configured ? updated.status : ProviderStatus.UNKNOWN,
+        configured: test.configured,
+        latency: test.latencyMs,
+        modelCount: test.modelCount,
+        statusCode: test.statusCode,
+      },
+    };
+  }
+
+  @Get('providers/:id/status')
+  @ApiOperation({ summary: 'Get live connection status of one provider' })
+  async providerStatus(@Param('id') id: string) {
+    const provider = await this.service.findProviderById(id);
+    return {
+      success: true,
+      data: {
+        id: provider.id,
+        name: provider.name,
+        displayName: provider.displayName,
+        baseUrl: provider.baseUrl,
+        providerType: provider.providerType,
+        configured: Boolean(provider.apiKey),
+        status: provider.status,
+        lastCheckedAt: provider.lastCheckedAt,
+        lastLatencyMs: provider.lastLatencyMs,
+        consecutiveFailures: provider.consecutiveFailures,
+      },
+    };
+  }
+
+  @Post('providers/:id/test')
+  @ApiOperation({ summary: 'Run a one-off connectivity test (records nothing)' })
+  async testProvider(@Param('id') id: string) {
+    const provider = await this.service.findProviderById(id);
+    const test = await this.service.testConnection(provider);
+    return { success: test.ok, data: test };
+  }
+
+  @Get('monitor/status')
+  @ApiOperation({ summary: 'Live connection status of all providers' })
+  async monitorStatus() {
+    const summary = await this.service.healthSummary();
+    return { success: true, data: summary };
+  }
+
+  @Post('monitor/run')
+  @ApiOperation({ summary: 'Run an immediate health sweep across active providers' })
+  async monitorRun() {
+    const results = await this.service.monitorSweep();
+    return { success: true, data: results };
   }
 
   @Get('features')

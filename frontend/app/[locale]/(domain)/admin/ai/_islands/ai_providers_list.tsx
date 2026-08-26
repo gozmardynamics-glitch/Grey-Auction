@@ -32,6 +32,7 @@ type ProviderPreset = {
   baseUrl: string;
   docs: string;
   tier: string;
+  providerType?: 'openai' | 'anthropic' | 'gemini';
 };
 
 const STATUS_META: Record<HealthStatus, { color: string; label: string }> = {
@@ -54,7 +55,14 @@ function formatRelativeTime(iso: string): string {
 export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
   const [providers, setProviders] = useState<ProviderWithHealth[]>(data);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', displayName: '', baseUrl: '', apiKey: '', tier: 'production' as string });
+  const [form, setForm] = useState({
+    name: '',
+    displayName: '',
+    baseUrl: '',
+    apiKey: '',
+    tier: 'production' as string,
+    providerType: 'openai' as 'openai' | 'anthropic' | 'gemini',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [checkingAll, setCheckingAll] = useState(false);
   const [presets, setPresets] = useState<ProviderPreset[]>([]);
@@ -83,7 +91,7 @@ export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
       if (res.ok) {
         toast.success('Provider created');
         setOpen(false);
-        setForm({ name: '', displayName: '', baseUrl: '', apiKey: '', tier: 'production' });
+        setForm({ name: '', displayName: '', baseUrl: '', apiKey: '', tier: 'production', providerType: 'openai' });
         await fetchProviders();
       } else {
         toast.error('Failed to create provider');
@@ -146,6 +154,7 @@ export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
       baseUrl: preset.baseUrl,
       apiKey: '',
       tier: preset.tier,
+      providerType: preset.providerType || 'openai',
     });
   }, [presets]);
 
@@ -254,6 +263,7 @@ export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
             <div><Label>Base URL</Label><Input value={form.baseUrl} onChange={(e) => setForm({ ...form, baseUrl: e.target.value })} placeholder="https://api.openai.com/v1" /></div>
             <div><Label>API Key</Label><Input type="password" value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} placeholder="sk-..." /></div>
             <div><Label>Tier</Label><Select value={form.tier} onValueChange={(v) => setForm({ ...form, tier: v })}><option value="production">Production</option><option value="development">Development</option><option value="testing">Testing</option></Select></div>
+            <div><Label>Protocol</Label><Select value={form.providerType} onValueChange={(v) => setForm({ ...form, providerType: v as 'openai' | 'anthropic' | 'gemini' })}><option value="openai">OpenAI-compatible (Bearers)</option><option value="anthropic">Anthropic (x-api-key)</option><option value="gemini">Google Gemini (key param)</option></Select></div>
             <Button onClick={handleSubmit} disabled={submitting || !form.name || !form.baseUrl || !form.apiKey}>
               {submitting ? 'Creating...' : 'Create Provider'}
             </Button>

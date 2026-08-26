@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { LLMProvider, ProviderStatus } from './entities/llm-provider.entity';
+import { LLMProvider, ProviderStatus, ProviderType } from './entities/llm-provider.entity';
 import { LLMModel } from './entities/llm-model.entity';
 import { AIFeatureConfig } from './entities/ai-feature-config.entity';
 import { AIUsageLog } from './entities/ai-usage-log.entity';
@@ -61,13 +61,133 @@ export class AIService {
       displayName: p.displayName,
       baseUrl: p.baseUrl,
       tier: p.tier,
+      providerType: p.providerType,
       isActive: p.isActive,
+      configured: Boolean(p.apiKey),
       status: p.status,
       lastCheckedAt: p.lastCheckedAt,
       lastLatencyMs: p.lastLatencyMs,
       consecutiveFailures: p.consecutiveFailures,
       modelCount: p.models?.length || 0,
     }));
+  }
+
+  /**
+   * Connectivity test for one provider, protocol-aware:
+   * - openai family: GET {base}/models with Authorization: Bearer
+   * - anthropic:     GET {base}/models with x-api-key + anthropic-version
+   * - gemini:        GET {base}/models?key=...
+   * Providers without an API key are reported as unconfigured (not DOWN).
+   */
+  async testConnection(provider: LLMProvider): Promise<{
+    ok: boolean;
+    configured: boolean;
+    modelCount: number;
+    latencyMs: number;
+    statusCode: number | null;
+    message: string;
+  }> {
+    const startTime = Date.now();
+    const base = (provider.baseUrl || '').replace(/\/$/, '');
+
+    if (!provider.apiKey) {
+      return {
+        ok: false,
+        configured: false,
+        modelCount: 0,
+        latencyMs: 0,
+        statusCode: null,
+        message: 'No API key configured — provider is not connected',
+      };
+    }
+
+    let url = base + '/models';
+    const headers: Record<string, string> = {
+      ...(provider.headers || {}),
+    };
+
+    if (provider.providerType === ProviderType.ANTHROPIC) {
+      headers['x-api-key'] = provider.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else if (provider.providerType === ProviderType.GEMINI) {
+      url += '?key=' + encodeURIComponent(provider.apiKey);
+    } else {
+      headers.Authorization = 'Bearer ' + provider.apiKey;
+    }
+
+    try {
+      const resp = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(10000),
+      });
+      const latencyMs = Date.now() - startTime;
+      let modelCount = 0;
+      let message = resp.ok ? 'Connection successful' : 'Connection failed';
+      if (resp.ok) {
+        const data: any = await resp.json().catch(() => ({}));
+        modelCount = data?.data?.length || data?.models?.length || 0;
+      }
+      return {
+        ok: resp.ok,
+        configured: true,
+        modelCount,
+        latencyMs,
+        statusCode: resp.status,
+        message,
+      };
+    } catch (err: any) {
+      return {
+        ok: false,
+        configured: true,
+        modelCount: 0,
+        latencyMs: Date.now() - startTime,
+        statusCode: null,
+        message: err?.message || 'Connection error',
+      };
+    }
+  }
+
+  /** Sweep all active providers; detect connectivity and record health. */
+  async monitorSweep(): Promise<Array<{ id: string; name: string; ok: boolean; configured: boolean; latencyMs: number; status: ProviderStatus }>> {
+    const providers = await this.findAllProviders();
+    const results = [];
+    for (const provider of providers) {
+      if (!provider.isActive) continue;
+
+      const test = await this.testConnection(provider);
+      let outcome: { success: boolean } = { success: false };
+      let finalStatus = provider.status;
+
+      if (!test.configured) {
+        // Leave status as-is (unknown) — not configured is not 'down'
+        results.push({
+          id: provider.id,
+          name: provider.name,
+          ok: false,
+          configured: false,
+          latencyMs: 0,
+          status: provider.status,
+        });
+        continue;
+      }
+
+      outcome = { success: test.ok };
+      const updated = await this.recordHealth(provider.id, {
+        success: test.ok,
+        latencyMs: test.latencyMs,
+        modelCount: test.modelCount,
+      });
+      finalStatus = updated.status;
+      results.push({
+        id: provider.id,
+        name: provider.name,
+        ok: test.ok,
+        configured: true,
+        latencyMs: test.latencyMs,
+        status: finalStatus,
+      });
+    }
+    return results;
   }
 
   async findProviderById(id: string) {
