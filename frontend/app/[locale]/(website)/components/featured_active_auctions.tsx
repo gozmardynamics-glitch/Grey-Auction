@@ -85,7 +85,7 @@ function FeaturedAuctionCard({
                 </span>
               )}
               {auction.status === 'active' && (
-                <span className="inline-flex items-center gap-1 bg-emerald-500/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 bg-emerald-700/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-white">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
                   Live
                 </span>

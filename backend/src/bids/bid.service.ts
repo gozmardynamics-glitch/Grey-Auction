@@ -6,6 +6,7 @@ import { PlaceBidDto } from './dto/bid.dto';
 import { Product, ProductStatus } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
 import { AuctionGateway } from './gateways/auction.gateway';
+import { NotificationService } from '../notification/notification.service';
 
 // ─── Auction engine constants ──────────────────────────────────────────
 // Minimum increment per current-bid level (NGN).
@@ -94,10 +95,16 @@ export class BidService {
     private readonly productService: ProductService,
     @Optional() private readonly gateway?: AuctionGateway,
     @Inject(DataSource) private readonly dataSource?: DataSource,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async placeBid(productId: string, userId: string, dto: PlaceBidDto): Promise<Bid> {
-    return this.dataSource.transaction(async (manager) => {
+    const placed: Bid[] = [];
+    // Bidders displaced from the leading slot during this bid action.
+    const displaced = new Set<string>();
+    let productTitle: string | undefined;
+
+    const result = await this.dataSource.transaction(async (manager) => {
       const product = await manager.findOne(Product, {
         where: { id: productId },
         lock: { mode: 'pessimistic_write' },
@@ -106,6 +113,7 @@ export class BidService {
       if (!product) {
         throw new NotFoundException('Product not found');
       }
+      productTitle = product.title;
 
       if (dto.amount <= product.currentBid) {
         throw new BadRequestException('Bid must be higher than current bid');
@@ -125,14 +133,18 @@ export class BidService {
         );
       }
 
-      const placed: Bid[] = [];
-
       const placeOne = async (
         bidderId: string,
         amount: number,
         isAutoBid: boolean,
         maxBid: number | null,
       ) => {
+        const currentLeader = await manager.findOne(Bid, {
+          where: { productId, isWinningBid: true },
+        });
+        if (currentLeader && currentLeader.bidderId !== bidderId) {
+          displaced.add(currentLeader.bidderId);
+        }
         await manager.update(
           Bid,
           { productId, isWinningBid: true },
@@ -197,6 +209,24 @@ export class BidService {
 
       return placed[0];
     });
+
+    // ─── Post-commit: notify every displaced bidder they've been outbid ──
+    const finalWinnerId = placed[placed.length - 1]?.bidderId;
+    if (this.notifications) {
+      const link = '/auctions/' + productId;
+      for (const outbidUserId of displaced) {
+        if (!outbidUserId || outbidUserId === finalWinnerId) continue;
+        void this.notifications
+          .notifyOutbid(outbidUserId, {
+            auctionTitle: productTitle ?? 'the auction',
+            auctionId: productId,
+            link,
+          })
+          .catch(() => undefined);
+      }
+    }
+
+    return result;
   }
 
   async getAuctionBids(productId: string): Promise<Bid[]> {

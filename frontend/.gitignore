@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
 
 # next.js
 /.next/
@@ -43,3 +45,5 @@ next-env.d.ts
 
 
 .claude/
+/AGENTS.md
+/CLAUDE.md

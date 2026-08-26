@@ -68,7 +68,7 @@ export default function JoinAuctionsCTA() {
               <Button
                 variant="secondary"
                 size="xl"
-                className="text-primary-foreground rounded-md text-lg"
+                className="text-secondary-foreground rounded-md text-lg"
               >
                 Create an Account
               </Button>

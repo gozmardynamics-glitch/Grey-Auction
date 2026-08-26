@@ -1,7 +1,7 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `feature/authjs-migration` · **Commits:** 55 · **Backend tests:** 95/95 · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `feature/authjs-migration` · **Commits:** 55+ · **Backend tests:** 110/110 · **Frontend build:** green (orig. env) — see Round 11 note · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
 ---
@@ -29,7 +29,7 @@
 | # | Item | Impact | Notes |
 |---|---|---|---|
 | N1 | AI in the seller create-listing form (description generator + title optimizer via /ai/execute) | High | **[x] DONE** (e0c28fb) - buttons on auction-details step, graceful AI-not-configured state |
-| N2 | Bidder notifications - outbid / won / ending-soon via Socket.IO + notifications table | High | **[x] DONE (backend+bell)** (e0c28fb) - `[!]` follow-up: wire triggers (outbid/won/room start) - placeholder in notification.service.ts |
+| N2 | Bidder notifications - outbid / won / ending-soon via Socket.IO + notifications table | High | **[x] DONE (backend+bell)** (e0c28fb) - **triggers wired** (Round 11): outbid (bid.service), won/ended (invoice-settlement), room-start (room-lifecycle) — notification.service helpers + 7 new tests |
 | N3 | Live auction watch page - in-room bid panel using the auto-bid/anti-sniping engine | High | **[x] DONE** (e0c28fb) - socket stream + bid panel + auto-bid + countdown + sticky mobile bar |
 | N4 | Pagination UI for admin tables (backend caps 50-200) | Medium | **[x] DONE** (e0c28fb) - DataTable pagination wired, responsive controls |
 | N5 | Hoist `auth()` in `lib/server/data.ts` (one session read per request) | Low | **[x] DONE** (e0c28fb) - React cache() per-request token |
@@ -205,3 +205,9 @@
 **Total estimate: ~11–13 working days for the full “Work Now” set** (0.5–1d Wave 0 · ~5.5d Wave 1 · ~7.5d Wave 2 · included in each feature P1/P2).
 
 **Round 10 (Work Now completion, e0c28fb):** all N1-N8 done via 4 parallel sub-agents (disjoint file ownership) + coordinator integration. Verified: backend 103/103 tests; frontend build green; all changed screens render 200; notifications API live. Follow-ups (placeholders): (1) `[!]` notification trigger wiring (outbid/won/room-start) - placeholder in notification.service.ts; (2) `[!]` AI execution live once LLM keys are added; (3) `[ ]` automated axe pass deferred to L6 WCAG audit (manual spot pass done).
+
+**Round 11 (follow-up execution):**
+- **[x] Notification triggers wired.** `NotificationService` gained typed helpers (`notifyOutbid`/`notifyAuctionWon`/`notifyAuctionEnded`/`notifyRoomStarted`); `BidService` fires outbid on displacement (post-commit), `InvoiceSettlementService` fires won/ended on settle, `RoomLifecycleService` fires room-start to participants+creator. `BidModule`/`RoomModule`/`InvoiceModule` now import `NotificationModule`. 7 new backend tests → **110/110**.
+- **[x] Bug fixed:** `RoomLifecycleService` injected `AuctionGateway` via `@Optional()` but `RoomModule` never imported `BidModule` (which exports it) — room-start/end socket broadcasts silently no-opped. `RoomModule` now imports `BidModule`; the broadcasts actually fire.
+- **[x] Automated axe/WCAG 2.1 AA pass (public pages).** Added `@axe-core/playwright` + `@playwright/test`, `playwright.config.ts`, `e2e/a11y.spec.ts`, `test:a11y` script, e2e README. Ran against a live app (backend :3001 + frontend :3000, Postgres up). **All 9 public routes pass.** Fixed systematic contrast issues: light `--muted-foreground` darkened (`oklch(0.556)→0.5`), nav accent `#0067f5→#0052c4`, status badges 500→700-level, `bg-secondary` white-text buttons → dark secondary foreground. Env note: `next build` in this sandbox fails only on `next/font/google` reaching fonts.googleapis.com (offline) — `tsc --noEmit` and the dev server are green; production build needs internet.
+- **[x] AI execution seam verified (still blocked by keys).** `AIOrchestratorService` has full model-chain fallback, protocol-aware providers, cost+usage logging, rate limiting; seller form (`auction_details_form.tsx`) calls `/ai/execute` for `title_optimizer`/`auction_description_generator` and gracefully toasts "AI not configured". Live execution unlocks when provider API keys are added (B-AI-1).

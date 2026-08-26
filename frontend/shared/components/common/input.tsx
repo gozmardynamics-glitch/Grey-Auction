@@ -48,7 +48,7 @@ const InputWithIcon = ({
       <Icon
         onClick={onIconClick}
         className={cn(
-          'absolute top-1/2 size-9 -translate-y-1/2 text-s p-2 cursor-pointer peer-focus:text-neutral-700 bg-secondary text-background transition-colors rounded-md',
+          'absolute top-1/2 size-9 -translate-y-1/2 text-s p-2 cursor-pointer peer-focus:text-neutral-700 bg-secondary text-secondary-foreground transition-colors rounded-md',
           iconClassName,
           {
             'right-4': iconPosition === 'right',

@@ -10,12 +10,14 @@ import { Product } from '../products/entities/product.entity';
 import { Bid } from '../bids/entities/bid.entity';
 import { EmailModule } from '../common/email/email.module';
 import { FeeModule } from '../fees/fee.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Invoice, User, Product, Bid]),
     EmailModule,
     FeeModule,
+    NotificationModule,
   ],
   controllers: [InvoiceController],
   providers: [InvoiceService, InvoiceSettlementService, InvoiceCronService],

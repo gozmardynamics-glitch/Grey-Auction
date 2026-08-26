@@ -183,7 +183,7 @@ export default function Header() {
               <NavigationMenu className="hidden lg:block">
                 <NavigationMenuList>
                   <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-primary/10 text-primary">
+                    <NavigationMenuTrigger className="bg-primary/10 text-primary-1">
                       <TextAlignStart className="mr-2 h-4 w-4" />
                       <span className="hidden md:flex">All Categories</span>
                     </NavigationMenuTrigger>

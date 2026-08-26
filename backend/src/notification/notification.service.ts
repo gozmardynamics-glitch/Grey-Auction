@@ -72,6 +72,60 @@ export class NotificationService {
     );
     return { updated: result.affected ?? 0 };
   }
-}
 
-// PLACEHOLDER: wire triggers (outbid/won/room start) in a follow-up
+  // ─── Concrete trigger helpers ────────────────────────────────────
+  // These build the title/body/link for the standardized events and
+  // keep the message copy in one place. Callers pass an optional
+  // explicit link (e.g. a public slug); otherwise it is derived from id.
+
+  async notifyOutbid(
+    userId: string,
+    data: { auctionTitle: string; auctionId: string; link?: string },
+  ): Promise<Notification> {
+    return this.create(userId, {
+      type: NotificationType.BID_OUTBID,
+      title: 'You’ve been outbid',
+      body: `Someone placed a higher bid on “${data.auctionTitle}”.`,
+      link: data.link ?? `/auctions/${data.auctionId}`,
+    });
+  }
+
+  async notifyAuctionWon(
+    userId: string,
+    data: { auctionTitle: string; auctionId: string; hammerPrice?: number; link?: string },
+  ): Promise<Notification> {
+    return this.create(userId, {
+      type: NotificationType.AUCTION_WON,
+      title: 'You won this auction',
+      body:
+        data.hammerPrice != null
+          ? `Congratulations! You won “${data.auctionTitle}” for ${data.hammerPrice.toLocaleString()} NGN.`
+          : `Congratulations! You won “${data.auctionTitle}”.`,
+      link: data.link ?? `/auctions/${data.auctionId}`,
+    });
+  }
+
+  async notifyAuctionEnded(
+    userId: string,
+    data: { auctionTitle: string; auctionId: string; link?: string },
+  ): Promise<Notification> {
+    return this.create(userId, {
+      type: NotificationType.AUCTION_ENDED,
+      title: 'Your auction has ended',
+      body: `“${data.auctionTitle}” has ended.`,
+      link: data.link ?? `/auctions/${data.auctionId}`,
+    });
+  }
+
+  async notifyRoomStarted(
+    userId: string,
+    data: { roomName: string; roomId: string; link?: string },
+  ): Promise<Notification> {
+    return this.create(userId, {
+      type: NotificationType.ROOM_STARTED,
+      title: 'Auction room is live',
+      body: `The auction room “${data.roomName}” is now open for bidding.`,
+      link: data.link ?? `/room/${data.roomId}`,
+    });
+  }
+}

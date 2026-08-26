@@ -52,14 +52,14 @@ export default function JoinMarketplace() {
             <div className="flex flex-wrap gap-4">
               <Button
                 size="xl"
-                className="bg-secondary hover:bg-secondary/90 text-primary-foreground font-semibold px-8"
+                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8"
               >
                 Start Bidding
               </Button>
               <Button
                 size="xl"
                 variant="outline"
-                className="bg-white/10 hover:bg-white/20 text-primary-foreground border-white/30 backdrop-blur-sm font-semibold px-8"
+                className="bg-black/20 hover:bg-black/30 text-primary-foreground border-white/30 backdrop-blur-sm font-semibold px-8"
                 onClick={() => router.push('/seller')}
               >
                 Become a Seller

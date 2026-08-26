@@ -134,4 +134,61 @@ describe('NotificationService', () => {
     );
     expect(result.updated).toBe(5);
   });
+
+  describe('trigger helpers', () => {
+    beforeEach(() => {
+      (repo.create as jest.Mock).mockReturnValue(notification);
+      (repo.save as jest.Mock).mockResolvedValue(notification);
+    });
+
+    it('notifyOutbid creates a BID_OUTBID notification with a public link', async () => {
+      await service.notifyOutbid('u1', { auctionTitle: 'iPhone', auctionId: 'a1' });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'u1',
+          type: NotificationType.BID_OUTBID,
+          link: '/auctions/a1',
+        }),
+      );
+    });
+
+    it('notifyAuctionWon creates an AUCTION_WON notification with the hammer price', async () => {
+      await service.notifyAuctionWon('u1', {
+        auctionTitle: 'iPhone',
+        auctionId: 'a1',
+        hammerPrice: 50000,
+      });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'u1',
+          type: NotificationType.AUCTION_WON,
+          link: '/auctions/a1',
+        }),
+      );
+      const dto = (repo.create as jest.Mock).mock.calls[0][0] as any;
+      expect(dto.body).toContain('NGN');
+    });
+
+    it('notifyAuctionEnded creates an AUCTION_ENDED notification for the seller', async () => {
+      await service.notifyAuctionEnded('s1', { auctionTitle: 'iPhone', auctionId: 'a1' });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 's1',
+          type: NotificationType.AUCTION_ENDED,
+          link: '/auctions/a1',
+        }),
+      );
+    });
+
+    it('notifyRoomStarted creates a ROOM_STARTED notification with the room link', async () => {
+      await service.notifyRoomStarted('u1', { roomName: 'Live Room', roomId: 'r1' });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'u1',
+          type: NotificationType.ROOM_STARTED,
+          link: '/room/r1',
+        }),
+      );
+    });
+  });
 });

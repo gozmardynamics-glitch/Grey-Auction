@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { NotificationService } from '../notification/notification.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, In } from 'typeorm';
 import { Product, ProductStatus } from '../products/entities/product.entity';
@@ -22,6 +23,7 @@ export class InvoiceSettlementService {
     @InjectRepository(Bid)
     private readonly bidRepo: Repository<Bid>,
     private readonly feeService: FeeService,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   /**
@@ -89,6 +91,27 @@ export class InvoiceSettlementService {
         result.details.push(
           `${product.title}: invoice generated for ${breakdown.total}`,
         );
+
+        // Notify the winner and the seller that the auction has settled.
+        if (this.notifications) {
+          const auctionTitle = product.title ?? 'the auction';
+          const link = '/auctions/' + (product.slug ?? product.id);
+          void this.notifications
+            .notifyAuctionWon(winningBid.bidderId, {
+              auctionTitle,
+              auctionId: product.id,
+              hammerPrice: Number(winningBid.amount),
+              link,
+            })
+            .catch(() => undefined);
+          void this.notifications
+            .notifyAuctionEnded(product.sellerId, {
+              auctionTitle,
+              auctionId: product.id,
+              link,
+            })
+            .catch(() => undefined);
+        }
       } catch (error: any) {
         result.errors++;
         result.details.push(`${product.title}: ERROR — ${error.message}`);

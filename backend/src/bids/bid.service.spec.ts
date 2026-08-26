@@ -13,6 +13,7 @@ import { Bid } from './entities/bid.entity';
 import { Product, ProductStatus } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
 import { AuctionGateway } from './gateways/auction.gateway';
+import { NotificationService } from '../notification/notification.service';
 
 describe('BidService', () => {
   let service: BidService;
@@ -20,6 +21,7 @@ describe('BidService', () => {
   let productService: jest.Mocked<Partial<ProductService>>;
   let gateway: jest.Mocked<Partial<AuctionGateway>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
+  let notificationMock: jest.Mocked<Partial<NotificationService>>;
   let manager: any;
 
   const mockProduct = {
@@ -59,6 +61,13 @@ describe('BidService', () => {
       broadcastBidUpdate: jest.fn(),
     };
 
+    notificationMock = {
+      notifyOutbid: jest.fn().mockResolvedValue(undefined),
+      notifyAuctionWon: jest.fn().mockResolvedValue(undefined),
+      notifyAuctionEnded: jest.fn().mockResolvedValue(undefined),
+      notifyRoomStarted: jest.fn().mockResolvedValue(undefined),
+    };
+
     manager = {
       findOne: jest.fn(),
       create: jest.fn(),
@@ -85,6 +94,7 @@ describe('BidService', () => {
         { provide: ProductService, useValue: productService },
         { provide: AuctionGateway, useValue: gateway },
         { provide: DataSource, useValue: dataSource },
+        { provide: NotificationService, useValue: notificationMock },
       ],
     }).compile();
 
@@ -337,6 +347,59 @@ describe('BidService', () => {
       );
       expect(ANTI_SNIPE_EXTEND_MS).toBeGreaterThan(0);
       expect(ANTI_SNIPE_WINDOW_MS).toBeGreaterThan(0);
+    });
+
+    it('notifies the displaced bidder when a new bid outbids them', async () => {
+      // placeBid mutates the product's currentBid, so use a fresh product object.
+      const fresh = {
+        id: 'product-1',
+        startingBid: 100,
+        currentBid: 150,
+        totalBids: 3,
+        status: ProductStatus.ACTIVE,
+        endTime: new Date(Date.now() + 3600000),
+      };
+      const prevLeader = { id: 'bid-old', productId: 'product-1', bidderId: 'user-2', isWinningBid: true };
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock)
+          .mockResolvedValueOnce(fresh)
+          .mockResolvedValueOnce(prevLeader);
+        (manager.create as jest.Mock).mockReturnValue({ ...mockBid, bidderId: 'user-1' });
+        (manager.save as jest.Mock).mockResolvedValue({ ...mockBid, bidderId: 'user-1' });
+        (manager.update as jest.Mock).mockResolvedValue({});
+        return cb(manager);
+      });
+
+      await service.placeBid('product-1', 'user-1', { amount: 200 });
+
+      expect(notificationMock.notifyOutbid).toHaveBeenCalledWith(
+        'user-2',
+        expect.objectContaining({ auctionId: 'product-1' }),
+      );
+    });
+
+    it('does not notify a bidder when their own bid stays winning', async () => {
+      const fresh = {
+        id: 'product-1',
+        startingBid: 100,
+        currentBid: 150,
+        totalBids: 3,
+        status: ProductStatus.ACTIVE,
+        endTime: new Date(Date.now() + 3600000),
+      };
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock)
+          .mockResolvedValueOnce(fresh)
+          .mockResolvedValueOnce({ ...mockBid, bidderId: 'user-1' });
+        (manager.create as jest.Mock).mockReturnValue({ ...mockBid, bidderId: 'user-1' });
+        (manager.save as jest.Mock).mockResolvedValue({ ...mockBid, bidderId: 'user-1' });
+        (manager.update as jest.Mock).mockResolvedValue({});
+        return cb(manager);
+      });
+
+      await service.placeBid('product-1', 'user-1', { amount: 200 });
+
+      expect(notificationMock.notifyOutbid).not.toHaveBeenCalled();
     });
   });
 });

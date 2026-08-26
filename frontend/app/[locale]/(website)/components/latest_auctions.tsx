@@ -74,7 +74,7 @@ export default function LatestAuctionsBanner({
       <div className="relative z-10 flex items-center justify-between max-w-7xl mx-auto">
         {/* Text Content */}
         <div className="max-w-md space-y-4">
-          <span className="inline-block rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary-foreground">
+          <span className="inline-block rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
             {badge}
           </span>
           <h2 className="text-lg leading-snug text-foreground md:text-2xl">

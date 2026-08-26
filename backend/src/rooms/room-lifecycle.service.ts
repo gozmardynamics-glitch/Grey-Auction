@@ -2,8 +2,9 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Room, RoomStatus } from './entities/room.entity';
+import { Room, RoomStatus, RoomParticipant } from './entities/room.entity';
 import { AuctionGateway } from '../bids/gateways/auction.gateway';
+import { NotificationService } from '../notification/notification.service';
 
 /**
  * Automated bidding-room lifecycle.
@@ -19,6 +20,9 @@ export class RoomLifecycleService {
     @InjectRepository(Room)
     private readonly repo: Repository<Room>,
     @Optional() private readonly gateway?: AuctionGateway,
+    @InjectRepository(RoomParticipant)
+    @Optional() private readonly participantRepo?: Repository<RoomParticipant>,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -34,6 +38,7 @@ export class RoomLifecycleService {
         await this.repo.save(room);
         this.logger.log(`Room started: ${room.roomCode} (${room.id})`);
         this.gateway?.broadcastRoomStarted(room.id);
+        await this.notifyRoomStart(room);
       }
     }
 
@@ -47,6 +52,34 @@ export class RoomLifecycleService {
         this.logger.log(`Room closed: ${room.roomCode} (${room.id})`);
         this.gateway?.broadcastRoomEnded(room.id);
       }
+    }
+  }
+
+  /**
+   * Notify room participants (and the creator) that the auction room is live.
+   * Fire-and-forget so a notification failure never breaks the lifecycle cron.
+   */
+  private async notifyRoomStart(room: Room): Promise<void> {
+    if (!this.notifications) return;
+    const recipients = new Set<string>();
+    if (this.participantRepo) {
+      const participants = await this.participantRepo.find({
+        where: { roomId: room.id },
+      });
+      for (const participant of participants) recipients.add(participant.userId);
+    }
+    if (room.createdById) recipients.add(room.createdById);
+    if (recipients.size === 0) return;
+
+    const link = '/room/' + room.id;
+    for (const userId of recipients) {
+      void this.notifications
+        .notifyRoomStarted(userId, {
+          roomName: room.name ?? 'Auction room',
+          roomId: room.id,
+          link,
+        })
+        .catch(() => undefined);
     }
   }
 }

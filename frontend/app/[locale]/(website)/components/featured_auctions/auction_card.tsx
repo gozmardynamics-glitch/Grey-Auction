@@ -39,10 +39,10 @@ function getCountryFlag(countryCode: string): string {
 
 function StatusBadge({ status }: { status: Auction['status'] }) {
   const config = {
-    active: { bg: 'bg-emerald-500', text: 'Live' },
-    live: { bg: 'bg-red-500', text: 'Live Now' },
-    new: { bg: 'bg-blue-500', text: 'New' },
-    sold: { bg: 'bg-gray-500', text: 'Sold' },
+    active: { bg: 'bg-emerald-700', text: 'Live' },
+    live: { bg: 'bg-red-700', text: 'Live Now' },
+    new: { bg: 'bg-blue-700', text: 'New' },
+    sold: { bg: 'bg-gray-700', text: 'Sold' },
   };
   const c = config[status];
   return (
