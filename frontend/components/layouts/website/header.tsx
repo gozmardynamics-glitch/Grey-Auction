@@ -46,6 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/common';
+import { NotificationBell } from '@/shared/components/common/notification_bell';
 
 import { setMenuOpen } from '@/redux/slices/ui.slice';
 import { LogoutDialog } from '@/shared/components/common/logout-dialog';
@@ -157,7 +158,7 @@ export default function Header() {
                 size="icon"
                 aria-label="Open navigation menu"
                 onClick={() => dispatch(setMenuOpen(true))}
-                className="text-muted-foreground hover:text-muted-foreground"
+                className="min-h-11 min-w-11 text-muted-foreground hover:text-muted-foreground"
               >
                 <Menu className="h-6 w-6" />
               </Button>
@@ -279,6 +280,7 @@ export default function Header() {
             {/* Right side actions */}
             <div className="items-center space-x-4 flex">
               <div className="flex items-center space-x-4">
+                <NotificationBell />
                 <Button
                   asChild
                   variant="ghost"

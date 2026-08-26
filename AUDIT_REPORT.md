@@ -1,215 +1,205 @@
-# GreyAuction - Comprehensive Audit & Setup Report (v2)
+# GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
-> **Date:** 2026-08-25  |  **Scope:** Grey-Auction monorepo (NestJS backend + Next.js 16 frontend)
-> **Method:** automated deep code audit + live runtime verification
-> **v2 changes:** authentication re-architected onto **Auth.js (NextAuth v5)**; work broken into a phased roadmap.
+> **Version:** consolidate (combined audit + performance review + improvement suggestions)
+> **Branch:** `feature/authjs-migration` · **Commits:** 55 · **Backend tests:** 95/95 · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
-## 1. Executive Summary
+---
 
-**What this is.** A Nigerian-focused auction marketplace ("GreyAuction") built with a **NestJS**
-REST/WebSocket API (19 modules, ~158 endpoints) and a **Next.js 16** storefront plus three
-dashboards (admin / buyer / seller). It also carries an **AI LLM Registry** (15 provider presets,
-health checks, 15 feature configs) and an **agent MCP** subsystem.
+## 1. What Is Done (verified)
 
-**Good news.** The foundation is strong: backend modules, schema (27 tables), Swagger docs, an
-invoice/PDF/settlement engine, a payment-gateway stub (Flutterwave/Paystack/mock), SMTP/SMS
-scaffolding, and a large reusable component library all exist.
+| Area | Status | Evidence |
+|---|---|---|
+| Authentication — Auth.js v5 (Clerk removed) | DONE | JWT credentials provider, role middleware, all dashboards verified |
+| Phase 2 — real data everywhere | DONE | public /faqs /banners, slugs, admin reports, seller shop; homepage/FAQ/auctions/dashboards live data |
+| Phase 3 — workflows | DONE | password reset, seller wizard, form validation, console.log cleanup, branded links |
+| Phase 4 — i18n + UX | DONE | fr/nl full parity (204/204/204), loading skeletons, runtime fixes |
+| Phase 5 — auction engine | DONE | proxy auto-bid, anti-sniping, room lifecycle cron, invite approvals, CSV bulk upload |
+| Wallet backend | DONE | entities, deposit/withdraw/PIN (bcrypt), UI wired with fallback |
+| Payments | PARTIAL (blocked) | mock mode works; webhook hardened + guarded; real capture needs gateway keys |
+| LLM provider registry (8 providers) | DONE | DeepSeek/Qwen/Wan/OpenRouter/Gemini/OpenAI/Anthropic/Poolside endpoint-verified, protocol-aware health, 5-min monitor, fallback chains, seeded 17 models |
+| Performance | IMPROVED | 9 new DB indexes, query caps, SQL aggregate summary, parallel health sweep |
 
-**Bad news.** The app could **not boot at all** out of the box: the frontend was hard-wired to
-**Clerk** with **no API keys in the repo** (ClerkProvider + clerkMiddleware throw without keys). Much
-of the UI renders **mock data** because it calls API endpoints that **do not exist** (silent
-fallbacks), and several real workflows were non-functional end-to-end (registration, onboarding).
+**Verification:** 95/95 backend tests, frontend `next build` green, all services healthy, working tree clean.
 
-### What I did (setup)
-- Extracted the project, installed all dependencies (network retries needed - host DNS is flaky).
-- Provisioned a dedicated PostgreSQL 16 (pgvector) container on port **5433**.
-- Created .env files for both apps; started and verified the backend on **:3001**.
-- **Replaced Clerk with Auth.js (NextAuth v5)** - credentials provider, JWT session, middleware guards. Fully self-contained, works offline (Phase 1 done and verified).
-- Seeded a full demo dataset (admins, buyer, seller, 8 categories, 8 products + 23 bids, 3 banners, 6 FAQs, fee config, 15 AI feature configs).
-- Started the frontend on **:3000** and opened it in your browser.
-- Fixed concrete bugs (middleware /api passthrough, auction-card image fallback, backend prod entry path, product model fields).
+---
 
-### Where it runs now
-| Component | URL | Status |
-|-----------|-----|--------|
-| Frontend (Next.js) | http://localhost:3000/en | running |
-| Backend API | http://localhost:3001/api | running |
-| Swagger docs | http://localhost:3001/api/docs | running |
-| PostgreSQL (Docker) | localhost:5433 | running |
+## 2. WORK NOW — no blockers (high-ROI, do next)
 
-### Demo accounts (Auth.js credentials login)
-| Role | Email | Password | Dashboard |
-|------|-------|----------|-----------|
-| Super Admin | admin@greyauction.com | Admin@12345 | /admin/dashboard |
-| Seller | demo@seller.com | Seller@12345 | /seller/dashboard |
-| Buyer | demo@buyer.com | Buyer@12345 | /buyer/dashboard |
+| # | Item | Impact | Notes |
+|---|---|---|---|
+| N1 | AI in the seller create-listing form (description generator + title optimizer via /ai/execute) | High | Backend + feature configs ready; wire the islands |
+| N2 | Bidder notifications — outbid / won / ending-soon via Socket.IO + notifications table | High | Notifications UI exists; add trigger logic |
+| N3 | Live auction watch page — in-room bid panel using the auto-bid/anti-sniping engine | High | Backend bids in rooms exist |
+| N4 | Pagination UI for admin tables (backend caps 50-200) | Medium | Straightforward table work |
+| N5 | Hoist `auth()` in `lib/server/data.ts` (one session read per request) | Low | Small perf win |
+| N6 | Dashboard loading/error states polish + wallet empty-state copy | Medium | UX |
+| N7 | Add `npm run seed:demo` + `seed:ai:providers` npm scripts | Low | DX |
+| N8 | CI: run frontend build (already broke before; now green) + backend tests on PR | Medium | Reliability |
 
-## 2. What Is Already Done (Working)
+---
 
-**Backend (NestJS, 19 modules, ~158 endpoints)**
-- Auth: JWT login/register, OTP send/verify, password reset, Google OAuth stub
-- Admin: admins CRUD, buyer list/suspend/activate, AI registry, agents, banners, FAQs
-- Seller (34 endpoints): registration, KYC documents, payouts, reviews, statistics, org types
-- Products/auctions: create/list/featured/approve/reject, reserve price, status machine
-- Bids: place/list with a Socket.IO WebSocket gateway (real-time bid broadcast)
-- Rooms: private invite rooms, participants, deposit flag
-- Invites: generate/validate/respond/use, exclusive + request modes, email/SMS
-- Categories, Banners, FAQs, Tickets, Settings, Content pages (privacy/terms), Audit
-- Fees config (commission/VAT/charges with breakdown calc), Invoices (PDF via pdfkit, email, cron settlement, stats), Payments (Flutterwave/Paystack/mock)
-- AI: LLM providers/models/features/usage, health-checked orchestrator, 15 provider presets
-- Agents: MCP server, tools, workflows, metrics, analytics
+## 3. WORK AFTER BLOCKERS RESOLVED
 
-**Frontend (Next.js 16, 40+ pages, 3 dashboards)**
-- (website): home, auctions listing + detail, blog, career, about-us, FAQ, contact, cart, checkout, wishlist, room
-- (auth): login, buyer/seller/org register, forgot/reset password, OTP steps
-- (admin): dashboard, admins, buyers, sellers, bids, auctions, banners, categories, FAQs, tickets, payments, AI providers/models, agents, settings
-- (buyer)/(seller): dashboards, wallet (deposit/withdraw/PIN), messages, chats, notifications, purchases/sales, settings
-- Shared component library (90+ Radix/Tailwind components), Redux + RTK Query, i18n (en/fr/nl), next-intl
+### Blockers and the work they unlock
 
-**Authentication - Auth.js (NextAuth v5)** [Phase 1 - DONE]
-- Credentials provider that calls the backend /auth/login (bcrypt-verified) and returns the backend JWT.
-- JWT session strategy; role + backend accessToken carried in the session cookie.
-- app/api/auth/[...nextauth]/route.ts exposes GET/POST; middleware (proxy.ts) protects routes by role (admin/seller/buyer) using token decode with salt.
-- Client flows: login / register / organization register / logout all use next-auth signIn / signOut / useSession; Redux bridged via auth-sync.
-- next-auth/react SessionProvider wraps the app; types/next-auth.d.ts augments Session/JWT.
-- Verified: all three dashboards render behind correct roles; anonymous and cross-role access redirect to login.
+| Blocker | Unlocks | Blocked item(s) |
+|---|---|---|
+| **Payment gateway keys** (FLUTTERWAVE_SECRET_KEY / PAYSTACK_SECRET_KEY) | Real payment capture + webhook verification | B1 Activate gateway; B2 deposit↔gateway linking (idempotent references); B3 buyer card/CV bank flows |
+| **LLM provider API keys** (OpenAI/DeepSeek/Gemini/Anthropic/OpenRouter/Qwen/Poolside) | Live AI execution | B1 Wire AI features into UX (chatbot, descriptions, smart search); B2 per-feature fallback chains verified live |
+| **GitHub credentials** (or `gh auth login`) | Publish the work | B1 push `feature/authjs-migration`; B2 merge to `master` + open PR |
+| **Production host/Coolify access** + env secrets | Deploy | B1 docker-compose single stack; B2 migrations-only DB (`migrationsRun: true`, `synchronize: false`); B3 backups; B4 Sentry/logging |
+| **Redis (or similar)** | Real caching | B1 Cache static config (categories/banners/FAQs) with invalidation |
 
-**Infra**: GitHub Actions CI (lint > build > test), root Dockerfiles, .env.example, migrations + seeds, Swagger
-## 3. What I Had to Do to Get It Running
+### After-blocker work items (detail)
 
-1. **Clerk -> Auth.js (NextAuth v5) migration** (the biggest blocker). Removed Clerk from proxy.ts, providers.tsx, auth-sync.tsx, login / buyer-register / seller-register / organization-register pages, and logout-dialog.tsx. Added auth.ts (credentials provider -> backend /auth/login, JWT session, role + accessToken), auth.config.ts (edge-safe middleware config), app/api/auth/[...nextauth]/route.ts, SessionProvider, and role-based middleware in proxy.ts (JWT decode with cookie-name salt). Also updated types/next-auth.d.ts and .env.local (AUTH_SECRET, AUTH_URL).
-2. **Database**: started greyauction-postgres (pgvector:pg16) on port 5433; set backend/.env.
-3. **Seeds**: ran the admin seed + a new seed-demo.ts (demo buyer/seller, categories, products, bids, banners, FAQs, fee config) + AI feature configs (15 rows).
-4. **Env**: backend/.env and frontend/.env.local (API URL, AUTH_SECRET, AUTH_URL).
-5. **Bug fixes**: middleware /api passthrough, auction-card image fallback, product model optional fields, backend start:prod + Dockerfile entry path (dist/src/main), middleware async callback + salt-based JWT decode.
+- `[!]` B-PAY-1: real gateway capture + webhook HMAC verification per provider (implemented seam; needs keys).
+- `[!]` B-PAY-2: deposit reference idempotency (unique reference guard) before production.
+- `[!]` B-AI-1: live verification of every provider chat execution + fallback switch-over with configured keys.
+- `[!]` B-GIT-1: `git push -u origin feature/authjs-migration`; merge to master; tag a release.
+- `[!]` B-DEPLOY-1: Coolify deploy with env secrets; run migrations; verify CSP/robots for the real domain.
+- `[!]` B-DEPLOY-2: automated DB backups + Sentry/instrumentation.
+- `[!]` B-CACHE-1: Redis-backed cache for static config + session-scale readiness.
 
-## 4. Issues, Bugs, Gaps & Broken Links (as of v2)
+---
 
-### Red - Critical (alpha-blocking; fixed or needs a decision)
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 1 | Frontend could not boot: hard-wired to Clerk with no keys (ClerkProvider + middleware throw) | Critical | Fixed via Auth.js migration |
-| 2 | Registration end-to-end was broken: Clerk users were unrelated to backend users; OTP steps were UI-only | Critical | Fixed (Auth.js credentials sign-in after register) |
-| 3 | Backend prod entry point wrong: npm run start:prod and Dockerfile.backend run node dist/main, but build outputs dist/src/main | Critical | Fixed |
-| 4 | Lockfile mismatch / network flakiness broke installs | Critical | Worked around |
-| 5 | Auth.js beta + Next 16 gotcha: middleware does not surface custom JWT claims (role) on req.auth.user; initial role check caused a redirect loop | Critical | Fixed - decode the JWT directly with cookie-name salt in middleware |
+## 4. WORK LATER (strategic / growth / polish)
 
-### Orange - High: real data never shows (mock fallbacks mask 404s) [Phase 2]
+| # | Item | Why | When |
+|---|---|---|---|
+| L1 | PWA + push notifications | Mobile retention | Post-launch |
+| L2 | Multi-currency (USD/GHS) + rate display | Growth lever | Post-launch |
+| L3 | Seller analytics dashboard (charts from /sellers/statistics/me) | Seller value | Post-launch |
+| L4 | Trust & safety: condition reports, KYC badges, dispute/feedback loop | Conversion | Post-launch |
+| L5 | Shipping/delivery integration + escrow | Enterprise buyers | Later |
+| L6 | Full WCAG 2.1 audit + responsive test matrix | Compliance | Before major marketing |
+| L7 | Load testing (k6) + Lighthouse budget (90+) | Scale assurance | Before big campaigns |
+| L8 | Marketplace advisor map + direct-sales section | Parity with Troostwijk | Differentiator |
+| L9 | Bulk CSV import enhancements (image URLs, multicategory, price tiers) | Seller productivity | Later |
 
-frontend/lib/server/data.ts (and the admin/seller islands) call endpoints that do not exist on the backend, so apiFetch returns null and the UI silently falls back to hardcoded mock data:
+---
+## 5. Performance & Efficiency Audit (results)
 
-| Frontend call | Backend route | Result |
-|---------------|---------------|--------|
-| /products/{slug} (detail pages) | only /products/:id (UUID) | 404 then mock |
-| /auctions/related, /auctions?category= | no /auctions controller | 404 then mock |
-| /testimonials, /cart, /orders, /wishlist | none | 404 then mock |
-| /admin/auctions, /admin/bids, /admin/sellers, /admin/payments | none | 404 then mock |
-| /admin/banners (list), /admin/faqs (list) | only PATCH/DELETE exist | 404 then mock |
-| /faqs (public list), /categories (list) | only :slug routes | 404 then mock |
-| /seller/listings, /seller/payments, /seller/sales, /seller/conversations | none | 404 then mock |
+### Done (commit 6a27d85)
+- 9 new DB indexes on hot columns: products(sellerId, status+endTime, category); bids(productId, bidderId, productId+createdAt); invoices(payment_reference); ai_usage_logs(createdAt, featureKey+createdAt, providerName).
+- Capped unbounded queries (take 100): user bids, room bids, seller listings, seller rooms, invites, content pages (50).
+- Invoice summary aggregates in SQL (no full-table load).
+- Provider health sweep parallelized (4 at a time).
 
-**Impact:** admin/buyer/seller dashboards and several public sections look complete but run on mock
-data (e.g. homepage banners, FAQs and categories are not the real seeded rows). The backend data
-exists and is reachable at the correct routes; the frontend simply points at wrong/legacy routes.
+### Remaining (see NOW + AFTER BLOCKERS)
+- Static-config caching → Redis after blocker. Local TTL cache optional.
+- `auth()` hoisting per request (N5).
+- Lighthouse/TTFB verification needs a browser toolchain.
 
-**Recommendation:** point data.ts and the island API files at the real routes (/products, /categories,
-/banners, /faqs, /rooms, /tickets, /invoices, /sellers/*) and add the missing list/report endpoints
-(GET /admin/banners, GET /admin/faqs, GET /categories, GET /faqs, admin auctions/bids/sellers/payments).
+---
 
-### Orange - High: broken / incomplete workflows [Phase 3]
-- **Password-reset link is broken.** The backend builds FRONTEND_URL/reset-password?token=..., but the real page is at /auth/login/forgot_password/reset_password. There is no /reset-password route.
-- **Seller onboarding (Become-a-Seller wizard) fails silently.** It POSTs to /sellers/register (requires a JWT) without a token and with a payload that does not match RegisterSellerDto; errors are swallowed.
-- **product.findBySlug is just findById** - no real slug column, so slug detail URLs cannot resolve a product.
-- **Dead API definitions:** auth.api.ts defines getProfile (GET), completeProfile (PATCH), verifyIdentity, resendOtp - none match the backend (POST /auth/profile etc.) and none are used anywhere.
-- **Auto-bid / proxy bidding** not implemented (DB flag exists); no anti-sniping extension; no bid increment table. [Phase 5]
-- **Room lifecycle** (scheduled -> live -> closed) is manual; deposit/payment and in-room bid placement not wired. [Phase 5]
-- **Invite request mode** lacks the seller-approval (join -> approve) flow. [Phase 5]
-- **Bulk lot upload (CSV)** - backend not built. [Phase 5]
-- **Payments** run in mock mode (no gateway keys) - intended, but real capture needs keys. [Phase 5]
+## 6. Historical Issue Log (all fixed — kept for reference)
 
-### Yellow - Medium: content, i18n, UX, quality [Phase 4]
-- **i18n is only ~26% translated.** en = 204 keys / 12 sections; fr = 53, nl = 53 keys / 4 sections. Switching to fr/nl leaves most of the UI in English.
-- **Form validation gutted.** (auth)/components/schema.ts has every schema commented out and replaced with "all optional" versions.
-- **Footer vs mobile-menu brand links are inconsistent placeholders.** Footer points to generic facebook.com / twitter.com / instagram.com / linkedin.com; mobile-menu uses greyauctions-specific URLs.
-- **Blog feed routes 404** (/feed.xml, /feed.json, /v1/articles, /v1/categories).
-- **Empty Image src warning** - empty string passed to a Next Image.
-- **39 console.log** statements in production components.
-- **Sitemap/robots hardcode greyauction.com** (not env-driven).
-- **Mock constants** in wallet.tsx; few loading/empty/error states; mobile/responsive audit not done.
+| # | Issue | Status | Fix |
+|---|---|---|---|
+| 1 | Clerk hard-wired, no keys (app could not boot) | FIXED | Auth.js v5 migration (26a58af) |
+| 2 | Registration/OTP flows were UI-only | FIXED | JWT sign-in after register (26a58af/9b1b0b5) |
+| 3 | Backend prod entry `dist/main` vs `dist/src/main` | FIXED | package.json + Dockerfile |
+| 4 | Mock fallbacks masked 404s in dashboards | FIXED | real routes + auth token (08fa5be) |
+| 5 | Password-reset link wrong route | FIXED | backend link + page token (d9cf9c3) |
+| 6 | Seller wizard 401 + bad payload | FIXED | auth-gated valid payload (9b1b0b5) |
+| 7 | Form validation gutted | FIXED | restored schemas (9b1b0b5) |
+| 8 | i18n fr/nl only 53 keys | FIXED | 204-key parity (293efc7) |
+| 9 | Frontend build broken (type errors) | FIXED | 26 pre-existing errors fixed; build green |
+| 10 | Auto-bid/anti-snipe missing | FIXED | engine (a0646f9) |
+| 11 | Room lifecycle manual | FIXED | cron (a0646f9) |
+| 12 | Invite request-mode no approval | FIXED | approval flow (8330420) |
+| 13 | Payment webhook: full scan + mock auto-verify | FIXED | targeted lookup + guard (1c3d9db) |
+| 14 | Broken links /terms /checkout/confirmation | FIXED | routes created (1c3d9db) |
+| 15 | Wallet backend absent | FIXED | wallet backend + UI (1c3d9db) |
+| 16 | Missing LLM providers (Wan, Poolside) + non-protocol health checks | FIXED | registry + protocol-aware health (893cf19) |
+| 17 | Hot queries unscaled | FIXED | indexes + caps (6a27d85) |
 
-### Green - Low: tech debt / cleanup [Phase 6]
-- Unused next-auth types were re-purposed (now used); @clerk/nextjs dep remains in package.json (uninstall).
-- CSP allows unsafe-inline + unsafe-eval (tighten in prod).
-- synchronize: true in dev (must be migrations-only in prod).
-- Backend has 5 TODO markers (seller stats/payout/review verification).
-- Only 4 backend spec files + 5 frontend component tests; no E2E or API integration tests.
-## 5. Gap vs. Industry Benchmark (Troostwijk-style)
+---
 
-Still missing / partial:
-- Deep category hierarchy (8 flat categories; no parent-child model / mega-menu)
-- Lot count per auction, location + flag on cards, multi-image thumbnail stacks
-- Lot specification table, condition report, collection/viewing info, legal info, CO2 badge, bidder anonymity, prev/next lot nav, image counter
-- Direct-sales (fixed-price) section, marketplace advisor map, seller statistics charts
-- Multi-currency + daily exchange rates (NGN only); shipping/delivery; buyer protection / escrow / disputes
-- PWA + WCAG 2.1 AA accessibility statement; more locales (de/es/ar)
-- E2E (Playwright) + load testing; structured logging/Sentry; DB backup schedule
+## 7. Value-Add Feature Ideas (prioritized)
 
-## 6. Phased Roadmap (work broken into phases)
+1. **AI in seller flow + chatbot** — backend ready (see N1).
+2. **Bidder notifications** — real-time + email (see N2).
+3. **Live auction watch page** (see N3).
+4. **Trust & safety** — condition reports, KYC badges (L4).
+5. **PWA + push** (L1).
+6. **Multi-currency** (L2).
+7. **Seller analytics** (L3).
+8. **Payment completion flow** in buyer dashboard — post-keys (B-PAY-1/3).
 
-### Phase 1 - Authentication re-platform (DONE, verified)
-- Replace Clerk with Auth.js (NextAuth v5): credentials provider, JWT session, role-based middleware, SessionProvider, signIn/signOut/useSession wiring, Redux bridge.
-- Deliverables: auth.ts, auth.config.ts, app/api/auth/[...nextauth]/route.ts, proxy.ts rewrite, providers/auth-sync/login/register/org/logout updates, types, env.
-- Verified: admin / seller / buyer login + dashboards; anonymous and cross-role redirects.
+---
+## 8. Quick Reference
 
-### Phase 2 - Make the data real (highest ROI, ~2-3 days)
-1. Fix API contracts in lib/server/data.ts + admin/seller islands to point at real routes (/products, /categories, /banners, /faqs, /rooms, /tickets, /invoices, /sellers/*).
-2. Add missing backend endpoints: GET /admin/banners, GET /admin/faqs, GET /categories (list), GET /faqs (public), admin auctions/bids/sellers/payments reports.
-3. Remove mock fallbacks once endpoints resolve; keep graceful empty states.
-4. Expose slug, location (city/country/countryCode), lotCount, watchersCount, rating on Product + map in the auction card/detail model.
-- Acceptance: homepage banners/FAQs/categories and all three dashboards show live seeded data; no mock in critical paths.
+**Run (dev):**
+1. `docker start greyauction-postgres`
+2. `cd backend && npm run build && npm run start:prod` (or `start:dev`)
+3. `cd frontend && npm run dev`
+4. Open http://localhost:3000/en · Swagger http://localhost:3001/api/docs
 
-### Phase 3 - Fix broken workflows (~2-3 days)
-1. Password-reset link: point backend email to /auth/login/forgot_password/reset_password (or add /reset-password route).
-2. Seller wizard: run post-login, attach Bearer token, build a valid RegisterSellerDto payload, surface validation errors; wire success -> seller dashboard.
-3. Restore form validation (uncomment/rewrite (auth)/components/schema.ts with real rules).
-4. Align or remove dead RTK auth endpoints (getProfile GET, completeProfile PATCH, verifyIdentity, resendOtp).
-5. Fix blog feed 404s (implement /feed.xml, /feed.json or remove the requesting components).
-6. Fix empty Image src warnings; unify footer/mobile-menu social links; console.log cleanup.
+**Demo accounts:** admin@greyauction.com / Admin@12345 · demo@seller.com / Seller@12345 · demo@buyer.com / Buyer@12345
+**Key scripts:** `seed:admins:dev`, `seed:demo` (ts-node), `seed-ai-providers.ts` (ts-node), `migration:run:dev`, `test`, `lint`; backend tests `npm test` (95).
 
-### Phase 4 - i18n, content & UX polish (~2-3 days)
-1. Complete fr/nl translations (204 keys each - currently 53).
-2. Add loading/empty/error states, skeletons, toast coverage; wallet mock constants -> real endpoints.
-3. Env-driven sitemap/robots; SEO metadata (Auction/Product schema, canonicals, breadcrumbs).
-4. Responsive + accessibility pass (WCAG AA), PWA manifest + offline shell.
+**Env files:** `backend/.env`, `frontend/.env.local` — payment/LLM keys go here when available.
 
-### Phase 5 - Complete the auction engine (~1-2 weeks)
-1. Bidding: auto-bid/proxy bidding (max-bid + step table over WebSocket), anti-sniping extension, bidder anonymity, bid history timestamps.
-2. Rooms: automated status cron (scheduled -> live -> closed), deposit collection, in-room bid UI.
-3. Invites: seller approval for request mode; QR + Telegram share; notifications.
-4. Payments: Flutterwave/Paystack keys, webhook success -> invoice paid, buyer-premium breakdown UI (fee config exists).
-5. Bulk lot upload (CSV) + product moderation queue UX.
+---
+## 9. Execution Log (rounds)
 
-### Phase 6 - Production hardening & ship (~1 week)
-1. Deployment: docker-compose single stack, use dist/src/main, Coolify webhook auto-deploy, .env secret management.
-2. Integrity: migrationsRun true + synchronize false, prod migrations, S3 backups, structured logging + Sentry, per-endpoint rate limits, tighten CSP.
-3. Tests: E2E (Playwright) smoke (home -> listing -> detail -> bid -> checkout), API integration (supertest), load (k6).
-4. Remove @clerk/nextjs from package.json; dep cleanup; license/security scan.
+- **Round 1:** Phase 2 complete (08fa5be). Phase 3 start: password-reset (d9cf9c3).
+- **Round 2:** Phase 3 complete (wizard 9b1b0b5, cleanup 2b6f0fd, links f179842).
+- **Round 3:** Phase 4 core (i18n 293efc7, loading 3f0a68e, charAt fix 3500a2e).
+- **Round 4:** Phase 5 engine (a0646f9: auto-bid, anti-snipe, room cron).
+- **Round 5:** Invite approvals + CSV bulk (8330420).
+- **Round 6:** P2 cleanups (d95f809).
+- **Round 7:** Wallet backend + webhook hardening + broken links + a11y (1c3d9db).
+- **Round 8:** LLM provider registry + health/monitoring + fallback (893cf19).
+- **Round 9:** Performance — indexes, caps, aggregate, parallel sweep (6a27d85).
 
-### Phase 7 - Differentiate (ongoing)
-1. Wire AI registry into UX: description generator, image captioning/tagging, smart search (pgvector), chatbot, pricing/bid prediction (endpoints exist).
-2. Multi-currency + exchange rates, shipping/delivery, escrow, disputes, affiliate/loyalty.
-3. More locales (de/es/ar); marketplace advisor map; direct-sales section.
+## 10. WORK NOW — Detailed Plan & Sequence
 
-**Recommended order:** Phase 2 -> Phase 3 -> Phase 4 -> Phase 5 -> Phase 6 -> Phase 7.
-The cheapest, highest-impact win is **Phase 2**, which turns every dashboard from "looks real" to actually real.
+**Ordering principle:** foundations first (scripts/CI/data layer), then the responsive/UX baseline (cross-cutting, so features are built on it), then features by dependency + value, then polish. Each item has acceptance criteria; every feature includes its UI/UX + responsive sub-tasks. `S`=foundation, `U`=UI/UX+responsive, `F`=feature, `P`=polish.
 
-## 7. Quick Reference
+### Wave 0 — Foundations (fast, unblocks everything)
 
-**Start order (dev):**
-1. docker start greyauction-postgres
-2. cd backend && npm run start:dev (or npm run build && npm run start:prod)
-3. cd frontend && npm run dev
-4. Open http://localhost:3000/en (Swagger at http://localhost:3001/api/docs)
+| ID | Task | Effort | Acceptance |
+|---|---|---|---|
+| S1 (N7) | Add npm scripts: `seed:demo`, `seed:ai:providers`, `seed:ai:features` | 0.25d | `npm run seed:demo` and `npm run seed:ai:providers` run green, idempotent |
+| S2 (N8) | CI: gate on frontend build + backend test; keep lint as warning | 0.5d | Local `npm run build` + `npm test` pass; CI yml updated; both jobs fail on errors |
+| S3 (N5) | Hoist `auth()` session read in `lib/server/data.ts` with React `cache()` | 0.25d | One session fetch per page render; no cross-request leakage; smoke passes |
 
-**Env files:** backend/.env, frontend/.env.local (created by this setup).
-**Key scripts:** seed:admins:dev, seed:demo (via ts-node), migration:run:dev, test, lint.
+### Wave 1 — UI/UX + Responsive Baseline (cross-cutting)
+
+| ID | Task | Effort | Acceptance |
+|---|---|---|---|
+| U1 | Responsive audit matrix 360/390/768/1024/1440 + fix horizontal scroll on core pages | 1d | No horizontal scroll at 360px on home/auctions/detail/FAQ/checkout and all dashboards |
+| U2 | Mobile nav & touch: hamburger flow, 44px+ touch targets, sheet/drawer spacing, `100dvh` fix | 1d | Touch targets pass at 44px; drawer opens/closes without layout shift |
+| U3 | Table hardening: `overflow-x-auto` + sticky header + mobile card fallback for admin auctions/bids/payments, seller listings, buyer payments | 1.5d | Tables usable on 360px (card view on mobile, no data loss) |
+| U4 (N6) | Consistent loading/empty/error states across dashboards + wallet empty-state copy | 1d | Every dashboard has Skeleton, EmptyState, and an error hint |
+| U5 | Form UX: validation messages, focus-visible rings, keyboard nav (seller wizard + checkout) | 1d | Keyboard-only flow works; errors announced; focus visible |
+| U6 | Accessibility spot-pass on new/nav components (aria-labels, headings, contrast) | 0.5d | axe-core pass on home + one dashboard |
+
+### Wave 2 — Features (dependency order)
+
+| ID | Task | Effort | UI/UX + Responsive | Acceptance |
+|---|---|---|---|---|
+| F1 (N4) | Admin table pagination (wire DataTable PaginationState + server fetch per page for auctions/bids/sellers/payments) | 1d | Pagination controls responsive; page size selector; mobile-friendly | 1000+ rows page correctly; no full reload; URL sync for page |
+| F2 (N1) | AI in seller create-listing: “Generate description” + “Optimize title” buttons → `POST /api/ai/execute` (feature `auction_description_generator`, `title_optimizer`) | 1.5d | Side panel/embedded card on the review step; skeleton while generating; graceful “AI not configured” toast; layout stacks on mobile | Generator fills description/title with detected model + latency shown; failure state never blocks manual entry |
+| F3 (N2) | Notifications: backend (entity, endpoints unread/list/mark-read, triggers for outbid/won/invite-approved/room-start) + frontend bell in header (desktop + mobile drawer) | 2.5d | Badge with unread count; dropdown on desktop, sheet on mobile; animations subtle; empty state | Trigger → row created → badge count updates (2 sessions verify) → mark-read persists |
+| F4 (N3) | Live auction watch page: socket.io join, live bid stream, in-room bid panel + auto-bid toggle + live countdown | 2.5d | 2-col → stacked at <768px; sticky bid bar on mobile; high-contrast live status | Two browsers: bid in A appears in B <1s; auto-bid ceiling shown; countdown syncs |
+
+### Wave 3 — Polish & verify
+
+| ID | Task | Effort | Acceptance |
+|---|---|---|---|
+| P1 | Full test + build + smoke after each feature; axe pass on changed screens | 0.5d/feature | 95+ tests pass, build green, no console errors |
+| P2 | Update this report: flip `[ ]`→`[x]`, record commit refs | 0.25d | Source of truth current every wave end |
+
+### Suggested order & why
+1. **S1 → S2 → S3** (0.5–1d): everything after is faster and verifiable.
+2. **U1 → U3 → U4** first, then **U2/U5/U6** — the responsive baseline prevents rework in F1–F4.
+3. **F1** (table pagination) before **F3/F4** — pagination improves the admin surfaces used to verify notifications and rooms.
+4. **F2** (AI) is independent — can be done anytime after Wave 1; it is the fastest visible win.
+5. **F3** then **F4** — notifications make the live watch page testable across two sessions.
+6. **P1/P2** at each feature boundary.
+
+**Total estimate: ~11–13 working days for the full “Work Now” set** (0.5–1d Wave 0 · ~5.5d Wave 1 · ~7.5d Wave 2 · included in each feature P1/P2).

@@ -44,7 +44,7 @@ export function TablePagination({
   if (totalPages <= 1 && totalItems <= 0) return null;
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
       <p className="text-sm text-muted-foreground">
         Showing {startItem}-{endItem} of {totalItems} results
       </p>
@@ -54,7 +54,7 @@ export function TablePagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-9 min-w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
           aria-label="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -65,7 +65,7 @@ export function TablePagination({
           page === '...' ? (
             <span
               key={`ellipsis-${i}`}
-              className="flex h-9 w-9 items-center justify-center text-sm text-muted-foreground"
+              className="flex h-9 min-w-9 items-center justify-center px-2 text-sm text-muted-foreground"
             >
               ...
             </span>
@@ -74,7 +74,7 @@ export function TablePagination({
               key={page}
               onClick={() => onPageChange(page)}
               className={cn(
-                'flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-colors',
+                'flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-sm font-medium transition-colors',
                 currentPage === page
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted'
@@ -89,7 +89,7 @@ export function TablePagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-9 min-w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
           aria-label="Next page"
         >
           <ChevronRight className="h-4 w-4" />

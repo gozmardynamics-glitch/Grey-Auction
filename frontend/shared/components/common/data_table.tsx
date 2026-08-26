@@ -83,6 +83,9 @@ interface DataTableProps<TData, TValue> {
 
   // Custom wrapper class
   className?: string;
+
+  // Mobile cards (below sm breakpoint): renders simple cards instead of table rows
+  mobileCards?: (row: TData, index: number) => ReactNode;
 }
 
 function ToolbarControls({
@@ -149,6 +152,7 @@ function DataTable<TData, TValue>({
   emptyDescription,
   isLoading = false,
   className,
+  mobileCards,
 }: DataTableProps<TData, TValue>) {
   const isServerSide = !!onPaginationChange;
   const showToolbar = showToolbarProp ?? !!(tabFilters || title);
@@ -247,13 +251,25 @@ function DataTable<TData, TValue>({
 
   const tableContent = (
     <>
-      <div className="rounded-md border">
-        <Table >
+      <div
+        className={cn(
+          'rounded-md border overflow-x-auto',
+          mobileCards && 'hidden sm:block'
+        )}
+      >
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className={cn(header.column.columnDef.meta?.sticky && 'sticky left-0 z-10 bg-background border-r') || 'bg-background border-r-0'}>
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      'sticky top-0 z-20 bg-background',
+                      header.column.columnDef.meta?.sticky &&
+                        'left-0 z-30 border-r'
+                    )}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -306,7 +322,28 @@ function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {pagination && computedPageCount > 0 && (
+      {mobileCards && (
+        <div className="space-y-3 sm:hidden">
+          {isLoading ? (
+            Array.from({ length: paginationState.pageSize }, (_, i) => (
+              <div key={i} className="space-y-2 rounded-lg border p-4">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : table.getRowModel().rows.length > 0 ? (
+            table.getRowModel().rows.map((row, index) =>
+              mobileCards(row.original, index)
+            )
+          ) : (
+            <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+              No results found.
+            </div>
+          )}
+        </div>
+      )}
+
+      {pagination && computedPageCount > 1 && (
         <TablePagination
           currentPage={currentPage}
           totalPages={computedPageCount}

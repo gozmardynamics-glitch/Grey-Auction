@@ -14,8 +14,17 @@ import {
   Sparkles,
   Timer,
   TrendingUp,
+  Zap,
 } from 'lucide-react';
-import { Button, Card, Badge, Skeleton } from '@/shared/components/common';
+import { toast } from 'sonner';
+import {
+  Button,
+  Card,
+  Badge,
+  Skeleton,
+  Input,
+  Label,
+} from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { useAppSelector } from '@/redux/store';
 
@@ -39,6 +48,24 @@ interface RoomData {
   requiresDeposit: boolean;
   depositAmount?: number;
   auctionCount?: number;
+  productIds?: string[];
+}
+
+interface LiveBid {
+  id: string;
+  bidderName?: string;
+  amount: number;
+  createdAt?: string;
+  isAutoBid?: boolean;
+}
+
+interface FeaturedProduct {
+  id: string;
+  title: string;
+  imageUrl?: string;
+  currentBid: number;
+  totalBids: number;
+  endTime?: string;
 }
 
 const STATUS_STEPS = [
@@ -59,6 +86,19 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
   const [connected, setConnected] = useState(false);
   const socketRef = useRef<any>(null);
 
+  // ─── Live watch-room state ────────────────────────────────────────────────
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [product, setProduct] = useState<FeaturedProduct | null>(null);
+  const [liveBids, setLiveBids] = useState<LiveBid[]>([]);
+  const [bidAmount, setBidAmount] = useState('');
+  const [maxBid, setMaxBid] = useState('');
+  const [isPlacingBid, setIsPlacingBid] = useState(false);
+  const [productCountdown, setProductCountdown] = useState('');
+
+  const prependLiveBid = useCallback((bid: LiveBid) => {
+    setLiveBids((prev) => [bid, ...prev].slice(0, 50));
+  }, []);
+
   // Load room data
   useEffect(() => {
     const loadRoom = async () => {
@@ -71,17 +111,70 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
         const json = await res.json();
         const data = json.data ?? json;
         setRoom(data);
+        // First product in the room is the featured watch-room auction.
+        const productId = data.productIds?.[0] || data.productId || null;
+        setSelectedProductId(productId);
         // Load auctions in room
         const auctionsRes = await fetch(`${apiBase}/rooms/${roomId}/participants`).catch(() => null);
         setAuctions([
           {
-            id: data.productIds?.[0] || '1',
+            id: productId || data.productIds?.[0] || '1',
             title: 'Featured Auction Item',
             currentBid: 2500000,
             totalBids: 12,
             status: 'active',
           },
         ]);
+
+        // PLACEHOLDER: product/bid-history endpoints may not be reachable in
+        // every environment; the socket events below keep the UI in sync when
+        // they are. Failures here degrade gracefully to the fallback card.
+        if (productId) {
+          const [productRes, bidsRes] = await Promise.all([
+            fetch(`${apiBase}/products/${productId}`).catch(() => null),
+            fetch(`${apiBase}/auctions/${productId}/bids`).catch(() => null),
+          ]);
+          if (productRes?.ok) {
+            const pj = await productRes.json();
+            const p = pj.data ?? pj;
+            if (p && typeof p === 'object') {
+              const featured: FeaturedProduct = {
+                id: p.id || productId,
+                title: p.title || 'Featured Auction Item',
+                imageUrl: p.images?.[0],
+                currentBid: Number(p.currentBid) || 0,
+                totalBids: Number(p.totalBids) || 0,
+                endTime: p.endTime,
+              };
+              setProduct(featured);
+              setAuctions([
+                {
+                  id: featured.id,
+                  title: featured.title,
+                  imageUrl: featured.imageUrl,
+                  currentBid: featured.currentBid,
+                  totalBids: featured.totalBids,
+                  status: 'active',
+                },
+              ]);
+            }
+          }
+          if (bidsRes?.ok) {
+            const bj = await bidsRes.json();
+            const bids = bj.data ?? bj;
+            if (Array.isArray(bids) && bids.length > 0) {
+              const mapped: LiveBid[] = bids.map((b: any) => ({
+                id: b.id || `bid-${Date.now()}-${Math.random()}`,
+                bidderName: b.bidderName || (b.bidder?.name as string | undefined) || 'Bidder',
+                amount: Number(b.amount) || 0,
+                createdAt: b.createdAt,
+                isAutoBid: !!b.isAutoBid,
+              }));
+              mapped.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+              setLiveBids(mapped.slice(0, 30));
+            }
+          }
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -95,9 +188,10 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
   useEffect(() => {
     if (!room) return;
     const updateTimer = () => {
-      const diff = new Date(room.startTime).getTime() - Date.now();
+      const target = room.status === 'live' ? room.endTime : room.startTime;
+      const diff = new Date(target).getTime() - Date.now();
       if (diff <= 0) {
-        setTimeLeft('Live now');
+        setTimeLeft(room.status === 'live' ? 'Ended' : 'Live now');
         return;
       }
       const days = Math.floor(diff / (24 * 60 * 60 * 1000));
@@ -115,6 +209,34 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
     return () => clearInterval(timer);
   }, [room]);
 
+  // Live countdown for the featured product (from its endTime)
+  useEffect(() => {
+    const endTime = product?.endTime || (room?.status === 'live' ? room?.endTime : null);
+    if (!endTime) {
+      setProductCountdown('');
+      return;
+    }
+    const updateProductCountdown = () => {
+      const diff = new Date(endTime).getTime() - Date.now();
+      if (diff <= 0) {
+        setProductCountdown('Ended');
+        return;
+      }
+      const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+      const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+      const secs = Math.floor((diff % (60 * 1000)) / 1000);
+      setProductCountdown(
+        days > 0
+          ? `${days}d ${hours}h ${mins}m`
+          : `${hours}h ${mins}m ${secs}s`
+      );
+    };
+    updateProductCountdown();
+    const timer = setInterval(updateProductCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [product?.endTime, room?.status, room?.endTime]);
+
   // WebSocket connection
   useEffect(() => {
     if (!room || room.status !== 'live') return;
@@ -122,8 +244,10 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
     const connect = async () => {
       try {
         const { io } = await import('socket.io-client');
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const socket = io(`${apiUrl}/auctions`, {
+        // Connect to the API origin (without the /api path) on the '/auctions' namespace
+        const configured = process.env.NEXT_PUBLIC_API_URL;
+        const apiOrigin = configured ? new URL(configured).origin : 'http://localhost:3001';
+        const socket = io(`${apiOrigin}/auctions`, {
           auth: { token: authToken },
         });
         socketRef.current = socket;
@@ -131,19 +255,53 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
         socket.on('connect', () => {
           setConnected(true);
           socket.emit('joinRoom', { roomId: room.id });
+          // The backend broadcasts bid events to the product room, so join it too.
+          if (selectedProductId) socket.emit('joinRoom', { roomId: selectedProductId });
         });
         socket.on('disconnect', () => setConnected(false));
         socket.on('newBid', (data: any) => {
+          const productId = data?.productId;
+          const bid = data?.bid;
+          if (!productId || !bid) return;
+          const amount = Number(bid.amount) || 0;
           setAuctions((prev) =>
             prev.map((a) =>
-              a.id === data.productId
-                ? { ...a, currentBid: data.bid.amount, totalBids: a.totalBids + 1 }
+              a.id === productId
+                ? { ...a, currentBid: amount || a.currentBid, totalBids: (a.totalBids || 0) + 1 }
                 : a
             )
           );
+          setProduct((prev) =>
+            prev && prev.id === productId
+              ? { ...prev, currentBid: amount || prev.currentBid, totalBids: (prev.totalBids || 0) + 1 }
+              : prev
+          );
+          prependLiveBid({
+            id: bid.id || `bid-${Date.now()}`,
+            bidderName: bid.bidderName || (bid.bidder?.name as string | undefined),
+            amount,
+            createdAt: bid.createdAt,
+            isAutoBid: !!bid.isAutoBid,
+          });
+        });
+        socket.on('bidUpdate', (data: any) => {
+          const productId = data?.productId;
+          if (!productId) return;
+          setAuctions((prev) =>
+            prev.map((a) =>
+              a.id === productId
+                ? { ...a, currentBid: data.currentBid ?? a.currentBid, totalBids: data.totalBids ?? a.totalBids }
+                : a
+            )
+          );
+          setProduct((prev) =>
+            prev && prev.id === productId
+              ? { ...prev, currentBid: data.currentBid ?? prev.currentBid, totalBids: data.totalBids ?? prev.totalBids }
+              : prev
+          );
         });
         socket.on('roomEnding', (data: any) => {
-          // Show ending warning
+          // Show ending warning (kept from the original page)
         });
         socket.on('roomEnded', () => {
           setRoom((prev) => (prev ? { ...prev, status: 'closed' } : prev));
@@ -158,7 +316,59 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
-  }, [room, authToken]);
+  }, [room, authToken, selectedProductId, prependLiveBid]);
+
+  // Place a bid on the featured product
+  const handlePlaceBid = useCallback(async () => {
+    if (!selectedProductId) return;
+    const amount = Number(bidAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Enter a valid bid amount');
+      return;
+    }
+    const parsedMax = Number(maxBid);
+    const payload: { amount: number; maxBid?: number } = { amount };
+    if (maxBid && !isNaN(parsedMax) && parsedMax > 0) payload.maxBid = parsedMax;
+    try {
+      setIsPlacingBid(true);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiBase}/auctions/${selectedProductId}/bids`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(json?.message || 'Failed to place bid');
+      }
+      const bid = json?.data;
+      if (bid) {
+        const amountNum = Number(bid.amount) || amount;
+        prependLiveBid({
+          id: bid.id || `bid-${Date.now()}`,
+          bidderName: bid.bidderName || (bid.bidder?.name as string | undefined) || 'You',
+          amount: amountNum,
+          createdAt: bid.createdAt,
+          isAutoBid: !!bid.isAutoBid,
+        });
+        setProduct((prev) =>
+          prev
+            ? { ...prev, currentBid: amountNum, totalBids: (prev.totalBids || 0) + 1 }
+            : prev
+        );
+      }
+      setBidAmount('');
+      setMaxBid('');
+      toast.success('Bid placed successfully');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to place bid. Please try again.');
+    } finally {
+      setIsPlacingBid(false);
+    }
+  }, [selectedProductId, bidAmount, maxBid, authToken, prependLiveBid]);
 
   if (loading) {
     return (
@@ -374,6 +584,171 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
           </div>
         )}
       </div>
+
+      {/* Live Watch Room */}
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <Radio className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold">Live Auction</h2>
+          {room.status === 'live' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              {product?.totalBids ?? 0} bids
+            </span>
+          )}
+        </div>
+
+        {!selectedProductId ? (
+          <Card className="p-8 text-center">
+            <Sparkles className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm font-medium text-foreground">No auction items in this room yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Live bidding will be available as soon as the seller adds a product to the room.
+            </p>
+          </Card>
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Current bid + live bid list */}
+              <Card className="p-5 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Current Bid
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      {formatCurrency(product?.currentBid ?? 0)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Ends In
+                    </p>
+                    <p className="text-lg font-bold tabular-nums">
+                      {productCountdown || '—'}
+                    </p>
+                  </div>
+                </div>
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  <h3 className="text-sm font-semibold">Recent Bids</h3>
+                  {liveBids.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No bids yet — be the first to bid!
+                    </p>
+                  ) : (
+                    liveBids.map((bid) => (
+                      <div
+                        key={bid.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm"
+                      >
+                        <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+                          {bid.isAutoBid && (
+                            <Zap className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                          )}
+                          <span className="truncate">{bid.bidderName || 'Bidder'}</span>
+                        </span>
+                        <span className="shrink-0 font-semibold">
+                          {formatCurrency(bid.amount)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              {/* Bid panel (desktop/tablet) */}
+              <Card className="hidden p-5 md:block">
+                <h3 className="mb-4 text-sm font-semibold">Place a Bid</h3>
+                {room.status === 'live' ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="bid-amount" className="text-sm">
+                        Your Bid (₦)
+                      </Label>
+                      <Input
+                        id="bid-amount"
+                        type="number"
+                        min={0}
+                        value={bidAmount}
+                        onChange={(e) => setBidAmount(e.target.value)}
+                        placeholder="Enter bid amount"
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="bid-max" className="text-sm">
+                        Max Bid — auto-bid (optional)
+                      </Label>
+                      <Input
+                        id="bid-max"
+                        type="number"
+                        min={0}
+                        value={maxBid}
+                        onChange={(e) => setMaxBid(e.target.value)}
+                        placeholder="Set a maximum for auto-bidding"
+                        className="mt-1.5"
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Leave empty to place a single bid.
+                      </p>
+                    </div>
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={handlePlaceBid}
+                      disabled={isPlacingBid || !bidAmount}
+                    >
+                      {isPlacingBid ? 'Placing bid...' : 'Place Bid'}
+                    </Button>
+                  </div>
+                ) : room.status === 'scheduled' ? (
+                  <p className="text-sm text-muted-foreground">
+                    Bidding opens when the room goes live.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    This auction has ended.
+                  </p>
+                )}
+              </Card>
+            </div>
+
+            {/* Sticky bottom bid bar (mobile) */}
+            {room.status === 'live' && (
+              <div className="sticky bottom-0 z-10 -mx-4 mt-4 border-t bg-background px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:hidden">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(e.target.value)}
+                    placeholder="Your bid (₦)"
+                    className="h-11 flex-1"
+                    aria-label="Bid amount"
+                  />
+                  <Button
+                    onClick={handlePlaceBid}
+                    disabled={isPlacingBid || !bidAmount}
+                    className="h-11 shrink-0"
+                  >
+                    {isPlacingBid ? 'Placing...' : 'Bid'}
+                  </Button>
+                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  value={maxBid}
+                  onChange={(e) => setMaxBid(e.target.value)}
+                  placeholder="Max bid (auto-bid, optional)"
+                  className="mt-2 h-10"
+                  aria-label="Maximum bid"
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* AI Room Assistant */}
       <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-5">
         <div className="flex items-start gap-4">

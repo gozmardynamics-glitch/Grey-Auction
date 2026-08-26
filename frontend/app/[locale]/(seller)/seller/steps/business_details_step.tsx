@@ -45,7 +45,7 @@ export default function BusinessDetailsStep({
                 <Input
                   placeholder="Enter company name"
                   {...field}
-                  className="bg-background"
+                  className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 />
               </FormControl>
               <FormMessage />
@@ -63,7 +63,7 @@ export default function BusinessDetailsStep({
                 <Input
                   placeholder="Enter registration number"
                   {...field}
-                  className="bg-background"
+                  className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 />
               </FormControl>
               <FormMessage />
@@ -81,7 +81,7 @@ export default function BusinessDetailsStep({
                 <Input
                   placeholder="Enter postal code"
                   {...field}
-                  className="bg-background"
+                  className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 />
               </FormControl>
               <FormMessage />
@@ -99,7 +99,7 @@ export default function BusinessDetailsStep({
                 <Input
                   placeholder="Street address"
                   {...field}
-                  className="bg-background"
+                  className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 />
               </FormControl>
               <FormMessage />
@@ -115,7 +115,11 @@ export default function BusinessDetailsStep({
               <FormItem>
                 <FormLabel>City</FormLabel>
                 <FormControl>
-                  <Input placeholder="Lagos" {...field} className="bg-background" />
+                  <Input
+                    placeholder="Lagos"
+                    {...field}
+                    className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -132,7 +136,7 @@ export default function BusinessDetailsStep({
                   <Input
                     placeholder="Lagos State"
                     {...field}
-                    className="bg-background"
+                    className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                   />
                 </FormControl>
                 <FormMessage />

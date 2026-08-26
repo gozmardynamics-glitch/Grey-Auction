@@ -126,6 +126,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
                           field.onChange(formatCardNumber(e.target.value))
                         }
                         maxLength={19}
+                        className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       />
                     </FormControl>
                     <FormMessage />
@@ -150,6 +151,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
                             field.onChange(formatExpiry(e.target.value))
                           }
                           maxLength={5}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         />
                       </FormControl>
                       <FormMessage />
@@ -177,6 +179,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
                             )
                           }
                           maxLength={4}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         />
                       </FormControl>
                       <FormMessage />

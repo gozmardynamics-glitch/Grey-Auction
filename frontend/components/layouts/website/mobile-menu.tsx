@@ -92,7 +92,7 @@ export default function MobileMenu() {
                 size="icon"
                 aria-label="Close navigation menu"
                 onClick={handleClose}
-                className="rounded-md text-muted-foreground hover:text-foreground"
+                className="min-h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground"
               >
                 <svg
                   width="24"
@@ -197,7 +197,7 @@ export default function MobileMenu() {
                 size="icon"
                 aria-label="Back to main menu"
                 onClick={() => setView('main')}
-                className="rounded-md text-muted-foreground hover:text-foreground"
+                className="min-h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -274,7 +274,7 @@ export default function MobileMenu() {
                 size="icon"
                 aria-label="Back to main menu"
                 onClick={() => setView('main')}
-                className="rounded-md text-muted-foreground hover:text-foreground"
+                className="min-h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>

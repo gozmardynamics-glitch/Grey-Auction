@@ -21,8 +21,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      # Real gate: lint + build + test must pass
       - run: npm run lint -- --max-warnings=0
-        continue-on-error: true
       - run: npm run build
       - run: npm test
 
@@ -41,6 +41,5 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint -- --max-warnings=0
-        continue-on-error: true
       - run: npm run build
       - run: npm test

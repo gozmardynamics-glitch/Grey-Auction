@@ -124,6 +124,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                           placeholder="Enter first name"
                           disabled={isLoading}
                           {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         />
                       </FormControl>
                       <FormMessage />
@@ -141,6 +142,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                           placeholder="Enter last name"
                           disabled={isLoading}
                           {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         />
                       </FormControl>
                       <FormMessage />
@@ -161,7 +163,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                         value={field.value}
                         onValueChange={field.onChange}
                       >
-                        <SelectTrigger className="w-[100px]">
+                        <SelectTrigger className="w-[100px] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -183,6 +185,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                             placeholder="Enter phone number"
                             disabled={isLoading}
                             {...field}
+                            className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                           />
                         </FormControl>
                         <FormMessage />
@@ -205,6 +208,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                         placeholder="Enter email"
                         disabled={isLoading}
                         {...field}
+                        className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       />
                     </FormControl>
                     <FormMessage />
@@ -224,7 +228,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                           <SelectValue placeholder="Select country" />
                         </SelectTrigger>
                       </FormControl>
@@ -253,7 +257,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                   <FormItem>
                     <FormLabel>House Number</FormLabel>
                     <FormControl>
-                      <Input disabled={isLoading} {...field} />
+                      <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -268,7 +276,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                   <FormItem>
                     <FormLabel>Street</FormLabel>
                     <FormControl>
-                      <Input disabled={isLoading} {...field} />
+                      <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -288,7 +300,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                         onValueChange={field.onChange}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                             <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                         </FormControl>
@@ -314,7 +326,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                         onValueChange={field.onChange}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                             <SelectValue placeholder="Select city" />
                           </SelectTrigger>
                         </FormControl>
@@ -340,7 +352,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                   <FormItem>
                     <FormLabel>Postal Code</FormLabel>
                     <FormControl>
-                      <Input disabled={isLoading} {...field} />
+                      <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -383,7 +399,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                         <FormItem>
                           <FormLabel>First Name</FormLabel>
                           <FormControl>
-                            <Input disabled={isLoading} {...field} />
+                            <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -396,7 +416,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                         <FormItem>
                           <FormLabel>Last Name</FormLabel>
                           <FormControl>
-                            <Input disabled={isLoading} {...field} />
+                            <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -415,7 +439,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                           onValueChange={field.onChange}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                               <SelectValue placeholder="Select country" />
                             </SelectTrigger>
                           </FormControl>
@@ -443,7 +467,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                       <FormItem>
                         <FormLabel>House Number</FormLabel>
                         <FormControl>
-                          <Input disabled={isLoading} {...field} />
+                          <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -457,7 +485,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                       <FormItem>
                         <FormLabel>Street</FormLabel>
                         <FormControl>
-                          <Input disabled={isLoading} {...field} />
+                          <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -476,7 +508,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                             onValueChange={field.onChange}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                                 <SelectValue placeholder="Select state" />
                               </SelectTrigger>
                             </FormControl>
@@ -500,7 +532,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                             onValueChange={field.onChange}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                                 <SelectValue placeholder="Select city" />
                               </SelectTrigger>
                             </FormControl>
@@ -522,7 +554,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                       <FormItem>
                         <FormLabel>Postal Code</FormLabel>
                         <FormControl>
-                          <Input disabled={isLoading} {...field} />
+                          <Input
+                          disabled={isLoading}
+                          {...field}
+                          className="focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

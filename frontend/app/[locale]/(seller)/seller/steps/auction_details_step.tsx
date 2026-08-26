@@ -52,7 +52,7 @@ export default function AuctionDetailsStep({
               </FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="bg-background">
+                  <SelectTrigger className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>
@@ -77,7 +77,7 @@ export default function AuctionDetailsStep({
               <FormLabel>Number of items</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="bg-background">
+                  <SelectTrigger className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     <SelectValue placeholder="Select number of items" />
                   </SelectTrigger>
                 </FormControl>
@@ -102,7 +102,7 @@ export default function AuctionDetailsStep({
               <FormLabel>Estimated total value</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="bg-background">
+                  <SelectTrigger className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     <SelectValue placeholder="Select estimated value" />
                   </SelectTrigger>
                 </FormControl>

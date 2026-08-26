@@ -1,7 +1,21 @@
 import { auth } from '@/auth';
+import { cache } from 'react';
 import type { Auction } from '@/app/[locale]/(website)/models';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+/**
+ * Per-request session token — cached with React cache() so a page render
+ * performs at most one auth() decode (no cross-request leakage).
+ */
+const getSessionToken = cache(async (): Promise<string | null> => {
+  try {
+    const session = await auth();
+    return (session?.user as any)?.accessToken || null;
+  } catch {
+    return null;
+  }
+});
 
 /**
  * Server-side fetch with the Auth.js session token attached when present,
@@ -10,13 +24,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
  */
 async function apiFetch(path: string, options?: RequestInit): Promise<any> {
   try {
-    let token: string | null = null;
-    try {
-      const session = await auth();
-      token = (session?.user as any)?.accessToken || null;
-    } catch {
-      token = null;
-    }
+    const token = await getSessionToken();
     const res = await fetch(`${API_BASE}${path}`, {
       headers: {
         'Content-Type': 'application/json',

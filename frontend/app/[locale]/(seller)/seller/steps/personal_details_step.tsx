@@ -48,7 +48,11 @@ export default function PersonalDetailsStep({
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your full name" {...field} className='bg-background' />
+                <Input
+                  placeholder="Enter your full name"
+                  {...field}
+                  className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -66,7 +70,7 @@ export default function PersonalDetailsStep({
                   type="email"
                   placeholder="Enter your email address"
                   {...field}
-                  className='bg-background'
+                  className="bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 />
               </FormControl>
               <FormMessage />
@@ -83,7 +87,7 @@ export default function PersonalDetailsStep({
               <FormControl>
                 <div className="flex gap-2">
                   <Select defaultValue="+234">
-                    <SelectTrigger className="w-28 h-12 bg-background">
+                    <SelectTrigger className="w-28 h-12 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -93,7 +97,7 @@ export default function PersonalDetailsStep({
                     </SelectContent>
                   </Select>
                   <Input
-                    className="flex-1 bg-background"
+                    className="flex-1 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     placeholder="Enter phone number"
                     {...field}
                   />

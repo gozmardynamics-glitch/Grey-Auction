@@ -1,6 +1,6 @@
 import { Clock, Megaphone, TrendingDown, Trophy } from 'lucide-react';
 
-import { Card, CardContent } from '@/shared/components/common';
+import { Card, CardContent, EmptyState } from '@/shared/components/common';
 
 const stats = [
   {
@@ -30,6 +30,15 @@ const stats = [
 ];
 
 export default function BuyerStats() {
+  if (stats.length === 0) {
+    return (
+      <EmptyState
+        title="No dashboard stats yet"
+        description="Your bidding activity will show up here once you place your first bid."
+      />
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       {stats.map((stat) => {
