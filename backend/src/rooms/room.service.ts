@@ -39,6 +39,7 @@ export class RoomService {
     return this.repo.find({
       where: { createdById: userId },
       order: { createdAt: 'DESC' },
+      take: 100,
     });
   }
 

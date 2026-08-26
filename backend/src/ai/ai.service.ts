@@ -149,43 +149,44 @@ export class AIService {
 
   /** Sweep all active providers; detect connectivity and record health. */
   async monitorSweep(): Promise<Array<{ id: string; name: string; ok: boolean; configured: boolean; latencyMs: number; status: ProviderStatus }>> {
-    const providers = await this.findAllProviders();
-    const results = [];
-    for (const provider of providers) {
-      if (!provider.isActive) continue;
+    const providers = (await this.findAllProviders()).filter((p) => p.isActive);
 
-      const test = await this.testConnection(provider);
-      let outcome: { success: boolean } = { success: false };
-      let finalStatus = provider.status;
+    // Bounded parallelism: test connections concurrently (each may take up to
+    // 10s), then record results. Avoids a slow provider delaying the sweep.
+    const concurrency = 4;
+    const results: Array<{ id: string; name: string; ok: boolean; configured: boolean; latencyMs: number; status: ProviderStatus }> = [];
 
-      if (!test.configured) {
-        // Leave status as-is (unknown) — not configured is not 'down'
-        results.push({
-          id: provider.id,
-          name: provider.name,
-          ok: false,
-          configured: false,
-          latencyMs: 0,
-          status: provider.status,
-        });
-        continue;
-      }
-
-      outcome = { success: test.ok };
-      const updated = await this.recordHealth(provider.id, {
-        success: test.ok,
-        latencyMs: test.latencyMs,
-        modelCount: test.modelCount,
-      });
-      finalStatus = updated.status;
-      results.push({
-        id: provider.id,
-        name: provider.name,
-        ok: test.ok,
-        configured: true,
-        latencyMs: test.latencyMs,
-        status: finalStatus,
-      });
+    for (let i = 0; i < providers.length; i += concurrency) {
+      const batch = providers.slice(i, i + concurrency);
+      const settled = await Promise.all(
+        batch.map(async (provider) => {
+          const test = await this.testConnection(provider);
+          if (!test.configured) {
+            return {
+              id: provider.id,
+              name: provider.name,
+              ok: false,
+              configured: false,
+              latencyMs: 0,
+              status: provider.status,
+            };
+          }
+          const updated = await this.recordHealth(provider.id, {
+            success: test.ok,
+            latencyMs: test.latencyMs,
+            modelCount: test.modelCount,
+          });
+          return {
+            id: provider.id,
+            name: provider.name,
+            ok: test.ok,
+            configured: true,
+            latencyMs: test.latencyMs,
+            status: updated.status,
+          };
+        }),
+      );
+      results.push(...settled);
     }
     return results;
   }

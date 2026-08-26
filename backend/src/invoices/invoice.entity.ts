@@ -25,6 +25,7 @@ export enum InvoiceStatus {
 @Index(['buyer_id'])
 @Index(['seller_id'])
 @Index(['auction_id'])
+@Index(['payment_reference'])
 export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;

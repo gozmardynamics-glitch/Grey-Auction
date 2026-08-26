@@ -8,7 +8,7 @@ export class ContentService {
   constructor(@InjectRepository(ContentPage) private readonly repo: Repository<ContentPage>) {}
 
   findBySlug(slug: string) { return this.repo.findOne({ where: { slug } }); }
-  findAll() { return this.repo.find(); }
+  findAll() { return this.repo.find({ take: 50 }); }
 
   async upsert(slug: string, dto: Partial<ContentPage>) {
     const existing = await this.repo.findOne({ where: { slug } });

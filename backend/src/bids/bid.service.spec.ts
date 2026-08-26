@@ -187,6 +187,7 @@ describe('BidService', () => {
         where: { bidderId: 'user-1' },
         relations: ['product', 'room'],
         order: { createdAt: 'DESC' },
+        take: 100,
       });
       expect(result).toEqual(bids);
     });

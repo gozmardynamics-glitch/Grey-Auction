@@ -221,23 +221,28 @@ export class InvoiceService {
     totalIssued: number;
     totalPaid: number;
   }> {
-    const invoices = await this.repo.find();
+    // Aggregate in the database instead of loading every invoice row.
+    const rows: Array<{ status: string; total: string | null; count: string }> =
+      await this.repo
+        .createQueryBuilder('inv')
+        .select('inv.status', 'status')
+        .addSelect('SUM(inv.total)', 'total')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('inv.status')
+        .getRawMany();
+
+    let count = 0;
     let totalIssued = 0;
     let totalPaid = 0;
-
-    for (const invoice of invoices) {
-      if (invoice.status === InvoiceStatus.CANCELLED) continue;
-      totalIssued += Number(invoice.total);
-      if (invoice.status === InvoiceStatus.PAID) {
-        totalPaid += Number(invoice.total);
-      }
+    for (const row of rows) {
+      count += parseInt(row.count, 10) || 0;
+      const sum = Number(row.total) || 0;
+      if (row.status === 'cancelled') continue;
+      totalIssued += sum;
+      if (row.status === 'paid') totalPaid += sum;
     }
 
-    return {
-      count: invoices.length,
-      totalIssued,
-      totalPaid,
-    };
+    return { count, totalIssued, totalPaid };
   }
 }
 

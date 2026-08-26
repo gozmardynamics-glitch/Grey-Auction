@@ -179,6 +179,7 @@ export class ProductService {
     return this.repo.find({
       where: { sellerId },
       order: { createdAt: 'DESC' },
+      take: 100,
     });
   }
 

@@ -212,6 +212,7 @@ export class BidService {
       where: { bidderId: userId },
       relations: ['product', 'room'],
       order: { createdAt: 'DESC' },
+      take: 100,
     });
   }
 
@@ -220,6 +221,7 @@ export class BidService {
       where: { roomId },
       relations: ['bidder', 'product'],
       order: { createdAt: 'DESC' },
+      take: 100,
     });
   }
 }

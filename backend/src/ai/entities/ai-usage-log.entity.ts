@@ -1,6 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('ai_usage_logs')
+@Index(['createdAt'])
+@Index(['featureKey', 'createdAt'])
+@Index(['providerName'])
 export class AIUsageLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -1,9 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Index } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { Product } from '../../products/entities/product.entity';
 import { Room } from '../../rooms/entities/room.entity';
 
 @Entity('bids')
+@Index(['productId'])
+@Index(['bidderId'])
+@Index(['productId', 'createdAt'])
 export class Bid {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, VersionColumn, Index } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 
 export enum ProductStatus {
@@ -25,6 +25,9 @@ export enum ProductVisibility {
 }
 
 @Entity('products')
+@Index(['sellerId'])
+@Index(['status', 'endTime'])
+@Index(['category'])
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;

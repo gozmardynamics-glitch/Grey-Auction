@@ -192,11 +192,11 @@ export class InviteService {
   }
 
   async findByProduct(productId: string): Promise<Invite[]> {
-    return this.repo.find({ where: { productId }, order: { createdAt: 'DESC' } });
+    return this.repo.find({ where: { productId }, order: { createdAt: 'DESC' }, take: 100 });
   }
 
   async findByRoom(roomId: string): Promise<Invite[]> {
-    return this.repo.find({ where: { roomId }, order: { createdAt: 'DESC' } });
+    return this.repo.find({ where: { roomId }, order: { createdAt: 'DESC' }, take: 100 });
   }
 
   async deactivate(id: string, userId: string): Promise<void> {
