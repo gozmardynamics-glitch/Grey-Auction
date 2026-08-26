@@ -1,7 +1,7 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `feature/authjs-migration` · **Commits:** 55+ · **Backend tests:** 117/117 · **Frontend build:** green (orig. env) — see Round 11 note · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `feature/authjs-migration` · **Commits:** 55+ · **Backend tests:** 120/120 · **Frontend build:** green (orig. env) — see Round 11 note · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
 ---
@@ -217,5 +217,11 @@
 - **[x] Seller dashboard recent_activity.** SellerService.getDashboard now returns real activity (invoices + product listings merged, newest-first) instead of an empty array; getRecentActivity added (uses seller.user_id). 3 tests.
 - **[x] Seller review is_verified_purchase.** SellerReviewService.create now verifies a purchase by checking for a won invoice (buyer + auction/product from this seller) instead of hardcoding true. 2 tests.
 - **[x] Notification bell navigation.** Clicking a notification marks it read AND routes to its link (notification_bell.tsx).
+
+**Round 13 (remaining codeable items):**
+- **[x] seller-statistics real-period populate.** SellerStatisticsService.generate/updateStatistics now derive metrics from real invoices (sales/commission/orders/distinct customers & products sold), products (listings) and reviews (count/avg/positive/negative) within the period, instead of leaving zeros. 1 test.
+- **[x] seller-payout balance-from-invoices.** requestPayout now computes available balance as gross earned on non-cancelled invoices minus gross already requested in live/fulfilled payouts (no longer `seller.total_sales`). 2 tests.
+- **Verified:** backend 120/120 tests, nest build green, backend boots with the extra repository injections. No a11y-markup change this round.
+- **Remaining work:** external-key blocks only (B-PAY-1/B-AI-1/B-GIT-1/B-DEPLOY-1/B-CACHE-1) + growth items (L1-L9). All code-only follow-ups now done.
 - **Verified:** backend 117/117 tests, nest build green, backend boots with the new index, frontend tsc --noEmit clean.
-- **Deliberately deferred (documented, not blocked):** seller-statistics real-period populate and seller-payout balance-from-invoices — the seller metrics are denormalized aggregates on the Seller entity (updateMetrics), and the period-analytics table is a growth/Analytics feature (L3). Implementing these partially would risk the reliability/stability bar this pass targets.
+- **Deliberately deferred (documented, not blocked):** ~~seller-statistics real-period populate and seller-payout balance-from-invoices~~ — DONE in Round 13.

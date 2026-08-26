@@ -5,9 +5,10 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { SellerPayout, PayoutStatus } from '../entities/seller-payout.entity';
 import { Seller, SellerStatus } from '../entities/seller.entity';
+import { Invoice, InvoiceStatus } from '../../invoices/invoice.entity';
 import {
   RequestPayoutDto,
   ProcessPayoutDto,
@@ -25,6 +26,8 @@ export class SellerPayoutService {
     private readonly payoutRepository: Repository<SellerPayout>,
     @InjectRepository(Seller)
     private readonly sellerRepository: Repository<Seller>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
   ) {}
 
   // ==========================================
@@ -62,13 +65,35 @@ export class SellerPayoutService {
       );
     }
 
-    // Check if seller has sufficient balance
-    // TODO: Integrate with actual balance calculation from orders
-    // For now, we'll just check against total_sales
-    const availableBalance = seller.total_sales; // Simplified
+    // Check if seller has sufficient balance (real, invoice-derived).
+    // Earned = gross sales on non-cancelled invoices; withdrawn = gross amounts
+    // already requested in live/fulfilled payouts.
+    const invoices = await this.invoiceRepository.find({
+      where: { seller_id: sellerId },
+    });
+    const grossEarned = invoices
+      .filter((inv) => inv.status !== InvoiceStatus.CANCELLED)
+      .reduce((sum, inv) => sum + Number(inv.hammer_price), 0);
+
+    const payouts = await this.payoutRepository.find({
+      where: {
+        seller_id: sellerId,
+        status: In([
+          PayoutStatus.PENDING,
+          PayoutStatus.PROCESSING,
+          PayoutStatus.COMPLETED,
+        ]),
+      },
+    });
+    const grossWithdrawn = payouts.reduce(
+      (sum, payout) => sum + Number(payout.gross_amount),
+      0,
+    );
+
+    const availableBalance = grossEarned - grossWithdrawn;
     if (requestDto.amount > availableBalance) {
       throw new BadRequestException(
-        `Insufficient balance. Available: ${availableBalance}`,
+        'Insufficient balance. Available: ' + availableBalance,
       );
     }
 

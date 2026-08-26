@@ -6,6 +6,9 @@ import {
   StatisticsPeriod,
 } from '../entities/seller-statistics.entity';
 import { Seller } from '../entities/seller.entity';
+import { Product } from '../../products/entities/product.entity';
+import { Invoice, InvoiceStatus } from '../../invoices/invoice.entity';
+import { SellerReview } from '../entities/seller-review.entity';
 
 /**
  * Service for managing seller performance statistics
@@ -17,6 +20,12 @@ export class SellerStatisticsService {
     private readonly statisticsRepository: Repository<SellerStatistics>,
     @InjectRepository(Seller)
     private readonly sellerRepository: Repository<Seller>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
+    @InjectRepository(SellerReview)
+    private readonly reviewRepository: Repository<SellerReview>,
   ) {}
 
   // ==========================================
@@ -63,8 +72,8 @@ export class SellerStatisticsService {
       period_end: periodEnd,
     });
 
-    // TODO: Populate with actual data from orders, products, etc.
-    // For now, initialize with zeros
+    // Derive metrics from real invoices/products/reviews in the period.
+    await this.populateMetrics(statistics, seller.user_id, periodStart, periodEnd);
     statistics.calculateMetrics();
 
     return this.statisticsRepository.save(statistics);
@@ -82,11 +91,65 @@ export class SellerStatisticsService {
       throw new NotFoundException('Statistics not found');
     }
 
-    // TODO: Recalculate from actual orders, products, reviews
-    // For now, just recalculate derived metrics
+    const seller = await this.sellerRepository.findOne({
+      where: { id: statistics.seller_id, deleted_at: null },
+    });
+    await this.populateMetrics(
+      statistics,
+      seller?.user_id || statistics.seller_id,
+      statistics.period_start,
+      statistics.period_end,
+    );
     statistics.calculateMetrics();
 
     return this.statisticsRepository.save(statistics);
+  }
+
+  /** Pull real metrics from invoices/products/reviews within a period. */
+  private async populateMetrics(
+    statistics: SellerStatistics,
+    sellerUserId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<void> {
+    const [invoices, products, reviews] = await Promise.all([
+      this.invoiceRepository.find({
+        where: { seller_id: sellerUserId, created_at: Between(periodStart, periodEnd) },
+      }),
+      this.productRepository.find({
+        where: { sellerId: sellerUserId, createdAt: Between(periodStart, periodEnd) },
+      }),
+      this.reviewRepository.find({
+        where: { seller_id: sellerUserId, created_at: Between(periodStart, periodEnd) },
+      }),
+    ]);
+
+    const totalSales = invoices.reduce((sum, inv) => sum + Number(inv.hammer_price), 0);
+    const commissionPaid = invoices.reduce((sum, inv) => sum + Number(inv.commission), 0);
+    const completedOrders = invoices.filter((inv) => inv.status === InvoiceStatus.PAID).length;
+    const cancelledOrders = invoices.filter((inv) => inv.status === InvoiceStatus.CANCELLED).length;
+    const productsSold = new Set(invoices.map((inv) => inv.product_id)).size;
+    const uniqueCustomers = new Set(invoices.map((inv) => inv.buyer_id)).size;
+    const positiveReviews = reviews.filter((rev) => rev.rating >= 4).length;
+    const negativeReviews = reviews.filter((rev) => rev.rating <= 2).length;
+    const averageRating = reviews.length
+      ? reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviews.length
+      : 0;
+
+    statistics.total_sales = totalSales;
+    statistics.gross_revenue = totalSales;
+    statistics.commission_paid = commissionPaid;
+    statistics.net_revenue = totalSales - commissionPaid;
+    statistics.total_orders = invoices.length;
+    statistics.completed_orders = completedOrders;
+    statistics.cancelled_orders = cancelledOrders;
+    statistics.products_listed = products.length;
+    statistics.products_sold = productsSold;
+    statistics.unique_customers = uniqueCustomers;
+    statistics.reviews_received = reviews.length;
+    statistics.average_rating = Number(averageRating.toFixed(2));
+    statistics.positive_reviews = positiveReviews;
+    statistics.negative_reviews = negativeReviews;
   }
 
   // ==========================================
