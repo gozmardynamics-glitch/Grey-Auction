@@ -15,6 +15,7 @@ describe('WalletService', () => {
   };
   const txRepo = {
     find: jest.fn(),
+    findOne: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
   };
@@ -108,5 +109,36 @@ describe('WalletService', () => {
     expect(txRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({ where: { walletId: 'w1' }, order: { createdAt: 'DESC' } }),
     );
+  });
+
+  it('deposit is idempotent when a reference already exists (no double credit)', async () => {
+    const wallet = { id: 'w1', userId: 'u1', balance: 5000, hasPin: false, pinHash: null };
+    const existingTx = { id: 't-old', walletId: 'w1', type: WalletTransactionType.DEPOSIT, reference: 'REF-1', amount: 5000 };
+    (walletRepo.findOne as jest.Mock).mockResolvedValue(wallet);
+    (txRepo.findOne as jest.Mock).mockResolvedValue(existingTx);
+
+    const res = await service.deposit('u1', { amount: 5000, reference: 'REF-1' });
+
+    expect(res.idempotent).toBe(true);
+    expect(res.transaction).toBe(existingTx);
+    expect(res.balance).toBe(5000);
+    expect(walletRepo.update).not.toHaveBeenCalled();
+    expect(txRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('deposit credits a brand-new reference once', async () => {
+    const wallet = { id: 'w1', userId: 'u1', balance: 1000, hasPin: false, pinHash: null };
+    const newTx = { id: 't-new', walletId: 'w1', type: WalletTransactionType.DEPOSIT, reference: 'REF-2', amount: 500 };
+    (walletRepo.findOne as jest.Mock).mockResolvedValue(wallet);
+    (txRepo.findOne as jest.Mock).mockResolvedValue(null);
+    (walletRepo.update as jest.Mock).mockResolvedValue({});
+    (txRepo.create as jest.Mock).mockReturnValue(newTx);
+    (txRepo.save as jest.Mock).mockResolvedValue(newTx);
+
+    const res = await service.deposit('u1', { amount: 500, reference: 'REF-2' });
+
+    expect(res.idempotent).toBe(false);
+    expect(res.balance).toBe(1500);
+    expect(walletRepo.update).toHaveBeenCalledWith('w1', { balance: 1500 });
   });
 });

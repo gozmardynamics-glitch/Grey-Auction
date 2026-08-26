@@ -69,21 +69,54 @@ export class WalletService {
       throw new BadRequestException('Amount must be a positive number');
     }
     const wallet = await this.getOrCreate(userId);
+
+    // Idempotency guard: a deposit reference must never be credited twice.
+    // If a completed deposit with this reference already exists, return it
+    // without touching the balance (prevents webhook/deposit replays).
+    if (dto.reference) {
+      const existing = await this.txRepo.findOne({
+        where: { reference: dto.reference, type: WalletTransactionType.DEPOSIT },
+      });
+      if (existing) {
+        return {
+          balance: Number(wallet.balance),
+          transaction: existing,
+          idempotent: true,
+        };
+      }
+    }
+
     const newBalance = Number(wallet.balance) + dto.amount;
     await this.walletRepo.update(wallet.id, { balance: newBalance });
 
-    const tx = await this.txRepo.save(
-      this.txRepo.create({
-        walletId: wallet.id,
-        type: WalletTransactionType.DEPOSIT,
-        amount: dto.amount,
-        reference: dto.reference || null,
-        description: dto.reference ? 'Wallet deposit' : 'Wallet deposit (mock)',
-        status: WalletTransactionStatus.COMPLETED,
-      }),
-    );
+    let tx: WalletTransaction;
+    try {
+      tx = await this.txRepo.save(
+        this.txRepo.create({
+          walletId: wallet.id,
+          type: WalletTransactionType.DEPOSIT,
+          amount: dto.amount,
+          reference: dto.reference || null,
+          description: dto.reference ? 'Wallet deposit' : 'Wallet deposit (mock)',
+          status: WalletTransactionStatus.COMPLETED,
+        }),
+      );
+    } catch (err: any) {
+      // DB unique constraint on reference won any race: return the existing deposit.
+      const raced = await this.txRepo.findOne({
+        where: { reference: dto.reference || undefined, type: WalletTransactionType.DEPOSIT },
+      });
+      if (raced) {
+        return {
+          balance: Number(wallet.balance),
+          transaction: raced,
+          idempotent: true,
+        };
+      }
+      throw err;
+    }
 
-    return { balance: newBalance, transaction: tx };
+    return { balance: newBalance, transaction: tx, idempotent: false };
   }
 
   async withdraw(userId: string, dto: WithdrawDto) {

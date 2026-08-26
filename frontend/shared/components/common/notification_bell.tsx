@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell, Check } from 'lucide-react';
 import { Button } from './button';
 import { useAppSelector } from '@/redux/store';
@@ -24,6 +25,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
  * (max-h with scroll) that fits small viewports.
  */
 export function NotificationBell() {
+  const router = useRouter();
   const token = useAppSelector((state) => state.auth.token);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -134,7 +136,10 @@ export function NotificationBell() {
                 key={n.id}
                 type="button"
                 className="flex w-full items-start gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors hover:bg-muted/40"
-                onClick={() => markRead(n.id)}
+                onClick={() => {
+                  markRead(n.id);
+                  if (n.link) router.push(n.link);
+                }}
               >
                 <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <Bell className="h-3.5 w-3.5 text-primary" />

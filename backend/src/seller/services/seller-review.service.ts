@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SellerReview, ReviewStatus } from '../entities/seller-review.entity';
 import { Seller } from '../entities/seller.entity';
+import { Invoice } from '../../invoices/invoice.entity';
 import {
   CreateReviewDto,
   RespondToReviewDto,
@@ -25,6 +26,8 @@ export class SellerReviewService {
     private readonly reviewRepository: Repository<SellerReview>,
     @InjectRepository(Seller)
     private readonly sellerRepository: Repository<Seller>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
   ) {}
 
   // ==========================================
@@ -72,13 +75,20 @@ export class SellerReviewService {
       throw new BadRequestException('Rating must be between 1 and 5');
     }
 
+    // A purchase is "verified" only if a won invoice exists for this buyer+auction.
+    const isVerifiedPurchase = await this.isVerifiedPurchase(
+      sellerId,
+      bidderId,
+      createDto,
+    );
+
     // Create review
     const review = this.reviewRepository.create({
       seller_id: sellerId,
       bidder_id: bidderId,
       ...createDto,
       status: ReviewStatus.ACTIVE,
-      is_verified_purchase: true, // TODO: Verify from orders
+      is_verified_purchase: isVerifiedPurchase,
     });
 
     const savedReview = await this.reviewRepository.save(review);
@@ -87,6 +97,22 @@ export class SellerReviewService {
     await this.updateSellerRating(sellerId);
 
     return savedReview;
+  }
+
+  /** True if the bidder has a won (invoiced) auction from this seller. */
+  private async isVerifiedPurchase(
+    sellerId: string,
+    bidderId: string,
+    dto: CreateReviewDto,
+  ): Promise<boolean> {
+    const where: Record<string, unknown> = {
+      seller_id: sellerId,
+      buyer_id: bidderId,
+    };
+    if (dto.auction_id) where.auction_id = dto.auction_id;
+    if (dto.product_id) where.product_id = dto.product_id;
+    const invoice = await this.invoiceRepository.findOne({ where });
+    return !!invoice;
   }
 
   /**

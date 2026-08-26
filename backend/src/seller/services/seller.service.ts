@@ -459,14 +459,66 @@ export class SellerService {
   }> {
     const seller = await this.findById(id);
     const stats = await this.getStatistics(id);
-
-    // TODO: Get recent activity from orders/products
+    const recent_activity = await this.getRecentActivity(seller.user_id);
 
     return {
       seller,
       stats,
-      recent_activity: [],
+      recent_activity,
     };
+  }
+
+  /** Most recent seller activity, derived from real invoices + product listings. */
+  async getRecentActivity(sellerUserId: string) {
+    const [invoices, products] = await Promise.all([
+      this.invoiceRepo.find({
+        where: { seller_id: sellerUserId },
+        order: { created_at: 'DESC' },
+        take: 8,
+      }),
+      this.productRepo.find({
+        where: { sellerId: sellerUserId },
+        order: { createdAt: 'DESC' },
+        take: 8,
+      }),
+    ]);
+
+    const activity: Array<{
+      id: string;
+      type: 'invoice' | 'product';
+      title: string;
+      description: string;
+      createdAt: Date;
+      link: string;
+    }> = [];
+
+    for (const inv of invoices) {
+      activity.push({
+        id: 'invoice-' + inv.id,
+        type: 'invoice',
+        title: 'Invoice ' + inv.invoice_number,
+        description:
+          'Sold for ' + Number(inv.hammer_price).toLocaleString('en-NG') + ' NGN (' + inv.status + ')',
+        createdAt: inv.created_at,
+        link: '/seller/sales',
+      });
+    }
+
+    for (const product of products) {
+      activity.push({
+        id: 'product-' + product.id,
+        type: 'product',
+        title: product.title,
+        description: 'Listing ' + product.status,
+        createdAt: product.createdAt,
+        link: '/auctions/' + (product.slug ?? product.id),
+      });
+    }
+
+    activity.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return activity.slice(0, 12);
   }
 
   // ==========================================

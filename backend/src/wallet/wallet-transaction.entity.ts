@@ -19,6 +19,7 @@ export enum WalletTransactionStatus {
 
 @Entity('wallet_transactions')
 @Index(['walletId'])
+@Index(['reference'], { unique: true })
 export class WalletTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;

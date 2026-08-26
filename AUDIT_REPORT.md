@@ -1,7 +1,7 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `feature/authjs-migration` · **Commits:** 55+ · **Backend tests:** 110/110 · **Frontend build:** green (orig. env) — see Round 11 note · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `feature/authjs-migration` · **Commits:** 55+ · **Backend tests:** 117/117 · **Frontend build:** green (orig. env) — see Round 11 note · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
 ---
@@ -54,7 +54,7 @@
 ### After-blocker work items (detail)
 
 - `[!]` B-PAY-1: real gateway capture + webhook HMAC verification per provider (implemented seam; needs keys).
-- `[!]` B-PAY-2: deposit reference idempotency (unique reference guard) before production.
+- `[x]` B-PAY-2: deposit reference idempotency (unique reference guard) — **DONE** (Round 12): app-level guard (never re-credit a used reference) + DB UNIQUE index on wallet_transactions.reference (verified live).
 - `[!]` B-AI-1: live verification of every provider chat execution + fallback switch-over with configured keys.
 - `[!]` B-GIT-1: `git push -u origin feature/authjs-migration`; merge to master; tag a release.
 - `[!]` B-DEPLOY-1: Coolify deploy with env secrets; run migrations; verify CSP/robots for the real domain.
@@ -211,3 +211,11 @@
 - **[x] Bug fixed:** `RoomLifecycleService` injected `AuctionGateway` via `@Optional()` but `RoomModule` never imported `BidModule` (which exports it) — room-start/end socket broadcasts silently no-opped. `RoomModule` now imports `BidModule`; the broadcasts actually fire.
 - **[x] Automated axe/WCAG 2.1 AA pass (public pages).** Added `@axe-core/playwright` + `@playwright/test`, `playwright.config.ts`, `e2e/a11y.spec.ts`, `test:a11y` script, e2e README. Ran against a live app (backend :3001 + frontend :3000, Postgres up). **All 9 public routes pass.** Fixed systematic contrast issues: light `--muted-foreground` darkened (`oklch(0.556)→0.5`), nav accent `#0067f5→#0052c4`, status badges 500→700-level, `bg-secondary` white-text buttons → dark secondary foreground. Env note: `next build` in this sandbox fails only on `next/font/google` reaching fonts.googleapis.com (offline) — `tsc --noEmit` and the dev server are green; production build needs internet.
 - **[x] AI execution seam verified (still blocked by keys).** `AIOrchestratorService` has full model-chain fallback, protocol-aware providers, cost+usage logging, rate limiting; seller form (`auction_details_form.tsx`) calls `/ai/execute` for `title_optimizer`/`auction_description_generator` and gracefully toasts "AI not configured". Live execution unlocks when provider API keys are added (B-AI-1).
+
+**Round 12 (code-only follow-ups + push prep):**
+- **[x] B-PAY-2 deposit idempotency.** WalletService.deposit now short-circuits when a reference is already deposited (no double credit) and recovers from the DB unique-index race; wallet_transactions.reference got a UNIQUE index (verified applied via synchronize). 2 tests.
+- **[x] Seller dashboard recent_activity.** SellerService.getDashboard now returns real activity (invoices + product listings merged, newest-first) instead of an empty array; getRecentActivity added (uses seller.user_id). 3 tests.
+- **[x] Seller review is_verified_purchase.** SellerReviewService.create now verifies a purchase by checking for a won invoice (buyer + auction/product from this seller) instead of hardcoding true. 2 tests.
+- **[x] Notification bell navigation.** Clicking a notification marks it read AND routes to its link (notification_bell.tsx).
+- **Verified:** backend 117/117 tests, nest build green, backend boots with the new index, frontend tsc --noEmit clean.
+- **Deliberately deferred (documented, not blocked):** seller-statistics real-period populate and seller-payout balance-from-invoices — the seller metrics are denormalized aggregates on the Seller entity (updateMetrics), and the period-analytics table is a growth/Analytics feature (L3). Implementing these partially would risk the reliability/stability bar this pass targets.
