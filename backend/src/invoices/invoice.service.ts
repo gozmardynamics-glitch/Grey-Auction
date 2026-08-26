@@ -116,6 +116,13 @@ export class InvoiceService {
     return invoice;
   }
 
+  /** Targeted lookup by payment reference (avoids loading the whole table). */
+  async findByPaymentReference(reference: string): Promise<Invoice | null> {
+    return this.repo.findOne({
+      where: { payment_reference: reference },
+    });
+  }
+
   async markPaid(id: string, dto: MarkPaidDto = {}): Promise<Invoice> {
     const invoice = await this.findById(id);
     if (invoice.status === InvoiceStatus.PAID) {

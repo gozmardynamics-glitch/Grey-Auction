@@ -90,6 +90,7 @@ export default function MobileMenu() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Close navigation menu"
                 onClick={handleClose}
                 className="rounded-md text-muted-foreground hover:text-foreground"
               >
@@ -194,6 +195,7 @@ export default function MobileMenu() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Back to main menu"
                 onClick={() => setView('main')}
                 className="rounded-md text-muted-foreground hover:text-foreground"
               >
@@ -270,6 +272,7 @@ export default function MobileMenu() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Back to main menu"
                 onClick={() => setView('main')}
                 className="rounded-md text-muted-foreground hover:text-foreground"
               >

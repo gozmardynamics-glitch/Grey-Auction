@@ -64,16 +64,19 @@ export class PaymentController {
       body?.reference ||
       '';
 
-    if (reference) {
+    // Never auto-verify via webhook in mock mode: without a real provider
+    // the gateway reports every reference as verified, which would let an
+    // unauthenticated request mark arbitrary invoices paid. Real providers are
+    // verified by calling back to the gateway (and optionally the signature).
+    if (reference && this.gateway.isConfigured()) {
       const result = await this.gateway.verifyPayment(
         reference,
         signature || flutterwaveHash,
       );
       if (result.verified) {
-        // Find invoice by payment reference and mark paid
-        const invoices = await this.invoiceService.findAll();
-        const invoice = invoices.find(
-          (inv) => inv.payment_reference === reference,
+        // Targeted lookup by payment reference — avoid scanning the whole table
+        const invoice = await this.invoiceService.findByPaymentReference(
+          reference,
         );
         if (invoice) {
           await this.invoiceService.markPaid(invoice.id, {
@@ -85,6 +88,16 @@ export class PaymentController {
       return { success: true, data: result };
     }
 
-    return { success: true, data: { verified: false, message: 'No reference found' } };
+    if (!reference) {
+      return { success: true, data: { verified: false, message: 'No reference found' } };
+    }
+    // A reference exists but no provider is configured — do not auto-verify.
+    return {
+      success: true,
+      data: {
+        verified: false,
+        message: 'Payment gateway not configured; webhook ignored',
+      },
+    };
   }
 }

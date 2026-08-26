@@ -155,6 +155,7 @@ export default function Header() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Open navigation menu"
                 onClick={() => dispatch(setMenuOpen(true))}
                 className="text-muted-foreground hover:text-muted-foreground"
               >

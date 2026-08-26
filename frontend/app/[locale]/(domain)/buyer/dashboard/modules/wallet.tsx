@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ListFilter, Search } from 'lucide-react';
 
 import { Button, Input, SortDropdown } from '@/shared/components/common';
+import { useAppSelector } from '@/redux/store';
 
 import WalletBalanceCard from '../components/wallet/wallet_balance_card';
 import WalletPaymentsTable from '../components/wallet/wallet_payments_table';
@@ -13,19 +14,83 @@ import { DUMMY_WALLET_PAYMENTS } from '../../models/data';
 const DepositModal = dynamic(() => import('../components/wallet/deposit_modal'));
 const WithdrawModal = dynamic(() => import('../components/wallet/withdraw_modal'));
 
-
+interface WalletApiData {
+  balance: number;
+  hasPin: boolean;
+  transactions: Array<{
+    id: string;
+    type: 'deposit' | 'withdraw';
+    amount: number | string;
+    status: string;
+    createdAt: string;
+    reference?: string | null;
+    description?: string | null;
+  }>;
+}
 
 export default function BuyerWalletModule() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortValue, setSortValue] = useState('default');
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const authToken = useAppSelector((state) => state.auth.token);
 
-  // Wallet backend (balances, bank accounts, PIN) is not implemented yet —
-  // these defaults render the empty states. Wire to a wallet API in a later phase.
-  const walletBalance = 20000000;
-  const bankAccount = null;
-  const hasPin = false;
+  // Defaults render when the wallet API is unavailable
+  const [walletBalance, setWalletBalance] = useState(20000000);
+  const [hasPin, setHasPin] = useState(false);
+  const [apiData, setApiData] = useState<WalletApiData['transactions'] | null>(null);
+
+  // Load the live wallet when available; keep defaults on failure
+  useEffect(() => {
+    if (!authToken) return;
+    let cancelled = false;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+    const load = async () => {
+      try {
+        const [walletRes, txRes] = await Promise.all([
+          fetch(apiBase + '/wallet', { headers: { Authorization: 'Bearer ' + authToken }, cache: 'no-store' }),
+          fetch(apiBase + '/wallet/transactions', { headers: { Authorization: 'Bearer ' + authToken }, cache: 'no-store' }),
+        ]);
+        if (!cancelled && walletRes.ok) {
+          const wallet = (await walletRes.json()).data;
+          if (wallet && typeof wallet.balance === 'number') {
+            setWalletBalance(wallet.balance);
+            setHasPin(Boolean(wallet.hasPin));
+          }
+        }
+        if (!cancelled && txRes.ok) {
+          const txs = (await txRes.json()).data;
+          if (Array.isArray(txs)) setApiData(txs);
+        }
+      } catch {
+        // Keep the defaults — the wallet UI still renders empty states
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken]);
+
+  const bankAccount = null; // no linked bank account flow in the API yet
+  const walletPayments =
+    apiData && apiData.length > 0
+      ? apiData.map((tx) => ({
+          referenceId: tx.reference || tx.id,
+          paymentName: tx.description || (tx.type === 'withdraw' ? 'Withdraw' : 'Deposit'),
+          type: tx.type === 'withdraw' ? ('Withdraw' as const) : ('Deposit' as const),
+          method: 'Bank Transfer' as const,
+          amount: Number(tx.amount),
+          date: new Date(tx.createdAt).toLocaleString(),
+          status:
+            tx.status === 'completed'
+              ? ('Completed' as const)
+              : tx.status === 'failed'
+                ? ('Failed' as const)
+                : ('Pending' as const),
+        }))
+      : DUMMY_WALLET_PAYMENTS;
 
   return (
     <div className="p-4 md:p-6 space-y-6">

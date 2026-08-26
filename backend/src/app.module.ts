@@ -26,6 +26,7 @@ import { AuditModule } from './audit/audit.module';
 import { FeeModule } from './fees/fee.module';
 import { PaymentModule } from './payments/payment.module';
 import { InvoiceModule } from './invoices/invoice.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { InvoiceModule } from './invoices/invoice.module';
     FeeModule,
     InvoiceModule,
     PaymentModule,
+    WalletModule,
   ],
   providers: [
     {
