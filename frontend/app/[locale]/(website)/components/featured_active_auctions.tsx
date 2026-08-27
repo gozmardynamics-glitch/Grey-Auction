@@ -150,7 +150,7 @@ function FeaturedAuctionCard({
               </Button>
               <Link href={`/auctions/${auction.id}`}>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="xl"
                   className="border-white/30 text-white hover:bg-white/10 font-semibold"
                 >
