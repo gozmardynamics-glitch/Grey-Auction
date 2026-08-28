@@ -6,6 +6,7 @@ export const SELLER_SETTINGS_MODULES = [
   { key: 'security', label: 'Security', icon: Gavel },
   { key: 'store', label: 'Store', icon: Store },
   { key: 'payments', label: 'Payment', icon: CreditCard },
+  { key: 'auction-payment', label: 'Auction Payment', icon: Gavel },
   { key: 'notifications', label: 'Notifications', icon: Bell },
   { key: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
   { key: 'plan-packages', label: 'Plan Packages', icon: Package },
