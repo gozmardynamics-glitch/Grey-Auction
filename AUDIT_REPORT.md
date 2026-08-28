@@ -68,11 +68,11 @@
 | # | Item | Why | When |
 |---|---|---|---|
 | L1 | PWA + push notifications | Mobile retention | ✅ Base done — manifest, SW (offline + static cache), offline page, install banner; push seam ready for VAPID keys (`94493cf`) |
-| L2 | Multi-currency (USD/GHS) + rate display | Growth lever | Post-launch |
+| L2 | Multi-currency (USD/GHS) + rate display | Growth lever | ✅ Done — key-free exchange-rate module + currency switcher (`9138b1b`, `9e36ac5`) |
 | L3 | Seller analytics dashboard (charts from /sellers/statistics/me) | Seller value | ✅ Done (`1463f25`) |
 | L4 | Trust & safety: condition reports, KYC badges, dispute/feedback loop | Conversion | ✅ Done — backend domain + frontend UI (`e3b6c6c`, `b079518`) |
 | L5 | Shipping/delivery integration + escrow | Enterprise buyers | ✅ Seams done — addresses, key-free rate calc, shipments, escrow state machine (`5135b24`, `a9c6a92`) |
-| L6 | Full WCAG 2.1 audit + responsive test matrix | Compliance | Before major marketing |
+| L6 | Full WCAG 2.1 audit + responsive test matrix | Compliance | ✅ Automated — axe 12 routes 0 violations + responsive matrix 25 checks (`231b442`) |
 | L7 | Load testing (k6) + Lighthouse budget (90+) | Scale assurance | ✅ Config done — k6 scenarios + Lighthouse 90+ budget & lhci config (`7e243fc`); run via `loadtest/` |
 | L8 | Marketplace advisor map + direct-sales section | Parity with Troostwijk | ✅ Done — advisor directory (lat/lng ready for map) + buy-now section (`5b4eb54`, `6f18126`) |
 | L9 | Bulk CSV import enhancements (image URLs, multicategory, price tiers) | Seller productivity | ✅ Done (`3245c4e`) |
