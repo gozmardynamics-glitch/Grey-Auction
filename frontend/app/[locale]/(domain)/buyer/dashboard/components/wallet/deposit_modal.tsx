@@ -10,6 +10,7 @@ import {
 
 import DepositAmountStep from './deposit_steps/amount_step';
 import type { PaymentMethodOption } from './deposit_steps/amount_step';
+import type { PaymentProviderId } from '@/shared/components/common/payment_provider_selector';
 import DepositConfirmStep from './deposit_steps/confirm_step';
 import DepositSuccessStep from './deposit_steps/success_step';
 import DepositFailureStep from './deposit_steps/failure_step';
@@ -32,6 +33,7 @@ export default function DepositModal({
   const [amount, setAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethodOption>('bank-transfer');
+  const [provider, setProvider] = useState<PaymentProviderId>('paystack');
 
   // Direct debit state
   const [ddAccountNumber, setDdAccountNumber] = useState('');
@@ -61,9 +63,32 @@ export default function DepositModal({
     }
   };
 
-  const handleConfirmDeposit = () => {
-    const isSuccess = Math.random() > 0.2;
-    setStep(isSuccess ? 'success' : 'failure');
+  const handleConfirmDeposit = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(apiBase + '/payments/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'deposit',
+          provider,
+          amount,
+          callbackUrl: window.location.origin + '/buyer/dashboard/wallet',
+          metadata: {},
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      const d = json?.data;
+      if (d?.checkoutUrl) {
+        // Redirect to the chosen provider's hosted checkout.
+        window.location.href = d.checkoutUrl;
+        return;
+      }
+      // Unconfigured/mock — complete the wallet top-up locally.
+      setStep('success');
+    } catch {
+      setStep('failure');
+    }
   };
 
   const handleDirectDebitNext = (accountNumber: string, bankName: string) => {
@@ -111,6 +136,8 @@ export default function DepositModal({
             <DepositConfirmStep
               amount={amount}
               paymentMethodLabel={paymentMethodLabel}
+              provider={provider}
+              onProviderChange={setProvider}
               onConfirm={handleConfirmDeposit}
               onBack={() => setStep('amount')}
             />

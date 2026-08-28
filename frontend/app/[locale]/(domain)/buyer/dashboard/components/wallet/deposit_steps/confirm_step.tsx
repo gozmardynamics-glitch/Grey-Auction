@@ -8,12 +8,15 @@ import {
 } from '@/shared/components/common';
 
 import { formatCurrency } from '@/shared/utils/helpers';
+import { PaymentProviderSelector, type PaymentProviderId } from '@/shared/components/common/payment_provider_selector';
 
 const PROCESSING_FEE_RATE = 0.015;
 
 interface ConfirmStepProps {
   amount: number;
   paymentMethodLabel: string;
+  provider: PaymentProviderId;
+  onProviderChange: (provider: PaymentProviderId) => void;
   onConfirm: () => void;
   onBack: () => void;
 }
@@ -21,6 +24,8 @@ interface ConfirmStepProps {
 export default function DepositConfirmStep({
   amount,
   paymentMethodLabel,
+  provider,
+  onProviderChange,
   onConfirm,
   onBack,
 }: ConfirmStepProps) {
@@ -32,6 +37,11 @@ export default function DepositConfirmStep({
       <DialogHeader>
         <DialogTitle>Confirm Deposit</DialogTitle>
       </DialogHeader>
+
+      <div>
+        <p className="mb-2 text-sm font-medium">Choose your payment platform</p>
+        <PaymentProviderSelector value={provider} onChange={onProviderChange} columns={2} />
+      </div>
 
       <div className="space-y-4">
         <div className="rounded-lg border p-4 space-y-3">
