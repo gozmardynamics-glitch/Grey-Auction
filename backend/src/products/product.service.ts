@@ -151,6 +151,12 @@ export class ProductService {
         continue;
       }
 
+      // L9: support multiple image URLs, price tiers and tags from the CSV.
+      const images = this.parseList(r.images || r.image_urls || r.image_url);
+      const tags = this.parseList(r.tags);
+      const reservePrice = r.reserve_price ? Number(r.reserve_price) : undefined;
+      const buyNowPrice = r.buy_now_price ? Number(r.buy_now_price) : undefined;
+
       const product = await this.repo.save(
         this.repo.create({
           title: r.title,
@@ -159,7 +165,12 @@ export class ProductService {
           currentBid: 0,
           category: r.category || 'Other',
           subCategory: r.sub_category || undefined,
-          images: r.image_url ? [r.image_url] : ['/placeholder.svg'],
+          images: images.length ? images : ['/placeholder.svg'],
+          tags: tags.length ? tags : undefined,
+          reservePrice,
+          hasReservePrice: reservePrice !== undefined,
+          buyNowPrice,
+          allowBuyNow: buyNowPrice !== undefined,
           endTime,
           status: ProductStatus.DRAFT,
           slug: this.generateSlug(r.title),
@@ -173,6 +184,15 @@ export class ProductService {
     }
 
     return { created, errors };
+  }
+
+  /** Split a pipe/comma-separated CSV field into a trimmed, non-empty list. */
+  private parseList(value?: string): string[] {
+    if (!value) return [];
+    return value
+      .split(/[|,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   async findBySeller(sellerId: string): Promise<Product[]> {

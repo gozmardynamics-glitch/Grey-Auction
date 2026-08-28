@@ -276,4 +276,42 @@ describe('ProductService', () => {
       expect(productRepository.save).toHaveBeenCalled();
     });
   });
+
+  describe('bulkCreate (L9 CSV enhancements)', () => {
+    it('creates a product with multiple images, tags and price tiers', async () => {
+      (productRepository.create as jest.Mock).mockImplementation((p: any) => p);
+      (productRepository.save as jest.Mock).mockImplementation(async (p: any) => ({ ...p, id: 'p1' }));
+      const rows = [
+        {
+          title: 'Watch',
+          starting_bid: '100',
+          images: 'https://a.com/1.jpg|https://b.com/2.jpg',
+          tags: 'luxury|watch',
+          reserve_price: '200',
+          buy_now_price: '500',
+          sub_category: 'Watches',
+        },
+      ];
+
+      const result = await service.bulkCreate(rows as any, 'seller-1');
+
+      expect(result.created).toHaveLength(1);
+      expect(result.errors).toHaveLength(0);
+      const created = (productRepository.save as jest.Mock).mock.calls[0][0];
+      expect(created.images).toEqual(['https://a.com/1.jpg', 'https://b.com/2.jpg']);
+      expect(created.tags).toEqual(['luxury', 'watch']);
+      expect(created.hasReservePrice).toBe(true);
+      expect(created.reservePrice).toBe(200);
+      expect(created.buyNowPrice).toBe(500);
+      expect(created.allowBuyNow).toBe(true);
+      expect(created.subCategory).toBe('Watches');
+    });
+
+    it('records a row error when the title is missing', async () => {
+      const result = await service.bulkCreate([{ starting_bid: '100' } as any], 'seller-1');
+      expect(result.created).toHaveLength(0);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].message).toContain('title');
+    });
+  });
 });
