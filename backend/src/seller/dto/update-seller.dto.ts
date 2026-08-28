@@ -10,6 +10,9 @@ import {
   IsUrl,
   Length,
   IsBoolean,
+  IsInt,
+  IsNumber,
+  Min,
 } from 'class-validator';
 import { SellerBusinessType, SellerPayoutMethod } from '../entities/seller.entity';
 
@@ -149,6 +152,23 @@ export class UpdateSellerDto {
   @IsOptional()
   @IsBoolean()
   auto_accept_orders?: boolean;
+
+  @ApiProperty({ example: 7, required: false, description: 'Days a winning buyer has to pay the invoice' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  invoice_payment_due_days?: number;
+
+  @ApiProperty({ example: false, required: false, description: 'Require wallet funding to a minimum before bidding' })
+  @IsOptional()
+  @IsBoolean()
+  require_minimum_bid_deposit?: boolean;
+
+  @ApiProperty({ example: 5000, required: false, description: 'Minimum wallet balance required to bid' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minimum_bid_deposit?: number;
 
   @ApiProperty({
     example: {

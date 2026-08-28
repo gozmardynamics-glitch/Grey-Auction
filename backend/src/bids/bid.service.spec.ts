@@ -14,6 +14,8 @@ import { Product, ProductStatus } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
 import { AuctionGateway } from './gateways/auction.gateway';
 import { NotificationService } from '../notification/notification.service';
+import { Seller } from '../seller/entities/seller.entity';
+import { WalletService } from '../wallet/wallet.service';
 
 describe('BidService', () => {
   let service: BidService;
@@ -22,6 +24,8 @@ describe('BidService', () => {
   let gateway: jest.Mocked<Partial<AuctionGateway>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
   let notificationMock: jest.Mocked<Partial<NotificationService>>;
+  let sellerRepo: jest.Mocked<Partial<Repository<Seller>>>;
+  let walletService: jest.Mocked<Partial<WalletService>>;
   let manager: any;
 
   const mockProduct = {
@@ -68,6 +72,9 @@ describe('BidService', () => {
       notifyRoomStarted: jest.fn().mockResolvedValue(undefined),
     };
 
+    sellerRepo = { findOne: jest.fn() };
+    walletService = { getWallet: jest.fn() };
+
     manager = {
       findOne: jest.fn(),
       create: jest.fn(),
@@ -95,6 +102,8 @@ describe('BidService', () => {
         { provide: AuctionGateway, useValue: gateway },
         { provide: DataSource, useValue: dataSource },
         { provide: NotificationService, useValue: notificationMock },
+        { provide: getRepositoryToken(Seller), useValue: sellerRepo },
+        { provide: WalletService, useValue: walletService },
       ],
     }).compile();
 
@@ -400,6 +409,76 @@ describe('BidService', () => {
       await service.placeBid('product-1', 'user-1', { amount: 200 });
 
       expect(notificationMock.notifyOutbid).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('bid deposit gate (seller-required minimum wallet)', () => {
+    const buildProduct = () => ({
+      id: 'product-1',
+      sellerId: 'seller-1',
+      startingBid: 100,
+      currentBid: 150,
+      totalBids: 3,
+      status: ProductStatus.ACTIVE,
+      endTime: new Date(Date.now() + 3600000),
+    });
+
+    it('rejects a bid when the seller requires a deposit and balance is insufficient', async () => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock).mockResolvedValue(buildProduct());
+        return cb(manager);
+      });
+      (sellerRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 's1',
+        user_id: 'seller-1',
+        require_minimum_bid_deposit: true,
+        minimum_bid_deposit: 5000,
+      });
+      (walletService.getWallet as jest.Mock).mockResolvedValue({ balance: 3000 });
+
+      await expect(
+        service.placeBid('product-1', 'user-1', { amount: 200 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows a bid when the seller requires a deposit and balance is sufficient', async () => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock).mockResolvedValue(buildProduct());
+        (manager.create as jest.Mock).mockReturnValue({ ...mockBid });
+        (manager.save as jest.Mock).mockResolvedValue({ ...mockBid });
+        (manager.update as jest.Mock).mockResolvedValue({});
+        return cb(manager);
+      });
+      (sellerRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 's1',
+        user_id: 'seller-1',
+        require_minimum_bid_deposit: true,
+        minimum_bid_deposit: 5000,
+      });
+      (walletService.getWallet as jest.Mock).mockResolvedValue({ balance: 10000 });
+
+      const result = await service.placeBid('product-1', 'user-1', { amount: 200 });
+      expect(result).toBeDefined();
+    });
+
+    it('does not gate on deposit when the seller does not require one', async () => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock).mockResolvedValue(buildProduct());
+        (manager.create as jest.Mock).mockReturnValue({ ...mockBid });
+        (manager.save as jest.Mock).mockResolvedValue({ ...mockBid });
+        (manager.update as jest.Mock).mockResolvedValue({});
+        return cb(manager);
+      });
+      (sellerRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 's1',
+        user_id: 'seller-1',
+        require_minimum_bid_deposit: false,
+        minimum_bid_deposit: null,
+      });
+
+      const result = await service.placeBid('product-1', 'user-1', { amount: 200 });
+      expect(result).toBeDefined();
+      expect(walletService.getWallet).not.toHaveBeenCalled();
     });
   });
 });

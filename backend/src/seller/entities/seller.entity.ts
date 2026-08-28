@@ -279,6 +279,19 @@ export class Seller {
   @Column({ type: 'boolean', default: false })
   auto_accept_orders: boolean;
 
+  // ─── Auction payment & bid-deposit settings ─────────────────────
+  /** Days a winning buyer has to pay the invoice (seller-set payment timeline). */
+  @Column({ type: 'int', default: 7 })
+  invoice_payment_due_days: number;
+
+  /** If true, bidders must fund their wallet to at least minimum_bid_deposit to bid. */
+  @Column({ type: 'boolean', default: false })
+  require_minimum_bid_deposit: boolean;
+
+  /** Minimum wallet balance required to bid when require_minimum_bid_deposit is on. */
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true })
+  minimum_bid_deposit: number;
+
   @Column({ type: 'jsonb', nullable: true })
   business_hours: {
     monday?: { open: string; close: string };

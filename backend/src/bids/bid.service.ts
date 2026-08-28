@@ -7,6 +7,8 @@ import { Product, ProductStatus } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
 import { AuctionGateway } from './gateways/auction.gateway';
 import { NotificationService } from '../notification/notification.service';
+import { Seller } from '../seller/entities/seller.entity';
+import { WalletService } from '../wallet/wallet.service';
 
 // ─── Auction engine constants ──────────────────────────────────────────
 // Minimum increment per current-bid level (NGN).
@@ -96,6 +98,9 @@ export class BidService {
     @Optional() private readonly gateway?: AuctionGateway,
     @Inject(DataSource) private readonly dataSource?: DataSource,
     @Optional() private readonly notifications?: NotificationService,
+    @InjectRepository(Seller)
+    @Optional() private readonly sellerRepository?: Repository<Seller>,
+    @Optional() private readonly walletService?: WalletService,
   ) {}
 
   async placeBid(productId: string, userId: string, dto: PlaceBidDto): Promise<Bid> {
@@ -121,6 +126,28 @@ export class BidService {
 
       if (dto.amount < product.startingBid) {
         throw new BadRequestException('Bid must be at least the starting bid');
+      }
+
+      // ─── Seller-required minimum bid deposit gate (conditional) ──
+      // If the seller requires wallet funding, the bidder must hold at least
+      // the configured minimum deposit in their wallet before they can bid.
+      if (this.sellerRepository && this.walletService) {
+        const seller = await this.sellerRepository.findOne({
+          where: { user_id: product.sellerId, deleted_at: null },
+        });
+        if (seller?.require_minimum_bid_deposit) {
+          const minDeposit = Number(seller.minimum_bid_deposit || 0);
+          if (minDeposit > 0) {
+            const wallet = await this.walletService.getWallet(userId);
+            if (Number(wallet.balance) < minDeposit) {
+              throw new BadRequestException(
+                'This auction requires a minimum wallet deposit of ' +
+                  minDeposit.toLocaleString('en-NG') +
+                  ' NGN to bid. Please fund your wallet.',
+              );
+            }
+          }
+        }
       }
 
       // ─── Anti-sniping: extend the auction when a bid arrives late ──
