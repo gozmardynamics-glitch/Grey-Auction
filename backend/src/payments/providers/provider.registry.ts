@@ -16,6 +16,6 @@ export function createProviderAdapter(provider: PaymentProvider): PaymentProvide
     case PaymentProvider.OPAY:
       return new OpayProvider();
     default:
-      return new PaystackProvider();
+      throw new Error('Unknown payment provider: ' + String(provider));
   }
 }

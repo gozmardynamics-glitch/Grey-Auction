@@ -5,13 +5,19 @@ import {
   Body,
   Query,
   Headers,
+  Param,
+  Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import {
   PaymentGatewayService,
   InitializePaymentDto,
 } from './payment-gateway.service';
+import { PaymentOrchestrationService } from './payment.orchestration.service';
+import { InitPaymentDto } from './dto/init-payment.dto';
+import { PaymentProvider } from './entities/payment.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { InvoiceService } from '../invoices/invoice.service';
 
@@ -21,6 +27,7 @@ export class PaymentController {
   constructor(
     private readonly gateway: PaymentGatewayService,
     private readonly invoiceService: InvoiceService,
+    private readonly orchestration: PaymentOrchestrationService,
   ) {}
 
   @Post('initialize')
@@ -99,5 +106,46 @@ export class PaymentController {
         message: 'Payment gateway not configured; webhook ignored',
       },
     };
+  }
+
+  /** Buyer picks a payment platform to pay an invoice or fund the wallet. */
+  @Post('init')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initialize a payment with the buyer-chosen provider + type' })
+  async init(@Body() dto: InitPaymentDto, @Req() req: any) {
+    const result = await this.orchestration.initialize({
+      userId: req.user.id,
+      type: dto.type,
+      provider: dto.provider,
+      amount: dto.amount,
+      invoiceId: dto.invoiceId,
+      email: req.user?.email,
+      callbackUrl: dto.callbackUrl,
+      metadata: dto.metadata,
+    });
+    return { success: true, data: result };
+  }
+
+  /** Signature-validated, idempotent per-provider webhook. */
+  @Post('webhook/:provider')
+  @ApiOperation({ summary: 'Per-provider payment webhook (signature-validated, idempotent)' })
+  async providerWebhook(
+    @Param('provider') provider: string,
+    @Headers() headers: Record<string, string>,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    if (!Object.values(PaymentProvider).includes(provider as PaymentProvider)) {
+      throw new BadRequestException('Unknown payment provider: ' + provider);
+    }
+    const rawBody = req?.rawBody ? req.rawBody.toString() : JSON.stringify(body || {});
+    const result = await this.orchestration.handleWebhook(
+      provider as PaymentProvider,
+      body,
+      headers,
+      rawBody,
+    );
+    return { success: true, data: result };
   }
 }
