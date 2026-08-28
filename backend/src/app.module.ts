@@ -33,6 +33,7 @@ import { TrustModule } from './trust/trust.module';
 import { AdvisorModule } from './advisors/advisor.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { EscrowModule } from './escrow/escrow.module';
+import { ExchangeRateModule } from './exchange-rates/exchange-rate.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { EscrowModule } from './escrow/escrow.module';
     ShippingModule,
     EscrowModule,
     AdvisorModule,
+    ExchangeRateModule,
   ],
   providers: [
     {
