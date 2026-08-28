@@ -1,12 +1,28 @@
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { Providers } from '../providers';
 import { Toaster } from '@/shared/components/common/sonner';
 import { CookieConsent } from '@/shared/components/common/cookie_consent';
+import { PwaProvider } from '@/shared/components/common/pwa/pwa-provider';
 import ChatbotWrapper from '@/shared/components/ai/chatbot-wrapper';
+
+export const metadata: Metadata = {
+  applicationName: 'GreyAuction',
+  themeColor: '#1a1a2e',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'GreyAuction',
+  },
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/apple-touch-icon.png',
+  },
+};
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -53,6 +69,7 @@ export default async function LocaleLayout({
             <Toaster richColors position="top-right" />
             <CookieConsent />
             <ChatbotWrapper />
+            <PwaProvider />
           </Providers>
         </NextIntlClientProvider>
       </body>

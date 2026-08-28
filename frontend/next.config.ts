@@ -29,6 +29,20 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Service worker must always be revalidated so SW updates roll out.
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
     ];
   },
   images: {
