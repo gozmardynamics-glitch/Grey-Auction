@@ -29,6 +29,7 @@ import { InvoiceModule } from './invoices/invoice.module';
 import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { TrustModule } from './trust/trust.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     WalletModule,
     NotificationModule,
     SubscriptionModule,
+    TrustModule,
   ],
   providers: [
     {

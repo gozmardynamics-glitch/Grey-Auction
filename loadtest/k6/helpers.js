@@ -31,7 +31,8 @@ export function registerLoadUser(i) {
   const password = 'Loadtest@12345';
   const res = http.post(
     API + '/auth/register',
-    JSON.stringify({ email, password, name: 'Load Tester ' + i, role: 'buyer' }),
+    // role omitted: UserRole enum is bidder|seller|admin; default (bidder) can bid.
+    JSON.stringify({ email, password, name: 'Load Tester ' + i }),
     jsonOpts(null, 'auth.register'),
   );
   if (res.status === 201 || res.status === 200) {
