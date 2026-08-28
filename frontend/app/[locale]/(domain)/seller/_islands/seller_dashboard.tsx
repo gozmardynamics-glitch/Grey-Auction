@@ -9,6 +9,7 @@ import {
 } from '@/shared/components/common';
 
 import SellerStatsCards from '../dashboard/components/seller_stats_cards';
+import SellerAnalytics from '../dashboard/components/seller_analytics';
 import ListedAuctions from '../dashboard/components/listed_auctions/listed_auctions';
 import Messages from '../dashboard/components/messages';
 import { Upload } from 'lucide-react';
@@ -41,6 +42,9 @@ export default function SellerDashboardIsland() {
           pendingRequests={0}
         />
       </div>
+
+      {/* Analytics (L3) */}
+      <SellerAnalytics />
 
       {/* Left column */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
