@@ -26,6 +26,7 @@ import {
 } from '@/shared/components/common';
 import { Separator } from '@/shared/components/common/separator';
 
+import { PaymentProviderSelector, type PaymentProviderId } from '@/shared/components/common/payment_provider_selector';
 import {
   formatCardNumber,
   formatCurrency,
@@ -49,6 +50,8 @@ interface PaymentFormProps {
 export default function PaymentForm({ orderItems }: PaymentFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [provider, setProvider] = useState<PaymentProviderId>('paystack');
+  const [instruction, setInstruction] = useState<string | null>(null);
 
   const total = orderItems.reduce((sum, item) => sum + item.price, 0);
 
@@ -64,31 +67,42 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
 
   const onSubmit = async (data: PaymentFormValues) => {
     setIsLoading(true);
+    setInstruction(null);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const reference = `PAY-${Date.now().toString(36).toUpperCase()}`;
 
-      const res = await fetch(`${apiBase}/payments/initialize`, {
+      // Buyer picks the payment platform; we create a Payment record and let the
+      // chosen provider initialize. Redirect providers return a hosted checkout
+      // URL; transfer/account providers return a payment instruction.
+      const res = await fetch(`${apiBase}/payments/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          type: 'invoice',
+          provider,
           amount: total,
           email: (data as any).email || 'buyer@greyauction.com',
-          reference,
-          currency: 'NGN',
+          callbackUrl: window.location.origin + '/checkout/confirmation',
+          metadata: {},
         }),
       });
 
       const json = await res.json().catch(() => null);
-      const checkoutUrl = json?.data?.checkoutUrl;
+      const d = json?.data;
 
-      if (checkoutUrl) {
-        // Redirect to gateway checkout page
-        window.location.href = checkoutUrl;
+      if (d?.checkoutUrl) {
+        // Redirect to the chosen gateway's hosted checkout.
+        window.location.href = d.checkoutUrl;
         return;
       }
 
-      // Mock mode or error — complete the flow locally
+      if (d?.paymentInstruction) {
+        // Transfer/account-based provider — show the instruction.
+        setInstruction(d.paymentInstruction);
+        return;
+      }
+
+      // Mock/unconfigured — complete the flow locally.
       router.push('/checkout/confirmation');
     } catch {
       router.push('/checkout/confirmation');
@@ -110,6 +124,20 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
               <CardTitle className="text-base">Card Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              <div>
+                <p className="mb-2 text-sm font-medium">Choose your payment platform</p>
+                <PaymentProviderSelector value={provider} onChange={setProvider} columns={4} />
+              </div>
+
+              {instruction && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+                  <p className="font-semibold">Pay via transfer</p>
+                  <p className="mt-1 text-muted-foreground">{instruction}</p>
+                </div>
+              )}
+
+              <Separator />
+
               {/* Card Number */}
               <FormField
                 control={form.control}
