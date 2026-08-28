@@ -30,6 +30,8 @@ import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { TrustModule } from './trust/trust.module';
+import { ShippingModule } from './shipping/shipping.module';
+import { EscrowModule } from './escrow/escrow.module';
 
 @Module({
   imports: [
@@ -64,6 +66,8 @@ import { TrustModule } from './trust/trust.module';
     NotificationModule,
     SubscriptionModule,
     TrustModule,
+    ShippingModule,
+    EscrowModule,
   ],
   providers: [
     {
