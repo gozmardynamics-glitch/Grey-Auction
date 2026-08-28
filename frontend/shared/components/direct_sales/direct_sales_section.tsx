@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Tag } from 'lucide-react';
 import { Card } from '@/shared/components/common';
-import { formatCurrency } from '@/shared/utils/helpers';
+import { Money } from '@/shared/currency';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -60,7 +60,7 @@ export function DirectSalesSection({ limit = 8 }: { limit?: number }) {
               </div>
               <div className="space-y-1.5 p-3">
                 <p className="line-clamp-2 text-sm font-medium">{it.title}</p>
-                <p className="text-sm font-semibold text-primary">{formatCurrency(price)}</p>
+                <p className="text-sm font-semibold text-primary"><Money amount={price} /></p>
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Tag className="h-3 w-3" />
                   Buy now {it.city ? ' - ' + it.city : ''}

@@ -10,6 +10,7 @@ import { useLocale } from 'next-intl';
 import { routing } from '@/i18n/routing';
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { CurrencySelect } from '@/shared/currency';
 
 import {
   Menu,
@@ -301,6 +302,7 @@ export default function Header() {
                     <span className="hidden md:flex">Cart</span>
                   </Link>
                 </Button>
+                <CurrencySelect />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">

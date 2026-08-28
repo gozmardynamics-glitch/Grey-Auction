@@ -8,6 +8,7 @@ import { Providers } from '../providers';
 import { Toaster } from '@/shared/components/common/sonner';
 import { CookieConsent } from '@/shared/components/common/cookie_consent';
 import { PwaProvider } from '@/shared/components/common/pwa/pwa-provider';
+import { CurrencyProvider } from '@/shared/currency';
 import ChatbotWrapper from '@/shared/components/ai/chatbot-wrapper';
 
 export const metadata: Metadata = {
@@ -65,11 +66,13 @@ export default async function LocaleLayout({
       >
         <NextIntlClientProvider messages={messages}>
           <Providers>
-            {children}
-            <Toaster richColors position="top-right" />
-            <CookieConsent />
-            <ChatbotWrapper />
-            <PwaProvider />
+            <CurrencyProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+              <CookieConsent />
+              <ChatbotWrapper />
+              <PwaProvider />
+            </CurrencyProvider>
           </Providers>
         </NextIntlClientProvider>
       </body>
