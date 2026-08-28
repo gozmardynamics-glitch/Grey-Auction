@@ -247,6 +247,20 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Newsletter */}
+        <div className="mb-4 rounded-lg border border-border bg-card p-4">
+          <h3 className="text-sm font-semibold">Stay in the loop</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Get new auction alerts and offers straight to your inbox.
+          </p>
+          <a
+            href="/subscribe"
+            className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Subscribe
+          </a>
+        </div>
+
         {/* Copyright */}
         <div className="mt-6 pt-6 border-t border-border">
           <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center">
