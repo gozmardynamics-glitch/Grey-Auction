@@ -14,6 +14,9 @@ const publicPaths = [
   '/en/privacy-policy',
   '/en/blog',
   '/en/career',
+  '/en/advisors',
+  '/en/direct-sales',
+  '/en/subscribe',
 ];
 
 for (const path of publicPaths) {
