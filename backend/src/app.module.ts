@@ -28,6 +28,7 @@ import { PaymentModule } from './payments/payment.module';
 import { InvoiceModule } from './invoices/invoice.module';
 import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { NotificationModule } from './notification/notification.module';
     PaymentModule,
     WalletModule,
     NotificationModule,
+    SubscriptionModule,
   ],
   providers: [
     {

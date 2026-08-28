@@ -18,6 +18,7 @@ interface SmtpConfig {
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly isProduction: boolean;
+  private readonly brevoApiKey = process.env.BREVO_API_KEY || '';
   private transport: any = null;
 
   constructor() {
@@ -25,11 +26,12 @@ export class EmailService {
 
     if (this.isProduction) {
       const config: SmtpConfig = {
-        host: process.env.SMTP_HOST || '',
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
-        from: process.env.SMTP_FROM || 'noreply@greyauction.com',
+        // Prefer the Brevo SMTP relay; fall back to generic SMTP_* vars.
+        host: process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+        port: parseInt(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587', 10),
+        user: process.env.BREVO_SMTP_USER || process.env.SMTP_USER || '',
+        pass: process.env.BREVO_SMTP_PASS || process.env.SMTP_PASS || '',
+        from: process.env.BREVO_FROM || process.env.SMTP_FROM || 'noreply@greyauction.com',
       };
 
       if (config.host && config.user) {
@@ -60,17 +62,22 @@ export class EmailService {
 
   async sendEmail(options: SendEmailOptions): Promise<void> {
     try {
+      // Prefer Brevo as the mail service when an API key is configured.
+      if (this.brevoApiKey) {
+        await this.sendViaBrevoApi(options);
+        return;
+      }
       if (!this.isProduction || !this.transport) {
         this.logEmail(options);
         return;
       }
 
       const config: SmtpConfig = {
-        host: process.env.SMTP_HOST || '',
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
-        from: process.env.SMTP_FROM || 'noreply@greyauction.com',
+        host: process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+        port: parseInt(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || '587', 10),
+        user: process.env.BREVO_SMTP_USER || process.env.SMTP_USER || '',
+        pass: process.env.BREVO_SMTP_PASS || process.env.SMTP_PASS || '',
+        from: process.env.BREVO_FROM || process.env.SMTP_FROM || 'noreply@greyauction.com',
       };
 
       await this.transport.sendMail({
@@ -418,6 +425,31 @@ export class EmailService {
     `;
 
     await this.sendEmail({ to, subject, html });
+  }
+
+  private async sendViaBrevoApi(options: SendEmailOptions): Promise<void> {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': this.brevoApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          email: process.env.BREVO_FROM || process.env.SMTP_FROM || 'noreply@greyauction.com',
+          name: 'GreyAuction',
+        },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => 'Unknown error');
+      throw new Error('Brevo ' + res.status + ': ' + text);
+    }
+    this.logger.log('Email sent to ' + options.to + ' via Brevo: ' + options.subject);
   }
 
   private logEmail(options: SendEmailOptions): void {
