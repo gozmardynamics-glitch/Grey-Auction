@@ -27,6 +27,7 @@ import {
   type PaymentGatewayValues,
   type WithdrawValues,
 } from '../../../models/schema';
+import PaymentProvidersStatus from './payment_providers_status';
 
 export default function PaymentsSettings() {
   // ─── Payment Gateway Form ──────────────────────────────────────────
@@ -64,6 +65,9 @@ export default function PaymentsSettings() {
 
   return (
     <div className="space-y-8 p-6">
+      {/* ─── Live provider status + env placeholders ───────────── */}
+      <PaymentProvidersStatus />
+
       {/* ─── Payment Gateway ───────────────────────────────────── */}
       <Form {...gatewayForm}>
         <form

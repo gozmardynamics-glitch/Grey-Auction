@@ -19,6 +19,7 @@ describe('PaymentController webhook', () => {
   const orchestration = {
     initialize: jest.fn(),
     handleWebhook: jest.fn(),
+    providersStatus: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -74,6 +75,16 @@ describe('PaymentController webhook', () => {
     const res = await controller.webhook('', '', {});
     expect(res.data.verified).toBe(false);
     expect(res.data.message).toContain('No reference');
+  });
+
+  it('providers returns the orchestration provider status', async () => {
+    (orchestration.providersStatus as jest.Mock).mockReturnValue([
+      { provider: 'paystack', configured: true },
+      { provider: 'opay', configured: false },
+    ]);
+    const res = await controller.providers();
+    expect(res.data).toHaveLength(2);
+    expect(orchestration.providersStatus).toHaveBeenCalled();
   });
 
   it('init delegates to the orchestration with the buyer-chosen provider + type', async () => {

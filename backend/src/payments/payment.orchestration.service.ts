@@ -95,6 +95,14 @@ export class PaymentOrchestrationService {
     return { success: true, payment };
   }
 
+  /** Report which providers are configured (env key present) for admin/UI. */
+  providersStatus(): Array<{ provider: PaymentProvider; configured: boolean }> {
+    return Object.values(PaymentProvider).map((provider) => {
+      const adapter = createProviderAdapter(provider);
+      return { provider, configured: adapter.configured() };
+    });
+  }
+
   /**
    * Reconcile a stale pending payment against the provider. Used by the
    * reconciliation cron for payments that never delivered a webhook.

@@ -108,6 +108,12 @@ export class PaymentController {
     };
   }
 
+  @Get('providers')
+  @ApiOperation({ summary: 'List payment providers and whether each is configured' })
+  async providers() {
+    return { success: true, data: this.orchestration.providersStatus() };
+  }
+
   /** Buyer picks a payment platform to pay an invoice or fund the wallet. */
   @Post('init')
   @UseGuards(JwtAuthGuard)
