@@ -30,6 +30,7 @@ import { WalletModule } from './wallet/wallet.module';
 import { NotificationModule } from './notification/notification.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { TrustModule } from './trust/trust.module';
+import { AdvisorModule } from './advisors/advisor.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { EscrowModule } from './escrow/escrow.module';
 
@@ -68,6 +69,7 @@ import { EscrowModule } from './escrow/escrow.module';
     TrustModule,
     ShippingModule,
     EscrowModule,
+    AdvisorModule,
   ],
   providers: [
     {

@@ -1,7 +1,7 @@
 import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsDateString, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductStatus } from '../entities/product.entity';
+import { ProductStatus, AuctionType } from '../entities/product.entity';
 
 export class CreateProductDto {
   @ApiProperty()
@@ -139,4 +139,15 @@ export class ProductQueryDto {
   @Type(() => Number)
   @IsNumber()
   limit?: number;
+
+  @ApiProperty({ required: false, enum: AuctionType })
+  @IsOptional()
+  @IsEnum(AuctionType)
+  auctionType?: AuctionType;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  allowBuyNow?: boolean;
 }
