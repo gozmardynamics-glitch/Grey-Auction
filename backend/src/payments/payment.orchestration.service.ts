@@ -95,6 +95,30 @@ export class PaymentOrchestrationService {
     return { success: true, payment };
   }
 
+  /**
+   * Reconcile a stale pending payment against the provider. Used by the
+   * reconciliation cron for payments that never delivered a webhook.
+   */
+  async reconcilePayment(payment: Payment): Promise<Payment> {
+    const adapter = createProviderAdapter(payment.provider);
+    const result = await adapter.verify(payment.reference);
+
+    if (result.verified && result.status === PaymentStatus.SUCCEEDED) {
+      if (payment.status !== PaymentStatus.SUCCEEDED) {
+        await this.applySucceededOutcome(payment);
+      }
+      return this.paymentService.updateStatus(payment.id, PaymentStatus.SUCCEEDED, {
+        providerReference: result.providerReference ?? payment.providerReference,
+      });
+    }
+
+    if (result.status === PaymentStatus.FAILED) {
+      return this.paymentService.updateStatus(payment.id, PaymentStatus.FAILED);
+    }
+
+    return payment;
+  }
+
   /** Conditional outcome: invoice -> mark paid; deposit -> credit wallet. */
   private async applySucceededOutcome(payment: Payment): Promise<void> {
     if (payment.type === PaymentType.INVOICE) {

@@ -53,4 +53,16 @@ export class PaymentService {
   async listByUser(userId: string): Promise<Payment[]> {
     return this.repo.find({ where: { userId }, order: { createdAt: 'DESC' } });
   }
+
+  /** Pending payments older than the given window, oldest first (for reconciliation). */
+  async findPending(olderThanMs: number, limit = 25): Promise<Payment[]> {
+    const cutoff = new Date(Date.now() - olderThanMs);
+    return this.repo
+      .createQueryBuilder('p')
+      .where('p.status = :status', { status: PaymentStatus.PENDING })
+      .andWhere('p.createdAt <= :cutoff', { cutoff })
+      .orderBy('p.createdAt', 'ASC')
+      .take(limit)
+      .getMany();
+  }
 }
