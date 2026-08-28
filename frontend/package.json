@@ -11,7 +11,10 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:a11y": "playwright test e2e/a11y.spec.ts"
+    "test:a11y": "playwright test e2e/a11y.spec.ts",
+    "test:lighthouse": "lhci autorun --config=../loadtest/lighthouse/lighthouserc.json",
+    "test:load:browse": "k6 run ../loadtest/k6/browse.js",
+    "test:load:bidding": "k6 run ../loadtest/k6/bidding.js"
   },
   "dependencies": {
     "@clerk/nextjs": "7.7.4",
