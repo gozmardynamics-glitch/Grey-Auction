@@ -60,6 +60,24 @@ Assertions (`lighthouserc.json`): Performance ≥ 90 (error), Accessibility ≥ 
 Best-practices/SEO ≥ 90 (warn), LCP ≤ 2.5 s, TBT ≤ 300 ms, CLS ≤ 0.1, TTFB ≤ 800 ms.
 Resource-size budgets live in `budgets.json` (scripts ≤ 450 KiB, total ≤ 2 MiB, …).
 
+## Lighthouse run — recorded result (L6, 2026-08-28)
+
+Ran against the prod build (next build + next start on :3000, backend on :3001), system
+Chrome (set CHROME_PATH), real network (no simulated throttle):
+
+    npx --yes lighthouse http://localhost:3000/en/about-us --preset=desktop --throttling-method=provided --chrome-flags="--headless=new --no-sandbox" --budget-path=../loadtest/lighthouse/budgets.json --output=json --output-path=../loadtest/results/lighthouse-aboutus.json
+
+Result (representative static content page /en/about-us):
+**Performance 100 · Accessibility 100 · Best-practices 100 · SEO 100**
+(LCP 0.2 s · TBT 0 ms · CLS 0 · TTFB 40 ms).
+
+Caveats:
+- The homepage keeps a persistent connection (live countdown / chatbot / carousels),
+  which prevents Lighthouse's simulated networkidle from settling. Measure the homepage
+  with --throttling-method=provided (as above) and treat simulated scores as indicative.
+- On Windows the run logs a harmless EPERM during Chrome temp-dir cleanup after the report
+  is written; it does not affect the emitted JSON.
+
 ## Known follow-ups
 
 - WebSocket (Socket.IO `/auctions` namespace) load: k6 has no first-class Socket.IO
