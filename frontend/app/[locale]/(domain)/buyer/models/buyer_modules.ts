@@ -1,4 +1,4 @@
-import { User, Shield, Heart, MessageSquare, Settings, BaggageClaim, Wallet, LayoutDashboard, Mail } from 'lucide-react';
+import { User, Shield, Heart, MessageSquare, Settings, BaggageClaim, Wallet, LayoutDashboard, Mail, Scale } from 'lucide-react';
 
 export const BUYER_MODULES = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -8,6 +8,7 @@ export const BUYER_MODULES = [
   { key: 'chats', label: 'Chats', icon: Shield },
   { key: 'purchases', label: 'Purchases', icon: BaggageClaim },
   { key: 'wallet', label: 'Wallet', icon: Wallet },
+  { key: 'disputes', label: 'Disputes', icon: Scale },
   { key: 'notifications', label: 'Notifications', icon: MessageSquare },
   { key: 'settings', label: 'Settings', icon: Settings }
 ] as const;

@@ -539,7 +539,7 @@ export default function ProductDetailsClient({
             slug: 'featured',
           }}
         />
-        <AuctionSaleInfo />
+        <AuctionSaleInfo auction={auction} />
       </div>
 
       <Separator />

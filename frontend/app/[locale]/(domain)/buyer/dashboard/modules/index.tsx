@@ -10,3 +10,4 @@ export { default as BuyerSettingsModule } from './settings';
 export { default as BuyerMessagesModule } from './messages';
 export { default as BuyerChatsModule } from './chats';
 export { default as BuyerWalletModule } from './wallet';
+export { default as BuyerDisputesModule } from './disputes';

@@ -4,6 +4,8 @@ import {
   CardContent,
   Separator,
 } from '@/shared/components/common';
+import { KycBadge, ConditionReportPanel } from '@/shared/components/trust';
+import type { Auction } from '../../../models';
 import {
   MapPin,
   Tag,
@@ -20,7 +22,7 @@ import {
   Leaf,
 } from 'lucide-react';
 
-export default function AuctionSaleInfo() {
+export default function AuctionSaleInfo({ auction }: { auction?: Auction }) {
   return (
     <div className="space-y-6">
       {/* Seller Info Card */}
@@ -38,8 +40,8 @@ export default function AuctionSaleInfo() {
                   GA
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Grey Automobile</p>
-                  <p className="text-xs text-muted-foreground">Verified Seller</p>
+                  <p className="text-sm font-semibold text-foreground">{auction?.sellerName || 'Grey Automobile'}</p>
+                  <KycBadge sellerId={auction?.sellerId} />
                 </div>
               </div>
               <Button variant="outline" size="sm" className="gap-1.5">
@@ -75,6 +77,11 @@ export default function AuctionSaleInfo() {
                 <span className="text-muted-foreground">Contact:</span>
                 <span className="text-xs">Shared on invoice after payment</span>
               </div>
+            </div>
+
+            {/* Condition report (L4 trust & safety) */}
+            <div className="border-t border-border/50 p-4">
+              <ConditionReportPanel productId={auction?.id} />
             </div>
           </CardContent>
         </Card>
