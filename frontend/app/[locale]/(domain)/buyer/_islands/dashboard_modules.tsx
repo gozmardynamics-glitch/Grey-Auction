@@ -38,6 +38,9 @@ const MODULE_MAP: Record<BuyerModuleKey, React.ComponentType> = {
   disputes: dynamic(() => import('../dashboard/modules/disputes'), {
     loading: moduleLoader,
   }),
+  delivery: dynamic(() => import('../dashboard/modules/delivery'), {
+    loading: moduleLoader,
+  }),
   notifications: dynamic(() => import('../dashboard/modules/notifications'), {
     loading: moduleLoader,
   }),

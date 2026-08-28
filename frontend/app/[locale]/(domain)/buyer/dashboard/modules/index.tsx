@@ -11,3 +11,4 @@ export { default as BuyerMessagesModule } from './messages';
 export { default as BuyerChatsModule } from './chats';
 export { default as BuyerWalletModule } from './wallet';
 export { default as BuyerDisputesModule } from './disputes';
+export { default as BuyerDeliveryModule } from './delivery';
