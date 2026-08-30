@@ -1,7 +1,7 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 97 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 99 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
 > **Security hardening (2026-08-30):** see section 12 — the external production-readiness audit's critical auth/money findings were remediated (fcd6cff, 56d52cf).
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
@@ -22,9 +22,14 @@
 
 **Security remediation (2026-08-30, from the external production-readiness audit):**
 - [x] Fixed: JWT secret fail-fast · OTP (crypto-RNG, persisted columns, no prod leak) · reset-token no-leak · role limited to bidder/seller · bid rejects closed/ended lots · invoice endpoints guarded + ownership · AdminRolesGuard fail-closed · global exception filter · frontend mock fallback dev-only. (fcd6cff, 56d52cf)
-- [placeholder] Google OAuth verification (endpoint disabled until google-auth-library is wired) · full baseline migration (use DB_SYNCHRONIZE=true once) · live FX feed · transactions/ledger for money paths.
+- [placeholder] Google OAuth verification (endpoint disabled until google-auth-library is wired) · full baseline migration (use DB_SYNCHRONIZE=true once) · live FX feed · transactions/ledger for wallet + payments + settlement (escrow is done).
 
-**Remaining (nothing key-free left to code):**
+**Latest round (hardcode cleanup + structural):**
+- [x] Removed hardcoded demo lot data — bid modal/title/lot/date/address/specs/description derive from the real auction (0b58ba1).
+- [x] Escrow hold/dispute/release/refund wrapped in transactions with pessimistic locks (d2a473d).
+- [x] Phased remediation plan A–G documented (section 13, e8fd0c2).
+
+**Remaining (phased in section 13 — nothing key-free left to code this round):**
 - Optional: open a retroactive PR if review is wanted (direct fast-forward merge already done).
 - Optional: live exchange-rate feed (set EXCHANGE_RATE_API_URL) or daily admin refresh.
 - Optional: wire Lighthouse/LHCI into CI (budget + scripts in loadtest/).
