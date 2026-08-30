@@ -332,3 +332,53 @@ were applied and verified (backend build + 206/206 Jest · frontend tsc + 67/67 
 ### Still blocked on keys / access (unchanged)
 - Payment gateway keys · LLM provider keys · production host (Coolify) · Redis.
 
+---
+
+## 13. Remediation Plan & Phases (key-free work remaining)
+
+Ordered so each phase builds on the last. Only key-free items are listed;
+key/access-blocked work (real payment capture, live AI, deploy, Redis) is in §3.
+
+### Phase A — Money-path transactions & ledger (data integrity)
+- A1 Wallet deposit/withdraw → wrap in a DB transaction; write an append-only
+  `wallet_transactions` row on every balance change (audit trail).
+- A2 Invoice settlement cron → transaction (issue invoice + mark lot SOLD atomically).
+- A3 Invoice markPaid + payment-capture seam → transaction.
+- A4 Escrow: move the payout (wallet credit on release) inside the escrow transaction.
+- Depends on: nothing. Verifies with: backend Jest + a concurrency test.
+
+### Phase B — Database schema baseline (C1)
+- B1 Generate a complete baseline migration for all 38 entities (schema-dump script).
+- B2 Reconcile/replace the 2 drifted migrations (CreateCoreTables/CreateSellerTables).
+- B3 Verify a fresh DB boots with `migration:run` and `synchronize` OFF.
+- Depends on: nothing. This is the main remaining deploy blocker.
+
+### Phase C — Auth completeness (S1 + OTP hardening)
+- C1 Google OAuth: verify the ID token server-side (google-auth-library) with
+  GOOGLE_CLIENT_ID, then re-enable `loginWithGoogle`.
+- C2 Rate-limit send-otp / verify-otp (ThrottlerGuard) to stop OTP brute-force.
+- Depends on: nothing. C1 needs GOOGLE_CLIENT_ID only at runtime, not to code.
+
+### Phase D — Real order / checkout path (A1/A3)
+- D1 Order entity + POST /orders that persists an order from a paid invoice.
+- D2 Gate the checkout success page on a real persisted order (no success-without-order).
+- D3 Payment webhook → mark order paid (seam; live gateway is key-blocked).
+- Depends on: Phase A (transactions) for order/ledger atomicity.
+
+### Phase E — Live exchange rates (L2)
+- E1 Daily cron refreshing rates from EXCHANGE_RATE_API_URL (refresh() exists).
+- E2 Admin UI to edit rates (frontend).
+- Depends on: nothing.
+
+### Phase F — Observability & hygiene (medium/low findings)
+- F1 Propagate the request id from the exception filter through normal logs.
+- F2 Dead-dependency / Clerk-remnant cleanup + config drift (JWT_EXPIRATION, CORS).
+- F3 N+1 / unbounded-query audit from the external report.
+- Depends on: nothing.
+
+### Phase G — Tests & CI
+- G1 Tests for the new transactions, guards, and order path.
+- G2 Wire Lighthouse/LHCI + k6 into CI.
+- Depends on: Phases A–D.
+
+
