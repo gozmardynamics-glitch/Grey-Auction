@@ -1,7 +1,8 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 91 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 94 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Security hardening (2026-08-30):** see section 12 — the external production-readiness audit's critical auth/money findings were remediated (fcd6cff, 56d52cf).
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
 ## 0. What's Pending (updated 2026-08-28)
@@ -18,6 +19,10 @@
 - [x] L6 WCAG - axe 12 routes 0 violations + responsive no-overflow matrix 25 checks (231b442).
 - [x] Lighthouse budget run - 100/100/100/100 on /en/about-us (prod build).
 - [x] Git finalize - merged feature/authjs-migration into master, tagged v1.0.0, pushed.
+
+**Security remediation (2026-08-30, from the external production-readiness audit):**
+- [x] Fixed: JWT secret fail-fast · OTP (crypto-RNG, persisted columns, no prod leak) · reset-token no-leak · role limited to bidder/seller · bid rejects closed/ended lots · invoice endpoints guarded + ownership · AdminRolesGuard fail-closed · global exception filter · frontend mock fallback dev-only. (fcd6cff, 56d52cf)
+- [placeholder] Google OAuth verification (endpoint disabled until google-auth-library is wired) · full baseline migration (use DB_SYNCHRONIZE=true once) · live FX feed · transactions/ledger for money paths.
 
 **Remaining (nothing key-free left to code):**
 - Optional: open a retroactive PR if review is wanted (direct fast-forward merge already done).
@@ -289,3 +294,39 @@
 - Dev uses TypeORM synchronize:true; switch to migrations-only before production (B-DEPLOY-1).
 - Lighthouse simulated metrics on the homepage are unreliable (persistent WS/chatbot/carousel connections); measure a static page with --throttling-method=provided.
 - Push notification support is a stub until VAPID keys are added (SW listens for push; seaming in place).
+
+---
+
+## 12. Production-Readiness Remediation (external WordBuddy audit, 2026-08-30)
+
+A third-party static audit flagged 16 critical / 18 high / 17 medium / 7 low findings.
+Spot-verification confirmed the critical/high ones were real. The key-free fixes below
+were applied and verified (backend build + 206/206 Jest · frontend tsc + 67/67 Vitest).
+
+### Fixed (commits fcd6cff, 56d52cf)
+| ID | Finding | Fix |
+|---|---|---|
+| S4 | JWT_SECRET silently fell back to "dev-secret" | Fail-fast: throw on boot if JWT_SECRET unset in production (auth.module + jwt.strategy) |
+| S3/R8 | OTP leaked in response, Math.random, and never persisted | crypto.randomInt + otpCode/otpExpiry columns on User + no OTP in prod response (dev echo only) |
+| S2 | Forgot-password returned the reset token | Return uniform success; token goes in the email only; no account enumeration |
+| S12 | register accepted client role (admin escalation) | RegisterDto role limited to bidder/seller; service never assigns admin |
+| R1 | Bids accepted on closed/sold/ended lots | placeBid rejects non-ACTIVE or past-endTime lots |
+| S8 | Invoice list/detail/pay/pdf unauthenticated | JwtAuthGuard + ownership (party-or-admin); pay/create/settle-now admin-only |
+| — | AdminRolesGuard failed open | Guard now throws when @AdminRoles is missing; class-level roles added to admin + admin-reports controllers |
+| M1 | No global exception filter | AllExceptionsFilter + request-id envelope, no raw DB/stack leak |
+| F16 | Frontend fabricated lots on API failure | Mock fallback gated to dev only; prod renders honest empty state |
+| C1 (mitigation) | Prod boots with no schema | DB_SYNCHRONIZE=true one-time bootstrap override documented |
+
+### Placeholders (stub/flag in place — real implementation still needed)
+| ID | What | Placeholder | To finish |
+|---|---|---|---|
+| S1 | Google OAuth unverified | loginWithGoogle now throws "not enabled" | Wire google-auth-library ID-token verify + GOOGLE_CLIENT_ID |
+| C1 | Full baseline migration | DB_SYNCHRONIZE bootstrap flag | Generate a complete migration for all 38 entities (typeorm schema dump) and switch off synchronize |
+| L2 | Live FX | EXCHANGE_RATE_API_URL hook + admin PATCH | Point to a real feed or run a daily refresh cron |
+| — | Money-path transactions | bid.service is the only transaction | Wrap wallet deposit/withdraw, escrow release/refund, payment capture, settlement in transactions + append-only ledger |
+| B-PAY | Real payment capture | Mock deposit / markPaid | Wire Paystack/Flutterwave capture + webhook (key-blocked) |
+| A1/A3 | Checkout/payment | Payments init 400s without keys | Create a real order + success only on confirmed payment (key-blocked) |
+
+### Still blocked on keys / access (unchanged)
+- Payment gateway keys · LLM provider keys · production host (Coolify) · Redis.
+
