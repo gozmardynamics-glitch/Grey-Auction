@@ -1,7 +1,7 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 89 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 91 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
 ## 0. What's Pending (updated 2026-08-28)
@@ -52,7 +52,7 @@
 
 ---
 
-## 2. WORK NOW — no blockers (high-ROI, do next)
+## 2. WORK NOW — COMPLETE (all N-items delivered in earlier rounds)
 
 | # | Item | Impact | Notes |
 |---|---|---|---|
@@ -165,9 +165,12 @@
 4. Open http://localhost:3000/en · Swagger http://localhost:3001/api/docs
 
 **Demo accounts:** admin@greyauction.com / Admin@12345 · demo@seller.com / Seller@12345 · demo@buyer.com / Buyer@12345
-**Key scripts:** `seed:admins:dev`, `seed:demo` (ts-node), `seed-ai-providers.ts` (ts-node), `migration:run:dev`, `test`, `lint`; backend tests `npm test` (95).
+**Key scripts (backend):** `seed:admins:dev`, `seed:demo` (ts-node), `seed-ai-providers.ts` (ts-node), `migration:run:dev`, `test`, `lint`, `build`.
+**Frontend scripts:** `npm run dev`, `npm run build`, `npm run test` (Vitest), `npm run test:a11y` (Playwright axe), `test:lighthouse`, `test:load:browse`, `test:load:bidding`.
 
-**Env files:** `backend/.env`, `frontend/.env.local` — payment/LLM keys go here when available.
+**Verify:** backend `npm test` → 206 · frontend `npx tsc --noEmit && npm test` → 67 · e2e axe 12 + responsive 25 · Lighthouse 100/100/100/100 (static page).
+
+**Env files:** `backend/.env`, `frontend/.env.local` — payment/LLM keys go here when available. `backend/.env.example` documents every env var (DB, JWT, Brevo, Termii/Twilio SMS, payment keys, webhook URL).
 
 ---
 ## 9. Execution Log (rounds)
@@ -183,6 +186,10 @@
 - **Round 9:** Performance — indexes, caps, aggregate, parallel sweep (6a27d85).
 - **Round 11:** Brevo transactional email + newsletter subscription (double opt-in) — c71f82b (backend), b0bf1ae (frontend).
 - **Round 12:** L-phase completion — L1 PWA (94493cf), L7 k6+Lighthouse budget (7e243fc), L4 trust & safety (e3b6c6c, b079518), L5 shipping+escrow (5135b24, a9c6a92), L8 advisors+direct-sales (5b4eb54, 6f18126), docs (8b5143f). Pushed to origin.
+- **Round 13:** L2 multi-currency — backend exchange-rates (9138b1b) + frontend provider/switcher (9e36ac5); 206/206 backend, 67/67 frontend.
+- **Round 14:** L6 a11y + responsive — axe 12 routes 0 violations + responsive matrix 25 checks (231b442).
+- **Round 15:** Lighthouse budget run recorded (1dcded3) — 100/100/100/100 on /en/about-us.
+- **Round 16:** Git finalize + release — merged to master, tagged v1.0.0, pushed; docs synced (86ae520, b163d96).
 
 ## 10. WORK NOW — Detailed Plan & Sequence
 
@@ -234,3 +241,51 @@
 **Total estimate: ~11–13 working days for the full “Work Now” set** (0.5–1d Wave 0 · ~5.5d Wave 1 · ~7.5d Wave 2 · included in each feature P1/P2).
 
 **Round 10 (Work Now completion, e0c28fb):** all N1-N8 done via 4 parallel sub-agents (disjoint file ownership) + coordinator integration. Verified: backend 103/103 tests; frontend build green; all changed screens render 200; notifications API live. Follow-ups (placeholders): (1) `[!]` notification trigger wiring (outbid/won/room-start) - placeholder in notification.service.ts; (2) `[!]` AI execution live once LLM keys are added; (3) `[ ]` automated axe pass deferred to L6 WCAG audit (manual spot pass done).
+
+---
+
+## 11. Continue Development — Handoff (final state, v1.0.0)
+
+### Where things live
+
+**Backend** (NestJS, backend/src/) — 30 modules, registered in app.module.ts:
+- Identity: auth (JWT + guards), admin (role guard), seller (KYC/statistics).
+- Trading: products (incl. direct-sale + auctionType filter), bids (proxy auto-bid + anti-snipe engine), rooms (live bidding + lifecycle cron), categories, banners, faqs, tickets.
+- Money: payments (provider seam: paystack/flutterwave/interswitch/opay), invoices (settlement cron), wallet, fees, escrow, exchange-rates.
+- Trust & fulfillment (added this cycle): trust (condition reports, KYC badges, disputes+feedback), shipping (addresses, rate calc, shipments), escrow, advisors.
+- Comms: notification (outbid/won/room triggers), common/email (Brevo), common/sms (Termii/Twilio), subscription (newsletter double opt-in).
+- AI: ai (LLM registry + orchestrator + 5-min health monitor), agents, common/ai.
+- Config/DB: config/database.config.ts, database/ (seeds), common (storage, throttler).
+
+**Frontend** (Next.js 16 App Router, frontend/):
+- Routes: app/[locale]/ route groups — (website) public, (domain) buyer/seller/admin dashboards, (seller) onboarding, (auth) auth pages.
+- Shared UI: shared/components/ — common (primitives: button, card, datatable, dialog...), trust, shipping, escrow, advisors, direct_sales, currency, ai, pwa.
+- Data: lib/server/data.ts (server fetches with per-request auth token), redux (client state), i18n + messages (en/fr/nl).
+- New public pages this cycle: /advisors, /direct-sales, /subscribe (+/subscribe/confirm), /[locale]/offline.
+- PWA: app/manifest.ts, public/sw.js, shared/components/common/pwa.
+- Tests: Vitest (shared/**/__tests__), Playwright e2e (a11y.spec.ts, responsive.spec.ts).
+
+**Ops/perf:** loadtest/ (k6 scenarios + Lighthouse budgets + README), root Dockerfiles, .github/workflows/ci.yml.
+
+### Run it (dev)
+1. docker start greyauction-postgres
+2. cd backend && npm run build && npm run start:prod (or start:dev)
+3. cd frontend && npm run dev
+4. http://localhost:3000/en · API http://localhost:3001/api · Swagger http://localhost:3001/api/docs
+
+### Verify it
+- Backend: cd backend && npm run build && npm test (206).
+- Frontend: cd frontend && npx tsc --noEmit && npm test (67) && npm run build.
+- E2E (both servers running): cd frontend && npm run test:a11y (12 axe) + npx playwright test e2e/responsive.spec.ts (25).
+- Load/perf: see loadtest/README.md (k6 + Lighthouse budget + recorded result).
+
+### What's next (in order)
+1. **Blocked on keys/access** (do when available) — see section 3:
+   Payment gateway live capture (B-PAY-1/2) · live AI execution (B-AI-1) · production deploy + backups + Sentry (B-DEPLOY-1/2) · Redis cache (B-CACHE-1).
+2. **Optional / polish (no keys):** wire Lighthouse into CI (scripts ready) · set EXCHANGE_RATE_API_URL for live FX · manual WCAG screen-reader pass (L6) · web-push once VAPID keys are generated (L1 follow-up).
+
+### Known caveats
+- Exchange rates are seeded static defaults (NGN/USD/GHS/EUR); refresh via admin PATCH /exchange-rates/:code or set EXCHANGE_RATE_API_URL.
+- Dev uses TypeORM synchronize:true; switch to migrations-only before production (B-DEPLOY-1).
+- Lighthouse simulated metrics on the homepage are unreliable (persistent WS/chatbot/carousel connections); measure a static page with --throttling-method=provided.
+- Push notification support is a stub until VAPID keys are added (SW listens for push; seaming in place).
