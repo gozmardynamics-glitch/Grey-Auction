@@ -811,33 +811,37 @@ const mockFaqCategories = [
   },
 ];
 
+// F16: never fabricate data in production — mock fallbacks are dev-only so a
+// failed API in prod renders an honest empty/error state instead of fake lots.
+const USE_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
+
 // ─── Website ─────────────────────────────────────────────────────────────
 
 export async function getAuctions() {
   const data = await apiFetch('/products');
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);
-  return mockAuctions;
+  return USE_MOCK_FALLBACK ? mockAuctions : [];
 }
 
 export async function getAuctionBySlug(slug: string) {
   const data = await apiFetch(`/products/${encodeURIComponent(slug)}`);
   if (data) return normalizeAuction(data);
-  return mockAuctions.find((a) => a.slug === slug || a.id === slug) || null;
+  return USE_MOCK_FALLBACK ? mockAuctions.find((a) => a.slug === slug || a.id === slug) || null : null;
 }
 
 export async function getFeaturedAuctions() {
   const data = await apiFetch('/products/featured');
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);
-  return mockAuctions.slice(0, 8);
+  return USE_MOCK_FALLBACK ? mockAuctions.slice(0, 8) : [];
 }
 
 export async function getCategories() {
   const data = await apiFetch('/categories');
   const list = unwrapList(data);
   if (list && list.length > 0) return list;
-  return mockCategories;
+  return USE_MOCK_FALLBACK ? mockCategories : [];
 }
 
 export async function getRelatedAuctions(category: string) {
@@ -846,9 +850,11 @@ export async function getRelatedAuctions(category: string) {
   );
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);
-  return mockAuctions.filter(
-    (a) => a.category?.toLowerCase() === category?.toLowerCase(),
-  );
+  return USE_MOCK_FALLBACK
+    ? mockAuctions.filter(
+        (a) => a.category?.toLowerCase() === category?.toLowerCase(),
+      )
+    : [];
 }
 
 export async function getAuctionsByCategory(category: string) {
@@ -857,28 +863,30 @@ export async function getAuctionsByCategory(category: string) {
   );
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);
-  return mockAuctions.filter(
-    (a) => a.category?.toLowerCase() === category?.toLowerCase(),
-  );
+  return USE_MOCK_FALLBACK
+    ? mockAuctions.filter(
+        (a) => a.category?.toLowerCase() === category?.toLowerCase(),
+      )
+    : [];
 }
 
 export async function getBanners() {
   const data = await apiFetch('/banners');
   const list = unwrapList(data);
   if (list && list.length > 0) return list;
-  return mockBanners;
+  return USE_MOCK_FALLBACK ? mockBanners : [];
 }
 
 export async function getFaqs() {
   const data = await apiFetch('/faqs');
   const list = unwrapList(data);
   if (list && list.length > 0) return list;
-  return mockFaqs;
+  return USE_MOCK_FALLBACK ? mockFaqs : [];
 }
 
 export async function getTestimonials() {
   // No backend entity for testimonials yet — marketing copy stays client-side
-  return mockTestimonials;
+  return USE_MOCK_FALLBACK ? mockTestimonials : [];
 }
 
 export async function getFaqCategories() {
@@ -903,7 +911,7 @@ export async function getFaqCategories() {
       items,
     }));
   }
-  return mockFaqCategories;
+  return USE_MOCK_FALLBACK ? mockFaqCategories : [];
 }
 
 export async function getCartItems() {
@@ -927,7 +935,7 @@ export async function getAdminAuctions() {
   const data = await apiFetch('/admin/auctions');
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);
-  return mockAuctions;
+  return USE_MOCK_FALLBACK ? mockAuctions : [];
 }
 
 export async function getAdminBids() {
@@ -958,21 +966,21 @@ export async function getAdminCategories() {
   const data = await apiFetch('/categories');
   const list = unwrapList(data);
   if (list && list.length > 0) return list;
-  return mockCategories;
+  return USE_MOCK_FALLBACK ? mockCategories : [];
 }
 
 export async function getAdminBanners() {
   const data = await apiFetch('/admin/banners');
   const list = unwrapList(data);
   if (list && list.length > 0) return list;
-  return mockBanners;
+  return USE_MOCK_FALLBACK ? mockBanners : [];
 }
 
 export async function getAdminFaqs() {
   const data = await apiFetch('/admin/faqs');
   const list = unwrapList(data);
   if (list && list.length > 0) return list;
-  return mockFaqs;
+  return USE_MOCK_FALLBACK ? mockFaqs : [];
 }
 
 export async function getAdminPayments() {
