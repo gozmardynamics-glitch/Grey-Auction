@@ -5,6 +5,10 @@ import { resolve } from 'path';
 config();
 
 const isProduction = process.env.NODE_ENV === 'production';
+// C1 mitigation: a one-time schema bootstrap for the FIRST production deploy.
+// Set DB_SYNCHRONIZE=true once to create all tables from entities, then remove
+// it and rely on migrations (a full baseline migration is the follow-up).
+const bootstrapSync = process.env.DB_SYNCHRONIZE === 'true';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -15,8 +19,8 @@ export const dataSourceOptions: DataSourceOptions = {
   database: process.env.DB_DATABASE || 'greyauction',
   entities: [resolve(__dirname, '..', '**', '*.entity.{ts,js}')],
   migrations: [resolve(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
-  synchronize: !isProduction,
-  migrationsRun: isProduction,
+  synchronize: bootstrapSync || !isProduction,
+  migrationsRun: isProduction && !bootstrapSync,
   logging: process.env.NODE_ENV === 'development',
   extra: {
     max: parseInt(process.env.DB_POOL_SIZE || '20', 10),

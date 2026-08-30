@@ -120,6 +120,14 @@ export class BidService {
       }
       productTitle = product.title;
 
+      // R1: reject bids on lots that are not actively accepting bids.
+      if (product.status !== ProductStatus.ACTIVE) {
+        throw new BadRequestException('Auction is not open for bidding');
+      }
+      if (product.endTime && new Date(product.endTime).getTime() <= Date.now()) {
+        throw new BadRequestException('Auction has ended');
+      }
+
       if (dto.amount <= product.currentBid) {
         throw new BadRequestException('Bid must be higher than current bid');
       }

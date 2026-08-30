@@ -36,6 +36,19 @@ export class User {
   @Column({ nullable: true })
   clerkId: string; // Clerk user ID (null for legacy local accounts)
 
+  // OTP email-verification state (persisted so verifyOtp can match).
+  @Column({ type: 'varchar', length: 6, nullable: true })
+  otpCode: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  otpExpiry: Date;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  phone: string;
+
+  @Column({ type: 'text', nullable: true })
+  address: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

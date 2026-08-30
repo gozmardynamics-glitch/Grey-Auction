@@ -25,6 +25,7 @@ const ALL_ADMIN_ROLES = [
 @ApiTags('Admin Reports')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminRolesGuard)
+@AdminRoles(...ALL_ADMIN_ROLES)
 @ApiBearerAuth()
 export class AdminReportsController {
   constructor(

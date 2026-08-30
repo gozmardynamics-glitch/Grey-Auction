@@ -18,6 +18,7 @@ import { AdminRole } from './entities/admin.entity';
 @ApiTags('Admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminRolesGuard)
+@AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN, AdminRole.SUPPORT_ADMIN)
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}

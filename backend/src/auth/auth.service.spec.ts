@@ -140,16 +140,20 @@ describe('AuthService', () => {
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
       expect(jwtService.sign).toHaveBeenCalledWith({ sub: mockUser.id }, { expiresIn: '1h' });
       expect(emailService.sendPasswordResetEmail).toHaveBeenCalled();
-      expect(result).toHaveProperty('resetToken', 'mock-jwt-token');
+      // Never leak the token in the response (S2).
+      expect(result).toEqual({ success: true, message: expect.any(String) });
+      expect(result).not.toHaveProperty('resetToken');
     });
 
-    it('should return null when user is not found', async () => {
+    it('responds identically when the user is not found (no enumeration)', async () => {
       (userRepository.findOne as jest.Mock).mockResolvedValue(null);
 
       const result = await service.forgotPassword('nonexistent@example.com');
 
-      expect(result).toBeNull();
+      expect(result.success).toBe(true);
+      expect(result).not.toHaveProperty('resetToken');
       expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
+      expect(jwtService.sign).not.toHaveBeenCalled();
     });
   });
 
@@ -163,16 +167,19 @@ describe('AuthService', () => {
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
       expect(userRepository.save).toHaveBeenCalled();
       expect(emailService.sendOtpEmail).toHaveBeenCalled();
-      expect(result).toHaveProperty('otp');
-      expect(result.otp).toMatch(/^\d{6}$/);
+      expect(result.success).toBe(true);
+      // Test env is not 'production', so the dev echo is present (never in prod).
+      expect(result.devOtp).toMatch(/^\d{6}$/);
+      expect(result).not.toHaveProperty('otp');
     });
 
-    it('should return null when user is not found', async () => {
+    it('responds identically when the user is not found (no enumeration)', async () => {
       (userRepository.findOne as jest.Mock).mockResolvedValue(null);
 
       const result = await service.sendOtp('nonexistent@example.com');
 
-      expect(result).toBeNull();
+      expect(result.success).toBe(true);
+      expect(result).not.toHaveProperty('otp');
       expect(userRepository.save).not.toHaveBeenCalled();
     });
   });

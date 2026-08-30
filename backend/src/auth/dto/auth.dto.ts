@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class LoginDto {
@@ -22,8 +22,10 @@ export class RegisterDto {
   @MinLength(2)
   name: string;
 
+  // Public self-registration may only create bidder or seller accounts.
+  // ADMIN is deliberately excluded to prevent privilege escalation (S12).
   @IsOptional()
-  @IsEnum(UserRole)
+  @IsIn([UserRole.BIDDER, UserRole.SELLER])
   role?: UserRole;
 }
 

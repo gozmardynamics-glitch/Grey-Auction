@@ -9,13 +9,20 @@ import { ClerkService } from './clerk.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailModule } from '../common/email/email.module';
 
+// Fail fast instead of silently signing with a known secret (S4).
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET is required in production');
+}
+const effectiveJwtSecret = jwtSecret || 'dev-secret';
+
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev-secret',
+      secret: effectiveJwtSecret,
       signOptions: { expiresIn: process.env.JWT_EXPIRATION || '24h' },
     }),
     EmailModule,

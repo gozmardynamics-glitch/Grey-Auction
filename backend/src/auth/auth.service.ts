@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 import { User, UserRole } from './entities/user.entity';
 import { LoginDto, RegisterDto, CompleteProfileDto } from './dto/auth.dto';
 import { EmailService } from '../common/email/email.service';
@@ -30,7 +31,7 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       name: dto.name,
-      role: dto.role || UserRole.BIDDER,
+      role: dto.role === UserRole.SELLER ? UserRole.SELLER : UserRole.BIDDER,
     });
 
     await this.userRepository.save(user);
@@ -64,21 +65,13 @@ export class AuthService {
   }
 
   async loginWithGoogle(profile: { email: string; name: string }) {
-    let user = await this.userRepository.findOne({ where: { email: profile.email } });
-
-    if (!user) {
-      user = this.userRepository.create({
-        email: profile.email,
-        name: profile.name,
-        passwordHash: await bcrypt.hash(Math.random().toString(36), 12),
-        role: UserRole.BIDDER,
-        isEmailVerified: true,
-      });
-      await this.userRepository.save(user);
-    }
-
-    const token = this.generateToken(user);
-    return { user: this.sanitizeUser(user), token };
+    // PLACEHOLDER (S1): the Google ID token is NOT verified server-side. Enabling
+    // this requires google-auth-library to verify the id_token, otherwise anyone can
+    // forge a login for any email. Reject until that verification is implemented.
+    void profile;
+    throw new UnauthorizedException(
+      'Google sign-in is not enabled (server-side ID-token verification missing)',
+    );
   }
 
   async forgotPassword(email: string) {
@@ -89,9 +82,9 @@ export class AuthService {
       this.emailService.sendPasswordResetEmail(email, resetLink).catch((err) => {
         this.logger.error(`Failed to send password reset email: ${err.message}`);
       });
-      return { resetToken };
     }
-    return null;
+    // Always respond identically (no token leak, no account enumeration).
+    return { success: true, message: 'If the email is registered, a reset link has been sent' };
   }
 
   async resetPassword(token: string, newPassword: string) {
@@ -115,8 +108,8 @@ export class AuthService {
     if (!user) throw new BadRequestException('User not found');
 
     if (dto.name) user.name = dto.name;
-    if (dto.phone !== undefined) (user as any).phone = dto.phone;
-    if (dto.address !== undefined) (user as any).address = dto.address;
+    if (dto.phone !== undefined) user.phone = dto.phone;
+    if (dto.address !== undefined) user.address = dto.address;
 
     await this.userRepository.save(user);
     return { user: this.sanitizeUser(user) };
@@ -136,25 +129,35 @@ export class AuthService {
 
   async sendOtp(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
-    if (!user) return null;
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    (user as any).otpCode = otp;
-    (user as any).otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    // No account enumeration: respond identically whether or not the user exists.
+    if (!user) {
+      return { success: true, message: 'If the email is registered, an OTP has been sent' };
+    }
+    const otp = randomInt(100000, 1000000).toString();
+    user.otpCode = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await this.userRepository.save(user);
     this.emailService.sendOtpEmail(email, otp).catch((err) => {
       this.logger.error(`Failed to send OTP email: ${err.message}`);
     });
-    return { otp };
+    // Never return the OTP in production. A dev echo is kept for local testing only.
+    const result: { success: boolean; message: string; devOtp?: string } = {
+      success: true,
+      message: 'OTP sent',
+    };
+    if (process.env.NODE_ENV !== 'production') result.devOtp = otp;
+    return result;
   }
 
   async verifyOtp(email: string, otp: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) throw new BadRequestException('User not found');
-    if ((user as any).otpCode !== otp) throw new BadRequestException('Invalid OTP');
-    if (new Date() > (user as any).otpExpiry) throw new BadRequestException('OTP expired');
+    if (!user.otpCode || !user.otpExpiry) throw new BadRequestException('No OTP requested');
+    if (new Date() > user.otpExpiry) throw new BadRequestException('OTP expired');
+    if (user.otpCode !== otp) throw new BadRequestException('Invalid OTP');
     user.isEmailVerified = true;
-    (user as any).otpCode = null;
-    (user as any).otpExpiry = null;
+    user.otpCode = null;
+    user.otpExpiry = null;
     await this.userRepository.save(user);
     return { user: this.sanitizeUser(user) };
   }

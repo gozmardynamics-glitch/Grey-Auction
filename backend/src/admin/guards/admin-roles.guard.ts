@@ -19,8 +19,10 @@ export class AdminRolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
+    // Fail CLOSED: an endpoint guarded by AdminRolesGuard but missing
+    // @AdminRoles(...) is a config bug — never silently grant access (S8).
     if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
+      throw new ForbiddenException('No admin roles are authorized for this endpoint');
     }
 
     const request = context.switchToHttp().getRequest();
