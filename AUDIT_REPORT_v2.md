@@ -1,7 +1,7 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 94 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 97 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
 > **Security hardening (2026-08-30):** see section 12 — the external production-readiness audit's critical auth/money findings were remediated (fcd6cff, 56d52cf).
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
@@ -316,6 +316,8 @@ were applied and verified (backend build + 206/206 Jest · frontend tsc + 67/67 
 | M1 | No global exception filter | AllExceptionsFilter + request-id envelope, no raw DB/stack leak |
 | F16 | Frontend fabricated lots on API failure | Mock fallback gated to dev only; prod renders honest empty state |
 | C1 (mitigation) | Prod boots with no schema | DB_SYNCHRONIZE=true one-time bootstrap override documented |
+| F7 | Bid modal hardcoded \"Audi RSQ8\" | Removed — title/lot/date/address/specs/description derive from the real auction (0b58ba1) |
+| — | Escrow check-then-write | hold/dispute/release/refund wrapped in transactions with pessimistic locks (d2a473d) |
 
 ### Placeholders (stub/flag in place — real implementation still needed)
 | ID | What | Placeholder | To finish |
@@ -323,7 +325,7 @@ were applied and verified (backend build + 206/206 Jest · frontend tsc + 67/67 
 | S1 | Google OAuth unverified | loginWithGoogle now throws "not enabled" | Wire google-auth-library ID-token verify + GOOGLE_CLIENT_ID |
 | C1 | Full baseline migration | DB_SYNCHRONIZE bootstrap flag | Generate a complete migration for all 38 entities (typeorm schema dump) and switch off synchronize |
 | L2 | Live FX | EXCHANGE_RATE_API_URL hook + admin PATCH | Point to a real feed or run a daily refresh cron |
-| — | Money-path transactions | bid.service is the only transaction | Wrap wallet deposit/withdraw, escrow release/refund, payment capture, settlement in transactions + append-only ledger |
+| — | Money-path transactions | escrow now transactional | Wrap wallet deposit/withdraw, payment capture, settlement in transactions + append-only ledger |
 | B-PAY | Real payment capture | Mock deposit / markPaid | Wire Paystack/Flutterwave capture + webhook (key-blocked) |
 | A1/A3 | Checkout/payment | Payments init 400s without keys | Create a real order + success only on confirmed payment (key-blocked) |
 
