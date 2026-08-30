@@ -1,8 +1,8 @@
 import {
   Injectable, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 
 const OPEN_STATUSES = [EscrowStatus.HELD, EscrowStatus.DISPUTED];
@@ -14,32 +14,37 @@ const CLOSED_STATUSES = [EscrowStatus.RELEASED, EscrowStatus.REFUNDED];
  *   HELD -> DISPUTED -> RELEASED | REFUNDED
  *   HELD ---------------> RELEASED | REFUNDED
  *
- * It is intentionally provider-agnostic; settlement hooks into the payment
- * module's payout/disbursement seam when gateway keys are configured.
+ * All mutating operations run inside a DB transaction with a pessimistic lock
+ * on the hold row, so release/refund can never double-settle under contention.
+ * Settlement hooks into the payment module's payout seam when keys are wired.
  */
 @Injectable()
 export class EscrowService {
   constructor(
     @InjectRepository(EscrowHold)
     private readonly holds: Repository<EscrowHold>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   /** Place funds in escrow for an invoice (normally triggered on invoice payment). */
   async hold(input: { invoiceId: string; amount: number; buyerId: string; sellerId: string }) {
     if (input.amount <= 0) throw new BadRequestException('Escrow amount must be positive');
-    const existing = await this.holds.findOne({
-      where: { invoiceId: input.invoiceId, status: In(OPEN_STATUSES) },
+    return this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(EscrowHold);
+      const existing = await repo.findOne({
+        where: { invoiceId: input.invoiceId, status: In(OPEN_STATUSES) },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (existing) throw new ConflictException('Funds are already in escrow for this invoice');
+      return repo.save(repo.create({
+        invoiceId: input.invoiceId,
+        amount: input.amount,
+        buyerId: input.buyerId,
+        sellerId: input.sellerId,
+        status: EscrowStatus.HELD,
+      }));
     });
-    if (existing) throw new ConflictException('Funds are already in escrow for this invoice');
-
-    const hold = this.holds.create({
-      invoiceId: input.invoiceId,
-      amount: input.amount,
-      buyerId: input.buyerId,
-      sellerId: input.sellerId,
-      status: EscrowStatus.HELD,
-    });
-    return this.holds.save(hold);
   }
 
   async getForInvoice(invoiceId: string, viewerId?: string): Promise<EscrowHold[]> {
@@ -49,34 +54,43 @@ export class EscrowService {
   }
 
   async markDisputed(id: string, userId: string): Promise<EscrowHold> {
-    const hold = await this.requireOpen(id);
-    if (hold.buyerId !== userId && hold.sellerId !== userId) {
-      throw new NotFoundException('Escrow hold not found');
-    }
-    hold.status = EscrowStatus.DISPUTED;
-    return this.holds.save(hold);
+    return this.dataSource.transaction(async (manager) => {
+      const hold = await this.requireOpen(manager, id);
+      if (hold.buyerId !== userId && hold.sellerId !== userId) {
+        throw new NotFoundException('Escrow hold not found');
+      }
+      hold.status = EscrowStatus.DISPUTED;
+      return manager.getRepository(EscrowHold).save(hold);
+    });
   }
 
   async release(id: string, adminId: string): Promise<EscrowHold> {
-    const hold = await this.requireOpen(id);
-    hold.status = EscrowStatus.RELEASED;
-    hold.resolvedById = adminId;
-    hold.releasedAt = new Date();
-    return this.holds.save(hold);
+    return this.dataSource.transaction(async (manager) => {
+      const hold = await this.requireOpen(manager, id);
+      hold.status = EscrowStatus.RELEASED;
+      hold.resolvedById = adminId;
+      hold.releasedAt = new Date();
+      return manager.getRepository(EscrowHold).save(hold);
+    });
   }
 
   async refund(id: string, adminId: string, reason: string): Promise<EscrowHold> {
     if (!reason || !reason.trim()) throw new BadRequestException('A refund reason is required');
-    const hold = await this.requireOpen(id);
-    hold.status = EscrowStatus.REFUNDED;
-    hold.resolvedById = adminId;
-    hold.refundReason = reason.trim();
-    hold.refundedAt = new Date();
-    return this.holds.save(hold);
+    return this.dataSource.transaction(async (manager) => {
+      const hold = await this.requireOpen(manager, id);
+      hold.status = EscrowStatus.REFUNDED;
+      hold.resolvedById = adminId;
+      hold.refundReason = reason.trim();
+      hold.refundedAt = new Date();
+      return manager.getRepository(EscrowHold).save(hold);
+    });
   }
 
-  private async requireOpen(id: string): Promise<EscrowHold> {
-    const hold = await this.holds.findOne({ where: { id } });
+  private async requireOpen(manager: EntityManager, id: string): Promise<EscrowHold> {
+    const hold = await manager.getRepository(EscrowHold).findOne({
+      where: { id },
+      lock: { mode: 'pessimistic_write' },
+    });
     if (!hold) throw new NotFoundException('Escrow hold not found');
     if (CLOSED_STATUSES.includes(hold.status)) {
       throw new BadRequestException('Escrow hold is already settled');

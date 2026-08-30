@@ -1,12 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { EscrowService } from './escrow.service';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 
 describe('EscrowService', () => {
   let service: EscrowService;
   const holds = { findOne: jest.fn(), find: jest.fn(), create: jest.fn(), save: jest.fn() };
+  // dataSource.transaction runs its callback with a manager whose getRepository
+  // returns the mocked repository, so the transaction path is exercised.
+  const dataSource = {
+    transaction: jest.fn(async (cb: any) => cb({ getRepository: () => holds })),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -14,6 +20,7 @@ describe('EscrowService', () => {
       providers: [
         EscrowService,
         { provide: getRepositoryToken(EscrowHold), useValue: holds },
+        { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
     service = module.get<EscrowService>(EscrowService);
