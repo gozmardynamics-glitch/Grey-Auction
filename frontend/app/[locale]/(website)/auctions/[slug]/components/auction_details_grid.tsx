@@ -39,25 +39,8 @@ export default function AuctionDetailsGrid({
   sellerName,
   parentAuction,
 }: AuctionDetailsGridProps) {
-  // Default specifications if none provided
-  const specs = specifications || [
-    { label: 'Brand', value: 'Audi' },
-    { label: 'Type', value: 'RSQ8 Performance' },
-    { label: 'Year of build', value: '2025' },
-    { label: 'Mileage', value: '900 km' },
-    { label: 'Fuel Type', value: 'Petrol' },
-    { label: 'Transmission', value: 'Automatic' },
-    { label: 'Color', value: 'White' },
-    { label: 'Interior', value: 'Black' },
-    { label: 'Engine', value: '4.0L V8 Twin-Turbo' },
-    { label: 'Horsepower', value: '591 HP' },
-    { label: 'Drive Type', value: 'AWD' },
-    { label: 'Doors', value: '5' },
-    { label: 'Seats', value: '5' },
-    { label: 'VIN', value: 'WAUZZZ4M9PD000001' },
-    { label: 'License Plate', value: '02-52-97' },
-    { label: 'Emission Standard', value: 'Euro 6' },
-  ];
+  // No fabricated demo specs — show only what the lot actually provides.
+  const specs = specifications || [];
 
   return (
     <div className="space-y-8">

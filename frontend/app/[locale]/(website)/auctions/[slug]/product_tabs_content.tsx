@@ -12,16 +12,8 @@ interface ProductTabsContentProps {
 }
 
 const defaultDescription: AuctionDescription = {
-  about:
-    'Introducing the Audi RSQ8, a masterpiece in automotive engineering, featuring a stunning white exterior and a sleek black interior. Transmission enthusiasts will be delighted by the 6-speed manual gearbox, offering a direct connection to the road. The odometer proudly displays just around 900 miles, a testament to the care this vehicle has received.',
-  mechanical: [
-    'Fuel Safe 22-gallon fuel cell',
-    'Ron Davis 4-core radiator',
-    'Ultra Pro oil cooler with fan pack on transmission and differential',
-    'Power-assisted rack and pinion steering',
-    'KRC power steering cooler',
-    'KRC steering pump',
-  ],
+  about: 'No description provided for this lot.',
+  mechanical: [],
 };
 
 export default function ProductTabsContent({

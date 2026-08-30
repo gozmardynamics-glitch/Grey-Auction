@@ -40,7 +40,7 @@ export default function AuctionSaleInfo({ auction }: { auction?: Auction }) {
                   GA
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{auction?.sellerName || 'Grey Automobile'}</p>
+                  <p className="text-sm font-semibold text-foreground">{auction?.sellerName || 'Seller'}</p>
                   <KycBadge sellerId={auction?.sellerId} />
                 </div>
               </div>
@@ -55,22 +55,22 @@ export default function AuctionSaleInfo({ auction }: { auction?: Auction }) {
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-muted-foreground">Location:</span>
-                <span className="font-medium">Lagos, Nigeria</span>
+                <span className="font-medium">{auction?.location ? auction.location.city + ', ' + auction.location.country : 'To be confirmed'}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Tag className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-muted-foreground">Lot:</span>
-                <span className="font-medium"># 25896742</span>
+                <span className="font-medium">{auction?.id ? '#' + auction.id.slice(0, 8).toUpperCase() : '—'}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-muted-foreground">Sale Date:</span>
-                <span className="font-medium">31st December, 2025 &bull; 16:00 WAT</span>
+                <span className="font-medium">{auction?.endTime ? new Date(auction.endTime).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'To be announced'}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-muted-foreground">Inspection:</span>
-                <span className="font-medium">7th January, 2025 &bull; 22:20 WAT</span>
+                <span className="font-medium">Contact seller to arrange</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-primary shrink-0" />
@@ -98,8 +98,8 @@ export default function AuctionSaleInfo({ auction }: { auction?: Auction }) {
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-foreground">No 5, Ijele Street, Victoria Island, Lagos</p>
-                <p className="text-xs text-muted-foreground">Nigeria</p>
+                <p className="text-sm font-medium text-foreground">{auction?.location ? auction.location.city + ', ' + auction.location.country : 'To be confirmed'}</p>
+                <p className="text-xs text-muted-foreground">Shared after payment</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
@@ -132,8 +132,8 @@ export default function AuctionSaleInfo({ auction }: { auction?: Auction }) {
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-foreground">No 5, Ijele Street, Victoria Island, Lagos</p>
-                <p className="text-xs text-muted-foreground">Nigeria</p>
+                <p className="text-sm font-medium text-foreground">{auction?.location ? auction.location.city + ', ' + auction.location.country : 'To be confirmed'}</p>
+                <p className="text-xs text-muted-foreground">Shared after payment</p>
               </div>
             </div>
             <div className="flex items-start gap-2">

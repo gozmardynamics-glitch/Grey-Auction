@@ -19,6 +19,7 @@ interface PlaceBidModalProps {
   onClose: () => void;
   bidAmount: number;
   auctionId: string;
+  auctionTitle?: string;
   onConfirm: () => void;
   bidModalStep: 'confirm' | 'success';
 }
@@ -28,6 +29,7 @@ export default function PlaceBidModal({
   onClose,
   bidAmount,
   auctionId,
+  auctionTitle,
   onConfirm,
   bidModalStep,
 }: PlaceBidModalProps) {
@@ -47,7 +49,7 @@ export default function PlaceBidModal({
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">#{auctionId}</p>
               <p className="text-sm font-semibold text-foreground">
-                Audi RSQ8 Performance 2025 | 02-52-97
+                {auctionTitle || 'This lot'}
               </p>
             </div>
 
@@ -92,7 +94,7 @@ export default function PlaceBidModal({
             </div>
             <h3 className="text-lg font-bold text-foreground">Your Bid is Winning</h3>
             <p className="text-sm text-muted-foreground max-w-xs">
-              You have successfully placed a bid on Audi RSQ8 Performance 2025 | 02-52-97.
+              You have successfully placed a bid on {auctionTitle || 'this lot'}.
               We&apos;ll notify you if you get outbid or if you win the auction.
             </p>
             <Button onClick={onClose} className="w-full">

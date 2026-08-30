@@ -226,7 +226,7 @@ export default function ProductDetailsClient({
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
             <Tag className="h-3 w-3" />
-            Lot: # {auction.id?.slice(0, 8).toUpperCase() || '25896742'}
+            Lot: {auction.id ? '#' + auction.id.slice(0, 8).toUpperCase() : ''}
           </span>
           {auction.location && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -261,7 +261,7 @@ export default function ProductDetailsClient({
           <div>
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-2xl font-bold text-foreground">
-                {auction.title || 'Audi RSQ8 Performance 2025 | 02-52-97'}
+                {auction.title || 'Untitled lot'}
               </h1>
               <div className="flex items-center gap-2 shrink-0">
                 <Button
@@ -294,7 +294,7 @@ export default function ProductDetailsClient({
           {/* Meta badges */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-              Lot: # {auction.id?.slice(0, 8).toUpperCase() || '25896742'}
+              Lot: {auction.id ? '#' + auction.id.slice(0, 8).toUpperCase() : ''}
             </span>
             <span className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
               <Tag className="h-3.5 w-3.5" />
@@ -530,10 +530,9 @@ export default function ProductDetailsClient({
             city: auction.location.city,
             country: auction.location.country,
             countryCode: auction.location.countryCode,
-            address: 'Victoria Island, Lagos',
           } : undefined}
-          lotId={`#${auction.id?.slice(0, 8).toUpperCase() || '25896742'}`}
-          sellerName={auction.sellerName || 'Grey Automobile'}
+          lotId={auction.id ? '#' + auction.id.slice(0, 8).toUpperCase() : undefined}
+          sellerName={auction.sellerName}
           parentAuction={{
             name: 'Featured Auctions',
             slug: 'featured',
@@ -547,7 +546,7 @@ export default function ProductDetailsClient({
       {/* ─── Tabs + Bid History ───────────────────────────────────────── */}
       <div className="grid gap-8 sm:grid-cols-2">
         <section className="min-w-0">
-          <ProductTabsContent />
+          <ProductTabsContent description={{ about: auction.description || 'No description provided for this lot.', mechanical: [] }} />
         </section>
 
         <section className="min-w-0 space-y-6 p-2">
@@ -578,6 +577,7 @@ export default function ProductDetailsClient({
         onClose={handleBidModalClose}
         bidAmount={bidAmount}
         auctionId={auctionId}
+        auctionTitle={auction.title}
         onConfirm={handleConfirmBid}
         bidModalStep={bidModalStep}
       />
