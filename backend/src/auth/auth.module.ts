@@ -22,7 +22,8 @@ const effectiveJwtSecret = jwtSecret || 'dev-secret';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: effectiveJwtSecret,
-      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '24h' },
+      // @nestjs/jwt 11 types expiresIn as ms.StringValue (not plain string).
+      signOptions: { expiresIn: (process.env.JWT_EXPIRATION || '24h') as any },
     }),
     EmailModule,
   ],

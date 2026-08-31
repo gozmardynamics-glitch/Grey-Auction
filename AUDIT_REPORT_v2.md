@@ -471,9 +471,9 @@ $env:DB_DATABASE="greyauction_itest"; $env:DB_SYNCHRONIZE="false"; $env:NODE_ENV
 | backend (transitive, lock-only) | 31 vulns (3 low, 18 mod, 10 high) | 29 vulns (3 low, 18 mod, 8 high) | npm audit fix (no majors); 24 transitive bumps; 252/252 tests + tsc green |
 | frontend next-auth | 2 critical (@auth/core via 5.0.0-beta.30) | 0 vulns | bumped to 5.0.0-beta.32 (same beta line); 67/67 vitest + tsc + prod build green |
 
-**Remaining backend findings (need user decision — U1):** all require the
-NestJS major upgrade (@nestjs/* 10 → 11/12, @nestjs/cli 12, uuid 11,
-picomatch/tmp/webpack via CLI). Listed in §0 blocked section.
+**Update (U1, 2026-08-31):** NestJS upgraded 10 → 11 across the whole family
+(common/core/platform-express/websockets/config/jwt/passport/swagger/typeorm
++ CLI/schematics/testing). Backend now reports **0 vulnerabilities**. See §19.
 ---
 
 ## 17. API Contract Enrichment (P4)
@@ -512,3 +512,28 @@ command/path/env var verified against the live repo.
   exist** — compose validation failed (env file not found). Fixed: env_file
   points to ./backend/.env with required: false (Coolify users manage env
   in the UI). Docs updated to copy backend/.env.example → backend/.env.
+---
+
+## 19. NestJS Major Upgrade 10 → 11 (U1)
+
+**Status: [x] DONE** — upgraded, tested, 0 vulnerabilities.
+
+| Check | Result |
+|---|---|
+| npm audit | **0 vulnerabilities** (was 29: 3 low, 18 moderate, 8 high) |
+| tsc --noEmit | clean (1 fix: JWT expiresIn now ms.StringValue-typed in @nestjs/jwt 11) |
+| Unit + service suite | 252/252 (38 suites) |
+| HTTP-layer E2E | 5/5 |
+| Money-path integration | 8/8 (fresh migrations-only DB) |
+| nest build (CLI 11) | green |
+| Live boot smoke | /api/health 200 · /api/exchange-rates 200 · /api/products 200 · /api/docs-json 182 paths / 82 schemas · 404 handling OK |
+
+**Versions:** @nestjs/* 11.2.3 (config 4.0.4, jwt 11.0.2, passport 11.0.5,
+swagger 11.4.7, typeorm 11.0.3, throttler 6.5.0 unchanged, schedule 6.1.3
+unchanged); CLI 11.0.24, schematics 11.1.0, testing 11.2.3.
+
+**Known limitation (documented, not a bug):** Nest **12** is the current
+latest, but @nestjs/throttler 6.5.0 (latest release) caps its peer range at
+Nest ^11 — no v12-compatible throttler exists yet. Nest 11 already clears
+every audit finding, so staying on 11 is the correct choice until throttler
+publishes a v12-compatible release (then a straightforward 11→12 bump).
