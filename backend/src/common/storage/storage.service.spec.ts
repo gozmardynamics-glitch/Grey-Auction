@@ -1,29 +1,41 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StorageService } from './storage.service';
-import { mkdirSync, existsSync, unlinkSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { STORAGE_DRIVER, StorageDriver } from './storage-driver.interface';
+import { ImageOptimizerService } from './image-optimizer.service';
 import { createHash } from 'crypto';
-
-jest.mock('fs', () => ({
-  mkdirSync: jest.fn(),
-  writeFileSync: jest.fn(),
-}));
-
-jest.mock('fs/promises', () => ({
-  writeFile: jest.fn().mockResolvedValue(undefined),
-  unlink: jest.fn().mockResolvedValue(undefined),
-  mkdir: jest.fn().mockResolvedValue(undefined),
-}));
 
 describe('StorageService', () => {
   let service: StorageService;
 
-  const mockFile: Express.Multer.File = {
+  const mockDriver: StorageDriver = {
+    put: jest.fn().mockImplementation(async (key: string, buffer: Buffer, contentType: string) => ({
+      key, url: '/uploads/' + key, size: buffer.length, contentType,
+    })),
+    delete: jest.fn().mockResolvedValue(undefined),
+    getUrl: jest.fn().mockImplementation((key: string) => '/uploads/' + key),
+  };
+
+  const mockOptimizer = {
+    isImage: jest.fn().mockReturnValue(true),
+    optimize: jest.fn().mockResolvedValue({
+      original: Buffer.from('original-webp'),
+      variants: {
+        large: Buffer.from('large'),
+        medium: Buffer.from('medium'),
+        thumb: Buffer.from('thumb'),
+      },
+      width: 1200,
+      height: 900,
+      format: 'webp',
+    }),
+  };
+
+  const mockImage: Express.Multer.File = {
     fieldname: 'file',
     originalname: 'test-image.jpg',
     encoding: '7bit',
     mimetype: 'image/jpeg',
-    buffer: Buffer.from('test-file-content'),
+    buffer: Buffer.from('test-image-content'),
     size: 18,
     stream: undefined,
     destination: '',
@@ -31,71 +43,85 @@ describe('StorageService', () => {
     path: '',
   };
 
+  const mockDoc: Express.Multer.File = {
+    ...mockImage,
+    originalname: 'kyc.pdf',
+    mimetype: 'application/pdf',
+    buffer: Buffer.from('pdf-content'),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [StorageService],
+      providers: [
+        StorageService,
+        { provide: STORAGE_DRIVER, useValue: mockDriver },
+        { provide: ImageOptimizerService, useValue: mockOptimizer },
+      ],
     }).compile();
 
     service = module.get<StorageService>(StorageService);
   });
 
-  describe('uploadFile', () => {
-    it('should save file and return metadata with hash', async () => {
-      jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+  describe('uploadFile (image)', () => {
+    it('optimizes to WebP and stores original + variants', async () => {
+      const result = await service.uploadFile(mockImage, 'images');
 
-      const result = await service.uploadFile(mockFile, 'images');
+      expect(mockOptimizer.optimize).toHaveBeenCalledWith(mockImage.buffer, 'image/jpeg');
+      expect(result.url).toContain('.webp');
+      expect(result.mimetype).toBe('image/webp');
+      expect(result.variants).toBeDefined();
+      expect(result.variants!.thumb).toContain('thumb.webp');
+      expect(result.variants!.medium).toContain('medium.webp');
+      expect(result.variants!.large).toContain('large.webp');
+      expect(result.width).toBe(1200);
+      expect(result.height).toBe(900);
+      expect(result.hash).toBe(createHash('sha256').update(mockImage.buffer).digest('hex'));
+    });
+  });
 
-      expect(result).toHaveProperty('url');
-      expect(result.url).toContain('/uploads/images/');
-      expect(result.url).toContain('test-image.jpg');
-      expect(result.filename).toBe('test-image.jpg');
-      expect(result.size).toBe(18);
-      expect(result.mimetype).toBe('image/jpeg');
-      expect(result).toHaveProperty('hash');
-      expect(result.hash).toBe(createHash('sha256').update(mockFile.buffer).digest('hex'));
+  describe('uploadFile (document)', () => {
+    it('stores non-image files verbatim (no optimization)', async () => {
+      (mockOptimizer.optimize as jest.Mock).mockResolvedValueOnce(null);
+      const result = await service.uploadFile(mockDoc, 'documents');
 
-      const { writeFile } = require('fs/promises');
-      expect(writeFile).toHaveBeenCalled();
+      expect(mockOptimizer.optimize).toHaveBeenCalled();
+      expect(result.variants).toBeUndefined();
+      expect(result.mimetype).toBe('application/pdf');
+      expect(result.url).toContain('.pdf');
+    });
+  });
+
+  describe('validation', () => {
+    it('rejects oversized files', async () => {
+      const big = { ...mockImage, size: 11 * 1024 * 1024 };
+      await expect(service.uploadFile(big, 'images')).rejects.toThrow(/10MB/);
+    });
+
+    it('rejects disallowed mimetypes', async () => {
+      const evil = { ...mockImage, mimetype: 'application/x-msdownload', size: 100 };
+      await expect(service.uploadFile(evil, 'images')).rejects.toThrow(/not allowed/);
     });
   });
 
   describe('getFileUrl', () => {
-    it('should return the relative path as the URL', () => {
-      const path = '/uploads/images/test-image.jpg';
-
-      const result = service.getFileUrl(path);
-
-      expect(result).toBe(path);
+    it('delegates to the driver', () => {
+      const url = service.getFileUrl('images/abc.webp');
+      expect(mockDriver.getUrl).toHaveBeenCalledWith('images/abc.webp');
+      expect(url).toContain('abc.webp');
     });
   });
 
   describe('deleteFile', () => {
-    it('should remove a file successfully', async () => {
-      const { unlink } = require('fs/promises');
-
-      await service.deleteFile('/uploads/images/test-image.jpg');
-
-      expect(unlink).toHaveBeenCalled();
+    it('delegates delete to the driver', async () => {
+      await service.deleteFile('images/abc.webp');
+      expect(mockDriver.delete).toHaveBeenCalled();
     });
 
-    it('should handle missing file gracefully', async () => {
-      const { unlink } = require('fs/promises');
-      const error = new Error('File not found') as NodeJS.ErrnoException;
-      error.code = 'ENOENT';
-      (unlink as jest.Mock).mockRejectedValueOnce(error);
-
-      await expect(service.deleteFile('/uploads/images/missing.jpg')).resolves.toBeUndefined();
-    });
-
-    it('should throw error for non-ENOENT errors', async () => {
-      const { unlink } = require('fs/promises');
-      const error = new Error('Permission denied') as NodeJS.ErrnoException;
-      error.code = 'EPERM';
-      (unlink as jest.Mock).mockRejectedValueOnce(error);
-
-      await expect(service.deleteFile('/uploads/images/file.jpg')).rejects.toThrow('Permission denied');
+    it('swallows deletion errors gracefully', async () => {
+      (mockDriver.delete as jest.Mock).mockRejectedValueOnce(new Error('gone'));
+      await expect(service.deleteFile('images/abc.webp')).resolves.toBeUndefined();
     });
   });
 });

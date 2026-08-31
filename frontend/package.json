@@ -14,7 +14,8 @@
     "test:a11y": "playwright test e2e/a11y.spec.ts",
     "test:lighthouse": "lhci autorun --config=../loadtest/lighthouse/lighthouserc.json",
     "test:load:browse": "k6 run ../loadtest/k6/browse.js",
-    "test:load:bidding": "k6 run ../loadtest/k6/bidding.js"
+    "test:load:bidding": "k6 run ../loadtest/k6/bidding.js",
+    "generate:api": "openapi-typescript http://localhost:3001/api/docs-json -o lib/api-types.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "7.7.4",
@@ -67,6 +68,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "29.1.1",
+    "openapi-typescript": "7.13.0",
     "prettier": "^3.8.1",
     "shadcn": "^3.8.4",
     "tailwindcss": "^4",

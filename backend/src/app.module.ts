@@ -35,6 +35,7 @@ import { ShippingModule } from './shipping/shipping.module';
 import { EscrowModule } from './escrow/escrow.module';
 import { ExchangeRateModule } from './exchange-rates/exchange-rate.module';
 import { OrderModule } from './orders/order.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { OrderModule } from './orders/order.module';
     AdvisorModule,
     ExchangeRateModule,
     OrderModule,
+    HealthModule,
   ],
   providers: [
     {

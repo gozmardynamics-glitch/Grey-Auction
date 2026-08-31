@@ -5,7 +5,7 @@ import { CommonAIModule } from './ai/ai.module';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 
 @Module({
-  imports: [StorageModule, EmailModule, CommonAIModule],
+  imports: [StorageModule.forRoot(), EmailModule, CommonAIModule],
   exports: [StorageModule, EmailModule, CommonAIModule],
 })
 export class CommonModule implements NestModule {
