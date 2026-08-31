@@ -38,3 +38,5 @@ npm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+# Test coverage output
+coverage/
