@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ExchangeRate } from './exchange-rate.entity';
 
 /** Indicative, key-free defaults (NGN base). Overridable at runtime / via env feed. */
@@ -63,6 +64,26 @@ export class ExchangeRateService implements OnModuleInit {
     const rate = rates[code] ?? rates.NGN;
     if (!rate) throw new NotFoundException('Unknown currency code: ' + code);
     return Math.round((amountNgn / rate) * 100) / 100;
+  }
+
+  /**
+   * Daily cron: refresh exchange rates from the configured feed.
+   * Runs at 03:00 UTC every day. No-op when EXCHANGE_RATE_API_URL is unset.
+   */
+  @Cron('0 3 * * *')
+  async handleRefreshCron(): Promise<void> {
+    const url = process.env.EXCHANGE_RATE_API_URL;
+    if (!url) {
+      this.logger.debug('Exchange-rate cron skipped: no EXCHANGE_RATE_API_URL configured');
+      return;
+    }
+    this.logger.log('Exchange-rate cron: refreshing from feed…');
+    const result = await this.refresh();
+    if (result.updated > 0) {
+      this.logger.log(`Exchange-rate cron: updated ${result.updated} rate(s)`);
+    } else {
+      this.logger.warn('Exchange-rate cron: feed returned no usable rates');
+    }
   }
 
   /** Best-effort live refresh from a configured feed (no-op without one). */

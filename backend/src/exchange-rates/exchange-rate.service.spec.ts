@@ -83,4 +83,102 @@ describe('ExchangeRateService', () => {
     expect(DEFAULT_RATES.USD).toBeGreaterThan(0);
     expect(DEFAULT_RATES.GHS).toBeGreaterThan(0);
   });
+
+  // ── handleRefreshCron tests ──────────────────────────────────
+
+  it('cron skips refresh when EXCHANGE_RATE_API_URL is unset', async () => {
+    delete process.env.EXCHANGE_RATE_API_URL;
+    const refreshSpy = jest.spyOn(service, 'refresh');
+    await service.handleRefreshCron();
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+
+  it('cron calls refresh when EXCHANGE_RATE_API_URL is set', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    const refreshSpy = jest.spyOn(service, 'refresh').mockResolvedValue({ updated: 2 });
+    await service.handleRefreshCron();
+    expect(refreshSpy).toHaveBeenCalled();
+    delete process.env.EXCHANGE_RATE_API_URL;
+  });
+
+  it('cron logs warning when feed returns zero updates', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    jest.spyOn(service, 'refresh').mockResolvedValue({ updated: 0 });
+    const warnSpy = jest.spyOn(service['logger'], 'warn');
+    await service.handleRefreshCron();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('no usable rates'));
+    delete process.env.EXCHANGE_RATE_API_URL;
+  });
+
+  it('refresh fetches from the configured URL and upserts rates', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    const mockJson = { rates: { USD: 1550, GBP: 1900 } };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockJson,
+    }) as any;
+    (repo.findOne as jest.Mock).mockResolvedValue(null);
+    (repo.create as jest.Mock).mockImplementation((x) => x);
+    (repo.save as jest.Mock).mockImplementation(async (x) => x);
+
+    const result = await service.refresh();
+    expect(result.updated).toBe(2);
+    expect(repo.save).toHaveBeenCalledTimes(2);
+    delete process.env.EXCHANGE_RATE_API_URL;
+    delete (global as any).fetch;
+  });
+
+  it('refresh handles fetch errors gracefully', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as any;
+
+    const result = await service.refresh();
+    expect(result.updated).toBe(0);
+    delete process.env.EXCHANGE_RATE_API_URL;
+    delete (global as any).fetch;
+  });
+
+  it('refresh handles non-OK HTTP response', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 }) as any;
+
+    const result = await service.refresh();
+    expect(result.updated).toBe(0);
+    delete process.env.EXCHANGE_RATE_API_URL;
+    delete (global as any).fetch;
+  });
+
+  it('refresh handles { data: {...} } response format', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    const mockJson = { data: { USD: 1550 } };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockJson,
+    }) as any;
+    (repo.findOne as jest.Mock).mockResolvedValue(null);
+    (repo.create as jest.Mock).mockImplementation((x) => x);
+    (repo.save as jest.Mock).mockImplementation(async (x) => x);
+
+    const result = await service.refresh();
+    expect(result.updated).toBe(1);
+    delete process.env.EXCHANGE_RATE_API_URL;
+    delete (global as any).fetch;
+  });
+
+  it('refresh skips invalid rate values', async () => {
+    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+    const mockJson = { rates: { USD: 1550, BAD: -1, ZERO: 0, NAN: 'abc' } };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockJson,
+    }) as any;
+    (repo.findOne as jest.Mock).mockResolvedValue(null);
+    (repo.create as jest.Mock).mockImplementation((x) => x);
+    (repo.save as jest.Mock).mockImplementation(async (x) => x);
+
+    const result = await service.refresh();
+    expect(result.updated).toBe(1); // only USD
+    delete process.env.EXCHANGE_RATE_API_URL;
+    delete (global as any).fetch;
+  });
 });
