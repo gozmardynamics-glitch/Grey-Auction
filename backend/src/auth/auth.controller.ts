@@ -1,4 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Headers, Req, UnauthorizedException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { ClerkService } from './clerk.service';
@@ -33,13 +34,10 @@ export class AuthController {
 
   @Post('oauth/google')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login with Google OAuth' })
+  @ApiOperation({ summary: 'Login with Google OAuth (server-verified ID token)' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Google login successful' })
   async googleLogin(@Body() dto: OauthGoogleDto) {
-    const result = await this.authService.loginWithGoogle({
-      email: dto.idToken,
-      name: dto.accessToken,
-    });
+    const result = await this.authService.loginWithGoogle(dto.idToken);
     return { success: true, message: 'Google login successful', data: result };
   }
 
@@ -80,6 +78,8 @@ export class AuthController {
     return { success: true, message: 'Password changed', data: result };
   }
 
+  // C2: tight per-IP throttle stops OTP email flooding.
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('send-otp')
   @ApiOperation({ summary: 'Send email verification OTP' })
   async sendOtp(@Body() dto: { email: string }) {
@@ -87,6 +87,8 @@ export class AuthController {
     return { success: true, message: 'OTP sent', data: result };
   }
 
+  // C2: tight per-IP throttle stops 6-digit OTP brute-force.
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify email OTP' })
   async verifyOtp(@Body() dto: { email: string; otp: string }) {

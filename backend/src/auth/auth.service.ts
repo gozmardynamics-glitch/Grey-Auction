@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { randomInt } from 'crypto';
 import { User, UserRole } from './entities/user.entity';
 import { LoginDto, RegisterDto, CompleteProfileDto } from './dto/auth.dto';
@@ -51,7 +52,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    // A Google/Clerk account has no local password (empty hash); reject it the
+    // same way as a wrong password so bcrypt doesn't crash and no account type leaks.
+    const isPasswordValid = user.passwordHash
+      ? await bcrypt.compare(dto.password, user.passwordHash)
+      : false;
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -64,14 +69,59 @@ export class AuthService {
     return { user: this.sanitizeUser(user), token };
   }
 
-  async loginWithGoogle(profile: { email: string; name: string }) {
-    // PLACEHOLDER (S1): the Google ID token is NOT verified server-side. Enabling
-    // this requires google-auth-library to verify the id_token, otherwise anyone can
-    // forge a login for any email. Reject until that verification is implemented.
-    void profile;
-    throw new UnauthorizedException(
-      'Google sign-in is not enabled (server-side ID-token verification missing)',
-    );
+  /**
+   * Sign in (or sign up) with Google. The Google ID token is verified
+   * server-side with google-auth-library against GOOGLE_CLIENT_ID before any
+   * email is trusted; a first-time Google user is provisioned as a verified
+   * bidder with no local password.
+   */
+  async loginWithGoogle(idToken: string) {
+    const payload = await this.verifyGoogleIdToken(idToken);
+    const email = payload.email;
+    const name = payload.name || email.split('@')[0];
+
+    let user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      user = this.userRepository.create({
+        email,
+        passwordHash: '', // no local password for Google accounts
+        name,
+        role: UserRole.BIDDER,
+        isEmailVerified: true,
+      });
+      await this.userRepository.save(user);
+    } else {
+      if (!user.isEmailVerified) user.isEmailVerified = true;
+      if (!user.name) user.name = name;
+      await this.userRepository.save(user);
+    }
+
+    const token = this.generateToken(user);
+    return { user: this.sanitizeUser(user), token };
+  }
+
+  /** Verify a Google ID token and return its verified identity claims. */
+  private async verifyGoogleIdToken(
+    idToken: string,
+  ): Promise<{ email: string; name?: string; sub: string }> {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      throw new UnauthorizedException(
+        'Google sign-in is not configured (GOOGLE_CLIENT_ID missing)',
+      );
+    }
+    try {
+      const client = new OAuth2Client(clientId);
+      const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email || !payload.email_verified) {
+        throw new Error('ID token is missing a verified email');
+      }
+      return { email: payload.email, name: payload.name, sub: payload.sub };
+    } catch (error: any) {
+      this.logger.warn(`Google ID token verification failed: ${error?.message || error}`);
+      throw new UnauthorizedException('Invalid Google ID token');
+    }
   }
 
   async forgotPassword(email: string) {
@@ -119,7 +169,9 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
-    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isValid = user.passwordHash
+      ? await bcrypt.compare(currentPassword, user.passwordHash)
+      : false;
     if (!isValid) throw new UnauthorizedException('Current password is incorrect');
 
     user.passwordHash = await bcrypt.hash(newPassword, 12);

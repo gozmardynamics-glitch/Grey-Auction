@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { AuthService } from './auth.service';
 import { User, UserRole } from './entities/user.entity';
 import { EmailService } from '../common/email/email.service';
@@ -128,6 +129,82 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should reject a Google/Clerk account (empty passwordHash) without crashing bcrypt', async () => {
+      const googleUser = { ...mockUser, passwordHash: '' };
+      (userRepository.findOne as jest.Mock).mockResolvedValue(googleUser);
+
+      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('loginWithGoogle', () => {
+    const idToken = 'fake-google-id-token';
+    const originalClientId = process.env.GOOGLE_CLIENT_ID;
+
+    const mockVerified = (payload: any) =>
+      (jest.spyOn(OAuth2Client.prototype, 'verifyIdToken') as unknown as jest.Mock).mockResolvedValue({
+        getPayload: () => payload,
+      });
+
+    beforeEach(() => {
+      process.env.GOOGLE_CLIENT_ID = 'test-google-client-id';
+    });
+
+    afterEach(() => {
+      if (originalClientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = originalClientId;
+    });
+
+    it('should provision a new verified bidder on first Google sign-in', async () => {
+      mockVerified({ email: 'google@example.com', email_verified: true, name: 'Google User', sub: 'g-sub-1' });
+      (userRepository.findOne as jest.Mock).mockResolvedValue(null);
+      (userRepository.create as jest.Mock).mockImplementation((x) => ({ id: 'u-g', ...x }));
+      (userRepository.save as jest.Mock).mockImplementation(async (x) => x);
+
+      const result = await service.loginWithGoogle(idToken);
+
+      expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+        email: 'google@example.com',
+        passwordHash: '',
+        role: UserRole.BIDDER,
+        isEmailVerified: true,
+      }));
+      expect(result.token).toBe('mock-jwt-token');
+      expect((result.user as any).passwordHash).toBeUndefined();
+    });
+
+    it('should sign in an existing user by verified email and mark it verified', async () => {
+      mockVerified({ email: 'google@example.com', email_verified: true, name: 'Google User', sub: 'g-sub-1' });
+      const existing = { ...mockUser, email: 'google@example.com', isEmailVerified: false };
+      (userRepository.findOne as jest.Mock).mockResolvedValue(existing);
+      (userRepository.save as jest.Mock).mockImplementation(async (x) => x);
+
+      const result = await service.loginWithGoogle(idToken);
+
+      expect(existing.isEmailVerified).toBe(true);
+      expect(result.user).toBeDefined();
+      expect(result.token).toBe('mock-jwt-token');
+    });
+
+    it('should reject when GOOGLE_CLIENT_ID is not configured', async () => {
+      delete process.env.GOOGLE_CLIENT_ID;
+      await expect(service.loginWithGoogle(idToken)).rejects.toThrow(UnauthorizedException);
+      expect(userRepository.findOne).not.toHaveBeenCalled();
+    });
+
+    it('should reject an invalid ID token', async () => {
+      (jest.spyOn(OAuth2Client.prototype, 'verifyIdToken') as unknown as jest.Mock).mockRejectedValue(new Error('invalid token'));
+      await expect(service.loginWithGoogle(idToken)).rejects.toThrow(UnauthorizedException);
+      expect(userRepository.findOne).not.toHaveBeenCalled();
+    });
+
+    it('should reject a token without a verified email', async () => {
+      mockVerified({ email: 'google@example.com', email_verified: false, sub: 'g-sub-1' });
+      await expect(service.loginWithGoogle(idToken)).rejects.toThrow(UnauthorizedException);
+      expect(userRepository.findOne).not.toHaveBeenCalled();
     });
   });
 

@@ -33,8 +33,11 @@ export class OauthGoogleDto {
   @IsString()
   idToken: string;
 
+  // The Google access token is not needed for ID-token verification; accepted
+  // for compatibility with the Auth.js Google provider payload.
+  @IsOptional()
   @IsString()
-  accessToken: string;
+  accessToken?: string;
 }
 
 export class ForgotPasswordDto {
