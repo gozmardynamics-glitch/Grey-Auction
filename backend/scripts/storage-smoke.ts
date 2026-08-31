@@ -52,7 +52,6 @@ async function main(): Promise<void> {
   console.log("→ S3 endpoint: " + cfg.endpoint + " bucket: " + cfg.bucket);
 
   const s3 = new S3StorageDriver(cfg);
-  s3.onModuleInit();
   const optimizer = new ImageOptimizerService();
   const s3Store = new StorageService(s3, optimizer);
 
@@ -117,7 +116,6 @@ async function main(): Promise<void> {
   // keyFromUrl round trips.
   check("keyFromUrl (path-style)", s3.keyFromUrl(cfg.endpoint + "/" + cfg.bucket + "/a/b/c.webp") === "a/b/c.webp", s3.keyFromUrl(cfg.endpoint + "/" + cfg.bucket + "/a/b/c.webp"));
   check("keyFromUrl (deep key)", s3.keyFromUrl("http://localhost:9010/greyauction-test/x/y/z.webp") === "x/y/z.webp");
-  s3.onModuleDestroy();
 
   // ── Local disk round trip (fallback driver) ──────────────────
   const tmp = mkdtempSync(join(tmpdir(), "ga-storage-"));

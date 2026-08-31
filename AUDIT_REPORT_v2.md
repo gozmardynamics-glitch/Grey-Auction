@@ -421,3 +421,42 @@ green, tsc --noEmit clean.
 
 **Note (non-issue):** deleteFile attempts variant keys for documents too —
 intentional idempotent no-ops (S3 DeleteObject succeeds on absent keys).
+---
+
+## 15. Money-Path Integration Suite (P2)
+
+**Status: [x] DONE** — 8/8 integration tests against real Postgres
+greyauction_itest (provisioned by backend/scripts/itest-db-setup.ts,
+migrations-only schema: Baseline + AddOrders applied cleanly on a fresh DB).
+
+| Flow step | Result |
+|---|---|
+| Register + login seller & buyer (HTTP) | PASS |
+| Create listing → approve → ACTIVE | PASS |
+| Buyer places winning bid (HTTP) | PASS |
+| End auction → settlement issues invoice + marks SOLD | PASS |
+| Payment init (offline, unconfigured provider) | PASS |
+| HMAC-signed Paystack webhook → invoice paid + order created atomically | PASS |
+| Webhook replay → idempotent (no duplicate order) | PASS |
+| Wallet deposit ledger + duplicate reference idempotency | PASS |
+
+**Bugs found & fixed (P2):**
+- [x] **P2-1 StorageService DI wiring broke app boot** — CommonModule imported
+  StorageModule.forRoot() (DynamicModule) but re-exported the bare module
+  class, so SellerModule could not resolve StorageService. Nest also rejects
+  re-exporting a provider class from an imported module in this setup.
+  Fixed: StorageModule is static again with a useFactory STORAGE_DRIVER
+  provider (env-read at DI time), S3 client is lazy, and modules import
+  StorageModule directly. Verified: real dev app boots, GET /api/health 200.
+- [x] **P2-2 DB_SYNCHRONIZE=false could not disable synchronize in dev/test**
+  (synchronize: bootstrapSync || !isProduction). Fixed: explicit opt-out so
+  integration tests run migrations-only (strict schema).
+
+**Run:**
+```
+cd backend
+$env:DB_DATABASE="greyauction_itest"; npx ts-node scripts/itest-db-setup.ts
+$env:DB_DATABASE="greyauction_itest"; $env:DB_SYNCHRONIZE="false"; $env:NODE_ENV="test"; npx jest --config jest-integration.json --forceExit
+```
+
+**Totals:** 252 unit + 8 integration + 5 E2E tests green; tsc clean.

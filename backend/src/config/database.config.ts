@@ -19,7 +19,9 @@ export const dataSourceOptions: DataSourceOptions = {
   database: process.env.DB_DATABASE || 'greyauction',
   entities: [resolve(__dirname, '..', '**', '*.entity.{ts,js}')],
   migrations: [resolve(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
-  synchronize: bootstrapSync || !isProduction,
+  // synchronize: true in dev/test unless explicitly disabled, and only when
+  // the production one-time bootstrap flag is set.
+  synchronize: isProduction ? bootstrapSync : process.env.DB_SYNCHRONIZE !== 'false',
   migrationsRun: isProduction && !bootstrapSync,
   logging: process.env.NODE_ENV === 'development',
   extra: {

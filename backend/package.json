@@ -20,7 +20,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:ci": "jest --coverage --ci --forceExit",
-    "test:e2e": "jest --config jest-e2e.json --forceExit"
+    "test:e2e": "jest --config jest-e2e.json --forceExit",
+    "itest:db": "ts-node -r tsconfig-paths/register scripts/itest-db-setup.ts",
+    "itest": "jest --config jest-integration.json --forceExit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",

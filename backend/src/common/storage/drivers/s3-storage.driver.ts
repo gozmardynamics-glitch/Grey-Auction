@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { StorageDriver, StoredObject } from '../storage-driver.interface';
 
@@ -20,7 +20,7 @@ export interface S3DriverConfig {
  * backends later is a pure config change — no code changes.
  */
 @Injectable()
-export class S3StorageDriver implements StorageDriver, OnModuleInit, OnModuleDestroy {
+export class S3StorageDriver implements StorageDriver {
   private readonly logger = new Logger(S3StorageDriver.name);
   private client: S3Client;
   private readonly cfg: S3DriverConfig;
@@ -29,27 +29,27 @@ export class S3StorageDriver implements StorageDriver, OnModuleInit, OnModuleDes
     this.cfg = cfg;
   }
 
-  onModuleInit(): void {
-    this.client = new S3Client({
-      endpoint: this.cfg.endpoint,
-      region: this.cfg.region,
-      credentials: {
-        accessKeyId: this.cfg.accessKeyId,
-        secretAccessKey: this.cfg.secretAccessKey,
-      },
-      forcePathStyle: this.cfg.forcePathStyle ?? true,
-    });
-    this.logger.log(
-      'S3 storage driver ready (bucket=' + this.cfg.bucket + ', endpoint=' + (this.cfg.endpoint || 'AWS default') + ')',
-    );
-  }
-
-  onModuleDestroy(): void {
-    this.client?.destroy();
+  /** Lazily create the S3 client (works regardless of DI lifecycle hooks). */
+  private getClient(): S3Client {
+    if (!this.client) {
+      this.client = new S3Client({
+        endpoint: this.cfg.endpoint,
+        region: this.cfg.region,
+        credentials: {
+          accessKeyId: this.cfg.accessKeyId,
+          secretAccessKey: this.cfg.secretAccessKey,
+        },
+        forcePathStyle: this.cfg.forcePathStyle ?? true,
+      });
+      this.logger.log(
+        'S3 storage driver ready (bucket=' + this.cfg.bucket + ', endpoint=' + (this.cfg.endpoint || 'AWS default') + ')',
+      );
+    }
+    return this.client;
   }
 
   async put(key: string, buffer: Buffer, contentType: string): Promise<StoredObject> {
-    await this.client.send(
+    await this.getClient().send(
       new PutObjectCommand({
         Bucket: this.cfg.bucket,
         Key: key,
@@ -61,7 +61,7 @@ export class S3StorageDriver implements StorageDriver, OnModuleInit, OnModuleDes
   }
 
   async delete(key: string): Promise<void> {
-    await this.client.send(
+    await this.getClient().send(
       new DeleteObjectCommand({ Bucket: this.cfg.bucket, Key: key }),
     );
   }
