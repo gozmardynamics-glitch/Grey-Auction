@@ -10,7 +10,8 @@ import {
   StreamableFile,
   ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { InvoiceApiResponseDto, InvoiceListApiResponseDto } from './dto/invoice-response.dto';
 import type { Response } from 'express';
 import {
   InvoiceService,
@@ -38,6 +39,7 @@ export class InvoiceController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List invoices (own; admin can filter by buyer/seller)' })
+  @ApiResponse({ status: 200, description: 'Invoices', type: InvoiceListApiResponseDto })
   async findAll(
     @Query('buyerId') buyerId?: string,
     @Query('sellerId') sellerId?: string,
@@ -76,6 +78,7 @@ export class InvoiceController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get invoice detail (party or admin)' })
+  @ApiResponse({ status: 200, description: 'Invoice', type: InvoiceApiResponseDto })
   async findById(@Param('id') id: string, @CurrentUser() user: any) {
     const data = await this.requirePartyOrAdmin(id, user);
     return { success: true, data };

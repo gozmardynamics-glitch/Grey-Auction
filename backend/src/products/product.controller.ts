@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
+import { ProductApiResponseDto } from './dto/product-response.dto';
 import { ProductService } from './product.service';
 import { csvToObjects, parseCsv } from './csv-parser';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
@@ -23,6 +24,7 @@ export class ProductController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new product listing' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Product created', type: ProductApiResponseDto })
   async create(@Body() dto: CreateProductDto, @CurrentUser() user: any) {
     const product = await this.productService.create(dto, user.id);
     return { success: true, message: 'Product created', data: product };
@@ -81,6 +83,7 @@ export class ProductController {
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID or slug' })
   @ApiParam({ name: 'id' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Product found', type: ProductApiResponseDto })
   async findOne(@Param('id') id: string) {
     const product = await this.productService.findByIdOrSlug(id);
     return { success: true, data: product };

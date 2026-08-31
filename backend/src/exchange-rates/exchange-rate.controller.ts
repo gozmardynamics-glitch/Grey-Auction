@@ -1,5 +1,6 @@
 import { Controller, Get, Patch, Post, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ExchangeRatesApiResponseDto } from './dto/exchange-rate-response.dto';
 import { ExchangeRateService } from './exchange-rate.service';
 import { UpsertExchangeRateDto } from './dto/exchange-rate.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,6 +15,7 @@ export class ExchangeRateController {
 
   @Get()
   @ApiOperation({ summary: 'Public exchange rates (NGN base)' })
+  @ApiResponse({ status: 200, description: 'Rates', type: ExchangeRatesApiResponseDto })
   async rates() {
     const data = await this.service.getRates();
     return { success: true, data };

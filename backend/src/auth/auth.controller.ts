@@ -1,6 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthApiResponseDto } from './dto/auth-response.dto';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, OauthGoogleDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -13,7 +14,7 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered', type: AuthApiResponseDto })
   async register(@Body() dto: RegisterDto) {
     const result = await this.authService.register(dto);
     return { success: true, message: 'Registration successful', data: result };
@@ -22,7 +23,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email and password' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Login successful' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Login successful', type: AuthApiResponseDto })
   async login(@Body() dto: LoginDto) {
     const result = await this.authService.login(dto);
     return { success: true, message: 'Login successful', data: result };

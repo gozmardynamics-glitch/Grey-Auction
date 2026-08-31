@@ -474,3 +474,23 @@ $env:DB_DATABASE="greyauction_itest"; $env:DB_SYNCHRONIZE="false"; $env:NODE_ENV
 **Remaining backend findings (need user decision — U1):** all require the
 NestJS major upgrade (@nestjs/* 10 → 11/12, @nestjs/cli 12, uuid 11,
 picomatch/tmp/webpack via CLI). Listed in §0 blocked section.
+---
+
+## 17. API Contract Enrichment (P4)
+
+**Status: [x] DONE** — typed response contracts generated for the frontend.
+
+- Added 19 response/envelope DTOs (@ApiProperty-typed) for auth, products,
+  bids, invoices, orders, wallet, exchange rates.
+- Annotated the main controllers with @ApiResponse({ type }) so the OpenAPI
+  JSON (/api/docs-json) exposes real response schemas.
+- Generated frontend/lib/api-types.ts (221KB) from the live spec via
+  `npm run generate:api` (openapi-typescript 7.13).
+- Verified: all 19 schemas present in docs-json; frontend tsc clean with
+  the generated file.
+
+**Bugs found & fixed (P4):**
+- [x] **P4-1 Stale backend process held port 3001 (EADDRINUSE)** — a leftover
+  dev server from a previous boot test was still listening, so Swagger
+  served stale schemas. Killed and re-booted; note added for future runs
+  (always verify the docs-json you generate against matches HEAD).

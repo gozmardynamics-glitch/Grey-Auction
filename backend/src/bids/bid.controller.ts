@@ -3,6 +3,7 @@ import {
   UseGuards, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { BidApiResponseDto } from './dto/bid-response.dto';
 import { BidService } from './bid.service';
 import { PlaceBidDto } from './dto/bid.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,6 +19,7 @@ export class BidController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Place a bid on an auction' })
   @ApiParam({ name: 'auctionId' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Bid placed', type: BidApiResponseDto })
   async placeBid(
     @Param('auctionId') auctionId: string,
     @Body() dto: PlaceBidDto,

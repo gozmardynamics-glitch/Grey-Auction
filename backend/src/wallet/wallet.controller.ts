@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { WalletApiResponseDto, WalletTransactionsApiResponseDto, DepositApiResponseDto } from './dto/wallet-response.dto';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -13,18 +14,21 @@ export class WalletController {
 
   @Get()
   @ApiOperation({ summary: 'Get the current user wallet' })
+  @ApiResponse({ status: 200, description: 'Wallet', type: WalletApiResponseDto })
   async getWallet(@CurrentUser() user: any) {
     return { success: true, data: await this.walletService.getWallet(user.id) };
   }
 
   @Get('transactions')
   @ApiOperation({ summary: 'Get wallet transactions' })
+  @ApiResponse({ status: 200, description: 'Transactions', type: WalletTransactionsApiResponseDto })
   async getTransactions(@CurrentUser() user: any) {
     return { success: true, data: await this.walletService.getTransactions(user.id) };
   }
 
   @Post('deposit')
   @ApiOperation({ summary: 'Deposit funds (mock settlement)' })
+  @ApiResponse({ status: 201, description: 'Deposit result', type: DepositApiResponseDto })
   async deposit(@CurrentUser() user: any, @Body() dto: { amount: number; reference?: string }) {
     return { success: true, data: await this.walletService.deposit(user.id, dto) };
   }
