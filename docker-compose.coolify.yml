@@ -77,7 +77,8 @@ services:
       dockerfile: Dockerfile.backend
     restart: unless-stopped
     env_file:
-      - .env
+      - path: ./backend/.env
+        required: false
     environment:
       NODE_ENV: production
       PORT: 3001

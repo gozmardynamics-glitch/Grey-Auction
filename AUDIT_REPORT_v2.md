@@ -494,3 +494,21 @@ picomatch/tmp/webpack via CLI). Listed in §0 blocked section.
   dev server from a previous boot test was still listening, so Swagger
   served stale schemas. Killed and re-booted; note added for future runs
   (always verify the docs-json you generate against matches HEAD).
+---
+
+## 18. Operations Documentation (P5)
+
+**Status: [x] DONE** — docs/OPERATIONS.md created; every referenced
+command/path/env var verified against the live repo.
+
+- Covers: storage architecture + driver env matrix, silent R2 switch,
+  storage smoke test, full testing matrix (unit/E2E/integration/contract/
+  load), Coolify deploy steps, health & observability.
+- Verification pass: docker compose config exits 0; all 6 referenced paths
+  exist; all 9 referenced npm scripts exist; env var names match code.
+
+**Bugs found & fixed (P5):**
+- [x] **P5-1 docker-compose.coolify.yml referenced a root .env that does not
+  exist** — compose validation failed (env file not found). Fixed: env_file
+  points to ./backend/.env with required: false (Coolify users manage env
+  in the UI). Docs updated to copy backend/.env.example → backend/.env.
