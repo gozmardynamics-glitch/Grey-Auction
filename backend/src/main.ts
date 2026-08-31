@@ -9,12 +9,12 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    rawBody: true, // Required for Clerk webhook signature verification
+    rawBody: true, // Required for webhook signature verification (payment gateways)
   });
 
   app.use(helmet());
   app.use(compression());
-  // Capture the raw body for Clerk webhook signature verification
+  // Capture the raw body for webhook signature verification (Paystack, Flutterwave, etc.)
   app.use(
     json({
       limit: '5mb',

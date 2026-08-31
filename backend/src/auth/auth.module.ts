@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { ClerkService } from './clerk.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailModule } from '../common/email/email.module';
 
@@ -28,7 +27,7 @@ const effectiveJwtSecret = jwtSecret || 'dev-secret';
     EmailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, ClerkService, JwtStrategy],
-  exports: [AuthService, ClerkService, JwtModule, PassportModule],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

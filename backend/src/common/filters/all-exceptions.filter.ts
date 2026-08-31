@@ -13,6 +13,9 @@ import type { Request, Response } from 'express';
  * Global exception filter (M1). Shapes every error into a consistent JSON
  * envelope with a request id, logs full details server-side, and never leaks
  * raw DB/stack information to clients.
+ *
+ * Reuses the X-Request-Id set by RequestIdMiddleware when present; falls back
+ * to generating a new UUID (should never happen if middleware is registered).
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -23,7 +26,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const res = ctx.getResponse<Response>();
     const req = ctx.getRequest<Request>();
     const requestId =
-      (req.headers['x-request-id'] as string) || randomUUID();
+      (req as any).requestId ||
+      (req.headers['x-request-id'] as string) ||
+      randomUUID();
 
     let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';

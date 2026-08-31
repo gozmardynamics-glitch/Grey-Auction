@@ -33,8 +33,9 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  /** Legacy external auth link (nullable, unused — kept for migration compatibility). */
   @Column({ nullable: true })
-  clerkId: string; // Clerk user ID (null for legacy local accounts)
+  clerkId: string;
 
   // OTP email-verification state (persisted so verifyOtp can match).
   @Column({ type: 'varchar', length: 6, nullable: true })
