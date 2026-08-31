@@ -24,6 +24,11 @@ export interface StorageDriver {
   delete(key: string): Promise<void>;
   /** Build a public URL for a key (used when constructing variant URLs). */
   getUrl(key: string): string;
+  /**
+   * Extract the object key from a URL produced by getUrl(). Used by delete
+   * so callers can pass back the exact URL they were given.
+   */
+  keyFromUrl(url: string): string;
 }
 
 /** DI token for the active StorageDriver (interface can't be a value token). */

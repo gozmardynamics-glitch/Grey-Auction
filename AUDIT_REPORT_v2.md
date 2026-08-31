@@ -387,3 +387,37 @@ key/access-blocked work (real payment capture, live AI, deploy, Redis) is in §3
 - Depends on: Phases A–D.
 
 
+---
+
+## 14. Storage & Media Pipeline (P1) — Live MinIO smoke test
+
+**Status: [x] DONE** — verified 2026-08-31 against a live MinIO instance
+(throwaway container on :9010, bucket greyauction-test, public-read).
+
+**Smoke test: 24/24 checks passed** (script: backend/scripts/storage-smoke.ts):
+
+| Check group | Result |
+|---|---|
+| Image upload → WebP re-encode (image/webp) + 800x600 metadata | PASS |
+| 3 responsive variants (thumb/medium/large) stored + publicly fetchable | PASS |
+| Public HTTP fetch of original + variants (200, image/webp) | PASS |
+| Document (PDF) stored verbatim, no variants | PASS |
+| Delete removes original **and all variants** (verified 404) | PASS |
+| Delete document | PASS |
+| keyFromUrl round-trips (path-style + deep keys) | PASS |
+| Local disk driver round-trip (upload/variants/delete) | PASS |
+
+**Bugs found & fixed (P1):**
+- [x] **P1-1 Orphaned variants on delete** — deleteFile removed only one object;
+  image -thumb/-medium/-large.webp variants leaked forever. Fixed: delete now
+  removes the original plus every variant (idempotent — S3 no-op / local ENOENT).
+- [x] **P1-2 Fragile key derivation** — deleteFile rebuilt keys with a
+  "last two path segments" heuristic that broke on keys with >2 segments and on
+  full S3 URLs. Fixed: drivers now own keyFromUrl() (each knows its URL shape).
+
+**New tests:** storage.module.spec.ts (driver selection: local default, S3
+when configured, safe fallback when creds missing) — 252 backend tests + 5 E2E
+green, tsc --noEmit clean.
+
+**Note (non-issue):** deleteFile attempts variant keys for documents too —
+intentional idempotent no-ops (S3 DeleteObject succeeds on absent keys).

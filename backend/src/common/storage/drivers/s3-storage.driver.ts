@@ -77,4 +77,22 @@ export class S3StorageDriver implements StorageDriver, OnModuleInit, OnModuleDes
     }
     return 'https://' + host + '/' + this.cfg.bucket + '/' + key;
   }
+
+  keyFromUrl(url: string): string {
+    const withoutQuery = url.split('?')[0];
+    // publicHost form: https://<host>/<key>
+    if (this.cfg.publicHost) {
+      const prefix = 'https://' + this.cfg.publicHost + '/';
+      if (withoutQuery.startsWith(prefix)) return withoutQuery.slice(prefix.length);
+    }
+    // Path-style and virtual-host forms both carry the bucket as the first
+    // path segment: strip scheme + host, then the bucket prefix.
+    let rest = withoutQuery.replace(/^https?:\/\//, '');
+    const slash = rest.indexOf('/');
+    if (slash >= 0) rest = rest.slice(slash + 1);
+    if (rest.startsWith(this.cfg.bucket + '/')) {
+      rest = rest.slice(this.cfg.bucket.length + 1);
+    }
+    return rest;
+  }
 }

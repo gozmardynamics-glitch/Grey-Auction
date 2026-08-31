@@ -43,4 +43,11 @@ export class LocalStorageDriver implements StorageDriver {
   getUrl(key: string): string {
     return '/uploads/' + key.replace(/\\/g, '/');
   }
+
+  keyFromUrl(url: string): string {
+    return url
+      .replace(/^\/uploads\//, '')
+      .split('?')[0]
+      .replace(/^\/+/, '');
+  }
 }

@@ -13,6 +13,9 @@ describe('StorageService', () => {
     })),
     delete: jest.fn().mockResolvedValue(undefined),
     getUrl: jest.fn().mockImplementation((key: string) => '/uploads/' + key),
+    keyFromUrl: jest.fn().mockImplementation((url: string) =>
+      url.replace(/^\/uploads\//, '').split('?')[0].replace(/^\/+/, ''),
+    ),
   };
 
   const mockOptimizer = {
@@ -114,13 +117,31 @@ describe('StorageService', () => {
   });
 
   describe('deleteFile', () => {
-    it('delegates delete to the driver', async () => {
+    it('deletes the original plus all image variants', async () => {
       await service.deleteFile('images/abc.webp');
-      expect(mockDriver.delete).toHaveBeenCalled();
+      const deletedKeys = (mockDriver.delete as jest.Mock).mock.calls.map((c: any[]) => c[0]);
+      expect(deletedKeys).toContain('images/abc.webp');
+      expect(deletedKeys).toContain('images/abc-thumb.webp');
+      expect(deletedKeys).toContain('images/abc-medium.webp');
+      expect(deletedKeys).toContain('images/abc-large.webp');
+    });
+
+    it('accepts a full URL and maps it back to a key', async () => {
+      await service.deleteFile('/uploads/images/abc.webp');
+      const deletedKeys = (mockDriver.delete as jest.Mock).mock.calls.map((c: any[]) => c[0]);
+      expect(deletedKeys).toContain('images/abc.webp');
+    });
+
+    it('deletes documents (variant attempts are harmless no-ops)', async () => {
+      await service.deleteFile('documents/kyc.pdf');
+      const deletedKeys = (mockDriver.delete as jest.Mock).mock.calls.map((c: any[]) => c[0]);
+      // The document itself must always be deleted; attempts at absent image
+      // variant keys are intentional and idempotent (S3 no-op / local ENOENT).
+      expect(deletedKeys).toContain('documents/kyc.pdf');
     });
 
     it('swallows deletion errors gracefully', async () => {
-      (mockDriver.delete as jest.Mock).mockRejectedValueOnce(new Error('gone'));
+      (mockDriver.delete as jest.Mock).mockRejectedValue(new Error('gone'));
       await expect(service.deleteFile('images/abc.webp')).resolves.toBeUndefined();
     });
   });

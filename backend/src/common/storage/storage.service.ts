@@ -111,17 +111,28 @@ export class StorageService {
     return this.driver.getUrl(relativePath.replace(/^\/uploads\//, ''));
   }
 
+  /**
+   * Delete a stored object by key or URL, including all image variants.
+   * Deleting is idempotent: missing objects are silently ignored.
+   */
   async deleteFile(relativeOrUrl: string): Promise<void> {
     if (!relativeOrUrl) return;
-    // Accept either a key ("images/abc.webp") or a full URL ("/uploads/images/abc.webp").
-    const key = relativeOrUrl
-      .replace(/^\/uploads\//, '')
-      .split('?')[0]
-      .split('/').slice(-2).join('/');
-    try {
-      await this.driver.delete(key);
-    } catch (e: any) {
-      this.logger.error('Failed to delete file ' + key + ': ' + (e?.message || e));
+    const key = this.driver.keyFromUrl(relativeOrUrl);
+    // Strip any extension to derive the base key, then remove the original
+    // plus every responsive variant (S3 deletes of absent keys are no-ops;
+    // the local driver swallows ENOENT).
+    const base = key.replace(/\.(webp|jpg|jpeg|png|gif|pdf|doc|docx|bin)$/i, '');
+    const candidates = new Set<string>([
+      key,
+      base + '.webp',
+      ...DEFAULT_IMAGE_VARIANTS.map((v) => base + '-' + v.name + '.webp'),
+    ]);
+    for (const candidate of candidates) {
+      try {
+        await this.driver.delete(candidate);
+      } catch (e: any) {
+        this.logger.error('Failed to delete file ' + candidate + ': ' + (e?.message || e));
+      }
     }
   }
 }
