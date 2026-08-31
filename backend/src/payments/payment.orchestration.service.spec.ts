@@ -1,26 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
 import { PaymentOrchestrationService } from './payment.orchestration.service';
 import { PaymentService } from './payment.service';
 import { InvoiceService } from '../invoices/invoice.service';
 import { WalletService } from '../wallet/wallet.service';
+import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.entity';
 
 describe('PaymentOrchestrationService', () => {
   let service: PaymentOrchestrationService;
   const paymentService = { create: jest.fn(), findByReference: jest.fn(), updateStatus: jest.fn(), listByUser: jest.fn() };
-  const invoiceService = { markPaid: jest.fn() };
-  const walletService = { deposit: jest.fn() };
+  const invoiceService = { markPaidInManager: jest.fn() };
+  const walletService = { creditInManager: jest.fn() };
+  const paymentRepo = { findOne: jest.fn(), save: jest.fn() };
+  const manager = { getRepository: jest.fn(() => paymentRepo) };
+  const dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
   const rawKey = process.env.PAYSTACK_SECRET_KEY;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     process.env.PAYSTACK_SECRET_KEY = 'test_key';
+    (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => cb(manager));
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentOrchestrationService,
         { provide: PaymentService, useValue: paymentService },
         { provide: InvoiceService, useValue: invoiceService },
         { provide: WalletService, useValue: walletService },
+        { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
     service = module.get<PaymentOrchestrationService>(PaymentOrchestrationService);
@@ -44,51 +51,62 @@ describe('PaymentOrchestrationService', () => {
       JSON.stringify({ event: 'charge.success', data: { reference: 'REF' } }),
     );
     expect(res.success).toBe(false);
-    expect(invoiceService.markPaid).not.toHaveBeenCalled();
-    expect(walletService.deposit).not.toHaveBeenCalled();
+    expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
+    expect(walletService.creditInManager).not.toHaveBeenCalled();
   });
 
-  it('marks an invoice paid on a valid succeeded invoice webhook', async () => {
+  it('marks an invoice paid and flips the payment atomically on a valid succeeded webhook', async () => {
     const { payload, headers, raw } = makeHook('REF', 'success');
-    (paymentService.findByReference as jest.Mock).mockResolvedValue({
+    const payment = {
       id: 'p1', type: PaymentType.INVOICE, invoiceId: 'inv1',
-      provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.PENDING,
-    });
-    (invoiceService.markPaid as jest.Mock).mockResolvedValue({ id: 'inv1' });
-    (paymentService.updateStatus as jest.Mock).mockImplementation(async (_id, s, extra) => ({ id: 'p1', status: s, ...extra }));
+      provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.PENDING, providerReference: null,
+    };
+    (paymentService.findByReference as jest.Mock).mockResolvedValue(payment);
+    (paymentRepo.findOne as jest.Mock).mockResolvedValue(payment);
+    (paymentRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
+    (invoiceService.markPaidInManager as jest.Mock).mockResolvedValue({ id: 'inv1' });
 
     const res = await service.handleWebhook(PaymentProvider.PAYSTACK, payload, headers, raw);
 
     expect(res.success).toBe(true);
-    expect(invoiceService.markPaid).toHaveBeenCalledWith('inv1', expect.objectContaining({ paymentReference: 'REF' }));
-    expect(paymentService.updateStatus).toHaveBeenCalledWith('p1', PaymentStatus.SUCCEEDED, expect.any(Object));
+    expect(res.payment.status).toBe(PaymentStatus.SUCCEEDED);
+    expect(invoiceService.markPaidInManager).toHaveBeenCalledWith(
+      manager, 'inv1', expect.objectContaining({ paymentReference: 'REF', paymentMethod: PaymentProvider.PAYSTACK }),
+    );
   });
 
   it('credits the wallet on a valid succeeded deposit webhook', async () => {
     const { payload, headers, raw } = makeHook('DEP', 'success');
-    (paymentService.findByReference as jest.Mock).mockResolvedValue({
+    const payment = {
       id: 'p2', type: PaymentType.DEPOSIT, userId: 'u1', amount: 5000,
-      provider: PaymentProvider.PAYSTACK, reference: 'DEP', status: PaymentStatus.PENDING,
-    });
-    (walletService.deposit as jest.Mock).mockResolvedValue({ balance: 5000 });
-    (paymentService.updateStatus as jest.Mock).mockImplementation(async (_id, s, extra) => ({ id: 'p2', status: s, ...extra }));
+      provider: PaymentProvider.PAYSTACK, reference: 'DEP', status: PaymentStatus.PENDING, providerReference: null,
+    };
+    (paymentService.findByReference as jest.Mock).mockResolvedValue(payment);
+    (paymentRepo.findOne as jest.Mock).mockResolvedValue(payment);
+    (paymentRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
+    (walletService.creditInManager as jest.Mock).mockResolvedValue({ balance: 5000 });
 
     const res = await service.handleWebhook(PaymentProvider.PAYSTACK, payload, headers, raw);
 
     expect(res.success).toBe(true);
-    expect(walletService.deposit).toHaveBeenCalledWith('u1', expect.objectContaining({ amount: 5000, reference: 'DEP' }));
+    expect(res.payment.status).toBe(PaymentStatus.SUCCEEDED);
+    expect(walletService.creditInManager).toHaveBeenCalledWith(
+      manager, 'u1', expect.objectContaining({ amount: 5000, reference: 'DEP', type: WalletTransactionType.DEPOSIT }),
+    );
   });
 
   it('does not double-apply when a payment is already succeeded', async () => {
     const { payload, headers, raw } = makeHook('REF', 'success');
-    (paymentService.findByReference as jest.Mock).mockResolvedValue({
+    const payment = {
       id: 'p1', type: PaymentType.INVOICE, invoiceId: 'inv1',
-      provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.SUCCEEDED,
-    });
+      provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.SUCCEEDED, providerReference: null,
+    };
+    (paymentService.findByReference as jest.Mock).mockResolvedValue(payment);
+    (paymentRepo.findOne as jest.Mock).mockResolvedValue(payment);
 
     const res = await service.handleWebhook(PaymentProvider.PAYSTACK, payload, headers, raw);
 
     expect(res.success).toBe(true);
-    expect(invoiceService.markPaid).not.toHaveBeenCalled();
+    expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
   });
 });

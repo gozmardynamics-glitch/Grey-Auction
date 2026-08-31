@@ -1,16 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InvoiceSettlementService } from './invoice-settlement.service';
-import { InvoiceService } from './invoice.service';
 
 @Injectable()
 export class InvoiceCronService implements OnModuleInit {
   private readonly logger = new Logger(InvoiceCronService.name);
 
-  constructor(
-    private readonly settlement: InvoiceSettlementService,
-    private readonly invoiceService: InvoiceService,
-  ) {}
+  constructor(private readonly settlement: InvoiceSettlementService) {}
 
   onModuleInit(): void {
     this.logger.log('Invoice cron service initialized — auctions settle every 5 minutes');
@@ -23,35 +19,24 @@ export class InvoiceCronService implements OnModuleInit {
   async settleEndedAuctions(): Promise<void> {
     this.logger.log('Running auction settlement cron…');
     try {
-      const result = await this.settlement.findEndedAuctionsToSettle(
-        async (data) => {
-          await this.invoiceService.generateInvoice(data);
-        },
-      );
+      const result = await this.settlement.settleEndedAuctions();
 
       this.logger.log(
-        `Settlement complete: ${result.settled} invoiced, ${result.skipped} closed without bids, ${result.errors} errors`,
+        'Settlement complete: ' + result.settled + ' invoiced, ' + result.skipped + ' closed/skipped, ' + result.errors + ' errors',
       );
 
       for (const detail of result.details) {
-        this.logger.log(`  ${detail}`);
+        this.logger.log('  ' + detail);
       }
     } catch (error: any) {
-      this.logger.error(`Settlement cron failed: ${error.message}`);
+      this.logger.error('Settlement cron failed: ' + error.message);
     }
   }
 
   /**
    * Manual trigger endpoint helper — run settlement on demand.
    */
-  async runNow(): Promise<{
-    settled: number;
-    skipped: number;
-    errors: number;
-    details: string[];
-  }> {
-    return this.settlement.findEndedAuctionsToSettle(async (data) => {
-      await this.invoiceService.generateInvoice(data);
-    });
+  async runNow() {
+    return this.settlement.settleEndedAuctions();
   }
 }

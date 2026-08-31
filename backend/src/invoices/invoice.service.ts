@@ -4,8 +4,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from './invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
@@ -44,10 +44,29 @@ export class InvoiceService {
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
     private readonly emailService: EmailService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async generateInvoice(data: GenerateInvoiceDto): Promise<Invoice> {
-    const count = await this.repo.count();
+    const saved = await this.dataSource.transaction((manager) =>
+      this.createInvoice(manager, data),
+    );
+
+    await this.notifyBuyer(saved).catch((error) => {
+      this.logger.warn(`Failed to email invoice ${saved.invoice_number}: ${error.message}`);
+    });
+
+    return saved;
+  }
+
+  /**
+   * Create an invoice within a caller-supplied transaction (used by the
+   * settlement cron so invoice + lot-SOLD commit atomically).
+   */
+  async createInvoice(manager: EntityManager, data: GenerateInvoiceDto): Promise<Invoice> {
+    const repo = manager.getRepository(Invoice);
+    const count = await repo.count();
     const next = count + 1;
     const year = new Date().getFullYear();
     const invoiceNumber = `INV-${year}-${String(next).padStart(6, '0')}`;
@@ -58,7 +77,7 @@ export class InvoiceService {
       Number(data.vat) +
       Number(data.fixedFee);
 
-    const invoice = this.repo.create({
+    const invoice = repo.create({
       invoice_number: invoiceNumber,
       auction_id: data.auctionId,
       product_id: data.productId,
@@ -73,13 +92,7 @@ export class InvoiceService {
       issued_at: new Date(),
     });
 
-    const saved = await this.repo.save(invoice);
-
-    await this.notifyBuyer(saved).catch((error) => {
-      this.logger.warn(`Failed to email invoice ${invoiceNumber}: ${error.message}`);
-    });
-
-    return saved;
+    return repo.save(invoice);
   }
 
   private async notifyBuyer(invoice: Invoice): Promise<void> {
@@ -124,20 +137,9 @@ export class InvoiceService {
   }
 
   async markPaid(id: string, dto: MarkPaidDto = {}): Promise<Invoice> {
-    const invoice = await this.findById(id);
-    if (invoice.status === InvoiceStatus.PAID) {
-      throw new BadRequestException('Invoice is already paid');
-    }
-    if (invoice.status === InvoiceStatus.CANCELLED) {
-      throw new BadRequestException('Cannot pay a cancelled invoice');
-    }
-
-    invoice.status = InvoiceStatus.PAID;
-    invoice.paid_at = new Date();
-    invoice.payment_method = dto.paymentMethod || null;
-    invoice.payment_reference = dto.paymentReference || null;
-
-    const saved = await this.repo.save(invoice);
+    const saved = await this.dataSource.transaction((manager) =>
+      this.markPaidInManager(manager, id, dto),
+    );
 
     const buyer = await this.userRepo.findOne({
       where: { id: saved.buyer_id },
@@ -155,6 +157,38 @@ export class InvoiceService {
     }
 
     return saved;
+  }
+
+  /**
+   * Mark an invoice paid within a caller-supplied transaction, taking a
+   * pessimistic lock so a webhook replay can never double-pay an invoice.
+   */
+  async markPaidInManager(
+    manager: EntityManager,
+    id: string,
+    dto: MarkPaidDto = {},
+  ): Promise<Invoice> {
+    const repo = manager.getRepository(Invoice);
+    const invoice = await repo.findOne({
+      where: { id },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+    if (invoice.status === InvoiceStatus.PAID) {
+      throw new BadRequestException('Invoice is already paid');
+    }
+    if (invoice.status === InvoiceStatus.CANCELLED) {
+      throw new BadRequestException('Cannot pay a cancelled invoice');
+    }
+
+    invoice.status = InvoiceStatus.PAID;
+    invoice.paid_at = new Date();
+    invoice.payment_method = dto.paymentMethod || null;
+    invoice.payment_reference = dto.paymentReference || null;
+
+    return repo.save(invoice);
   }
 
   async getPdfData(id: string): Promise<Record<string, unknown>> {

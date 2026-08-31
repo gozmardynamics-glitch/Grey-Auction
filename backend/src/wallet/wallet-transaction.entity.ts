@@ -9,6 +9,8 @@ import {
 export enum WalletTransactionType {
   DEPOSIT = 'deposit',
   WITHDRAW = 'withdraw',
+  ESCROW_RELEASE = 'escrow_release',
+  ESCROW_REFUND = 'escrow_refund',
 }
 
 export enum WalletTransactionStatus {
@@ -41,6 +43,9 @@ export class WalletTransaction {
 
   @Column({ nullable: true })
   description: string;
+
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  balanceAfter: number;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -4,6 +4,8 @@ import {
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
+import { WalletService } from '../wallet/wallet.service';
+import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 
 const OPEN_STATUSES = [EscrowStatus.HELD, EscrowStatus.DISPUTED];
 const CLOSED_STATUSES = [EscrowStatus.RELEASED, EscrowStatus.REFUNDED];
@@ -25,6 +27,7 @@ export class EscrowService {
     private readonly holds: Repository<EscrowHold>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly walletService: WalletService,
   ) {}
 
   /** Place funds in escrow for an invoice (normally triggered on invoice payment). */
@@ -70,7 +73,16 @@ export class EscrowService {
       hold.status = EscrowStatus.RELEASED;
       hold.resolvedById = adminId;
       hold.releasedAt = new Date();
-      return manager.getRepository(EscrowHold).save(hold);
+      const saved = await manager.getRepository(EscrowHold).save(hold);
+      // Payout: credit the seller's wallet in the same transaction so the
+      // escrow state transition and the wallet credit commit atomically.
+      await this.walletService.creditInManager(manager, hold.sellerId, {
+        amount: hold.amount,
+        reference: 'escrow_release:' + hold.id,
+        description: 'Escrow release for invoice ' + hold.invoiceId,
+        type: WalletTransactionType.ESCROW_RELEASE,
+      });
+      return saved;
     });
   }
 
@@ -82,7 +94,15 @@ export class EscrowService {
       hold.resolvedById = adminId;
       hold.refundReason = reason.trim();
       hold.refundedAt = new Date();
-      return manager.getRepository(EscrowHold).save(hold);
+      const saved = await manager.getRepository(EscrowHold).save(hold);
+      // Refund: credit the buyer's wallet in the same transaction.
+      await this.walletService.creditInManager(manager, hold.buyerId, {
+        amount: hold.amount,
+        reference: 'escrow_refund:' + hold.id,
+        description: 'Escrow refund for invoice ' + hold.invoiceId,
+        type: WalletTransactionType.ESCROW_REFUND,
+      });
+      return saved;
     });
   }
 

@@ -4,6 +4,8 @@ import { NotFoundException, BadRequestException, ConflictException } from '@nest
 import { DataSource } from 'typeorm';
 import { EscrowService } from './escrow.service';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
+import { WalletService } from '../wallet/wallet.service';
+import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 
 describe('EscrowService', () => {
   let service: EscrowService;
@@ -13,6 +15,7 @@ describe('EscrowService', () => {
   const dataSource = {
     transaction: jest.fn(async (cb: any) => cb({ getRepository: () => holds })),
   };
+  const walletService = { creditInManager: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -21,6 +24,7 @@ describe('EscrowService', () => {
         EscrowService,
         { provide: getRepositoryToken(EscrowHold), useValue: holds },
         { provide: DataSource, useValue: dataSource },
+        { provide: WalletService, useValue: walletService },
       ],
     }).compile();
     service = module.get<EscrowService>(EscrowService);
@@ -47,23 +51,33 @@ describe('EscrowService', () => {
     await expect(service.hold(input)).rejects.toThrow(ConflictException);
   });
 
-  it('releases funds once', async () => {
-    (holds.findOne as jest.Mock).mockResolvedValue({ id: 'h1', status: EscrowStatus.HELD, buyerId: 'b1', sellerId: 's1' });
+  it('releases funds once and credits the seller wallet atomically', async () => {
+    (holds.findOne as jest.Mock).mockResolvedValue({ id: 'h1', status: EscrowStatus.HELD, buyerId: 'b1', sellerId: 's1', invoiceId: 'inv-1', amount: 2500000 });
     (holds.save as jest.Mock).mockImplementation(async (x) => x);
 
     const res = await service.release('h1', 'admin1');
     expect(res.status).toBe(EscrowStatus.RELEASED);
     expect(res.releasedAt).toBeInstanceOf(Date);
+    expect(walletService.creditInManager).toHaveBeenCalledWith(
+      expect.anything(),
+      's1',
+      expect.objectContaining({ amount: 2500000, type: WalletTransactionType.ESCROW_RELEASE, reference: 'escrow_release:h1' }),
+    );
   });
 
-  it('refunds with a mandatory reason', async () => {
+  it('refunds with a mandatory reason and credits the buyer wallet', async () => {
     await expect(service.refund('h1', 'admin1', '  ')).rejects.toThrow(BadRequestException);
 
-    (holds.findOne as jest.Mock).mockResolvedValue({ id: 'h1', status: EscrowStatus.DISPUTED });
+    (holds.findOne as jest.Mock).mockResolvedValue({ id: 'h1', status: EscrowStatus.DISPUTED, buyerId: 'b1', sellerId: 's1', invoiceId: 'inv-1', amount: 2500000 });
     (holds.save as jest.Mock).mockImplementation(async (x) => x);
     const res = await service.refund('h1', 'admin1', 'Item not as described');
     expect(res.status).toBe(EscrowStatus.REFUNDED);
     expect(res.refundReason).toBe('Item not as described');
+    expect(walletService.creditInManager).toHaveBeenCalledWith(
+      expect.anything(),
+      'b1',
+      expect.objectContaining({ amount: 2500000, type: WalletTransactionType.ESCROW_REFUND, reference: 'escrow_refund:h1' }),
+    );
   });
 
   it('moves a held amount to disputed only for a party', async () => {

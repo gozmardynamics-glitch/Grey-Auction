@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { PaymentService } from './payment.service';
 import { InvoiceService } from '../invoices/invoice.service';
 import { WalletService } from '../wallet/wallet.service';
+import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { Payment, PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.entity';
 import { createProviderAdapter } from './providers/provider.registry';
 
@@ -22,6 +25,8 @@ export class PaymentOrchestrationService {
     private readonly paymentService: PaymentService,
     private readonly invoiceService: InvoiceService,
     private readonly walletService: WalletService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   /** Create the app payment record and ask the chosen provider to initialize. */
@@ -78,13 +83,10 @@ export class PaymentOrchestrationService {
       return { success: false, message: 'Unknown payment reference' };
     }
 
-    if (hook.status === PaymentStatus.SUCCEEDED && payment.status !== PaymentStatus.SUCCEEDED) {
-      await this.applySucceededOutcome(payment);
+    if (hook.status === PaymentStatus.SUCCEEDED) {
       return {
         success: true,
-        payment: await this.paymentService.updateStatus(payment.id, PaymentStatus.SUCCEEDED, {
-          providerReference: hook.providerReference ?? payment.providerReference,
-        }),
+        payment: await this.applySucceeded(payment, hook.providerReference ?? payment.providerReference),
       };
     }
 
@@ -112,12 +114,7 @@ export class PaymentOrchestrationService {
     const result = await adapter.verify(payment.reference);
 
     if (result.verified && result.status === PaymentStatus.SUCCEEDED) {
-      if (payment.status !== PaymentStatus.SUCCEEDED) {
-        await this.applySucceededOutcome(payment);
-      }
-      return this.paymentService.updateStatus(payment.id, PaymentStatus.SUCCEEDED, {
-        providerReference: result.providerReference ?? payment.providerReference,
-      });
+      return this.applySucceeded(payment, result.providerReference ?? payment.providerReference);
     }
 
     if (result.status === PaymentStatus.FAILED) {
@@ -127,20 +124,44 @@ export class PaymentOrchestrationService {
     return payment;
   }
 
-  /** Conditional outcome: invoice -> mark paid; deposit -> credit wallet. */
-  private async applySucceededOutcome(payment: Payment): Promise<void> {
+  /**
+   * Apply a succeeded payment exactly once, atomically with the status flip.
+   * A pessimistic lock + status re-check makes concurrent webhook replays safe.
+   */
+  private async applySucceeded(payment: Payment, providerReference?: string | null): Promise<Payment> {
+    return this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(Payment);
+      const locked = await repo.findOne({
+        where: { id: payment.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!locked) throw new NotFoundException('Payment not found');
+      if (locked.status === PaymentStatus.SUCCEEDED) return locked;
+
+      await this.applyOutcome(manager, locked);
+
+      locked.status = PaymentStatus.SUCCEEDED;
+      locked.providerReference = providerReference ?? locked.providerReference;
+      return repo.save(locked);
+    });
+  }
+
+  /** Conditional outcome within the caller's transaction: invoice -> paid; deposit -> wallet credit. */
+  private async applyOutcome(manager: EntityManager, payment: Payment): Promise<void> {
     if (payment.type === PaymentType.INVOICE) {
       if (!payment.invoiceId) return;
-      await this.invoiceService.markPaid(payment.invoiceId, {
+      await this.invoiceService.markPaidInManager(manager, payment.invoiceId, {
         paymentMethod: payment.provider,
         paymentReference: payment.reference,
       });
       return;
     }
     if (payment.type === PaymentType.DEPOSIT) {
-      await this.walletService.deposit(payment.userId, {
+      await this.walletService.creditInManager(manager, payment.userId, {
         amount: payment.amount,
         reference: payment.reference,
+        description: 'Wallet deposit',
+        type: WalletTransactionType.DEPOSIT,
       });
     }
   }

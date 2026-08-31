@@ -1,10 +1,9 @@
 import {
   Injectable,
-  NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Wallet } from './wallet.entity';
 import {
@@ -23,11 +22,29 @@ export interface WithdrawDto {
   pin?: string;
 }
 
+/** Input for a wallet credit performed within an existing transaction. */
+export interface WalletCreditInput {
+  amount: number;
+  reference?: string;
+  description?: string;
+  type: WalletTransactionType;
+}
+
+/** True when the error is a Postgres unique-constraint violation (code 23505). */
+function isUniqueViolation(err: any): boolean {
+  return (
+    err?.code === '23505' ||
+    err?.driverError?.code === '23505' ||
+    (typeof err?.message === 'string' && err.message.includes('duplicate key value'))
+  );
+}
+
 /**
- * Digital wallet backed by the database. Deposits/withdrawals in the current
- * dev mode are settled immediately (the payment gateway runs in mock mode);
- * when gateway keys are configured, deposits can be linked to a payment
- * reference for reconciliation.
+ * Digital wallet backed by the database. Every balance mutation runs inside a
+ * DB transaction and appends an immutable ledger row, so the wallet can never
+ * overdraw or double-credit under concurrency. Deposits/withdrawals in the
+ * current dev mode settle immediately (the payment gateway runs in mock mode);
+ * when gateway keys are configured, deposits link to a payment reference.
  */
 @Injectable()
 export class WalletService {
@@ -36,13 +53,53 @@ export class WalletService {
     private readonly walletRepo: Repository<Wallet>,
     @InjectRepository(WalletTransaction)
     private readonly txRepo: Repository<WalletTransaction>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
+  /** Read-path wallet access: create the row if missing (race-safe). */
   private async getOrCreate(userId: string): Promise<Wallet> {
     const existing = await this.walletRepo.findOne({ where: { userId } });
     if (existing) return existing;
     const wallet = this.walletRepo.create({ userId, balance: 0, currency: 'NGN' });
-    return this.walletRepo.save(wallet);
+    try {
+      return await this.walletRepo.save(wallet);
+    } catch (err: any) {
+      // Lost the unique(userId) race: the other insert won — read it back.
+      if (isUniqueViolation(err)) {
+        const raced = await this.walletRepo.findOne({ where: { userId } });
+        if (raced) return raced;
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Fetch (or create) the wallet inside a transaction and take a pessimistic
+   * write lock so concurrent debits/credits for the same user serialize and can
+   * never overdraw or double-spend.
+   */
+  private async getOrCreateLocked(manager: EntityManager, userId: string): Promise<Wallet> {
+    const repo = manager.getRepository(Wallet);
+    let wallet = await repo.findOne({
+      where: { userId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (wallet) return wallet;
+
+    const created = repo.create({ userId, balance: 0, currency: 'NGN' });
+    try {
+      return await repo.save(created);
+    } catch (err: any) {
+      if (isUniqueViolation(err)) {
+        wallet = await repo.findOne({
+          where: { userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (wallet) return wallet;
+      }
+      throw err;
+    }
   }
 
   async getWallet(userId: string) {
@@ -68,87 +125,116 @@ export class WalletService {
     if (!dto.amount || dto.amount <= 0) {
       throw new BadRequestException('Amount must be a positive number');
     }
-    const wallet = await this.getOrCreate(userId);
-
-    // Idempotency guard: a deposit reference must never be credited twice.
-    // If a completed deposit with this reference already exists, return it
-    // without touching the balance (prevents webhook/deposit replays).
-    if (dto.reference) {
-      const existing = await this.txRepo.findOne({
-        where: { reference: dto.reference, type: WalletTransactionType.DEPOSIT },
-      });
-      if (existing) {
-        return {
-          balance: Number(wallet.balance),
-          transaction: existing,
-          idempotent: true,
-        };
-      }
-    }
-
-    const newBalance = Number(wallet.balance) + dto.amount;
-    await this.walletRepo.update(wallet.id, { balance: newBalance });
-
-    let tx: WalletTransaction;
     try {
-      tx = await this.txRepo.save(
-        this.txRepo.create({
-          walletId: wallet.id,
-          type: WalletTransactionType.DEPOSIT,
+      return await this.dataSource.transaction((manager) =>
+        this.credit(manager, userId, {
           amount: dto.amount,
-          reference: dto.reference || null,
+          reference: dto.reference,
           description: dto.reference ? 'Wallet deposit' : 'Wallet deposit (mock)',
-          status: WalletTransactionStatus.COMPLETED,
+          type: WalletTransactionType.DEPOSIT,
         }),
       );
     } catch (err: any) {
-      // DB unique constraint on reference won any race: return the existing deposit.
-      const raced = await this.txRepo.findOne({
-        where: { reference: dto.reference || undefined, type: WalletTransactionType.DEPOSIT },
-      });
-      if (raced) {
-        return {
-          balance: Number(wallet.balance),
-          transaction: raced,
-          idempotent: true,
-        };
+      // A concurrent deposit with the same reference inserted first. The whole
+      // transaction rolled back, so no balance change leaked; return the winner.
+      if (dto.reference && isUniqueViolation(err)) {
+        const raced = await this.txRepo.findOne({
+          where: { reference: dto.reference, type: WalletTransactionType.DEPOSIT },
+        });
+        if (raced) {
+          const wallet = await this.getOrCreate(userId);
+          return { balance: Number(wallet.balance), transaction: raced, idempotent: true };
+        }
       }
       throw err;
     }
-
-    return { balance: newBalance, transaction: tx, idempotent: false };
   }
 
   async withdraw(userId: string, dto: WithdrawDto) {
     if (!dto.amount || dto.amount <= 0) {
       throw new BadRequestException('Amount must be a positive number');
     }
-    const wallet = await this.getOrCreate(userId);
+    return this.dataSource.transaction(async (manager) => {
+      const wallet = await this.getOrCreateLocked(manager, userId);
 
-    if (wallet.hasPin && wallet.pinHash) {
-      if (!dto.pin || !(await bcrypt.compare(dto.pin, wallet.pinHash))) {
-        throw new BadRequestException('Invalid PIN');
+      if (wallet.hasPin && wallet.pinHash) {
+        if (!dto.pin || !(await bcrypt.compare(dto.pin, wallet.pinHash))) {
+          throw new BadRequestException('Invalid PIN');
+        }
+      }
+
+      const balance = Number(wallet.balance);
+      if (dto.amount > balance) {
+        throw new BadRequestException('Insufficient balance');
+      }
+
+      const newBalance = balance - dto.amount;
+      const txRepo = manager.getRepository(WalletTransaction);
+      await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
+
+      const tx = await txRepo.save(
+        txRepo.create({
+          walletId: wallet.id,
+          type: WalletTransactionType.WITHDRAW,
+          amount: dto.amount,
+          status: WalletTransactionStatus.COMPLETED,
+          balanceAfter: newBalance,
+        }),
+      );
+
+      return { balance: newBalance, transaction: tx };
+    });
+  }
+
+  /**
+   * Credit a wallet within a caller-supplied transaction (escrow payout, payment
+   * capture). The ledger row commits or rolls back with the caller's transaction.
+   */
+  async creditInManager(
+    manager: EntityManager,
+    userId: string,
+    input: WalletCreditInput,
+  ) {
+    return this.credit(manager, userId, input);
+  }
+
+  /** Core credit: lock wallet, re-check idempotency, update balance, write ledger. */
+  private async credit(
+    manager: EntityManager,
+    userId: string,
+    input: WalletCreditInput,
+  ) {
+    if (!input.amount || input.amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+    const wallet = await this.getOrCreateLocked(manager, userId);
+    const txRepo = manager.getRepository(WalletTransaction);
+
+    if (input.reference) {
+      const existing = await txRepo.findOne({
+        where: { reference: input.reference, type: input.type },
+      });
+      if (existing) {
+        return { balance: Number(wallet.balance), transaction: existing, idempotent: true };
       }
     }
 
-    const balance = Number(wallet.balance);
-    if (dto.amount > balance) {
-      throw new BadRequestException('Insufficient balance');
-    }
+    const newBalance = Number(wallet.balance) + input.amount;
+    await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
 
-    const newBalance = balance - dto.amount;
-    await this.walletRepo.update(wallet.id, { balance: newBalance });
-
-    const tx = await this.txRepo.save(
-      this.txRepo.create({
+    const tx = await txRepo.save(
+      txRepo.create({
         walletId: wallet.id,
-        type: WalletTransactionType.WITHDRAW,
-        amount: dto.amount,
+        type: input.type,
+        amount: input.amount,
+        reference: input.reference || null,
+        description: input.description || null,
         status: WalletTransactionStatus.COMPLETED,
+        balanceAfter: newBalance,
       }),
     );
 
-    return { balance: newBalance, transaction: tx };
+    return { balance: newBalance, transaction: tx, idempotent: false };
   }
 
   async setPin(userId: string, pin: string) {
@@ -164,7 +250,7 @@ export class WalletService {
 
   async verifyPin(userId: string, pin: string): Promise<boolean> {
     const wallet = await this.getOrCreate(userId);
-    if (!wallet.hasPin || !wallet.pinHash) return true; // no PIN set -> allow
+    if (!wallet.hasPin || !wallet.pinHash) return true;
     return bcrypt.compare(pin, wallet.pinHash);
   }
 }

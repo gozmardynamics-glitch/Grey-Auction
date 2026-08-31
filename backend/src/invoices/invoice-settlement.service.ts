@@ -1,10 +1,11 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { NotificationService } from '../notification/notification.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, In } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, LessThan, In, Repository } from 'typeorm';
 import { Product, ProductStatus } from '../products/entities/product.entity';
 import { Bid } from '../bids/entities/bid.entity';
 import { FeeService } from '../fees/fee.service';
+import { InvoiceService } from './invoice.service';
 
 export interface SettlementResult {
   settled: number;
@@ -12,6 +13,10 @@ export interface SettlementResult {
   errors: number;
   details: string[];
 }
+
+type SettlementOutcome =
+  | { kind: 'settled'; detail: string; buyerId: string; sellerId: string; title: string; slug: string | null; id: string; hammerPrice: number }
+  | { kind: 'no-bid' | 'skip'; detail: string };
 
 @Injectable()
 export class InvoiceSettlementService {
@@ -23,28 +28,19 @@ export class InvoiceSettlementService {
     @InjectRepository(Bid)
     private readonly bidRepo: Repository<Bid>,
     private readonly feeService: FeeService,
+    private readonly invoiceService: InvoiceService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   /**
-   * Finds auctions that have ended (endTime < now) but are still active,
-   * locates the winning bid for each, and generates invoices.
-   * Returns the invoice data for each settled auction (the invoice itself
-   * is created via the provided callback to avoid a circular dependency
-   * between the invoices and bids modules).
+   * Finds auctions that have ended (endTime < now) but are still active, then
+   * settles each in its own DB transaction: the invoice is issued and the lot is
+   * marked SOLD atomically (a pessimistic lock + status re-check prevents a
+   * concurrent run from double-invoicing the same lot).
    */
-  async findEndedAuctionsToSettle(
-    onInvoice: (data: {
-      auctionId: string;
-      productId: string;
-      buyerId: string;
-      sellerId: string;
-      hammerPrice: number;
-      commission: number;
-      vat: number;
-      fixedFee: number;
-    }) => Promise<void>,
-  ): Promise<SettlementResult> {
+  async settleEndedAuctions(): Promise<SettlementResult> {
     const result: SettlementResult = { settled: 0, skipped: 0, errors: 0, details: [] };
 
     const ended = await this.productRepo.find({
@@ -56,66 +52,95 @@ export class InvoiceSettlementService {
 
     for (const product of ended) {
       try {
-        const winningBid = await this.bidRepo.findOne({
-          where: { productId: product.id, isWinningBid: true },
-        });
+        const outcome = await this.dataSource.transaction<SettlementOutcome>(
+          async (manager) => {
+            const productRepo = manager.getRepository(Product);
+            const bidRepo = manager.getRepository(Bid);
 
-        if (!winningBid) {
-          // No bids — just close the auction
-          product.status = ProductStatus.CLOSED;
-          await this.productRepo.save(product);
-          result.skipped++;
-          result.details.push(`${product.title}: no winning bid — closed`);
-          continue;
-        }
+            const locked = await productRepo.findOne({
+              where: { id: product.id },
+              lock: { mode: 'pessimistic_write' },
+            });
+            if (!locked) {
+              return { kind: 'skip', detail: product.title + ': missing — skipped' };
+            }
+            if (![ProductStatus.ACTIVE, ProductStatus.APPROVED].includes(locked.status)) {
+              return { kind: 'skip', detail: product.title + ': already settled — skipped' };
+            }
 
-        const breakdown = await this.feeService.getBreakdown(
-          Number(winningBid.amount),
-          product.category,
-        );
+            const winningBid = await bidRepo.findOne({
+              where: { productId: locked.id, isWinningBid: true },
+            });
+            if (!winningBid) {
+              locked.status = ProductStatus.CLOSED;
+              await productRepo.save(locked);
+              return { kind: 'no-bid', detail: product.title + ': no winning bid — closed' };
+            }
 
-        await onInvoice({
-          auctionId: product.id,
-          productId: product.id,
-          buyerId: winningBid.bidderId,
-          sellerId: product.sellerId,
-          hammerPrice: Number(winningBid.amount),
-          commission: breakdown.commission,
-          vat: breakdown.vatOnBid + breakdown.vatOnCommission,
-          fixedFee: breakdown.fixedFee,
-        });
+            const breakdown = await this.feeService.getBreakdown(
+              Number(winningBid.amount),
+              locked.category,
+            );
 
-        product.status = ProductStatus.SOLD;
-        await this.productRepo.save(product);
-        result.settled++;
-        result.details.push(
-          `${product.title}: invoice generated for ${breakdown.total}`,
-        );
-
-        // Notify the winner and the seller that the auction has settled.
-        if (this.notifications) {
-          const auctionTitle = product.title ?? 'the auction';
-          const link = '/auctions/' + (product.slug ?? product.id);
-          void this.notifications
-            .notifyAuctionWon(winningBid.bidderId, {
-              auctionTitle,
-              auctionId: product.id,
+            await this.invoiceService.createInvoice(manager, {
+              auctionId: locked.id,
+              productId: locked.id,
+              buyerId: winningBid.bidderId,
+              sellerId: locked.sellerId,
               hammerPrice: Number(winningBid.amount),
-              link,
-            })
-            .catch(() => undefined);
-          void this.notifications
-            .notifyAuctionEnded(product.sellerId, {
-              auctionTitle,
-              auctionId: product.id,
-              link,
-            })
-            .catch(() => undefined);
+              commission: breakdown.commission,
+              vat: breakdown.vatOnBid + breakdown.vatOnCommission,
+              fixedFee: breakdown.fixedFee,
+            });
+
+            locked.status = ProductStatus.SOLD;
+            await productRepo.save(locked);
+
+            return {
+              kind: 'settled',
+              detail: product.title + ': invoice generated for ' + breakdown.total,
+              buyerId: winningBid.bidderId,
+              sellerId: locked.sellerId,
+              title: locked.title,
+              slug: locked.slug ?? null,
+              id: locked.id,
+              hammerPrice: Number(winningBid.amount),
+            };
+          },
+        );
+
+        if (outcome.kind === 'settled') {
+          result.settled++;
+          result.details.push(outcome.detail);
+
+          // Notify the winner and the seller after the transaction has committed.
+          if (this.notifications) {
+            const auctionTitle = outcome.title ?? 'the auction';
+            const link = '/auctions/' + (outcome.slug ?? outcome.id);
+            void this.notifications
+              .notifyAuctionWon(outcome.buyerId, {
+                auctionTitle,
+                auctionId: outcome.id,
+                hammerPrice: outcome.hammerPrice,
+                link,
+              })
+              .catch(() => undefined);
+            void this.notifications
+              .notifyAuctionEnded(outcome.sellerId, {
+                auctionTitle,
+                auctionId: outcome.id,
+                link,
+              })
+              .catch(() => undefined);
+          }
+        } else {
+          result.skipped++;
+          result.details.push(outcome.detail);
         }
       } catch (error: any) {
         result.errors++;
-        result.details.push(`${product.title}: ERROR — ${error.message}`);
-        this.logger.error(`Settlement failed for ${product.id}: ${error.message}`);
+        result.details.push(product.title + ': ERROR — ' + error.message);
+        this.logger.error('Settlement failed for ' + product.id + ': ' + error.message);
       }
     }
 
