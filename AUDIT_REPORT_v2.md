@@ -460,3 +460,17 @@ $env:DB_DATABASE="greyauction_itest"; $env:DB_SYNCHRONIZE="false"; $env:NODE_ENV
 ```
 
 **Totals:** 252 unit + 8 integration + 5 E2E tests green; tsc clean.
+---
+
+## 16. Dependency Hygiene (P3)
+
+**Status: [x] DONE** — non-breaking fixes applied, all suites green.
+
+| Package | Before | After | Notes |
+|---|---|---|---|
+| backend (transitive, lock-only) | 31 vulns (3 low, 18 mod, 10 high) | 29 vulns (3 low, 18 mod, 8 high) | npm audit fix (no majors); 24 transitive bumps; 252/252 tests + tsc green |
+| frontend next-auth | 2 critical (@auth/core via 5.0.0-beta.30) | 0 vulns | bumped to 5.0.0-beta.32 (same beta line); 67/67 vitest + tsc + prod build green |
+
+**Remaining backend findings (need user decision — U1):** all require the
+NestJS major upgrade (@nestjs/* 10 → 11/12, @nestjs/cli 12, uuid 11,
+picomatch/tmp/webpack via CLI). Listed in §0 blocked section.
