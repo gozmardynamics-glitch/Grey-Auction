@@ -1,9 +1,81 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `master` (feature/authjs-migration merged) · **Commits:** 99 · **Release:** v1.0.0 · **Backend tests:** 206/206 (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs)
+> **Branch:** `master` (feature/authjs-migration fully merged; branch deleted) · **Commits:** 110+ · **Release:** v1.0.0 · **Backend tests:** 252/252 unit + 5/5 E2E + 8/8 integration (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **npm audit:** 0 (backend) / 0 (frontend) · **NestJS:** 11.2.3 · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs, non-prod)
 > **Security hardening (2026-08-30):** see section 12 — the external production-readiness audit's critical auth/money findings were remediated (fcd6cff, 56d52cf).
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
+
+
+---
+
+## SESSION HANDOFF — START HERE (2026-08-31, end of day)
+
+**State when this file was written:** everything below is committed and pushed;
+working tree clean; only branch is `master` (stale fully-merged
+`feature/authjs-migration` deleted; history preserved via merge 1dcded3 / tag v1.0.0).
+
+### Verification baseline (all green, verified today)
+
+| Check | Result |
+|---|---|
+| backend npm audit | **0 vulnerabilities** |
+| frontend npm audit | **0 vulnerabilities** (next-auth 5.0.0-beta.32) |
+| backend tsc --noEmit | clean |
+| frontend tsc --noEmit | clean |
+| backend unit/service tests | 252/252 (38 suites) |
+| backend HTTP-layer E2E | 5/5 |
+| backend money-path integration | 8/8 (Postgres greyauction_itest) |
+| frontend Vitest | 67/67 · prod build green |
+| backend nest build (CLI 11) | green |
+| live boot smoke | /api/health 200 · /api/products 200 · /api/docs-json 182 paths/82 schemas |
+| storage smoke (vs live MinIO) | 24/24 |
+| NestJS version | 11.2.3 line (config 4, jwt 11, passport 11, swagger 11.4.7, typeorm 11, throttler 6.5, schedule 6.1.3) |
+
+### Completed in this workstream (commits on master)
+
+- Phases A–G of the remediation plan (transactions/ledger, baseline migration,
+  auth, orders, live FX cron, observability, CI) — §13, commits ef7ce0b…b9801b8.
+- Storage & media pipeline: MinIO/S3 driver abstraction, sharp WebP optimization,
+  variant cleanup on delete, silent Cloudflare-R2 switch (env-only) — §14, f64e948.
+- Money-path integration suite + storage DI wiring fix + DB_SYNCHRONIZE opt-out —
+  §15, 7b26c70.
+- Dependency hygiene (frontend 0 vulns) — §16, eae0c0e.
+- API contract enrichment: 19 typed response DTOs + generated frontend/lib/api-types.ts —
+  §17, f381c14.
+- Ops docs (docs/OPERATIONS.md) + compose env_file fix — §18, cae6e12.
+- **U1 NestJS 10 → 11** (0 vulnerabilities, all suites green) — §19, 4a1a461.
+
+### Next up (needs user input — the U-list)
+
+- [ ] **U2 secrets**: Brevo API key, Termii/Twilio, Paystack/Flutterwave/OPay keys,
+  Google OAuth Client ID, fluentax CBN FX key (Phase E live feed).
+- [ ] **U3 production domain**: for CORS_ORIGIN / NEXTAUTH_URL / FRONTEND_URL /
+  S3_PUBLIC_HOST / cookie config.
+- [ ] **U4 Cloudflare R2 account**: access key/secret/bucket — then flip the
+  storage env vars per docs/OPERATIONS.md (silent switch, no code change).
+- [ ] **U5 business rules**: fee % / VAT / settlement assumptions for tests
+  (current tests use seeded defaults).
+- [ ] **U6 Coolify VPS access**: deploy docker-compose.coolify.yml (postgres +
+  minio + backend + frontend); run migrations; backups/Sentry.
+- [ ] **U7 (optional)**: Nest 12 bump once @nestjs/throttler publishes a
+  v12-compatible release (peer range currently caps at ^11) — see §19.
+- [ ] Frontend admin rate editor for exchange rates (Phase E2, deprioritized).
+
+### Command cheat sheet (from docs/OPERATIONS.md)
+
+```
+cd backend
+npm test                                   # unit/service
+npm run test:e2e                           # HTTP-layer E2E
+$env:DB_DATABASE="greyauction_itest"; npx ts-node scripts/itest-db-setup.ts   # provision (idempotent)
+$env:DB_DATABASE="greyauction_itest"; $env:DB_SYNCHRONIZE="false"; $env:NODE_ENV="test"; npm run itest
+npm run build
+npx ts-node scripts/storage-smoke.ts       # needs MinIO (see OPERATIONS.md)
+cd frontend
+npm test                                   # Vitest
+npm run generate:api                       # needs backend on :3001
+npm run build
+```
 
 ## 0. What's Pending (updated 2026-08-28)
 
