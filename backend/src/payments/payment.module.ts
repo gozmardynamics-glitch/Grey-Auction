@@ -8,9 +8,10 @@ import { PaymentReconciliationService } from './payment.reconciliation.service';
 import { Payment } from './entities/payment.entity';
 import { InvoiceModule } from '../invoices/invoice.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { OrderModule } from '../orders/order.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment]), InvoiceModule, WalletModule],
+  imports: [TypeOrmModule.forFeature([Payment]), InvoiceModule, WalletModule, OrderModule],
   controllers: [PaymentController],
   providers: [PaymentGatewayService, PaymentService, PaymentOrchestrationService, PaymentReconciliationService],
   exports: [PaymentGatewayService, PaymentService, PaymentOrchestrationService],

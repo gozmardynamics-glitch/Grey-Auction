@@ -5,6 +5,7 @@ import { PaymentService } from './payment.service';
 import { InvoiceService } from '../invoices/invoice.service';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
+import { OrderService } from '../orders/order.service';
 import { PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.entity';
 
 describe('PaymentOrchestrationService', () => {
@@ -12,6 +13,7 @@ describe('PaymentOrchestrationService', () => {
   const paymentService = { create: jest.fn(), findByReference: jest.fn(), updateStatus: jest.fn(), listByUser: jest.fn() };
   const invoiceService = { markPaidInManager: jest.fn() };
   const walletService = { creditInManager: jest.fn() };
+  const orderService = { markPaidInManager: jest.fn() };
   const paymentRepo = { findOne: jest.fn(), save: jest.fn() };
   const manager = { getRepository: jest.fn(() => paymentRepo) };
   const dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
@@ -27,6 +29,7 @@ describe('PaymentOrchestrationService', () => {
         { provide: PaymentService, useValue: paymentService },
         { provide: InvoiceService, useValue: invoiceService },
         { provide: WalletService, useValue: walletService },
+        { provide: OrderService, useValue: orderService },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -53,6 +56,7 @@ describe('PaymentOrchestrationService', () => {
     expect(res.success).toBe(false);
     expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
     expect(walletService.creditInManager).not.toHaveBeenCalled();
+    expect(orderService.markPaidInManager).not.toHaveBeenCalled();
   });
 
   it('marks an invoice paid and flips the payment atomically on a valid succeeded webhook', async () => {
@@ -65,6 +69,7 @@ describe('PaymentOrchestrationService', () => {
     (paymentRepo.findOne as jest.Mock).mockResolvedValue(payment);
     (paymentRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
     (invoiceService.markPaidInManager as jest.Mock).mockResolvedValue({ id: 'inv1' });
+    (orderService.markPaidInManager as jest.Mock).mockResolvedValue({ id: 'o1', status: 'paid' });
 
     const res = await service.handleWebhook(PaymentProvider.PAYSTACK, payload, headers, raw);
 
@@ -73,6 +78,8 @@ describe('PaymentOrchestrationService', () => {
     expect(invoiceService.markPaidInManager).toHaveBeenCalledWith(
       manager, 'inv1', expect.objectContaining({ paymentReference: 'REF', paymentMethod: PaymentProvider.PAYSTACK }),
     );
+    // D3: the order is created/marked paid atomically with the invoice.
+    expect(orderService.markPaidInManager).toHaveBeenCalledWith(manager, 'inv1', 'REF');
   });
 
   it('credits the wallet on a valid succeeded deposit webhook', async () => {
@@ -90,6 +97,7 @@ describe('PaymentOrchestrationService', () => {
 
     expect(res.success).toBe(true);
     expect(res.payment.status).toBe(PaymentStatus.SUCCEEDED);
+    expect(orderService.markPaidInManager).not.toHaveBeenCalled();
     expect(walletService.creditInManager).toHaveBeenCalledWith(
       manager, 'u1', expect.objectContaining({ amount: 5000, reference: 'DEP', type: WalletTransactionType.DEPOSIT }),
     );
@@ -108,5 +116,6 @@ describe('PaymentOrchestrationService', () => {
 
     expect(res.success).toBe(true);
     expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
+    expect(orderService.markPaidInManager).not.toHaveBeenCalled();
   });
 });

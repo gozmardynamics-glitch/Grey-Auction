@@ -5,6 +5,7 @@ import { PaymentService } from './payment.service';
 import { InvoiceService } from '../invoices/invoice.service';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
+import { OrderService } from '../orders/order.service';
 import { Payment, PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.entity';
 import { createProviderAdapter } from './providers/provider.registry';
 
@@ -25,6 +26,7 @@ export class PaymentOrchestrationService {
     private readonly paymentService: PaymentService,
     private readonly invoiceService: InvoiceService,
     private readonly walletService: WalletService,
+    private readonly orderService: OrderService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -154,6 +156,8 @@ export class PaymentOrchestrationService {
         paymentMethod: payment.provider,
         paymentReference: payment.reference,
       });
+      // D3 seam: create/mark the order paid atomically with the invoice + payment.
+      await this.orderService.markPaidInManager(manager, payment.invoiceId, payment.reference);
       return;
     }
     if (payment.type === PaymentType.DEPOSIT) {

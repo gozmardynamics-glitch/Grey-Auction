@@ -920,8 +920,14 @@ export async function getCartItems() {
 }
 
 export async function getOrderItems() {
-  // Orders are frontend-owned state; no backend module exists
+  // Order items flow through the backend orders module; the client cart is not
+  // fully wired yet, so the checkout forms render an empty list.
   return [];
+}
+
+export async function getOrderById(orderId: string) {
+  if (!orderId) return null;
+  return apiFetch(`/orders/${encodeURIComponent(orderId)}`);
 }
 
 export async function getWishlistItems() {

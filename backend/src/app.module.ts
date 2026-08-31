@@ -34,6 +34,7 @@ import { AdvisorModule } from './advisors/advisor.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { EscrowModule } from './escrow/escrow.module';
 import { ExchangeRateModule } from './exchange-rates/exchange-rate.module';
+import { OrderModule } from './orders/order.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ExchangeRateModule } from './exchange-rates/exchange-rate.module';
     EscrowModule,
     AdvisorModule,
     ExchangeRateModule,
+    OrderModule,
   ],
   providers: [
     {
