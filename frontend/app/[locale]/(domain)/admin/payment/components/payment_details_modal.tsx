@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/common';
-import { Payment, PaymentDetail } from '../../models';
+import { PaymentDetail } from '../../models';
 import { formatCurrency, statusStyles } from '@/shared/utils/helpers';
 
 

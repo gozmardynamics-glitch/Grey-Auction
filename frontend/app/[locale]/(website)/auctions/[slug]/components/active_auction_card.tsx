@@ -229,7 +229,7 @@ export default function ActiveAuctionCard({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            We'll automatically bid for you up to your maximum
+            We&apos;ll automatically bid for you up to your maximum
           </p>
 
           <Button

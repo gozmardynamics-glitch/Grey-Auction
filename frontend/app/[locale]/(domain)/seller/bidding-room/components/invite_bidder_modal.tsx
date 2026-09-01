@@ -102,7 +102,7 @@ export default function InviteBidderModal({
       const baseUrl = window.location.origin;
       setInviteLink(`${baseUrl}/invite/${invite.token}`);
       setStep('success');
-    } catch (err: any) {
+    } catch {
       // Fallback for demo: generate local link
       setInviteLink(
         `${window.location.origin}/invite/demo-${Date.now().toString(36)}`
@@ -111,7 +111,7 @@ export default function InviteBidderModal({
     } finally {
       setIsSubmitting(false);
     }
-  }, [authToken, roomId, productId, expiry, mode, email, firstName, lastName]);
+  }, [authToken, roomId, productId, expiry, mode, email, firstName, lastName, phone]);
 
   const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(inviteLink);

@@ -36,7 +36,7 @@ export default function TestimonialCard({
       {/* Content */}
       <div className="relative h-full flex flex-col justify-end p-6 text-primary-foreground">
         {/* Quote */}
-        <p className="text-base md:text-lg mb-6 leading-relaxed">"{quote}"</p>
+        <p className="text-base md:text-lg mb-6 leading-relaxed">&ldquo;{quote}&rdquo;</p>
 
         {/* Author Info */}
         <div>

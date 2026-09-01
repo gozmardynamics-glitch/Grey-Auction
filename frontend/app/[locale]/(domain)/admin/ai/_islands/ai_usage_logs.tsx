@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { DataTable } from '@/shared/components/common/data_table';
 import { Badge } from '@/shared/components/common/badge';
 import { Input } from '@/shared/components/common/input';
-import { Select } from '@/shared/components/common/select';
 import { MiniSpinner } from '@/shared/components/common/spinner';
 import { ColumnDef } from '@tanstack/react-table';
 import type { AIUsageLog } from '../../models';
@@ -16,21 +15,18 @@ export default function AIUsageLogs() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ feature: '', dateFrom: '', dateTo: '' });
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filters.feature) params.set('feature', filters.feature);
-      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
-      if (filters.dateTo) params.set('dateTo', filters.dateTo);
-      const res = await fetch(`${API_URL}/admin/ai/usage?${params}`);
-      const json = await res.json();
-      setLogs(json.data || []);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+  const fetchLogs = useCallback(() => {
+    const params = new URLSearchParams();
+    if (filters.feature) params.set('feature', filters.feature);
+    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.set('dateTo', filters.dateTo);
+    fetch(`${API_URL}/admin/ai/usage?${params}`)
+      .then((res) => res.json())
+      .then((json) => setLogs(json.data || []))
+      .catch(() => {
+        // ignore
+      })
+      .finally(() => setLoading(false));
   }, [filters]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
@@ -93,7 +89,7 @@ export default function AIUsageLogs() {
         </div>
         <button
           className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm"
-          onClick={fetchLogs}
+          onClick={() => { setLoading(true); fetchLogs(); }}
         >
           Apply Filters
         </button>

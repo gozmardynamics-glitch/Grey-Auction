@@ -30,7 +30,7 @@ export default function ParticipantsModal({
   participants,
 }: ParticipantsModalProps) {
   const [removeOpen, setRemoveOpen] = useState(false);
-  const [_selectedParticipant, setSelectedParticipant] =
+  const [, setSelectedParticipant] =
     useState<BiddingRoomParticipant | null>(null);
 
   const handleRemove = (participant: BiddingRoomParticipant) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo } from 'react';
 import Autoplay from 'embla-carousel-autoplay';
 import {
   Carousel,
@@ -11,12 +11,14 @@ import TestimonialCard from './customer_stories/testimonials_card';
 import { testimonials } from '../models/data';
 
 export default function CustomerStories() {
-  const plugin = useRef(
-    Autoplay({
-      delay: 4000,
-      stopOnInteraction: false,
-      stopOnMouseEnter: true,
-    })
+  const plugin = useMemo(
+    () =>
+      Autoplay({
+        delay: 4000,
+        stopOnInteraction: false,
+        stopOnMouseEnter: true,
+      }),
+    []
   );
 
   return (
@@ -42,9 +44,9 @@ export default function CustomerStories() {
             align: 'start',
             loop: true,
           }}
-          plugins={[plugin.current]}
-          onMouseEnter={plugin.current.stop}
-          onMouseLeave={plugin.current.reset}
+          plugins={[plugin]}
+          onMouseEnter={plugin.stop}
+          onMouseLeave={plugin.reset}
           className="w-full"
         >
           <CarouselContent className="-ml-4">

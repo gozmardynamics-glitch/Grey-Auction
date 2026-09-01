@@ -1,6 +1,5 @@
 import { api } from '@/redux/api';
 import type {
-  User,
   AuthResponse,
   LoginRequest,
   RegisterRequest,

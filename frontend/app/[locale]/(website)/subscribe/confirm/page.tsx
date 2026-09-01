@@ -11,32 +11,31 @@ export default function SubscribeConfirmPage() {
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      return;
-    }
+    if (!token) return;
     fetch(apiBase + '/subscriptions/confirm?token=' + encodeURIComponent(token))
       .then((r) => r.json())
       .then((j) => setStatus(j?.success ? 'ok' : 'error'))
       .catch(() => setStatus('error'));
   }, [token, apiBase]);
 
+  const resolvedStatus = !token ? 'error' : status;
+
   return (
     <div className="mx-auto max-w-md px-4 py-20 text-center">
-      {status === 'loading' && (
+      {resolvedStatus === 'loading' && (
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-9 w-9 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Confirming your subscription…</p>
         </div>
       )}
-      {status === 'ok' && (
+      {resolvedStatus === 'ok' && (
         <div className="space-y-3">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
           <h1 className="text-xl font-semibold">You are subscribed!</h1>
           <p className="text-sm text-muted-foreground">Thanks for subscribing to GreyAuction updates.</p>
         </div>
       )}
-      {status === 'error' && (
+      {resolvedStatus === 'error' && (
         <div className="space-y-3">
           <XCircle className="mx-auto h-12 w-12 text-destructive" />
           <h1 className="text-xl font-semibold">Link invalid or expired</h1>

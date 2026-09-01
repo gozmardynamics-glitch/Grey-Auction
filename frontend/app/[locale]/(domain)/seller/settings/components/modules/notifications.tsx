@@ -30,7 +30,7 @@ export default function SellerNotificationsSettings() {
     },
   });
 
-  const onSaveNotifications = (data: NotificationsValues) => {
+  const onSaveNotifications = () => {
     
     toast.success('Notification preferences saved.');
   };

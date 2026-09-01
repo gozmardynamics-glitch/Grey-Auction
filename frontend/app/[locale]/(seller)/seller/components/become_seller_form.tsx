@@ -55,7 +55,7 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
   );
   const [formData, setFormData] =
     useState<BecomeSellerFormData>(DEFAULT_FORM_DATA);
-  const [submitting, setSubmitting] = useState(false);
+  const [, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handlePersonalDetails = (data: PersonalDetailsValues) => {

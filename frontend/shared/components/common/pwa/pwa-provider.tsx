@@ -24,7 +24,7 @@ function shouldRegisterServiceWorker(): boolean {
  *  - captures beforeinstallprompt for an in-app "Install" affordance.
  */
 export function PwaProvider({ children }: { children?: React.ReactNode }) {
-  const [offline, setOffline] = useState(false);
+  const [offline, setOffline] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installVisible, setInstallVisible] = useState(false);
 
@@ -38,7 +38,6 @@ export function PwaProvider({ children }: { children?: React.ReactNode }) {
   useEffect(() => {
     const goOffline = () => setOffline(true);
     const goOnline = () => setOffline(false);
-    setOffline(typeof navigator !== 'undefined' && navigator.onLine === false);
     window.addEventListener('offline', goOffline);
     window.addEventListener('online', goOnline);
     return () => {

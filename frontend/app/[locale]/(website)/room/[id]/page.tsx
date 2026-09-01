@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, use } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Lock,
   Clock,
@@ -27,6 +27,7 @@ import {
 } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { useAppSelector } from '@/redux/store';
+import type { Socket } from 'socket.io-client';
 
 interface RoomAuction {
   id: string;
@@ -75,7 +76,6 @@ const STATUS_STEPS = [
 ] as const;
 
 export default function LiveRoomView({ params }: { params: Promise<{ id: string }> }) {
-  const router = useRouter();
   const { id: roomId } = use(params);
   const authToken = useAppSelector((state) => state.auth.token);
   const [room, setRoom] = useState<RoomData | null>(null);
@@ -84,7 +84,7 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [connected, setConnected] = useState(false);
-  const socketRef = useRef<any>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   // ─── Live watch-room state ────────────────────────────────────────────────
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -114,8 +114,6 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
         // First product in the room is the featured watch-room auction.
         const productId = data.productIds?.[0] || data.productId || null;
         setSelectedProductId(productId);
-        // Load auctions in room
-        const auctionsRes = await fetch(`${apiBase}/rooms/${roomId}/participants`).catch(() => null);
         setAuctions([
           {
             id: productId || data.productIds?.[0] || '1',
@@ -163,20 +161,30 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
             const bj = await bidsRes.json();
             const bids = bj.data ?? bj;
             if (Array.isArray(bids) && bids.length > 0) {
-              const mapped: LiveBid[] = bids.map((b: any) => ({
-                id: b.id || `bid-${Date.now()}-${Math.random()}`,
-                bidderName: b.bidderName || (b.bidder?.name as string | undefined) || 'Bidder',
-                amount: Number(b.amount) || 0,
-                createdAt: b.createdAt,
-                isAutoBid: !!b.isAutoBid,
-              }));
+              const mapped: LiveBid[] = bids.map((b: unknown) => {
+                const bid = b as {
+                  id?: unknown;
+                  amount?: unknown;
+                  createdAt?: unknown;
+                  isAutoBid?: unknown;
+                  bidderName?: unknown;
+                  bidder?: { name?: unknown };
+                };
+                return {
+                  id: (typeof bid.id === 'string' && bid.id) || `bid-${Date.now()}-${Math.random()}`,
+                  bidderName: (typeof bid.bidderName === 'string' && bid.bidderName) || (typeof bid.bidder?.name === 'string' ? bid.bidder.name : undefined) || 'Bidder',
+                  amount: Number(bid.amount) || 0,
+                  createdAt: typeof bid.createdAt === 'string' ? bid.createdAt : undefined,
+                  isAutoBid: !!bid.isAutoBid,
+                };
+              });
               mapped.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
               setLiveBids(mapped.slice(0, 30));
             }
           }
         }
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load room');
       } finally {
         setLoading(false);
       }
@@ -212,11 +220,11 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
   // Live countdown for the featured product (from its endTime)
   useEffect(() => {
     const endTime = product?.endTime || (room?.status === 'live' ? room?.endTime : null);
-    if (!endTime) {
-      setProductCountdown('');
-      return;
-    }
     const updateProductCountdown = () => {
+      if (!endTime) {
+        setProductCountdown('');
+        return;
+      }
       const diff = new Date(endTime).getTime() - Date.now();
       if (diff <= 0) {
         setProductCountdown('Ended');
@@ -232,9 +240,12 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
           : `${hours}h ${mins}m ${secs}s`
       );
     };
-    updateProductCountdown();
+    const initial = setTimeout(updateProductCountdown, 0);
     const timer = setInterval(updateProductCountdown, 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(timer);
+    };
   }, [product?.endTime, room?.status, room?.endTime]);
 
   // WebSocket connection
@@ -259,9 +270,17 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
           if (selectedProductId) socket.emit('joinRoom', { roomId: selectedProductId });
         });
         socket.on('disconnect', () => setConnected(false));
-        socket.on('newBid', (data: any) => {
-          const productId = data?.productId;
-          const bid = data?.bid;
+        socket.on('newBid', (data: unknown) => {
+          const payload = data as { productId?: unknown; bid?: unknown } | null | undefined;
+          const productId = payload?.productId;
+          const bid = payload?.bid as {
+            id?: unknown;
+            amount?: unknown;
+            createdAt?: unknown;
+            isAutoBid?: unknown;
+            bidderName?: unknown;
+            bidder?: { name?: unknown };
+          } | undefined;
           if (!productId || !bid) return;
           const amount = Number(bid.amount) || 0;
           setAuctions((prev) =>
@@ -277,30 +296,35 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
               : prev
           );
           prependLiveBid({
-            id: bid.id || `bid-${Date.now()}`,
-            bidderName: bid.bidderName || (bid.bidder?.name as string | undefined),
+            id: (typeof bid.id === 'string' && bid.id) || `bid-${Date.now()}`,
+            bidderName: (typeof bid.bidderName === 'string' && bid.bidderName) || (typeof bid.bidder?.name === 'string' ? bid.bidder.name : undefined),
             amount,
-            createdAt: bid.createdAt,
+            createdAt: typeof bid.createdAt === 'string' ? bid.createdAt : undefined,
             isAutoBid: !!bid.isAutoBid,
           });
         });
-        socket.on('bidUpdate', (data: any) => {
-          const productId = data?.productId;
+        socket.on('bidUpdate', (data: unknown) => {
+          const payload = data as { productId?: unknown; currentBid?: unknown; totalBids?: unknown } | null | undefined;
+          const productId = payload?.productId;
           if (!productId) return;
+          const currentBid = payload.currentBid;
+          const totalBids = payload.totalBids;
+          const nextBid = typeof currentBid === 'number' ? currentBid : undefined;
+          const nextTotal = typeof totalBids === 'number' ? totalBids : undefined;
           setAuctions((prev) =>
             prev.map((a) =>
               a.id === productId
-                ? { ...a, currentBid: data.currentBid ?? a.currentBid, totalBids: data.totalBids ?? a.totalBids }
+                ? { ...a, currentBid: nextBid ?? a.currentBid, totalBids: nextTotal ?? a.totalBids }
                 : a
             )
           );
           setProduct((prev) =>
             prev && prev.id === productId
-              ? { ...prev, currentBid: data.currentBid ?? prev.currentBid, totalBids: data.totalBids ?? prev.totalBids }
+              ? { ...prev, currentBid: nextBid ?? prev.currentBid, totalBids: nextTotal ?? prev.totalBids }
               : prev
           );
         });
-        socket.on('roomEnding', (data: any) => {
+        socket.on('roomEnding', () => {
           // Show ending warning (kept from the original page)
         });
         socket.on('roomEnded', () => {
@@ -363,8 +387,8 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
       setBidAmount('');
       setMaxBid('');
       toast.success('Bid placed successfully');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to place bid. Please try again.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to place bid. Please try again.');
     } finally {
       setIsPlacingBid(false);
     }
@@ -539,10 +563,12 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
               <Card key={auction.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative h-36 bg-muted overflow-hidden">
                   {auction.imageUrl && (
-                    <img
+                    <Image
                       src={auction.imageUrl}
                       alt={auction.title}
-                      className="h-full w-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
                     />
                   )}
                   {room.status === 'live' && (

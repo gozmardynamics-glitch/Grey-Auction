@@ -1,14 +1,65 @@
 # GreyAuction — Source of Truth (Audit + Roadmap + Pending Work)
 
 > **Version:** consolidate (combined audit + performance review + improvement suggestions)
-> **Branch:** `master` (feature/authjs-migration fully merged; branch deleted) · **Commits:** 110+ · **Release:** v1.0.0 · **Backend tests:** 252/252 unit + 5/5 E2E + 8/8 integration (Jest) · **Frontend tests:** 67/67 (Vitest) · **Frontend build:** green · **npm audit:** 0 (backend) / 0 (frontend) · **NestJS:** 11.2.3 · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs, non-prod)
+> **Branch:** `master` (feature/authjs-migration fully merged; branch deleted) · **Commits:** 115+ · **Release:** v1.0.0 · **Backend tests:** 252/252 unit + 5/5 E2E + 8/8 integration (Jest) · **Frontend tests:** 77/77 (Vitest) · **Frontend build:** green · **Lint:** eslint 0 errors (gate green) · **npm audit:** 0 (backend) / 0 (frontend) · **NestJS:** 11.2.3 · **App live:** :3000 (frontend) · :3001 (API/Swagger /api/docs, non-prod)
 > **Security hardening (2026-08-30):** see section 12 — the external production-readiness audit's critical auth/money findings were remediated (fcd6cff, 56d52cf).
 > **How to use this file:** it is the single source of truth. Work items are tracked as `[ ]` (pending), `[x]` (done), `[!]` (blocked). Update statuses here as work proceeds.
 
 
 ---
 
-## SESSION HANDOFF — START HERE (2026-08-31, end of day)
+## SESSION HANDOFF — START HERE (2026-09-01, workstream 2026-09-01)
+
+**State:** master, pushed. This workstream delivered the U-list follow-ups that were
+key-free: Phase E2 admin FX editor, the chatbot upgrade, LHCI in CI, the a11y sweep
+fixes, the lint-debt cleanup, and the production keys/access shopping list
+(docs/KEYS_AND_ACCESS.md — user has supplied domain greyauction.com, Coolify at
+coolify.gozmar.com, and Cloudflare R2 account grey-auction; see §12 of that doc for
+what is still awaited).
+
+### Done this workstream (commits on master)
+
+- Phase E2 — admin exchange-rates editor page (list, inline edit via PATCH, refresh
+  from feed via POST /exchange-rates/refresh, en/fr/nl i18n, Vitest) — 4d6df2c.
+- Chatbot upgrade — i18n, responsive (no 360px overflow), dialog a11y, not-configured
+  state, tests; chatbot_assistant enabled in seed — 4e83425.
+- Lighthouse/LHCI wired into CI (.github/workflows/ci.yml new lighthouse job; config
+  repointed to static /en/about-us + /en/faq; README) — 6f097e0.
+- docs/KEYS_AND_ACCESS.md — full U2–U6 keys/access shopping list — 2260e7d.
+- a11y sweep — axe /en homepage violation fixed (aria-labels on auction-card
+  wishlist/share buttons); axe 12/12 + responsive 25/25 green — a91e989.
+- Lint-debt cleanup — 219 errors/80 warnings → 0 (frontend lint gate green again) — TBD.
+- Backend re-verified: 252/252 unit, 5/5 E2E, 8/8 money-path integration (itest DB
+  re-provisioned), build green.
+
+### Verification baseline (this workstream, 2026-09-01)
+
+| Check | Result |
+|---|---|
+| frontend Vitest | **77/77** (67 + 6 FX + 4 chatbot) |
+| frontend tsc --noEmit | clean |
+| frontend prod build | green |
+| frontend eslint --max-warnings=0 | green after lint cleanup |
+| axe (Playwright) | 12/12 routes, 0 violations |
+| responsive no-overflow | 25/25 |
+| backend unit/service | 252/252 |
+| backend HTTP E2E | 5/5 |
+| backend money-path integration | 8/8 |
+| live smoke | /api/health 200 · /api/products 200 · /en /fr /nl 200 |
+
+### Next up (unchanged — needs user input)
+
+- U2 secrets, U3 DNS records for greyauction.com (subdomain plan in
+  docs/KEYS_AND_ACCESS.md §6), U4 R2 key pair, U5 business rules, U6 Coolify
+  access/token — details and exact env var names in docs/KEYS_AND_ACCESS.md.
+- Optional: U7 Nest 12 once @nestjs/throttler supports it; web-push VAPID (we can
+  generate); Lighthouse budget run will now execute automatically in CI.
+
+### Command cheat sheet (from docs/OPERATIONS.md) — unchanged
+
+---
+
+## SESSION HANDOFF — previous (2026-08-31, end of day)
 
 **State when this file was written:** everything below is committed and pushed;
 working tree clean; only branch is `master` (stale fully-merged

@@ -8,7 +8,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-import { Card, CardContent, CardFooter } from '@/shared/components/common/card';
+import { Card, CardContent } from '@/shared/components/common/card';
 import { Badge } from '@/shared/components/common/badge';
 import { Button } from '@/shared/components/common/button';
 

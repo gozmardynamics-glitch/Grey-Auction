@@ -47,7 +47,7 @@ function LoginForm() {
       }
 
       const session = await getSession();
-      const role = (session?.user as any)?.role || 'buyer';
+      const role = (session?.user as { role?: string } | undefined)?.role || 'buyer';
       const redirect =
         searchParams.get('redirect') || ROLE_DASHBOARDS[role] || '/';
       router.push(redirect);

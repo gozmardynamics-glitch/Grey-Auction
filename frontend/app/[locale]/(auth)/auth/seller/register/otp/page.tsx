@@ -21,7 +21,6 @@ interface OTPVerificationProps {
 export default function SellerOTPVerification({
   email,
   length = 6,
-  onVerify,
   onResend,
   title = 'Verify Account',
   description,

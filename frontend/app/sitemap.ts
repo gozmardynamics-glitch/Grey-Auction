@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getAuctions } from '@/lib/server/data';
+import type { Auction } from '@/app/[locale]/(website)/models';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://greyauction.com';
 
@@ -24,8 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const auctionEntries: MetadataRoute.Sitemap = (auctions || [])
-    .filter((auction: any) => auction?.slug)
-    .map((auction: any) => ({
+    .filter((auction: Auction) => auction?.slug)
+    .map((auction: Auction) => ({
     url: `${BASE_URL}/en/auctions/${auction.slug}`,
     lastModified: auction.endTimeIso
       ? new Date(auction.endTimeIso)

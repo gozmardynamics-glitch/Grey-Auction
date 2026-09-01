@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { ArrowLeft, Link2, UserPlus, Lock, Shield, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Link2, UserPlus, Lock, Shield, Check } from 'lucide-react';
 import { Badge, Button } from '@/shared/components/common';
 import type { BiddingRoom, BiddingRoomAuction } from '../../models';
 import AuctionCard from './auction_card';

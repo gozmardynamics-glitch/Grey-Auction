@@ -83,17 +83,17 @@ export default auth(async (req) => {
     const cookie = req.cookies.get(cookieName)?.value;
     if (cookie) {
       try {
-        const decoded = (await decode({
+        const decoded = await decode({
           token: cookie,
           secret: process.env.AUTH_SECRET || '',
           salt: cookieName,
-        })) as any;
+        });
         role = decoded?.role;
       } catch {
-        role = (session?.user as any)?.role as string | undefined;
+        role = session?.user?.role;
       }
     }
-    if (!role) role = (session?.user as any)?.role as string | undefined;
+    if (!role) role = session?.user?.role;
   }
 
   // Protect dashboard routes

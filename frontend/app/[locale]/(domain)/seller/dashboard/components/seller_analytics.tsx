@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/redux/store';
 import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/shared/components/common';
-import { ShoppingBag, Package, Star, Wallet } from 'lucide-react';
+import { ShoppingBag, Package, Star, Wallet, type LucideIcon } from 'lucide-react';
 
 interface PeriodStats {
   total_sales: number;
@@ -17,7 +17,19 @@ interface PeriodStats {
   negative_reviews: number;
 }
 
-const INFLATABLE = (p: any) => ({
+interface RawPeriodStats {
+  total_sales?: number;
+  total_orders?: number;
+  completed_orders?: number;
+  products_listed?: number;
+  products_sold?: number;
+  reviews_received?: number;
+  average_rating?: number;
+  positive_reviews?: number;
+  negative_reviews?: number;
+}
+
+const INFLATABLE = (p: RawPeriodStats | null | undefined): PeriodStats => ({
   total_sales: Number(p?.total_sales || 0),
   total_orders: Number(p?.total_orders || 0),
   completed_orders: Number(p?.completed_orders || 0),
@@ -139,7 +151,7 @@ export default function SellerAnalytics() {
   );
 }
 
-function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function Kpi({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-4">

@@ -1,5 +1,9 @@
 import { Badge } from '@/shared/components/common';
+import type { VariantProps } from 'class-variance-authority';
+import { badgeVariants } from '@/shared/components/common/badge';
 import { ColumnDef } from '@tanstack/react-table';
+
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
 
 export interface ListedAuctions {
   id: string;
@@ -10,13 +14,13 @@ export interface ListedAuctions {
   status: 'Pending' | 'Approved' | 'Rejected';
 }
 
-const priorityVariants: Record<ListedAuctions['priority'], string> = {
+const priorityVariants: Record<ListedAuctions['priority'], BadgeVariant> = {
   High: 'destructive',
   Medium: 'secondary',
   Low: 'outline',
 };
 
-const statusVariants: Record<ListedAuctions['status'], string> = {
+const statusVariants: Record<ListedAuctions['status'], BadgeVariant> = {
   Pending: 'secondary',
   Approved: 'default',
   Rejected: 'destructive',
@@ -50,7 +54,7 @@ export const columns: ColumnDef<ListedAuctions>[] = [
       const priority = row.getValue('priority') as ListedAuctions['priority'];
       return (
         <Badge
-         variant={priorityVariants[priority] as any}>
+         variant={priorityVariants[priority]}>
           {priority}
         </Badge>
       );
@@ -66,7 +70,7 @@ export const columns: ColumnDef<ListedAuctions>[] = [
     cell: ({ row }) => {
       const status = row.getValue('status') as ListedAuctions['status'];
       return (
-        <Badge variant={statusVariants[status] as any}>
+        <Badge variant={statusVariants[status]}>
           {status}
         </Badge>
       );

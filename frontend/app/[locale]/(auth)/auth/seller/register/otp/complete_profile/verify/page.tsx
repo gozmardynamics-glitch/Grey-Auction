@@ -147,7 +147,7 @@ export default function VerificationPage() {
           <FormField
             control={form.control}
             name="file"
-            render={({ field }) => (
+            render={() => (
               <FormItem>
                 <FormLabel className="text-foreground">Upload File</FormLabel>
                 <FormControl>

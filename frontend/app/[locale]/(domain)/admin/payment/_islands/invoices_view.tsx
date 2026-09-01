@@ -36,17 +36,12 @@ export default function InvoicesView() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchInvoices = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/invoices`, { cache: 'no-store' });
-      const json = await res.json();
-      setInvoices(json.data || []);
-    } catch {
-      toast.error('Failed to load invoices');
-    } finally {
-      setLoading(false);
-    }
+  const fetchInvoices = useCallback(() => {
+    fetch(`${API_URL}/invoices`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => setInvoices(json.data || []))
+      .catch(() => toast.error('Failed to load invoices'))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {

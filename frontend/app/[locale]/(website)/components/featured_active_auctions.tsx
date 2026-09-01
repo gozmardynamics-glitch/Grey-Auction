@@ -5,7 +5,7 @@ import { MapPin, Clock, Gavel, Eye, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button, Card, CardContent, CountdownTimer } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
-import { Auction, categoryGradients } from '../models/index';
+import { Auction } from '../models/index';
 
 interface FeaturedActiveAuctionsProps {
   auctions: Auction[];

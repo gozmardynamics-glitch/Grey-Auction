@@ -1,11 +1,11 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { CreditCard, Landmark, Wallet, Smartphone } from 'lucide-react';
+import { CreditCard, Landmark, Wallet, type LucideIcon } from 'lucide-react';
 
 export type PaymentProviderId = 'paystack' | 'flutterwave' | 'interswitch' | 'opay';
 
-const PROVIDERS: { id: PaymentProviderId; label: string; icon: any; description: string }[] = [
+const PROVIDERS: { id: PaymentProviderId; label: string; icon: LucideIcon; description: string }[] = [
   { id: 'paystack', label: 'Paystack', icon: CreditCard, description: 'Card, bank transfer, USSD' },
   { id: 'flutterwave', label: 'Flutterwave', icon: CreditCard, description: 'Card, transfer, mobile money' },
   { id: 'interswitch', label: 'Interswitch', icon: Landmark, description: 'Bank transfer / Collection' },

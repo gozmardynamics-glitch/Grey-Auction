@@ -34,7 +34,7 @@ export default function BuyerAuthenticationsModule() {
     },
   });
 
-  const onSavePassword = (data: BuyerChangePasswordValues) => {
+  const onSavePassword = () => {
     
     toast.success('Password changed successfully.');
     passwordForm.reset();
@@ -48,7 +48,7 @@ export default function BuyerAuthenticationsModule() {
     },
   });
 
-  const onSaveSecurity = (data: BuyerSecurityOptionsValues) => {
+  const onSaveSecurity = () => {
     
     toast.success('Security options saved.');
   };

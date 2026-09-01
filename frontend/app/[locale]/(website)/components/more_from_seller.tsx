@@ -9,7 +9,6 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-  EmptyState,
 } from '@/shared/components/common';
 import { Store } from 'lucide-react';
 

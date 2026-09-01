@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Check } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from './button';
 import { useAppSelector } from '@/redux/store';
 
@@ -30,39 +30,44 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(() => {
     if (!token) return;
-    setLoading(true);
-    try {
-      const [listRes, countRes] = await Promise.all([
-        fetch(API_BASE + '/notifications?limit=5', {
-          headers: { Authorization: 'Bearer ' + token },
-          cache: 'no-store',
-        }),
-        fetch(API_BASE + '/notifications/unread-count', {
-          headers: { Authorization: 'Bearer ' + token },
-          cache: 'no-store',
-        }),
-      ]);
-      const list = await listRes.json().catch(() => ({}));
-      const count = await countRes.json().catch(() => ({}));
-      setItems(Array.isArray(list.data) ? list.data : []);
-      setUnread(Number(count.data?.count || 0));
-    } catch {
-      // API unavailable - keep the bell hidden (no crashing)
-    } finally {
-      setLoading(false);
-    }
-  };
+    Promise.all([
+      fetch(API_BASE + '/notifications?limit=5', {
+        headers: { Authorization: 'Bearer ' + token },
+        cache: 'no-store',
+      }),
+      fetch(API_BASE + '/notifications/unread-count', {
+        headers: { Authorization: 'Bearer ' + token },
+        cache: 'no-store',
+      }),
+    ])
+      .then(([listRes, countRes]) =>
+        Promise.all([
+          listRes.json().catch(() => ({})),
+          countRes.json().catch(() => ({})),
+        ])
+      )
+      .then(([list, count]) => {
+        setItems(Array.isArray(list.data) ? list.data : []);
+        setUnread(Number(count.data?.count || 0));
+      })
+      .catch(() => {
+        // API unavailable - keep the bell hidden (no crashing)
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
     load();
     const t = setInterval(load, 60000); // refresh every minute
     return () => clearInterval(t);
-  }, [token]);
+  }, [token, load]);
 
   const markRead = async (id: string) => {
     try {

@@ -38,7 +38,7 @@ export default function BuyerWalletModule() {
   // Defaults render when the wallet API is unavailable
   const [walletBalance, setWalletBalance] = useState(20000000);
   const [hasPin, setHasPin] = useState(false);
-  const [apiData, setApiData] = useState<WalletApiData['transactions'] | null>(null);
+  const [, setApiData] = useState<WalletApiData['transactions'] | null>(null);
 
   // Load the live wallet when available; keep defaults on failure
   useEffect(() => {
@@ -74,23 +74,6 @@ export default function BuyerWalletModule() {
   }, [authToken]);
 
   const bankAccount = null; // no linked bank account flow in the API yet
-  const walletPayments =
-    apiData && apiData.length > 0
-      ? apiData.map((tx) => ({
-          referenceId: tx.reference || tx.id,
-          paymentName: tx.description || (tx.type === 'withdraw' ? 'Withdraw' : 'Deposit'),
-          type: tx.type === 'withdraw' ? ('Withdraw' as const) : ('Deposit' as const),
-          method: 'Bank Transfer' as const,
-          amount: Number(tx.amount),
-          date: new Date(tx.createdAt).toLocaleString(),
-          status:
-            tx.status === 'completed'
-              ? ('Completed' as const)
-              : tx.status === 'failed'
-                ? ('Failed' as const)
-                : ('Pending' as const),
-        }))
-      : DUMMY_WALLET_PAYMENTS;
 
   return (
     <div className="p-4 md:p-6 space-y-6">

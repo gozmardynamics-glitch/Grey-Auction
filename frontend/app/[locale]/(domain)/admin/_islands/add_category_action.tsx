@@ -27,14 +27,14 @@ export default function AddCategoryAction({ categories }: AddCategoryActionProps
         open={addCategoryOpen}
         onOpenChange={setAddCategoryOpen}
         categories={categories}
-        onSubmit={(data: any) => {
+        onSubmit={(data: Record<string, unknown>) => {
           const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
           fetch(`${apiBase}/categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: data.name || data.category,
-              slug: data.slug || (data.name || data.category || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              slug: String(data.slug || data.name || data.category || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
               description: data.description,
               subCategories: data.subCategories || [],
               imageUrl: data.icon || undefined,

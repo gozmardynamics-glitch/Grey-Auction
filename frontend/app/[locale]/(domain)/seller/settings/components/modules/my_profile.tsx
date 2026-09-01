@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import {
@@ -87,9 +87,10 @@ export default function MyProfileSettings() {
     toast.success('Address information saved.');
   };
 
-  const firstName = profileForm.watch('firstName') || '';
-  const lastName = profileForm.watch('lastName') || '';
-  const email = profileForm.watch('email') || '';
+  const firstName = useWatch({ control: profileForm.control, name: 'firstName' }) || '';
+  const lastName = useWatch({ control: profileForm.control, name: 'lastName' }) || '';
+  const email = useWatch({ control: profileForm.control, name: 'email' }) || '';
+  const shopName = useWatch({ control: profileForm.control, name: 'shopName' });
   const initials = `${firstName[0] || ''}${lastName[0] || ''}`;
 
   return (
@@ -101,7 +102,7 @@ export default function MyProfileSettings() {
         </div>
         <div>
           <h3 className="text-lg font-semibold">
-            {profileForm.watch('shopName')}
+            {shopName}
           </h3>
           <p className="text-sm text-muted-foreground">{email}</p>
           <Badge variant="outline" className="mt-1">

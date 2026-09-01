@@ -6,7 +6,7 @@ describe('ConditionReportPanel (L4)', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    global.fetch = vi.fn((input: any) => {
+    global.fetch = vi.fn((input: unknown) => {
       const url = String(input);
       if (url.endsWith('/history')) {
         return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });

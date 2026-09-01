@@ -43,6 +43,10 @@ interface OrderItem {
   price: number;
 }
 
+interface PaymentFormValuesWithEmail extends PaymentFormValues {
+  email?: string;
+}
+
 interface PaymentFormProps {
   orderItems: OrderItem[];
 }
@@ -81,7 +85,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
           type: 'invoice',
           provider,
           amount: total,
-          email: (data as any).email || 'buyer@greyauction.com',
+          email: (data as PaymentFormValuesWithEmail).email || 'buyer@greyauction.com',
           callbackUrl: window.location.origin + '/checkout/confirmation',
           metadata: {},
         }),
@@ -92,7 +96,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
 
       if (d?.checkoutUrl) {
         // Redirect to the chosen gateway's hosted checkout.
-        window.location.href = d.checkoutUrl;
+        window.location.assign(d.checkoutUrl);
         return;
       }
 

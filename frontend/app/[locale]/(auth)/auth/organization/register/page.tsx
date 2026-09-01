@@ -308,7 +308,6 @@ export default function OrganizationRegisterPage() {
 
     // 1. Create the platform account (seller role) — returns a JWT
     let token = '';
-    let accountId = '';
     try {
       const accountRes = await fetch(apiBase + '/auth/register', {
         method: 'POST',
@@ -322,7 +321,6 @@ export default function OrganizationRegisterPage() {
       });
       const accountJson = await accountRes.json().catch(() => ({}));
       token = accountJson?.data?.token || '';
-      accountId = accountJson?.data?.user?.id || '';
     } catch {
       isDemo = true;
     }

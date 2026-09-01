@@ -40,8 +40,8 @@ export function useAIFeature({ featureKey, onSuccess, onError }: UseAIFeatureOpt
       setResult(output);
       onSuccess?.(output);
       return output;
-    } catch (e: any) {
-      const msg = e.message || 'AI feature failed';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'AI feature failed';
       setError(msg);
       onError?.(msg);
       toast.error('AI feature failed. A fallback model may be used.');

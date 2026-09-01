@@ -10,13 +10,15 @@ export interface PendingRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
 }
 
-const priorityVariants: Record<PendingRequest['priority'], string> = {
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
+
+const priorityVariants: Record<PendingRequest['priority'], BadgeVariant> = {
   High: 'destructive',
   Medium: 'secondary',
   Low: 'outline',
 };
 
-const statusVariants: Record<PendingRequest['status'], string> = {
+const statusVariants: Record<PendingRequest['status'], BadgeVariant> = {
   Pending: 'secondary',
   Approved: 'default',
   Rejected: 'destructive',
@@ -49,7 +51,7 @@ export const columns: ColumnDef<PendingRequest>[] = [
     cell: ({ row }) => {
       const priority = row.getValue('priority') as PendingRequest['priority'];
       return (
-        <Badge variant={priorityVariants[priority] as any}>
+        <Badge variant={priorityVariants[priority]}>
           {priority}
         </Badge>
       );
@@ -65,7 +67,7 @@ export const columns: ColumnDef<PendingRequest>[] = [
     cell: ({ row }) => {
       const status = row.getValue('status') as PendingRequest['status'];
       return (
-        <Badge variant={statusVariants[status] as any}>
+        <Badge variant={statusVariants[status]}>
           {status}
         </Badge>
       );

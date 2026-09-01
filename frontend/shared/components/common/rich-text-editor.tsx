@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -27,6 +28,32 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+}
+
+function ToolbarButton({
+  onClick,
+  isActive = false,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  isActive?: boolean;
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        'rounded p-1.5 transition-colors hover:bg-muted',
+        isActive && 'bg-muted text-primary'
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
 export function RichTextEditor({
@@ -58,30 +85,6 @@ export function RichTextEditor({
   });
 
   if (!editor) return null;
-
-  const ToolbarButton = ({
-    onClick,
-    isActive = false,
-    children,
-    title,
-  }: {
-    onClick: () => void;
-    isActive?: boolean;
-    children: React.ReactNode;
-    title: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={cn(
-        'rounded p-1.5 transition-colors hover:bg-muted',
-        isActive && 'bg-muted text-primary'
-      )}
-    >
-      {children}
-    </button>
-  );
 
   const iconSize = 'h-4 w-4';
 

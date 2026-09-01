@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Lock,
   Clock,
   Gavel,
   Users,
-  MapPin,
   Shield,
   Sparkles,
   CheckCircle2,
@@ -60,26 +60,41 @@ export default function InviteLandingPage({
   const [joined, setJoined] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [requested, setRequested] = useState(false);
+  const [startsSoon, setStartsSoon] = useState(false);
 
-  const loadInvite = useCallback(async () => {
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${apiBase}/invites/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: inviteToken }),
+  const loadInvite = useCallback(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    fetch(`${apiBase}/invites/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: inviteToken }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          return res.json().then((err: { message?: string }) => {
+            throw new Error(err.message || 'Invalid or expired invitation');
+          });
+        }
+        return res.json();
+      })
+      .then((json) => {
+        const data = (json.data ?? json) as InviteData;
+        setInvite(data);
+        setStartsSoon(
+          new Date(data.room.startTime).getTime() - Date.now() <
+            24 * 60 * 60 * 1000
+        );
+      })
+      .catch((err: unknown) => {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'This invitation is invalid or has expired.'
+        );
+      })
+      .finally(() => {
+        setLoading(false);
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Invalid or expired invitation');
-      }
-      const json = await res.json();
-      setInvite(json.data ?? json);
-    } catch (err: any) {
-      setError(err.message || 'This invitation is invalid or has expired.');
-    } finally {
-      setLoading(false);
-    }
   }, [inviteToken]);
 
   useEffect(() => {
@@ -110,8 +125,8 @@ export default function InviteLandingPage({
       setTimeout(() => {
         router.push(`/room/${invite.room.id}`);
       }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Failed to join room');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to join room');
       setJoining(false);
     }
   }, [invite, router]);
@@ -135,8 +150,8 @@ export default function InviteLandingPage({
         throw new Error(err.message || 'Request failed');
       }
       setRequested(true);
-    } catch (err: any) {
-      setError(err.message || 'Could not submit your request');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not submit your request');
     } finally {
       setRequesting(false);
     }
@@ -200,8 +215,6 @@ export default function InviteLandingPage({
       </div>
     );
   }
-
-  const startsSoon = new Date(invite.room.startTime).getTime() - Date.now() < 24 * 60 * 60 * 1000;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
@@ -290,10 +303,12 @@ export default function InviteLandingPage({
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                 {invite.product.imageUrl && (
-                  <img
+                  <Image
                     src={invite.product.imageUrl}
                     alt={invite.product.title}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="64px"
                   />
                 )}
               </div>

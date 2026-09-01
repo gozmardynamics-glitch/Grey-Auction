@@ -2,6 +2,27 @@ import { auth } from '@/auth';
 import { cache } from 'react';
 import type { Auction } from '@/app/[locale]/(website)/models';
 
+// Typed server-data boundary: each getter below asserts the entity shape its
+// consumers (admin/seller/website pages) render with.
+import type {
+  Admin as AdminUser,
+  Banner as AdminBanner,
+  Bid as AdminBid,
+  BiddingRoom as AdminBiddingRoom,
+  Buyer as AdminBuyer,
+  Category as AdminCategory,
+  Faq as AdminFaq,
+  Payment as AdminPayment,
+  Seller as AdminSeller,
+  Ticket as AdminTicket,
+} from '@/app/[locale]/(domain)/admin/models';
+import type {
+  BiddingRoom as SellerBiddingRoom,
+  Conversation as SellerConversation,
+  Sale as SellerSale,
+} from '@/app/[locale]/(domain)/seller/models';
+import type { Category as WebsiteCategory } from '@/app/[locale]/(website)/models';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
@@ -11,7 +32,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const getSessionToken = cache(async (): Promise<string | null> => {
   try {
     const session = await auth();
-    return (session?.user as any)?.accessToken || null;
+    return session?.user?.accessToken || null;
   } catch {
     return null;
   }
@@ -22,7 +43,7 @@ const getSessionToken = cache(async (): Promise<string | null> => {
  * so admin/seller endpoints (JWT-guarded) return real data for the
  * authenticated request that rendered the page.
  */
-async function apiFetch(path: string, options?: RequestInit): Promise<any> {
+async function apiFetch(path: string, options?: RequestInit): Promise<unknown> {
   try {
     const token = await getSessionToken();
     const res = await fetch(`${API_BASE}${path}`, {
@@ -45,49 +66,81 @@ async function apiFetch(path: string, options?: RequestInit): Promise<any> {
  * Normalize a backend Product row into the frontend Auction shape so
  * cards/detail pages render real data (images, location, counts...).
  */
-function normalizeAuction(p: any): Auction {
-  const images = Array.isArray(p?.images) && p.images.length ? p.images : ['/placeholder.svg'];
+interface RawAuction {
+  id?: string;
+  slug?: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  subCategory?: string;
+  images?: string[];
+  status?: string;
+  currentBid?: number;
+  startingBid?: number;
+  totalBids?: number;
+  endTime?: string;
+  city?: string;
+  country?: string;
+  countryCode?: string;
+  sellerId?: string;
+  auctionType?: string;
+  watchersCount?: number;
+  specifications?: Record<string, unknown>;
+  seller?: {
+    business_name?: string;
+    name?: string;
+    rating?: number;
+    reviewCount?: number;
+  };
+}
+
+function normalizeAuction(p: unknown): Auction {
+  const raw = p as RawAuction;
+  const images = Array.isArray(raw?.images) && raw.images.length ? raw.images : ['/placeholder.svg'];
   const status: Auction['status'] =
-    p?.status === 'sold' ? 'sold' : 'active';
+    raw?.status === 'sold' ? 'sold' : 'active';
   return {
-    id: p?.id || '',
-    slug: p?.slug || p?.id,
-    title: p?.title || '',
-    description: p?.description || '',
-    category: p?.category || '',
-    subCategory: p?.subCategory || '',
+    id: raw?.id || '',
+    slug: raw?.slug || raw?.id,
+    title: raw?.title || '',
+    description: raw?.description || '',
+    category: raw?.category || '',
+    subCategory: raw?.subCategory || '',
     images,
     imageUrl: images[0],
-    currentBid: Number(p?.currentBid ?? p?.startingBid ?? 0),
-    startingBid: Number(p?.startingBid ?? 0),
-    totalBids: Number(p?.totalBids ?? 0),
+    currentBid: Number(raw?.currentBid ?? raw?.startingBid ?? 0),
+    startingBid: Number(raw?.startingBid ?? 0),
+    totalBids: Number(raw?.totalBids ?? 0),
     timeLeft: '',
-    endTime: p?.endTime ? new Date(p.endTime) : new Date(Date.now() + 7 * 86400000),
-    endTimeIso: p?.endTime,
+    endTime: raw?.endTime ? new Date(raw.endTime) : new Date(Date.now() + 7 * 86400000),
+    endTimeIso: raw?.endTime,
     status,
-    location: p?.city
-      ? { city: p.city, country: p.country || 'Nigeria', countryCode: p.countryCode || 'NG' }
+    location: raw?.city
+      ? { city: raw.city, country: raw.country || 'Nigeria', countryCode: raw.countryCode || 'NG' }
       : undefined,
-    sellerId: p?.sellerId || '',
-    sellerName: p?.seller?.business_name || p?.seller?.name || '',
-    auctionType: p?.auctionType === 'direct_sale' ? 'buy' : 'bid',
-    specs: p?.specifications
-      ? Object.entries(p.specifications)
+    sellerId: raw?.sellerId || '',
+    sellerName: raw?.seller?.business_name || raw?.seller?.name || '',
+    auctionType: raw?.auctionType === 'direct_sale' ? 'buy' : 'bid',
+    specs: raw?.specifications
+      ? Object.entries(raw.specifications)
           .map(([k, v]) => `${k}: ${v}`)
           .join(' · ')
       : undefined,
-    watchersCount: Number(p?.watchersCount ?? 0),
-    rating: Number(p?.seller?.rating ?? 0),
-    reviewCount: Number(p?.seller?.reviewCount ?? 0),
+    watchersCount: Number(raw?.watchersCount ?? 0),
+    rating: Number(raw?.seller?.rating ?? 0),
+    reviewCount: Number(raw?.seller?.reviewCount ?? 0),
   };
 }
 
 /** Unwrap the many list shapes the API returns into a plain array. */
-function unwrapList(data: any): any[] | null {
+function unwrapList(data: unknown): unknown[] | null {
   if (!data) return null;
   if (Array.isArray(data)) return data;
-  if (Array.isArray(data.items)) return data.items;
-  if (Array.isArray(data.data)) return data.data;
+  if (typeof data === 'object' && data !== null) {
+    const record = data as { items?: unknown; data?: unknown };
+    if (Array.isArray(record.items)) return record.items;
+    if (Array.isArray(record.data)) return record.data;
+  }
   return null;
 }
 
@@ -840,8 +893,8 @@ export async function getFeaturedAuctions() {
 export async function getCategories() {
   const data = await apiFetch('/categories');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list;
-  return USE_MOCK_FALLBACK ? mockCategories : [];
+  if (list && list.length > 0) return list as WebsiteCategory[];
+  return (USE_MOCK_FALLBACK ? mockCategories : []) as unknown as WebsiteCategory[];
 }
 
 export async function getRelatedAuctions(category: string) {
@@ -896,11 +949,12 @@ export async function getFaqCategories() {
     // Group the flat FAQ rows into the FAQCategory shape the UI expects
     const groups = new Map<string, { question: string; answer: string }[]>();
     for (const faq of list) {
-      const name = (faq.category as string) || 'General';
+      const row = faq as { category?: unknown; question?: unknown; answer?: unknown };
+      const name = (typeof row.category === 'string' && row.category) || 'General';
       if (!groups.has(name)) groups.set(name, []);
       groups.get(name)!.push({
-        question: (faq.question as string) || '',
-        answer: (faq.answer as string) || '',
+        question: (typeof row.question === 'string' && row.question) || '',
+        answer: (typeof row.answer === 'string' && row.answer) || '',
       });
     }
     const EMOJIS = ['📦', '💬', '💰', '🛠️', '🚚', '🔒', '⭐', '🏷️'];
@@ -947,64 +1001,64 @@ export async function getAdminAuctions() {
 export async function getAdminBids() {
   const data = await apiFetch('/admin/bids');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminBid[];
 }
 
 export async function getAdminBuyers() {
   const data = await apiFetch('/admin/buyers');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminBuyer[];
 }
 
 export async function getAdminSellers() {
   const data = await apiFetch('/admin/sellers');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminSeller[];
 }
 
 export async function getAdminAdmins() {
   const data = await apiFetch('/admin/admins');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminUser[];
 }
 
 export async function getAdminCategories() {
   const data = await apiFetch('/categories');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list;
-  return USE_MOCK_FALLBACK ? mockCategories : [];
+  if (list && list.length > 0) return list as AdminCategory[];
+  return (USE_MOCK_FALLBACK ? mockCategories : []) as unknown as AdminCategory[];
 }
 
 export async function getAdminBanners() {
   const data = await apiFetch('/admin/banners');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list;
-  return USE_MOCK_FALLBACK ? mockBanners : [];
+  if (list && list.length > 0) return list as AdminBanner[];
+  return (USE_MOCK_FALLBACK ? mockBanners : []) as unknown as AdminBanner[];
 }
 
 export async function getAdminFaqs() {
   const data = await apiFetch('/admin/faqs');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list;
-  return USE_MOCK_FALLBACK ? mockFaqs : [];
+  if (list && list.length > 0) return list as AdminFaq[];
+  return (USE_MOCK_FALLBACK ? mockFaqs : []) as unknown as AdminFaq[];
 }
 
 export async function getAdminPayments() {
   const data = await apiFetch('/admin/payments');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminPayment[];
 }
 
 export async function getAdminBiddingRooms() {
   const data = await apiFetch('/rooms');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminBiddingRoom[];
 }
 
 export async function getAdminTickets() {
   const data = await apiFetch('/tickets');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminTicket[];
 }
 
 // ─── Seller ─────────────────────────────────────────────────────────────
@@ -1019,23 +1073,25 @@ export async function getSellerListings() {
 export async function getSellerPayments() {
   const data = await apiFetch('/sellers/payouts/me');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as AdminPayment[];
 }
 
 export async function getSellerSales() {
   const data = await apiFetch('/sellers/me/sales');
-  if (data && Array.isArray(data.products)) return data.products;
+  if (data && typeof data === 'object' && Array.isArray((data as { products?: unknown }).products)) {
+    return (data as { products: unknown[] }).products as SellerSale[];
+  }
   return [];
 }
 
 export async function getSellerBiddingRooms() {
   const data = await apiFetch('/rooms');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as SellerBiddingRoom[];
 }
 
 export async function getSellerConversations() {
   const data = await apiFetch('/sellers/me/conversations');
   const list = unwrapList(data);
-  return list ?? [];
+  return (list ?? []) as SellerConversation[];
 }

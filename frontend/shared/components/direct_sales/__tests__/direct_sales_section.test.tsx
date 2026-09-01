@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { DirectSalesSection } from '../direct_sales_section';
 import { CurrencyProvider } from '@/shared/currency';
 
-function makeFetch(items: any[]) {
-  return vi.fn((input: any) => {
+function makeFetch(items: unknown[]) {
+  return vi.fn((input: unknown) => {
     const url = String(input);
     if (url.includes('/exchange-rates')) {
       return Promise.resolve({

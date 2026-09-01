@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/compo
 import { Input } from '@/shared/components/common/input';
 import { Select } from '@/shared/components/common/select';
 import { Label } from '@/shared/components/common/label';
-import { Switch } from '@/shared/components/common/switch';
 import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Trash2, Edit, Wifi } from 'lucide-react';

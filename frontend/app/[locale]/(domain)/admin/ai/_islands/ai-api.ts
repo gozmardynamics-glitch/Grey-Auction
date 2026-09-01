@@ -1,3 +1,5 @@
+import type { LLMModel } from '../../models';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export async function getAIProviders() {
@@ -38,11 +40,12 @@ export async function getAIUsageSummary() {
 
 export async function getAllModels() {
   const providers = await getAIProviders();
-  const models: any[] = [];
+  const models: Record<string, unknown>[] = [];
   for (const p of providers) {
     for (const m of (p.models || [])) {
       models.push({ ...m, provider: p });
     }
   }
-  return models;
+  // Runtime shape is LLMModel + provider; assert at the boundary.
+  return models as unknown as LLMModel[];
 }

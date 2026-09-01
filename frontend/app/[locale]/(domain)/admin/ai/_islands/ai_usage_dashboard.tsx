@@ -16,16 +16,14 @@ export default function AIUsageDashboard() {
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchSummary = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/admin/ai/usage/summary`);
-      const json = await res.json();
-      setSummary(json.data);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+  const fetchSummary = useCallback(() => {
+    fetch(`${API_URL}/admin/ai/usage/summary`)
+      .then((res) => res.json())
+      .then((json) => setSummary(json.data))
+      .catch(() => {
+        // ignore
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);

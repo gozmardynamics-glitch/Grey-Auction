@@ -20,7 +20,7 @@ export function StatusTabs({ tabs, activeTab, onTabChange }: StatusTabsProps) {
   return (
     <div className="mb-6 overflow-x-auto">
       <div className="flex min-w-max gap-0 border-b border-border">
-        {tabs.map((tab, index) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => onTabChange(tab.key)}

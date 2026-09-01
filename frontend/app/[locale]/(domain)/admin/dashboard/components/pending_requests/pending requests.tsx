@@ -1,9 +1,3 @@
-
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
 import { ListFilter, FileText } from 'lucide-react';
 
 import {
@@ -12,12 +6,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  DataTable,
   EmptyState,
 } from '@/shared/components/common';
 
@@ -28,12 +17,6 @@ interface PendingRequestsProps {
 }
 
 export default function PendingRequests({ data = [] }: PendingRequestsProps) {
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   return (
     <Card className=''>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -54,40 +37,12 @@ export default function PendingRequests({ data = [] }: PendingRequestsProps) {
             className="py-12"
           />
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            columns={columns}
+            data={data}
+            pagination={false}
+            showToolbar={false}
+          />
         )}
       </CardContent>
     </Card>

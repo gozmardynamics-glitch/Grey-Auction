@@ -7,14 +7,27 @@ import {
   Clock,
   Users,
   Shield,
-  CheckCircle2,
   ArrowRight,
   Mail,
   Sparkles,
-  MapPin,
 } from 'lucide-react';
 import { Button, Card, Skeleton } from '@/shared/components/common';
 import { useAppSelector } from '@/redux/store';
+
+interface InvitationRoom {
+  id: string;
+  roomId?: string;
+  productIds?: string[];
+  productId?: string;
+  name: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  type: 'public' | 'private';
+  requiresDeposit: boolean;
+  depositAmount?: number;
+  status: string;
+}
 
 interface Invitation {
   id: string;
@@ -42,42 +55,45 @@ export default function InvitationsModule() {
   const [error, setError] = useState<string | null>(null);
   const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
 
-  const loadInvitations = useCallback(async () => {
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      // Fetch rooms where user is invited
-      const res = await fetch(`${apiBase}/rooms`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-      });
-      if (!res.ok) throw new Error('Failed to load invitations');
-      const json = await res.json();
-      const rooms = json.data ?? json.data ?? [];
-      // Filter to private rooms where user is in invited list
-      // (In production this should be a dedicated endpoint)
-      const invited = rooms
-        .filter((room: any) => room.type === 'private')
-        .map((room: any) => ({
-          id: room.id,
-          token: '',
-          roomId: room.id,
-          productId: room.productIds?.[0] || '',
-          roomName: room.name,
-          roomDescription: room.description,
-          startTime: room.startTime,
-          endTime: room.endTime,
-          type: room.type,
-          requiresDeposit: room.requiresDeposit,
-          depositAmount: room.depositAmount,
-          status: room.status,
-          expiresAt: room.endTime,
-          participantCount: 0,
-        }));
-      setInvitations(invited);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const loadInvitations = useCallback(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    // Fetch rooms where user is invited
+    fetch(`${apiBase}/rooms`, {
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load invitations');
+        return res.json();
+      })
+      .then((json) => {
+        const data = json.data ?? json;
+        const rooms = Array.isArray(data) ? data : data?.rooms ?? [];
+        // Filter to private rooms where user is in invited list
+        // (In production this should be a dedicated endpoint)
+        const invited = rooms
+          .filter((room: InvitationRoom) => room.type === 'private')
+          .map((room: InvitationRoom) => ({
+            id: room.id,
+            token: '',
+            roomId: room.id,
+            productId: room.productIds?.[0] || '',
+            roomName: room.name,
+            roomDescription: room.description,
+            startTime: room.startTime,
+            endTime: room.endTime,
+            type: room.type,
+            requiresDeposit: room.requiresDeposit,
+            depositAmount: room.depositAmount,
+            status: room.status,
+            expiresAt: room.endTime,
+            participantCount: 0,
+          }));
+        setInvitations(invited);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Something went wrong');
+      })
+      .finally(() => setLoading(false));
   }, [authToken]);
 
   useEffect(() => {
@@ -99,8 +115,8 @@ export default function InvitationsModule() {
         });
         if (!res.ok) throw new Error('Failed to join room');
         router.push(`/room/${roomId}`);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Something went wrong');
       } finally {
         setJoiningRoomId(null);
       }

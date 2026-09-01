@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, CheckCircle2, Circle, AlertTriangle, UserX } from 'lucide-react';
 import { toast } from 'sonner';
@@ -85,7 +85,7 @@ export default function SettingsSecurity() {
     },
   });
 
-  const newPasswordValue = form.watch('newPassword');
+  const newPasswordValue = useWatch({ control: form.control, name: 'newPassword' });
 
   // Sync confirmPassword with newPassword (no confirm field in UI)
   useEffect(() => {

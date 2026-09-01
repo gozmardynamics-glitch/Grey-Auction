@@ -27,7 +27,7 @@ import { CompleteProfileFormValues } from '@/app/[locale]/(auth)/components/sche
 
 export default function CompleteProfilePage() {
   const router = useRouter();
-  const [isLoading, _setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const form = useForm<CompleteProfileFormValues>({
     resolver: zodResolver(completeProfileSchema),
@@ -40,7 +40,7 @@ export default function CompleteProfilePage() {
     },
   });
 
-  const onSubmit = async (data: CompleteProfileFormValues) => {
+  const onSubmit = async () => {
     
     router.push('/auth/seller/register/otp/complete_profile/verify');
   };

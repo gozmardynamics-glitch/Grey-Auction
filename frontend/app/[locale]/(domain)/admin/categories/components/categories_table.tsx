@@ -85,8 +85,8 @@ export default function CategoriesTable({
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              name: (category as any).category || (category as any).name,
-              description: (category as any).description,
+              name: (category as { category?: string; name?: string }).category || (category as { category?: string; name?: string }).name,
+              description: (category as { description?: string }).description,
             }),
           }).catch(() => {});
           setDetailsOpen(false);

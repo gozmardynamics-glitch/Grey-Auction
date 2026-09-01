@@ -53,8 +53,8 @@ export default function SellerSecuritySettings() {
       }
       toast.success('Password changed successfully.');
       passwordForm.reset();
-    } catch (err: any) {
-      toast.error(err.message || 'Password change failed. Check your current password.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Password change failed. Check your current password.');
     }
   };
 
@@ -68,7 +68,7 @@ export default function SellerSecuritySettings() {
     },
   });
 
-  const onSavePin = (data: WithdrawalPinValues) => {
+  const onSavePin = () => {
     
     toast.success('Withdrawal PIN changed successfully.');
     pinForm.reset();
@@ -82,7 +82,7 @@ export default function SellerSecuritySettings() {
     },
   });
 
-  const onSaveSecurity = (data: SecurityOptionsValues) => {
+  const onSaveSecurity = () => {
     
     toast.success('Security options saved.');
   };

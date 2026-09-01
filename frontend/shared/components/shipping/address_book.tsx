@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Star } from 'lucide-react';
-import { Button, Card, Input, Label } from '@/shared/components/common';
+import { Pencil, Trash2, Star } from 'lucide-react';
+import { Button, Input, Label } from '@/shared/components/common';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -36,7 +36,6 @@ export function AddressBook({ token }: { token?: string }) {
   if (token) headers.Authorization = 'Bearer ' + token;
 
   const load = useCallback(() => {
-    setLoading(true);
     fetch(API_BASE + '/shipping/addresses', { headers: token ? { Authorization: 'Bearer ' + token } : {} })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => setAddresses(Array.isArray(j?.data) ? j.data : []))
@@ -63,16 +62,19 @@ export function AddressBook({ token }: { token?: string }) {
     }
     setForm(EMPTY);
     setEditingId(null);
+    setLoading(true);
     load();
   };
 
   const remove = async (id: string) => {
     await fetch(API_BASE + '/shipping/addresses/' + id, { method: 'DELETE', headers });
+    setLoading(true);
     load();
   };
 
   const setDefault = async (id: string) => {
     await fetch(API_BASE + '/shipping/addresses/' + id + '/default', { method: 'POST', headers });
+    setLoading(true);
     load();
   };
 

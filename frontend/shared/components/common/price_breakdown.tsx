@@ -53,17 +53,25 @@ const computeFallback = (amount: number): FeeBreakdown => {
 };
 
 function PriceBreakdown({ amount, category, className }: PriceBreakdownProps) {
+  if (amount <= 0) {
+    return null;
+  }
+
+  return (
+    <PriceBreakdownInner
+      key={`${amount}:${category ?? ''}`}
+      amount={amount}
+      category={category}
+      className={className}
+    />
+  );
+}
+
+function PriceBreakdownInner({ amount, category, className }: PriceBreakdownProps) {
   const [data, setData] = useState<FeeBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (amount <= 0) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
     const timer = setTimeout(async () => {
       try {
         const apiBase =

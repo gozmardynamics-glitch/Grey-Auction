@@ -43,7 +43,6 @@ export function MyDisputes({ token }: { token?: string }) {
   const [open, setOpen] = useState(false);
 
   const load = useCallback(() => {
-    setLoading(true);
     fetch(API_BASE + '/disputes', {
       headers: token ? { Authorization: 'Bearer ' + token } : {},
       cache: 'no-store',
@@ -68,7 +67,7 @@ export function MyDisputes({ token }: { token?: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={load} aria-label="Refresh disputes">
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); load(); }} aria-label="Refresh disputes">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button size="sm" onClick={() => setOpen(true)} data-testid="open-dispute">
@@ -103,7 +102,7 @@ export function MyDisputes({ token }: { token?: string }) {
         </ul>
       )}
 
-      <DisputeDialog open={open} onClose={() => setOpen(false)} onOpened={load} token={token} />
+      <DisputeDialog open={open} onClose={() => setOpen(false)} onOpened={() => { setLoading(true); load(); }} token={token} />
     </Card>
   );
 }

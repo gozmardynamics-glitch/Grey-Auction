@@ -94,7 +94,7 @@ function ShareIconButton({
   );
 }
 
-export function ShareButtons({ url, title, description }: ShareButtonsProps) {
+export function ShareButtons({ url, title }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {
@@ -114,8 +114,6 @@ export function ShareButtons({ url, title, description }: ShareButtonsProps) {
     const shareUrl = btn.getUrl(url, title);
     window.open(shareUrl, '_blank', 'noopener,noreferrer');
   };
-
-  const shareText = description ? `${title} - ${description}` : title;
 
   return (
     <>

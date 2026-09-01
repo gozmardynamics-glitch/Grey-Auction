@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common/card';
 import { Badge } from '@/shared/components/common/badge';
-import { MiniSpinner } from '@/shared/components/common/spinner';
 import { toast } from 'sonner';
 import { Cpu, Layers, Zap, DollarSign } from 'lucide-react';
 import type { LLMProvider, AIUsageLog } from '../../models';
@@ -18,18 +17,12 @@ interface AIDashboardProps {
 
 export default function AIDashboard({ providers, summary }: AIDashboardProps) {
   const [usageLogs, setUsageLogs] = useState<AIUsageLog[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchUsage = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_URL}/admin/ai/usage`);
-      const data = await response.json();
-      setUsageLogs(data.data || []);
-    } catch {
-      toast.error('Failed to load usage data');
-    } finally {
-      setLoading(false);
-    }
+  const fetchUsage = useCallback(() => {
+    fetch(`${API_URL}/admin/ai/usage`)
+      .then((response) => response.json())
+      .then((data) => setUsageLogs(data.data || []))
+      .catch(() => toast.error('Failed to load usage data'));
   }, []);
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);

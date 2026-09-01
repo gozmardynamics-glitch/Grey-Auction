@@ -11,7 +11,6 @@ import {
   Card,
   CardContent,
   CardFooter,
-  Rating,
 } from '@/shared/components/common';
 
 import { Auction } from '../../models';

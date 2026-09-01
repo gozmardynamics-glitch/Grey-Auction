@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { DataTable } from '@/shared/components/common/data_table';
 import { Badge } from '@/shared/components/common/badge';
-import { Button } from '@/shared/components/common/button';
 import { Switch } from '@/shared/components/common/switch';
 import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';

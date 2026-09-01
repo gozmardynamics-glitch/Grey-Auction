@@ -50,14 +50,14 @@ export default function CreateListingPage() {
     scrollToTop();
   }, []);
 
-  const [createAuction, { isLoading: isCreating }] = useCreateAuctionMutation();
+  const [createAuction] = useCreateAuctionMutation();
 
   const handlePublish = useCallback(async () => {
     try {
       setIsSubmitting(true);
       setError(null);
 
-      const { auctionDetails, pricingAndTerms, lotAndInventory } = formData;
+      const { auctionDetails, pricingAndTerms } = formData;
 
       // Use start date if provided, otherwise start now
       const startTime = pricingAndTerms.auctionStartDate
@@ -89,7 +89,7 @@ export default function CreateListingPage() {
       setFormData(DEFAULT_FORM_DATA);
       setCurrentStep(1);
       router.push('/seller/auctions');
-    } catch (err) {
+    } catch {
       setError('Failed to publish listing. Please try again.');
     } finally {
       setIsSubmitting(false);

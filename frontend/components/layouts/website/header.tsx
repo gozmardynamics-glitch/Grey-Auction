@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAppSelector, useAppDispatch } from '@/redux/store';
 import { useRouter as useNextRouter } from 'next/navigation';

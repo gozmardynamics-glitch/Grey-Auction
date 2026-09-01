@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Autoplay from 'embla-carousel-autoplay';
 
@@ -16,7 +16,10 @@ import { FeaturedSlide } from './banners/featured_slide';
 import { CategorySlide } from './banners/category_slide';
 
 export default function Banner() {
-  const plugin = useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
+  const plugin = useMemo(
+    () => Autoplay({ delay: 5000, stopOnInteraction: true }),
+    []
+  );
   const router = useRouter();
 
   const handlePrimaryClick = () => {
@@ -35,7 +38,7 @@ export default function Banner() {
             align: 'start',
             loop: true,
           }}
-          plugins={[plugin.current]}
+          plugins={[plugin]}
           className="w-full"
         >
           <CarouselContent>

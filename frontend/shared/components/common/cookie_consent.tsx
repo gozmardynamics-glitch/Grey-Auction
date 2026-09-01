@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Drawer,
@@ -43,17 +43,10 @@ function setCookieConsent(preferences: CookiePreferences) {
 
 export function CookieConsent() {
   const t = useTranslations('cookieConsent');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => getCookieConsent() === null);
   const [showCustomize, setShowCustomize] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
-
-  useEffect(() => {
-    const existing = getCookieConsent();
-    if (!existing) {
-      setOpen(true);
-    }
-  }, []);
 
   function handleAcceptAll() {
     setCookieConsent({ necessary: true, analytics: true, marketing: true });

@@ -2,10 +2,10 @@ import {
   Button,
   Card,
   CardContent,
-  Separator,
 } from '@/shared/components/common';
 import { KycBadge, ConditionReportPanel } from '@/shared/components/trust';
 import type { Auction } from '../../../models';
+import Link from 'next/link';
 import {
   MapPin,
   Tag,
@@ -198,9 +198,9 @@ export default function AuctionSaleInfo({ auction }: { auction?: Auction }) {
           <HelpCircle className="h-5 w-5 text-primary" />
           <div>
             <p className="text-sm font-medium text-foreground">Have questions?</p>
-            <a href="/faq" className="text-xs text-primary hover:underline">
+            <Link href="/faq" className="text-xs text-primary hover:underline">
               Visit our Help center
-            </a>
+            </Link>
           </div>
         </div>
       </div>

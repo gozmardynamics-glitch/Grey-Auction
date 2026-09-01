@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import Link from 'next/link';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
@@ -79,7 +80,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
     },
   });
 
-  const shipToDifferent = form.watch('shipToDifferent');
+  const shipToDifferent = useWatch({ control: form.control, name: 'shipToDifferent' });
 
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsLoading(true);
@@ -611,9 +612,9 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
                   </FormControl>
                   <FormLabel className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground">
                     By clicking accept, you agree to our{' '}
-                    <a href="/terms" className="text-primary underline">
+                    <Link href="/terms" className="text-primary underline">
                       terms and conditions
-                    </a>{' '}
+                    </Link>{' '}
                     and are obliged to create an agreement contract with us
                   </FormLabel>
                   <FormMessage />

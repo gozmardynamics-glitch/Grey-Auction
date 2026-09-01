@@ -38,19 +38,20 @@ function currencyFormat(code: string): Intl.NumberFormat | null {
  * converts NGN amounts into the selected display currency. Defaults to NGN.
  */
 export function CurrencyProvider({ children }: { children?: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<CurrencyCode>('NGN');
+  const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved && (SUPPORTED_CURRENCIES as readonly string[]).includes(saved)) {
+        return saved as CurrencyCode;
+      }
+    } catch {
+      // private mode
+    }
+    return 'NGN';
+  });
   const [rates, setRates] = useState<Record<string, number>>({ NGN: 1 });
 
   useEffect(() => {
-    let saved: string | null = null;
-    try {
-      saved = window.localStorage.getItem(STORAGE_KEY);
-    } catch {
-      saved = null;
-    }
-    if (saved && (SUPPORTED_CURRENCIES as readonly string[]).includes(saved)) {
-      setCurrencyState(saved as CurrencyCode);
-    }
     fetch(API_BASE + '/exchange-rates', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {

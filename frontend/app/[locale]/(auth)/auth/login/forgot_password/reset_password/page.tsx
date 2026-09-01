@@ -57,8 +57,9 @@ function ResetPasswordForm() {
       }
 
       router.push('/auth/login');
-    } catch (err: any) {
-      form.setError('root', { message: err.message || 'Failed to reset password. Please try again.' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : undefined;
+      form.setError('root', { message: message || 'Failed to reset password. Please try again.' });
     } finally {
       setIsLoading(false);
     }

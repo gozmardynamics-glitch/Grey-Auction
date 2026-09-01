@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Heart,
   Share2,
@@ -28,7 +29,6 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  TypographyH3,
 } from '@/shared/components/common';
 
 import { formatCurrency } from '@/shared/utils/helpers';
@@ -159,8 +159,8 @@ export default function ProductDetailsClient({
       );
       setBidAmount(0);
       setBidModalStep('success');
-    } catch (err: any) {
-      dispatch(setBidError(err.message || 'Failed to place bid. Please try again.'));
+    } catch (err: unknown) {
+      dispatch(setBidError(err instanceof Error ? err.message : 'Failed to place bid. Please try again.'));
       setBidModalOpen(false);
     } finally {
       dispatch(setBidding(false));
@@ -282,13 +282,13 @@ export default function ProductDetailsClient({
               </div>
             </div>
             {/* Parent auction link */}
-            <a
+            <Link
               href="/auctions"
               className="inline-flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline"
             >
               Part of: Featured Auctions Collection
               <ChevronRight className="h-3 w-3" />
-            </a>
+            </Link>
           </div>
 
           {/* Meta badges */}

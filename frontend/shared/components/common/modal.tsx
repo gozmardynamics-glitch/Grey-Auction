@@ -2,7 +2,7 @@
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -21,11 +21,12 @@ const Modal = ({
   className,
   iconClassName,
 }: ModalProps) => {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // Hydration-safe mounted flag: false during SSR, true on the client.
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   if (!isMounted) {
     return null;

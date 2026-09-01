@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { BadgeCheck } from 'lucide-react';
 import { Button, Card } from '@/shared/components/common';
-import { useCountdown } from '@/shared/hooks/useCountdown';
 import { CountdownTimer } from '../../../../shared/components/common/countdown_timer';
 
 const benefits = [
@@ -16,12 +15,11 @@ const benefits = [
 
 export default function JoinMarketplace() {
   const router = useRouter();
-  const targetDate = useMemo(() => {
+  const endTime = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 5);
-    return d;
+    d.setDate(d.getDate() + 3);
+    return d.toISOString();
   }, []);
-  const timeRemaining = useCountdown(targetDate);
 
   return (
     <section className="bg-background">
@@ -123,11 +121,7 @@ export default function JoinMarketplace() {
                     </div>
                   </div>
                 </div> */}
-                <CountdownTimer
-                  endTime={new Date(
-                    Date.now() + 3 * 24 * 60 * 60 * 1000
-                  ).toISOString()}
-                />
+                <CountdownTimer endTime={endTime} />
               </div>
             </Card>
           </div>

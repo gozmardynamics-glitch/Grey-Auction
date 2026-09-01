@@ -4,7 +4,6 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/shared/components/common/button';
 import { Input } from '@/shared/components/common/input';
 import { Label } from '@/shared/components/common/label';
-import { Select } from '@/shared/components/common/select';
 import { Switch } from '@/shared/components/common/switch';
 import { toast } from 'sonner';
 import Link from 'next/link';

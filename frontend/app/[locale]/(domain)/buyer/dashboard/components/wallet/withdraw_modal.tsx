@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent } from '@/shared/components/common';
 
 // Add account flow steps (shared)
@@ -46,15 +46,13 @@ export default function WithdrawModal({
 
   const [step, setStep] = useState<WithdrawStep>(getInitialStep);
 
-  // Reset when modal opens/closes
-  useEffect(() => {
-    if (open) {
-      setStep(getInitialStep());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   const handleClose = () => onOpenChange(false);
+
+  // Reset the flow when the modal opens.
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) setStep(getInitialStep());
+    onOpenChange(nextOpen);
+  };
 
   const isCompactStep =
     step === 'review' ||
@@ -62,7 +60,7 @@ export default function WithdrawModal({
     step === 'reset-pin-success';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className={`${isCompactStep ? 'max-w-sm' : 'max-w-md'} p-0`}
       >

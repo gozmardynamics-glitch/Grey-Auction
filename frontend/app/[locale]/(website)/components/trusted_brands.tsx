@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo } from 'react';
 import Image from 'next/image';
 import Autoplay from 'embla-carousel-autoplay';
 import {
@@ -37,12 +37,14 @@ function BrandLogo({ brand }: { brand: (typeof trustedBrands)[number] }) {
 }
 
 export default function TrustedBrands() {
-  const plugin = useRef(
-    Autoplay({
-      delay: 2000,
-      stopOnInteraction: false,
-      stopOnMouseEnter: false,
-    })
+  const plugin = useMemo(
+    () =>
+      Autoplay({
+        delay: 2000,
+        stopOnInteraction: false,
+        stopOnMouseEnter: false,
+      }),
+    []
   );
 
   return (
@@ -66,7 +68,7 @@ export default function TrustedBrands() {
             loop: true,
             dragFree: true,
           }}
-          plugins={[plugin.current]}
+          plugins={[plugin]}
           className="w-full"
         >
           <CarouselContent className="-ml-4">

@@ -9,13 +9,21 @@ import { DataTable } from '@/shared/components/common/data_table';
 import { MiniSpinner } from '@/shared/components/common/spinner';
 import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';
-import { Bot, Wrench, Workflow, Play, RefreshCw, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Zap } from 'lucide-react';
 import { getAgentDashboard, runGapAnalysis, discoverCapabilities } from './agents-api';
 
 interface AgentDashboardData {
   totalAgents: number; activeAgents: number; agentsByCategory: Record<string, number>;
   totalTools: number; activeTools: number; totalWorkflows: number; activeWorkflows: number;
-  totalExecutions: number; successRate: string; recentMetrics: any[];
+  totalExecutions: number; successRate: string; recentMetrics: unknown[];
+}
+
+interface GapItem {
+  severity: string; area: string; description: string; suggestedAction: string;
+}
+
+interface GapAnalysisResult {
+  totalGaps: number; estimatedEffort: string; gaps?: GapItem[];
 }
 
 interface AgentInstance {
@@ -35,15 +43,19 @@ export default function AgentDashboard() {
   const [agents, setAgents] = useState<AgentInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [gapResult, setGapResult] = useState<any>(null);
+  const [gapResult, setGapResult] = useState<GapAnalysisResult | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [dash, agts] = await Promise.all([getAgentDashboard(), fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/agents/instances`).then(r => r.json())]);
-      setData(dash);
-      setAgents(agts?.data || []);
-    } catch { toast.error('Failed to load dashboard'); } finally { setLoading(false); }
+  const fetchData = useCallback(() => {
+    Promise.all([
+      getAgentDashboard(),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/agents/instances`).then((r) => r.json()),
+    ])
+      .then(([dash, agts]) => {
+        setData(dash);
+        setAgents(agts?.data || []);
+      })
+      .catch(() => toast.error('Failed to load dashboard'))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -51,7 +63,7 @@ export default function AgentDashboard() {
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
-      const result = await runGapAnalysis();
+      const result = (await runGapAnalysis()) as GapAnalysisResult;
       setGapResult(result);
       toast.success(`Analysis complete: ${result.totalGaps} gaps found (${result.estimatedEffort})`);
     } catch { toast.error('Analysis failed'); } finally { setAnalyzing(false); }
@@ -107,7 +119,7 @@ export default function AgentDashboard() {
           <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Analysis Results — {gapResult.totalGaps} Gaps ({gapResult.estimatedEffort})</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {gapResult.gaps?.map((g: any, i: number) => (
+              {gapResult.gaps?.map((g: GapItem, i: number) => (
                 <div key={i} className="flex items-start gap-2 text-sm border-b pb-2">
                   <Badge variant={g.severity === 'critical' ? 'destructive' : g.severity === 'high' ? 'default' : 'secondary'} className="shrink-0 mt-0.5">{g.severity}</Badge>
                   <div><strong>{g.area}:</strong> {g.description}<br /><span className="text-muted-foreground">{g.suggestedAction}</span></div>

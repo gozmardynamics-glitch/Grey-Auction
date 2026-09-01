@@ -12,18 +12,6 @@ const PlayStoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const FlutterwaveIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z" />
-  </svg>
-);
-
-const PaystackIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-
 import { Button, Logo, NewsletterForm } from '@/shared/components/common';
 
 export default function Footer() {
@@ -253,12 +241,12 @@ export default function Footer() {
           <p className="mt-1 text-xs text-muted-foreground">
             Get new auction alerts and offers straight to your inbox.
           </p>
-          <a
+          <Link
             href="/subscribe"
             className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
             Subscribe
-          </a>
+          </Link>
         </div>
 
         {/* Copyright */}

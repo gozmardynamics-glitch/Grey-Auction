@@ -16,7 +16,7 @@ interface WishlistClientProps {
 
 export default function WishlistClient({ auctions }: WishlistClientProps) {
   const [counting, setCounting] = useState(false);
-  const [_click, setClick] = useState(false);
+  const [, setClick] = useState(false);
 
   const handleStart = () => {
     setClick(true);

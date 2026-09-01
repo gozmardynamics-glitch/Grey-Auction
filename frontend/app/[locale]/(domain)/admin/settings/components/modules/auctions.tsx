@@ -36,7 +36,7 @@ export default function AuctionsSettings() {
     },
   });
 
-  const onSaveSettings = (data: AuctionSettingsValues) => {
+  const onSaveSettings = () => {
     
     toast.success('Auction settings saved.');
   };
@@ -49,7 +49,7 @@ export default function AuctionsSettings() {
     },
   });
 
-  const onSaveAdvanced = (data: AuctionAdvancedValues) => {
+  const onSaveAdvanced = () => {
     
     toast.success('Advanced auction settings saved.');
   };

@@ -89,27 +89,26 @@ export default function FeesSettings() {
   const [previewCategory, setPreviewCategory] = useState('');
   const [sampleAmount, setSampleAmount] = useState('1000000');
 
-  const loadConfigs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/fees`);
-      const json = await res.json();
-      const data: FeeConfig[] =
-        json?.success && Array.isArray(json.data) ? json.data : [];
-      setConfigs(data);
-      setPreviewCategory((prev) =>
-        prev && data.some((c) => c.category === prev)
-          ? prev
-          : data.find((c) => c.category === 'default')?.category ??
-            data[0]?.category ??
-            ''
-      );
-    } catch (error) {
-      console.error('Failed to load fee configurations:', error);
-      toast.error('Failed to load fee configurations.');
-    } finally {
-      setLoading(false);
-    }
+  const loadConfigs = useCallback(() => {
+    fetch(`${API_BASE}/fees`)
+      .then((res) => res.json())
+      .then((json) => {
+        const data: FeeConfig[] =
+          json?.success && Array.isArray(json.data) ? json.data : [];
+        setConfigs(data);
+        setPreviewCategory((prev) =>
+          prev && data.some((c) => c.category === prev)
+            ? prev
+            : data.find((c) => c.category === 'default')?.category ??
+              data[0]?.category ??
+              ''
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to load fee configurations:', error);
+        toast.error('Failed to load fee configurations.');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -167,7 +166,8 @@ export default function FeesSettings() {
       toast.success('Fee configuration saved.');
       setShowForm(false);
       resetForm();
-      await loadConfigs();
+      setLoading(true);
+      loadConfigs();
     } catch (error) {
       console.error('Failed to save fee configuration:', error);
       toast.error('Failed to save fee configuration.');
@@ -185,7 +185,8 @@ export default function FeesSettings() {
       });
       if (!res.ok) throw new Error('delete failed');
       toast.success('Fee configuration deleted.');
-      await loadConfigs();
+      setLoading(true);
+      loadConfigs();
     } catch (error) {
       console.error('Failed to delete fee configuration:', error);
       toast.error('Failed to delete fee configuration.');
@@ -208,7 +209,8 @@ export default function FeesSettings() {
         }),
       });
       if (!res.ok) throw new Error('toggle failed');
-      await loadConfigs();
+      setLoading(true);
+      loadConfigs();
     } catch (error) {
       console.error('Failed to update fee configuration:', error);
       toast.error('Failed to update fee configuration.');

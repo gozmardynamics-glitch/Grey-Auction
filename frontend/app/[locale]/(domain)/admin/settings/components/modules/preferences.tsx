@@ -49,7 +49,7 @@ export default function PreferencesSettings() {
     },
   });
 
-  const onSaveWebsite = (data: WebsitePreferencesValues) => {
+  const onSaveWebsite = () => {
     
     toast.success('Website preferences saved.');
   };
@@ -62,7 +62,7 @@ export default function PreferencesSettings() {
     },
   });
 
-  const onSaveAppearance = (data: AppearanceValues) => {
+  const onSaveAppearance = () => {
     
     toast.success('Appearance settings saved.');
   };

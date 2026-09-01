@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent } from '@/shared/components/common';
 
 import AddAccountStep from './add_account_step';
@@ -29,13 +29,13 @@ export default function AddAccountModal({
 }: AddAccountModalProps) {
   const [step, setStep] = useState<AddAccountFlowStep>('add-account');
 
-  useEffect(() => {
-    if (open) {
-      setStep('add-account');
-    }
-  }, [open]);
-
   const handleClose = () => onOpenChange(false);
+
+  // Reset the flow when the modal opens.
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) setStep('add-account');
+    onOpenChange(nextOpen);
+  };
 
   const handleDone = () => {
     onSuccess?.();
@@ -45,7 +45,7 @@ export default function AddAccountModal({
   const isCompactStep = step === 'account-success';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className={`${isCompactStep ? 'max-w-sm' : 'max-w-md'} p-0`}
       >

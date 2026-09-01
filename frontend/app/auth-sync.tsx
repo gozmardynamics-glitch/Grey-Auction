@@ -19,12 +19,12 @@ export function AuthSync() {
       dispatch(
         setUser({
           user: {
-            id: (session.user as any).id || '',
+            id: session.user.id || '',
             name: session.user.name || '',
             email: session.user.email || '',
-            role: (session.user as any).role || 'buyer',
+            role: (session.user.role as 'admin' | 'seller' | 'buyer') || 'buyer',
           },
-          token: (session.user as any).accessToken || '',
+          token: session.user.accessToken || '',
         }),
       );
     } else {

@@ -38,7 +38,7 @@ function ConfirmationContent() {
               </span>
               <h1 className="text-2xl font-bold text-foreground">Order not found</h1>
               <p className="text-sm text-muted-foreground">
-                We couldn't find a confirmed order for this session. If you
+                We couldn&apos;t find a confirmed order for this session. If you
                 just completed a payment it may still be processing — check
                 your dashboard for your invoice.
               </p>

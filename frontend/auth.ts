@@ -57,17 +57,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role || 'buyer';
-        token.accessToken = (user as any).accessToken || '';
-        token.id = (user as any).id;
+        token.role = user.role || 'buyer';
+        token.accessToken = user.accessToken || '';
+        token.id = user.id;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.id = (token as any).id || '';
-        session.user.role = (token as any).role || 'buyer';
-        session.user.accessToken = (token as any).accessToken || '';
+        session.user.id = token.id || '';
+        session.user.role = token.role || 'buyer';
+        session.user.accessToken = token.accessToken || '';
       }
       return session;
     },
