@@ -4,11 +4,13 @@
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
-        "budgetPath": "./budgets.json"
+        "budgetPath": "../loadtest/lighthouse/budgets.json",
+        "throttlingMethod": "provided",
+        "chromeFlags": "--headless --no-sandbox"
       },
       "url": [
-        "http://localhost:3000/en",
-        "http://localhost:3000/en/auctions"
+        "http://localhost:3000/en/about-us",
+        "http://localhost:3000/en/faq"
       ]
     },
     "assert": {
@@ -26,7 +28,7 @@
     },
     "upload": {
       "target": "filesystem",
-      "outputDir": "../results/lighthouse"
+      "outputDir": ".lighthouseci"
     }
   }
 }

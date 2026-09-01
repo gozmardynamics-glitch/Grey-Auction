@@ -51,14 +51,48 @@ npx lighthouse http://localhost:3000/en \
   --budget-path=loadtest/lighthouse/budgets.json \
   --output=html --output-path=loadtest/results/lighthouse-home.html
 
-# CI-style: 3 runs x 2 pages, fail the build under the budget
-cd loadtest/lighthouse && npx @lhci/cli autorun
-# (or from frontend/: npm run test:lighthouse)
+# CI-style: 3 runs x 2 static pages, fail the build under the budget
+# (run from frontend/ - the config paths are resolved relative to cwd)
+npx @lhci/cli@0.14.x autorun --config=../loadtest/lighthouse/lighthouserc.json
+# (or, from frontend/: npm run test:lighthouse)
 ```
+
+The LHCI config (`loadtest/lighthouse/lighthouserc.json`) audits
+`/en/about-us` and `/en/faq` only - the homepage and `/en/auctions` are
+excluded because their persistent/live connections (countdown, chatbot,
+carousels, live bidding data) make Lighthouse's simulated networkidle
+unreliable (see caveats below). Paths inside the config (`budgetPath`,
+`outputDir`) are resolved relative to the working directory, so run it from
+`frontend/` (as both the npm script and CI do) rather than
+`loadtest/lighthouse/`.
 
 Assertions (`lighthouserc.json`): Performance ≥ 90 (error), Accessibility ≥ 90 (error),
 Best-practices/SEO ≥ 90 (warn), LCP ≤ 2.5 s, TBT ≤ 300 ms, CLS ≤ 0.1, TTFB ≤ 800 ms.
 Resource-size budgets live in `budgets.json` (scripts ≤ 450 KiB, total ≤ 2 MiB, …).
+
+### In CI (GitHub Actions)
+
+A dedicated `lighthouse` job in `.github/workflows/ci.yml` runs LHCI on every push
+and PR to `master`/`main`. It is deliberately independent of the `backend` job
+(no database or seed data): it installs frontend deps, runs `next build`, starts the
+production server on `:3000` in the background, polls `http://localhost:3000/en/about-us`
+until it returns 200 (up to ~60 s), runs `npx @lhci/cli@0.14.x autorun` with the same
+config, and uploads `frontend/.lighthouseci/` as an artifact (always, even on budget
+failure). The config sets `chromeFlags: "--headless --no-sandbox"` and
+`throttlingMethod: "provided"` so the run is stable on the ephemeral ubuntu runner.
+
+### Local vs `npm run test:lighthouse`
+
+`npm run test:lighthouse` (defined in `frontend/package.json`) is just a thin wrapper:
+
+    lhci autorun --config=../loadtest/lighthouse/lighthouserc.json
+
+It runs from `frontend/` and delegates entirely to the same `lighthouserc.json` that CI
+uses, so a local `npm run test:lighthouse` is byte-for-byte the same audit CI runs — but
+**it assumes a production server is already listening on `http://localhost:3000`** (run
+`npm run build && npm run start` first). CI, by contrast, does the build + server-bootstrap
++ readiness poll itself. Both write the report to `frontend/.lighthouseci/`; the npm
+script does not upload it anywhere.
 
 ## Lighthouse run — recorded result (L6, 2026-08-28)
 

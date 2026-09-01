@@ -75,3 +75,45 @@ jobs:
       - run: npm run lint -- --max-warnings=0
       - run: npm run build
       - run: npm test
+
+  lighthouse:
+    name: Lighthouse (LHCI)
+    runs-on: ubuntu-latest
+    # Independent of the backend job: audits a prod build against static
+    # pages only, so it needs no database or seeded data.
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Start production server
+        run: npx next start -p 3000 > /tmp/next-start.log 2>&1 &
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en/about-us || true)
+            if [ "$status" = "200" ]; then
+              echo "Server ready (HTTP 200)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server did not become ready in time. Last log:"
+          cat /tmp/next-start.log || true
+          exit 1
+      - name: Run Lighthouse CI
+        run: npx @lhci/cli@0.14.x autorun --config=../loadtest/lighthouse/lighthouserc.json
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: frontend/.lighthouseci/
+          if-no-files-found: ignore
