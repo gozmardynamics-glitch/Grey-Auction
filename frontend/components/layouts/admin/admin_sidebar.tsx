@@ -22,6 +22,7 @@ import {
   NotepadTextDashed,
   Ticket,
   Cpu,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 import {
@@ -64,6 +65,7 @@ const navGroups: NavGroup[] = [
       { icon: HandCoins, label: 'Bids', path: '/admin/bids' },
       { icon: Home, label: 'Bidding Room', path: '/admin/bidding-room' },
       { icon: Wallet, label: 'Payment', path: '/admin/payment' },
+      { icon: ArrowLeftRight, label: 'Exchange Rates', path: '/admin/exchange-rates' },
     ],
   },
   {
