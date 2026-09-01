@@ -10,6 +10,13 @@
 
 ## SESSION HANDOFF — START HERE (2026-09-01, workstream 2026-09-01)
 
+**TO RESUME (tomorrow or any later session):** just say *"check AUDIT_REPORT_v2
+and continue"*. Bootstrap: DB `docker start greyauction-postgres` if stopped →
+backend `cd backend && npm run start:dev` (:3001) → frontend `cd frontend &&
+npm run dev` (:3000). Awaited keys + status board: docs/KEYS_AND_ACCESS.md
+(§14 has the priority order). Next workstream: implement the U5 fee-settings
+answers (§10 of that doc) and wire R2/Brevo/SMS/FX as keys arrive.
+
 **State:** master, pushed. This workstream delivered the U-list follow-ups that were
 key-free: Phase E2 admin FX editor, the chatbot upgrade, LHCI in CI, the a11y sweep
 fixes, the lint-debt cleanup, and the production keys/access shopping list
