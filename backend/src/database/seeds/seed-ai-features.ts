@@ -41,7 +41,7 @@ async function seedFeatureConfigs() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...feature,
-            isEnabled: false,
+            isEnabled: feature.featureKey === 'chatbot_assistant',
             temperature: 0.7,
             maxTokens: 2048,
             rateLimitPerMinute: 10,
