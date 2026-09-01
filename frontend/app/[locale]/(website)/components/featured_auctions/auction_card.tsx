@@ -192,12 +192,14 @@ export function AuctionCard({
           <div className="flex-1" />
           <button
             onClick={handleWishlistClick}
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-muted ${isAnimating ? 'animate-heartPop' : ''}`}
           >
             <Heart className={`h-3.5 w-3.5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
           </button>
           <button
             onClick={handleShareClick}
+            aria-label="Share auction"
             className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-muted"
           >
             <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
