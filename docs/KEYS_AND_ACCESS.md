@@ -1,121 +1,179 @@
-# GreyAuction — Production Keys & Access (U2–U6 Shopping List)
+# GreyAuction — Production Keys & Access Runbook (U2–U6)
 
-Companion to `docs/OPERATIONS.md` and `AUDIT_REPORT_v2.md` §3 / §12–13 / SESSION HANDOFF.
-Everything below maps 1:1 to env vars documented in `backend/.env.example`.
+Companion to `docs/OPERATIONS.md` and `AUDIT_REPORT_v2.md` (SESSION HANDOFF).
+This is the **detailed acquisition guide**: every item tells you exactly where to click,
+what to copy, which env var it feeds, and what it unblocks.
 
-> **How to hand things over:** put values straight into `backend/.env` (local) or as
-> Coolify environment variables on the resource — do **not** paste secrets into chat,
-> they would land in logs. When something is in place, tell us and we flip the flag.
+> **Handing secrets over safely:** paste values into `backend/.env` (local) or as
+> Coolify environment variables and tell me they are in place — or paste them in chat
+> if that is easier (chat may be logged; rotate later if you care). Either way, once a
+> value is in place I flip the corresponding flag and verify.
 
-## 0. Already provided by you (this session)
+---
 
-| Item | Value | Notes |
-|---|---|---|
-| Production domain | `greyauction.com` | see §6 for the subdomain plan |
-| Coolify host | `https://coolify.gozmar.com` | access still needed, see §7 |
-| R2 account name | `grey-auction` | bucket = `grey-auction` |
-| R2 S3 endpoint | `https://ff486626c9f1a7bdfce5ed9188ebae4e.r2.cloudflarestorage.com` | we set `S3_ENDPOINT` to this host (no path) and `S3_BUCKET=grey-auction`; the driver builds URLs as `{endpoint}/{bucket}/{key}` |
+## 1. Cloudflare R2 — API key pair (U4 · storage go-live)
 
-## 1. Cloudflare R2 — API key pair (U4, storage go-live)
+**Why:** prod image/media uploads go to R2 instead of local disk. Pure env change.
 
-- **Where:** Cloudflare dashboard → R2 → Overview → "Manage R2 API Tokens" → Create API token
-  (Permission: Object Read & Write; scope: the `grey-auction` bucket).
-- **Provide:** R2 **Access Key ID** + **Secret Access Key**.
-- **Also choose the public host** (what users see in image URLs):
-  - (a) custom domain — add `cdn.greyauction.com` in R2 → bucket → Settings → Custom Domains; or
-  - (b) the free r2.dev public URL for the bucket (we set it as `S3_PUBLIC_HOST`).
-- **Effect once provided:** we set `STORAGE_DRIVER=s3`, `S3_ENDPOINT` (above), `S3_ACCESS_KEY`,
-  `S3_SECRET_KEY`, `S3_BUCKET=grey-auction`, `S3_FORCE_PATH_STYLE=true`, `S3_PUBLIC_HOST` —
-  pure env change, no code or rebuild. Uploads start flowing to R2 instead of the local disk/MinIO.
+**Steps (Cloudflare dashboard):**
+1. Go to https://dash.cloudflare.com → log into the account that owns **grey-auction**.
+2. Left sidebar → **R2 Object Storage** (first use may ask to enable R2 / add payment —
+   free tier: 10 GB storage, Class-A ops 1M/mo — plenty to start).
+3. Confirm bucket **grey-auction** exists (you already gave me the account + endpoint).
+4. Top-right of the R2 page → **Manage R2 API Tokens** → **Create API Token**.
+5. Permissions: **Object Read & Write** → "Specify bucket(s)": apply to **grey-auction** only.
+6. Client IP filtering: leave empty. TTL: leave default. → **Create API Token**.
+7. Copy the **Access Key ID** and **Secret Access Key** — the secret is shown **once**.
 
-## 2. Payment gateways (U2 / B-PAY-1: real capture + webhook)
+**Also choose the public host for image URLs:**
+- Option A (fastest): bucket → **Settings → Public access → Allow Access** (r2.dev URL,
+  free, rate-limited). Copy the `pub-….r2.dev` URL.
+- Option B (nicer URLs): bucket → **Settings → Custom Domains → Connect Domain** →
+  `cdn.greyauction.com` (requires greyauction.com DNS to live in this Cloudflare account).
 
-Providers without keys are automatically skipped (payments stay in mock mode), so any subset works.
+**Provide:** Access Key ID · Secret Access Key · chosen public host.
+**Feeds:** `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_PUBLIC_HOST` (I set `STORAGE_DRIVER=s3`,
+`S3_ENDPOINT=https://ff486626c9f1a7bdfce5ed9188ebae4e.r2.cloudflarestorage.com`,
+`S3_BUCKET=grey-auction`, `S3_FORCE_PATH_STYLE=true`).
+**Unblocks:** storage go-live; upload pipeline switches with zero code changes.
 
-| Env var | Where to get it |
-|---|---|
-| `PAYSTACK_SECRET_KEY` | paystack.com → Settings → API Keys & Webhooks (live secret key) |
-| `FLUTTERWAVE_SECRET_KEY` | Flutterwave dashboard → Settings → API Keys (live secret) |
-| `FLUTTERWAVE_WEBHOOK_HASH` | Flutterwave → Settings → Webhooks: set URL `https://api.greyauction.com/api/payments/webhook/flutterwave`, copy the verif-hash it gives you |
-| `INTERSWITCH_CLIENT_ID` / `INTERSWITCH_CLIENT_SECRET` | optional — Interswitch (Quickteller) merchant portal |
-| `OPAY_MERCHANT_ID` / `OPAY_SECRET_KEY` | optional — OPay merchant dashboard |
+## 2. Paystack — secret key (U2 · card payments)
 
-- Paystack webhook URL (set in Paystack dashboard): `https://api.greyauction.com/api/payments/webhook/paystack`.
-- We set `PAYMENT_WEBHOOK_URL=https://api.greyauction.com/api/payments/webhook` ourselves.
+**Steps:**
+1. https://paystack.com → sign in (business account must be KYC-approved for live keys).
+2. **Settings → API Keys & Webhooks** tab.
+3. Copy the **Secret Key** — live `sk_live_…` (or `sk_test_…` if you want a staging pass first).
+4. Same page → **Webhook URL** → set:
+   `https://api.greyauction.com/api/payments/webhook/paystack`
 
-## 3. Email — Brevo (U2: real transactional email)
+**Provide:** the secret key (+ live or test). **Feeds:** `PAYSTACK_SECRET_KEY`.
+**Unblocks:** Paystack at checkout; signature-validated webhooks mark invoices paid.
 
-- **Provide:** `BREVO_API_KEY` (Brevo → SMTP & API → API Keys) **or** the SMTP relay pair
-  (`BREVO_SMTP_USER` / `BREVO_SMTP_PASS`). Sender will be `noreply@greyauction.com`.
-- **You must also:** add the SPF + DKIM records Brevo shows you to the `greyauction.com` DNS
-  (see §6) — without them, mail lands in spam.
+## 3. Flutterwave — secret key + webhook hash (U2)
 
-## 4. SMS — Termii or Twilio (U2: real OTP/alerts)
+**Steps:**
+1. https://dashboard.flutterwave.com → sign in (live keys need an approved business).
+2. **Settings → API** → copy the **Live Secret Key** (`FLWSECK-…`).
+3. **Settings → Webhooks** → set URL:
+   `https://api.greyauction.com/api/payments/webhook/flutterwave`
+   → create/copy the **Secret hash** (the `verif-hash` value).
 
-- Option A: `TERMII_API_KEY` (+ confirm sender ID `GreyAuct` is approved in your Termii account).
-- Option B: `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `TWILIO_FROM_NUMBER` (an E.164 number you own).
+**Provide:** secret key + webhook hash. **Feeds:** `FLUTTERWAVE_SECRET_KEY`, `FLUTTERWAVE_WEBHOOK_HASH`.
+**Unblocks:** Flutterwave at checkout + webhook settlement.
 
-## 5. Google OAuth (Phase C1: enable Google sign-in)
+**Optional extra gateways:** Interswitch (`INTERSWITCH_CLIENT_ID`/`INTERSWITCH_CLIENT_SECRET`)
+and OPay (`OPAY_MERCHANT_ID`/`OPAY_SECRET_KEY`) — any subset; unset providers are skipped.
 
-- **Where:** Google Cloud Console → APIs & Services → Credentials → Create "OAuth client ID" → Web application.
-  - **Authorized JavaScript origins:** `https://greyauction.com` and `http://localhost:3000` (dev).
-- **Provide:** `GOOGLE_CLIENT_ID` only (no secret needed — the backend verifies the ID token
-  with `google-auth-library`; the frontend uses the same ID to init Google Identity Services).
+## 4. Brevo — transactional email (U2)
 
-## 6. DNS for greyauction.com (U3) — confirm the plan
+**Steps:**
+1. https://app.brevo.com → sign in.
+2. Top-right profile menu → **SMTP & API** → **API Keys** tab → **Generate New API Key**
+   (name: `greyauction-prod`) → copy (`xkeysib-…`, shown once).
+3. **Senders & IP** → add sender `noreply@greyauction.com` → Brevo shows **SPF/DKIM records**
+   (Domain Authentication) → add them to the greyauction.com DNS (see §7) or mail lands in spam.
 
-Proposed topology (say if you want something different, e.g. www or same-origin /api):
+**Provide:** the API key (or the SMTP relay pair `BREVO_SMTP_USER`/`BREVO_SMTP_PASS`).
+**Feeds:** `BREVO_API_KEY` (+ SPF/DKIM records → DNS). **Unblocks:** real OTP/reset/outbid/won emails.
 
-| Hostname | Type | Points to | Used for |
+## 5. SMS — Termii or Twilio (U2)
+
+**Termii (NG-focused, preferred):**
+1. https://account.termii.com → dashboard home shows the **API Key** → copy.
+2. **Settings → Sender ID** → request `GreyAuct` (approval can take a day or two;
+   until then the default sender works).
+
+**Twilio (alternative/international):**
+1. https://console.twilio.com → copy **Account SID** (AC…) and **Auth Token**.
+2. Phone Numbers → Buy a number (SMS-capable) → that E.164 number is `TWILIO_FROM_NUMBER`.
+
+**Provide:** `TERMII_API_KEY` (+ sender approval status) **or** Twilio SID + token + number.
+**Feeds:** `TERMII_API_KEY`/`TERMII_SENDER_ID` or `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM_NUMBER`.
+**Unblocks:** real SMS OTPs and alerts.
+
+## 6. Google OAuth — Client ID (U2 · Google sign-in)
+
+**Steps:**
+1. https://console.cloud.google.com → create/select project **GreyAuction**.
+2. **APIs & Services → OAuth consent screen** → External → app name "GreyAuction",
+   support email, developer email → **Publish** (no sensitive scopes needed).
+3. **Credentials → Create Credentials → OAuth client ID → Web application**.
+4. **Authorized JavaScript origins:** `https://greyauction.com` and `http://localhost:3000`.
+   (No redirect URIs needed — we use Google Identity Services token flow.)
+5. Create → copy the **Client ID** (`….apps.googleusercontent.com`).
+
+**Provide:** the Client ID only (no secret — the backend verifies the ID token via
+google-auth-library). **Feeds:** `GOOGLE_CLIENT_ID`. **Unblocks:** Google sign-in (C1).
+
+## 7. DNS for greyauction.com (U3)
+
+**Tell me:** where DNS is hosted (Cloudflare? registrar?) and whether you add records or give me access.
+
+**Records (exact):**
+| Hostname | Type | Value | Purpose |
 |---|---|---|---|
-| `greyauction.com` | A | Coolify VPS IP | frontend — `NEXTAUTH_URL`, `FRONTEND_URL`, `CORS_ORIGIN` |
-| `api.greyauction.com` | A | Coolify VPS IP | backend — `NEXT_PUBLIC_API_URL=https://api.greyauction.com/api`, webhooks |
+| `greyauction.com` | A | Coolify VPS IP | frontend (`NEXTAUTH_URL`, `FRONTEND_URL`, `CORS_ORIGIN`) |
+| `api.greyauction.com` | A | Coolify VPS IP | backend (`NEXT_PUBLIC_API_URL`, payment webhooks) |
 | `cdn.greyauction.com` (optional) | CNAME | R2 custom domain | `S3_PUBLIC_HOST` |
-| SPF/DKIM TXT records | TXT | Brevo-provided values | email deliverability |
+| (from Brevo) | TXT | SPF/DKIM values Brevo shows | email deliverability |
+| `www` (optional) | CNAME | greyauction.com | www alias |
 
-- **Provide:** where is DNS managed (registrar / Cloudflare / elsewhere) and who creates the records — you, or give us access to the DNS panel.
-- We will set the matching env values (`FRONTEND_URL`, `CORS_ORIGIN`, `NEXTAUTH_URL`,
-  `NEXT_PUBLIC_API_URL`, `PAYMENT_WEBHOOK_URL`, `S3_PUBLIC_HOST`) once the subdomains resolve.
+**Unblocks:** production domain config, TLS certs via Coolify, webhook reachability.
 
-## 7. Coolify access (U6: production deploy)
+## 8. Coolify deploy access (U6)
 
-- **You:** in `coolify.gozmar.com`, create a **Project** (e.g. `greyauction`) with the VPS as a
-  **Server**, then give us either:
-  - a temporary dashboard login, or
-  - a Coolify **API token** (Keys & Tokens → API tokens) + the server/project names.
-- **We then:** add the `docker-compose.coolify.yml` stack (postgres + minio + backend + frontend),
-  set all production env secrets (from §1–§6 + `JWT_SECRET`), deploy, run migrations, enable
-  backups and Sentry. `DB_SYNCHRONIZE=false` with `migrationsRun: true` is already the prod default.
+**Steps:**
+1. https://coolify.gozmar.com → log in.
+2. **+ New Project** → name `greyauction` → attach/select the VPS as **Server**
+   (recommend ≥ 2 vCPU / 4 GB RAM for the 4-service stack: postgres+minio+backend+frontend).
+3. Hand me access either way:
+   - **API token:** Settings (admin) → **Keys & Tokens** → new token (read/write) → copy, or
+   - a temporary team-member login.
 
-## 8. Live FX feed (Phase E: real exchange rates)
+**Provide:** project name + token (or login) + VPS IP (for the DNS A records).
+**Unblocks:** full production deploy from `docker-compose.coolify.yml`, migrations-only DB
+(`DB_SYNCHRONIZE=false`), scheduled backups.
 
-- **Provide:** `EXCHANGE_RATE_API_URL` — any feed that returns JSON in the shape
-  `{ "rates": { "USD": 1500, ... } }` or `{ "data": { ... } }` (API key embedded in the URL is fine).
-  You mentioned a fluentax CBN FX endpoint — that works if it matches the shape.
-- **Effect:** the existing 03:00 UTC cron and the admin "Refresh from feed" button start updating real rates.
+## 9. Live FX feed (Phase E)
 
-## 9. Business rules (U5) — confirm the numbers
+Any endpoint returning `{"rates":{…}}` or `{"data":{…}}` JSON:
+- **Zero-signup option:** `https://open.er-api.com/v6/latest/NGN` (free, no key) — works as-is.
+- exchangerate-api.com → free tier key → `https://v6.exchangerate-api.com/v6/KEY/latest/NGN`.
+- Your fluentax/CBN endpoint — send me the URL (key embedded) and I'll verify the shape.
 
-Used by fees/VAT/settlement logic and their tests (currently seeded defaults):
+**Provide:** the URL. **Feeds:** `EXCHANGE_RATE_API_URL`. **Unblocks:** the 03:00 UTC cron +
+the admin "Refresh from feed" button update real rates.
 
-- Buyer/seller **fee percentage**, **VAT %**, **settlement/payout schedule** (e.g. 7 days after delivery),
-  escrow release policy, default currency (NGN) and whether GHS/EUR/USD must remain display-only.
+## 10. Business rules (U5) — answer these
 
-## 10. LLM provider keys (optional, self-serve)
+1. Buyer fee % and seller commission % (and on what base: hammer price? incl. shipping?).
+2. VAT % (applied to fees only, or hammer + fees?).
+3. Settlement/payout schedule (e.g. T+7 days after delivery confirmation).
+4. Escrow auto-release window (days after delivery without dispute).
+5. Minimum bid increment (NGN) and reserve-price policy.
+6. Currency policy: NGN default; USD/GHS/EUR display-only?
+7. Do fees apply to direct-sales (buy-now) too, or auctions only?
 
-- Add them yourself in **Admin → AI Providers** (presets for OpenAI/Anthropic/DeepSeek/Qwen/Gemini/
-  OpenRouter/Groq/… exist). Tell us which providers you have keys for and we can pre-seed feature
-  configs (chatbot, description generator, title optimizer) with sensible fallback chains.
+**Feeds:** fee/VAT/settlement config + test expectations (currently seeded defaults).
 
-## 11. Push notifications (L1 follow-up, optional)
+## 11. LLM providers (optional · self-serve)
 
-- **Nothing needed from you** — we generate the VAPID keypair ourselves. Just say "go".
+Keys are added in **Admin → AI Providers** (presets: OpenAI, Anthropic, DeepSeek, Qwen, GLM,
+Gemini, OpenRouter, Groq, Mistral, Ollama, …). Tell me WHICH providers you have keys for and
+I'll pre-seed the feature configs (chatbot, description generator, title optimizer) with
+sensible fallback chains. `chatbot_assistant` is now enabled by seed; it needs at least one
+provider+model configured before it actually responds.
 
-## 12. Order of unblocking (suggested)
+## 12. Sentry (optional)
 
-1. R2 keys (§1) → storage silently goes live, images stop hitting local disk.
-2. Coolify access + DNS (§6–§7) → first production deploy with migrations-only DB.
-3. Brevo + Termii/Twilio (§3–§4) → real emails/SMS in prod.
-4. Paystack/Flutterwave (§2) → real payments + webhooks.
-5. Google Client ID (§5) → Google sign-in enabled.
-6. FX URL (§8) + business rules (§9) → live rates + aligned money math.
+Not wired in code yet. If you want error tracking at launch: sentry.io → create a NestJS
+project → copy the **DSN** — I'll wire it during the deploy.
+
+## 13. Push notifications (VAPID) — nothing needed
+
+We generate the VAPID keypair ourselves. Just say "go".
+
+## 14. Priority order
+
+1. R2 keys (§1) → 2. Coolify + DNS (§7–8) → 3. Brevo + SMS (§4–5) → 4. Paystack/Flutterwave (§2–3)
+→ 5. Google Client ID (§6) → 6. FX URL + business rules (§9–10).

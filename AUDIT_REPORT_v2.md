@@ -14,8 +14,9 @@
 key-free: Phase E2 admin FX editor, the chatbot upgrade, LHCI in CI, the a11y sweep
 fixes, the lint-debt cleanup, and the production keys/access shopping list
 (docs/KEYS_AND_ACCESS.md — user has supplied domain greyauction.com, Coolify at
-coolify.gozmar.com, and Cloudflare R2 account grey-auction; see §12 of that doc for
-what is still awaited).
+coolify.gozmar.com, and Cloudflare R2 account grey-auction; the doc is now a detailed
+acquisition runbook — per-provider click-paths, exact env var names, webhook URLs,
+DNS records; see §14 for the priority order).
 
 ### Done this workstream (commits on master)
 
@@ -50,9 +51,10 @@ what is still awaited).
 
 ### Next up (unchanged — needs user input)
 
-- U2 secrets, U3 DNS records for greyauction.com (subdomain plan in
-  docs/KEYS_AND_ACCESS.md §6), U4 R2 key pair, U5 business rules, U6 Coolify
-  access/token — details and exact env var names in docs/KEYS_AND_ACCESS.md.
+- U2 secrets, U3 DNS records for greyauction.com, U4 R2 key pair, U5 business
+  rules, U6 Coolify access/token — the full detailed acquisition runbook
+  (click-paths, exact values, env var names, webhook URLs, DNS table) is
+  docs/KEYS_AND_ACCESS.md; start from its §14 priority order.
 - Optional: U7 Nest 12 once @nestjs/throttler supports it; web-push VAPID (we can
   generate); Lighthouse budget run will now execute automatically in CI.
 
