@@ -254,3 +254,18 @@ Still needed, in order:
 
 Received & verified: Paystack ✅, Flutterwave ✅, Google Client ID ✅, Coolify ✅,
 DNS values ✅ (corrected), business rules ✅, LLM provider list ✅.
+
+## 15. Connections (state at 2026-09-01 close)
+
+- **Coolify API — CONNECTED.** Token verified; v4.1.2; server `localhost` @
+  host.docker.internal (VPS 173.212.230.3). Project **GreyAuction**
+  (`b6as8aze8abhikytid2ysksw`) exists with an empty `production` env — apps to be
+  created via API from github.com/gozmardynamics-glitch/Grey-Auction.
+- **Cloudflare API — NOT CONNECTED.** Requested from user: custom API token with
+  **Zone → DNS → Edit** + **Zone → Zone → Read**, scoped to greyauction.com —
+  needed for A records (bare `173.212.230.3`), Brevo SPF/DKIM TXTs, and later
+  the cdn CNAME. Alternative: user confirms DNS host and adds records manually.
+  MCP is not available in this harness — the REST API is the integration path.
+- **Secrets hygiene:** all received values live only in git-ignored `backend/.env`
+  (verified ignored). Coolify token + Brevo keys were pasted in chat — rotate
+  after go-live.

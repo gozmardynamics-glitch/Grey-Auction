@@ -10,12 +10,39 @@
 
 ## SESSION HANDOFF — START HERE (2026-09-01, workstream 2026-09-01)
 
-**TO RESUME (tomorrow or any later session):** just say *"check AUDIT_REPORT_v2
-and continue"*. Bootstrap: DB `docker start greyauction-postgres` if stopped →
-backend `cd backend && npm run start:dev` (:3001) → frontend `cd frontend &&
-npm run dev` (:3000). Awaited keys + status board: docs/KEYS_AND_ACCESS.md
-(§14 has the priority order). Next workstream: implement the U5 fee-settings
-answers (§10 of that doc) and wire R2/Brevo/SMS/FX as keys arrive.
+**TO RESUME (tomorrow morning):** just say *"check AUDIT_REPORT_v2 and continue"*.
+Bootstrap: DB `docker start greyauction-postgres` if stopped → backend
+`cd backend && npm run start:dev` (:3001) → frontend `cd frontend && npm run dev`
+(:3000). Status board + priorities: docs/KEYS_AND_ACCESS.md (§14).
+
+### TOMORROW MORNING — PICK UP HERE (state at session close, 2026-09-01 evening)
+
+**Connections:**
+- ✅ **Coolify API connected** (token in backend/.env history, verified): v4.1.2,
+  server `localhost` @ host.docker.internal reachable, VPS 173.212.230.3.
+  Project **GreyAuction** exists (uuid `b6as8aze8abhikytid2ysksw`) with EMPTY
+  `production` environment → next: create apps (backend+frontend+postgres) via
+  POST /applications from github.com/gozmardynamics-glitch/Grey-Auction.
+- ❌ **Cloudflare API NOT connected** — asked user for an API token
+  (Zone→DNS→Edit + Zone→Read, scoped to greyauction.com) OR confirmation that
+  DNS sits at the registrar (then user adds records manually). A-record values
+  = bare 173.212.230.3 (user's first attempt had invalid `.8000` port suffix).
+
+**Keys received & verified (in git-ignored backend/.env):** Paystack test ✅,
+Flutterwave test + hash ✅, Google Client ID ✅, Coolify token ✅.
+**Keys rejected/awaited:** Brevo 401 (re-issue + SMTP username + SPF/DKIM),
+R2 key pair + public host (TOP priority — storage go-live), FX feed URL
+(open.er-api.com offer stands), SMS (Termii/Twilio), LLM keys (providers named:
+OpenRouter, DeepSeek, Claude/Anthropic, Ollama, OpenAI + compatible base URLs),
+live payment keys (later).
+
+**Next workstream (no keys needed):** implement U5 fee rules — 5%/5% fees
+toggleable per seller AND per product, VAT base switch (fees-only vs
+hammer+fees), customizable payout schedule, escrow window fixed at auction
+creation (0 = immediate), seller-set bid increment/reserve, fees apply to
+direct sales. Backend has `fee_configs` table (commissionPct/vatPct/otherChargesPct/
+fixedFee/isActive per category) — extend with per-seller/per-product overrides
++ settings UI + tests.
 
 **State:** master, pushed. This workstream delivered the U-list follow-ups that were
 key-free: Phase E2 admin FX editor, the chatbot upgrade, LHCI in CI, the a11y sweep
