@@ -28,7 +28,8 @@ what is still awaited).
 - docs/KEYS_AND_ACCESS.md — full U2–U6 keys/access shopping list — 2260e7d.
 - a11y sweep — axe /en homepage violation fixed (aria-labels on auction-card
   wishlist/share buttons); axe 12/12 + responsive 25/25 green — a91e989.
-- Lint-debt cleanup — 219 errors/80 warnings → 0 (frontend lint gate green again) — TBD.
+- Lint-debt cleanup — 219 errors/80 warnings → 0 (frontend lint gate green again;
+  incl. typed server-data boundary in lib/server/data.ts) — 1da44f3.
 - Backend re-verified: 252/252 unit, 5/5 E2E, 8/8 money-path integration (itest DB
   re-provisioned), build green.
 
