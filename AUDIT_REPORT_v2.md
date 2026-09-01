@@ -33,6 +33,13 @@ DNS records; see §14 for the priority order).
   incl. typed server-data boundary in lib/server/data.ts) — 1da44f3.
 - Backend re-verified: 252/252 unit, 5/5 E2E, 8/8 money-path integration (itest DB
   re-provisioned), build green.
+- docs/KEYS_AND_ACCESS.md expanded into a detailed acquisition runbook
+  (click-paths, env names, webhook URLs, DNS table, priority order) — e037a94.
+- First key delivery received & verified: Paystack test key (live API check OK),
+  Flutterwave test key + webhook hash (live API check OK), Google Client ID,
+  Coolify API token (GET /servers OK; VPS 173.212.230.3), DNS values (corrected:
+  bare IP, no ports), 7/7 U5 business-rule answers, LLM provider list. Brevo keys
+  rejected (401) — re-issue requested. Secrets live only in git-ignored backend/.env.
 
 ### Verification baseline (this workstream, 2026-09-01)
 
@@ -51,10 +58,16 @@ DNS records; see §14 for the priority order).
 
 ### Next up (unchanged — needs user input)
 
-- U2 secrets, U3 DNS records for greyauction.com, U4 R2 key pair, U5 business
-  rules, U6 Coolify access/token — the full detailed acquisition runbook
-  (click-paths, exact values, env var names, webhook URLs, DNS table) is
-  docs/KEYS_AND_ACCESS.md; start from its §14 priority order.
+- First key delivery is IN (see done-list above). Still awaited, in order:
+  (1) R2 key pair + public host — storage go-live; (2) Brevo re-issued API key +
+  SMTP username + SPF/DKIM records; (3) FX feed URL (open.er-api.com offer stands);
+  (4) SMS keys (Termii/Twilio); (5) live payment keys when transacting;
+  (6) LLM API keys; (7) DNS host confirmation. Runbook + status board:
+  docs/KEYS_AND_ACCESS.md.
+- Implementation backlog from the U5 answers (settings-driven 5%/5% fees per seller
+  & product, VAT base switch, customizable payout, escrow fixed at auction creation
+  with 0 = immediate, seller-set bid increment/reserve, fees on direct sales) —
+  next workstream.
 - Optional: U7 Nest 12 once @nestjs/throttler supports it; web-push VAPID (we can
   generate); Lighthouse budget run will now execute automatically in CI.
 

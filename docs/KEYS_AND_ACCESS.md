@@ -11,6 +11,38 @@ what to copy, which env var it feeds, and what it unblocks.
 
 ---
 
+## ⚡ STATUS BOARD — first key delivery (2026-09-01)
+
+Values themselves live only in `backend/.env` (git-ignored) — this doc tracks state only.
+
+| Item | State | Verification |
+|---|---|---|
+| §2 Paystack secret key | ✅ **received (test)** | API call accepted the key — verified 2026-09-01 |
+| §3 Flutterwave secret key + webhook hash | ✅ **received (test)** | API call accepted the key — verified 2026-09-01 |
+| §4 Brevo | ❌ **rejected — re-issue needed** | both provided keys → HTTP 401 from api.brevo.com; ALSO still need the **SMTP username** shown next to the smtp key |
+| §6 Google Client ID | ✅ received | format valid; proves out on first Google login |
+| §7 DNS | ⚠️ received w/ corrections | A records must be bare `173.212.230.3` (no `.8000` — DNS cannot store ports); SPF/DKIM records from Brevo sender page still needed (the received TXT is DMARC only) |
+| §8 Coolify API token + VPS IP | ✅ **received & verified** | `GET /api/v1/servers` OK — server `localhost @ host.docker.internal`, VPS `173.212.230.3` |
+| §1 R2 key pair + public host | ⏳ awaited | — |
+| §5 SMS (Termii or Twilio) | ⏳ awaited | — |
+| §9 FX feed URL | ⏳ awaited (or say "use open.er-api.com") | — |
+| §11 LLM providers | ✅ named: OpenRouter, DeepSeek, Claude/Anthropic, Ollama, OpenAI + any Anthropic/OpenAI-compatible base URL | keys to follow later |
+| §12 Sentry / §13 VAPID | optional / self-serve | — |
+
+### §10 business rules — user answers (2026-09-01), to be implemented as configurable settings
+
+1. **Fees:** buyer fee **5%**, seller commission **5%** — each toggleable per **seller account
+   and per product** from settings, and adjustable.
+2. **VAT:** support **both bases** (fees-only and hammer+fees) with an activation switch.
+3. **Payout schedule:** customizable per user preference.
+4. **Escrow auto-release:** fixed **at auction creation time** (0 = immediate release —
+   buyer is assumed to have inspected and agreed).
+5. **Bid increment:** set by the auctioneer/seller; **reserve price** policy set by seller.
+6. **Currency:** NGN default; USD/GHS/EUR display-only — confirmed.
+7. **Direct sales:** fees **apply** to buy-now/direct sales too.
+
+---
+
 ## 1. Cloudflare R2 — API key pair (U4 · storage go-live)
 
 **Why:** prod image/media uploads go to R2 instead of local disk. Pure env change.
@@ -76,6 +108,17 @@ and OPay (`OPAY_MERCHANT_ID`/`OPAY_SECRET_KEY`) — any subset; unset providers 
 **Provide:** the API key (or the SMTP relay pair `BREVO_SMTP_USER`/`BREVO_SMTP_PASS`).
 **Feeds:** `BREVO_API_KEY` (+ SPF/DKIM records → DNS). **Unblocks:** real OTP/reset/outbid/won emails.
 
+> **⚠ 2026-09-01: first delivery rejected.** Both provided keys (the `xkeysib-…` API key
+> and the `xsmtpsib-…` SMTP key) return **HTTP 401** from `api.brevo.com` — likely copied
+> incompletely or the account keys differ. To fix:
+> 1. Brevo → **SMTP & API → API Keys → Generate New API Key** → paste the FULL new
+>    `xkeysib-…` value (they show it once — copy with the copy button, not by hand).
+> 2. Also send the **SMTP username** shown beside the smtp key on the SMTP & API page
+>    (the relay login — usually the account email). We have the smtp password but not
+>    the username.
+> 3. The DMARC TXT arrived (`_dmarc` → `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`)
+>    but SPF + DKIM from **Senders & IP → Domain Authentication** are still needed.
+
 ## 5. SMS — Termii or Twilio (U2)
 
 **Termii (NG-focused, preferred):**
@@ -120,7 +163,25 @@ google-auth-library). **Feeds:** `GOOGLE_CLIENT_ID`. **Unblocks:** Google sign-i
 
 **Unblocks:** production domain config, TLS certs via Coolify, webhook reachability.
 
+> **⚠ 2026-09-01 corrections to the first delivery.**
+> The supplied A-record values were `173.212.230.3.8000` — DNS **A records cannot store
+> ports**; use the bare IP:
+>
+> | Hostname | Type | Correct value |
+> |---|---|---|
+> | `greyauction.com` | A | `173.212.230.3` |
+> | `api.greyauction.com` | A | `173.212.230.3` |
+> | `_dmarc` | TXT | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` ✅ received |
+>
+> Port 8000 (if the stack needs one) is handled by Coolify's reverse proxy (Traefik) on
+> the VPS — ports 80/443 must reach it. SPF/DKIM from Brevo still pending (§4). Also
+> still unknown: **where DNS is hosted** — Cloudflare or the registrar?
+
 ## 8. Coolify deploy access (U6)
+
+> ✅ **2026-09-01: API token received & verified** (`GET /api/v1/servers` OK — server
+> `localhost @ host.docker.internal`). VPS IP: `173.212.230.3`. Next: create the
+> `greyauction` project via the API and wire env + deploy.
 
 **Steps:**
 1. https://coolify.gozmar.com → log in.
@@ -144,25 +205,32 @@ Any endpoint returning `{"rates":{…}}` or `{"data":{…}}` JSON:
 **Provide:** the URL. **Feeds:** `EXCHANGE_RATE_API_URL`. **Unblocks:** the 03:00 UTC cron +
 the admin "Refresh from feed" button update real rates.
 
-## 10. Business rules (U5) — answer these
+## 10. Business rules (U5) — ✅ ANSWERED 2026-09-01, implementation pending
 
-1. Buyer fee % and seller commission % (and on what base: hammer price? incl. shipping?).
-2. VAT % (applied to fees only, or hammer + fees?).
-3. Settlement/payout schedule (e.g. T+7 days after delivery confirmation).
-4. Escrow auto-release window (days after delivery without dispute).
-5. Minimum bid increment (NGN) and reserve-price policy.
-6. Currency policy: NGN default; USD/GHS/EUR display-only?
-7. Do fees apply to direct-sales (buy-now) too, or auctions only?
+1. **Buyer fee 5% / seller commission 5%** — each adjustable and enable/disable-able
+   per seller account AND per product, from settings.
+2. **VAT:** support **both bases** — fees-only or hammer+fees — selected via an
+   activation switch.
+3. **Payout schedule:** customizable per user preference (no fixed T+N).
+4. **Escrow auto-release window:** fixed **at auction creation time**; may be **0**
+   (immediate payment — buyer assumed to have inspected and agreed).
+5. **Minimum bid increment:** set by the auctioneer/seller; **reserve price** policy
+   set by the seller.
+6. **Currency:** NGN default; USD/GHS/EUR display-only — confirmed.
+7. **Direct sales:** fees **apply** to buy-now/direct sales.
 
-**Feeds:** fee/VAT/settlement config + test expectations (currently seeded defaults).
+**Feeds:** fee/VAT/settlement config (settings-driven, per-seller & per-product overrides)
++ test expectations (currently seeded defaults — will be replaced by these rules).
 
 ## 11. LLM providers (optional · self-serve)
 
-Keys are added in **Admin → AI Providers** (presets: OpenAI, Anthropic, DeepSeek, Qwen, GLM,
-Gemini, OpenRouter, Groq, Mistral, Ollama, …). Tell me WHICH providers you have keys for and
-I'll pre-seed the feature configs (chatbot, description generator, title optimizer) with
-sensible fallback chains. `chatbot_assistant` is now enabled by seed; it needs at least one
-provider+model configured before it actually responds.
+✅ **Providers named 2026-09-01:** OpenRouter, DeepSeek, Claude/Anthropic, Ollama,
+OpenAI — plus any provider exposing an Anthropic- or OpenAI-compatible base URL.
+Keys to follow later; they are added in **Admin → AI Providers** (all of these are
+existing presets, and custom OpenAI/Anthropic-compatible base URLs are supported).
+I'll pre-seed the feature configs (chatbot, description generator, title optimizer)
+with fallback chains once the keys arrive. `chatbot_assistant` is enabled by seed;
+it needs at least one provider+model configured before it actually responds.
 
 ## 12. Sentry (optional)
 
@@ -173,7 +241,16 @@ project → copy the **DSN** — I'll wire it during the deploy.
 
 We generate the VAPID keypair ourselves. Just say "go".
 
-## 14. Priority order
+## 14. Priority order — UPDATED after 2026-09-01 delivery
 
-1. R2 keys (§1) → 2. Coolify + DNS (§7–8) → 3. Brevo + SMS (§4–5) → 4. Paystack/Flutterwave (§2–3)
-→ 5. Google Client ID (§6) → 6. FX URL + business rules (§9–10).
+Still needed, in order:
+1. **R2 key pair + public host** (§1) — storage go-live
+2. **Brevo re-issue + SMTP username + SPF/DKIM** (§4) — email go-live
+3. **FX feed URL** (§9) — say "use open.er-api.com" or send your URL
+4. **SMS keys** (§5) — Termii or Twilio
+5. Live payment keys when ready to transact (currently test-mode keys received)
+6. LLM API keys (§11) — to follow
+7. DNS host confirmation (§7) — Cloudflare or registrar?
+
+Received & verified: Paystack ✅, Flutterwave ✅, Google Client ID ✅, Coolify ✅,
+DNS values ✅ (corrected), business rules ✅, LLM provider list ✅.
