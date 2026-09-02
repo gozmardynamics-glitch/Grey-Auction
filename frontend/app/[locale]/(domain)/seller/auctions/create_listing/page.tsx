@@ -82,6 +82,23 @@ export default function CreateListingPage() {
         endTime,
         category: auctionDetails.category,
         images: imageFiles,
+        // U5: reserve policy + seller-set rules
+        hasReservePrice: pricingAndTerms.hasReservePrice,
+        ...(pricingAndTerms.hasReservePrice && {
+          reservePrice: parseFloat(pricingAndTerms.reservePrice) || 0,
+          reservePriceVisibility: pricingAndTerms.reservePriceVisibility,
+        }),
+        allowBuyNow: pricingAndTerms.allowBuyNow,
+        ...(pricingAndTerms.allowBuyNow && {
+          buyNowPrice: parseFloat(pricingAndTerms.buyNowPrice) || 0,
+        }),
+        ...(pricingAndTerms.minBidIncrement &&
+          parseFloat(pricingAndTerms.minBidIncrement) > 0 && {
+            minBidIncrement: parseFloat(pricingAndTerms.minBidIncrement),
+          }),
+        ...(pricingAndTerms.escrowReleaseHours !== undefined && {
+          escrowReleaseHours: pricingAndTerms.escrowReleaseHours,
+        }),
       };
 
       await createAuction(auctionData).unwrap();

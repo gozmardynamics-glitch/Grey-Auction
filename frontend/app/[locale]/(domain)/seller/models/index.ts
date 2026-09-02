@@ -88,6 +88,9 @@ interface PricingAndTermsData {
   auctionStartDate?: string;
   timezone?: string;
   auctionType?: AuctionType;
+  // U5: seller-set minimum bid increment + escrow window (fixed at creation)
+  minBidIncrement?: string;
+  escrowReleaseHours?: number;
 }
 
 interface CreateListingFormData {
@@ -207,6 +210,8 @@ const DEFAULT_FORM_DATA: CreateListingFormData = {
     auctionStartDate: '',
     timezone: 'Africa/Lagos',
     auctionType: 'timed',
+    minBidIncrement: '',
+    escrowReleaseHours: 72,
   },
 };
 

@@ -56,4 +56,12 @@ export interface CreateAuctionData {
   endTime: Date;
   category: string;
   images: File[];
+  // U5: reserve policy, buy-now and seller-set rules
+  hasReservePrice?: boolean;
+  reservePrice?: number;
+  reservePriceVisibility?: 'hidden' | 'exposed';
+  allowBuyNow?: boolean;
+  buyNowPrice?: number;
+  minBidIncrement?: number;
+  escrowReleaseHours?: number;
 }

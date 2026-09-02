@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from '@/shared/components/common';
 
+import { toast } from 'sonner';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import {
@@ -181,9 +182,37 @@ export default function ProductDetailsClient({
     setBidAmount(0);
   }, [bidAmount, currentBid, dispatch]);
 
-  const handleBuyNow = useCallback(() => {
-    router.push('/checkout');
-  }, [router]);
+  const handleBuyNow = useCallback(async () => {
+    // U5 #7 — direct-sale buy-now: creates the fee-bearing invoice + order
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    try {
+      const res = await fetch(`${apiBase}/orders/buy-now/${auctionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Buy now failed.');
+        return;
+      }
+      const order = json?.data;
+      const invoiceId = order?.invoiceId ?? order?.invoice?.id ?? order?.invoice_id;
+      if (invoiceId) {
+        try {
+          sessionStorage.setItem('greyauction:buyNowInvoiceId', String(invoiceId));
+        } catch {
+          /* storage unavailable — proceed without persisting */
+        }
+      }
+      toast.success('Purchase started — continuing to payment.');
+      router.push('/checkout/payment');
+    } catch {
+      toast.error('Buy now failed. Please try again.');
+    }
+  }, [auctionId, authToken, router]);
 
   const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href);

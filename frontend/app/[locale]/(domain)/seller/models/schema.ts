@@ -110,6 +110,9 @@ export const pricingAndTermsSchema = z.object({
   auctionStartDate: z.string().optional(),
   timezone: z.string().optional(),
   auctionType: z.enum(['timed', 'live']).optional(),
+  // U5: seller-set minimum bid increment + escrow window (fixed at creation)
+  minBidIncrement: z.string().optional(),
+  escrowReleaseHours: z.number().min(0).optional(),
 }).superRefine((data, ctx) => {
   if (data.hasReservePrice && !data.reservePrice) {
     ctx.addIssue({

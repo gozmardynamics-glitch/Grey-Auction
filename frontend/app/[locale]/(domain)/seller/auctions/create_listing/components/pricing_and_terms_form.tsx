@@ -135,6 +135,63 @@ export default function PricingAndTermsForm({
                 </FormItem>
               )}
             />
+
+            {/* U5 #5 — seller-set minimum bid increment (optional; blank = platform ladder) */}
+            <FormField
+              control={form.control}
+              name="minBidIncrement"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Minimum Bid Increment (U5)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ''}
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Leave blank to use platform default"
+                      className="bg-background"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Bidders must bid at least this much above the current bid.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* U5 #4 — escrow auto-release window, fixed at creation (0 = immediate) */}
+            <FormField
+              control={form.control}
+              name="escrowReleaseHours"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Escrow Release Window (hours, U5)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={field.value ?? 72}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === '' ? undefined : Number(e.target.value),
+                        )
+                      }
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      className="bg-background"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Fixed once the listing goes live. 0 releases funds to you
+                    immediately after payment; default is 72 hours.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           {/* Right column - Payment Terms */}

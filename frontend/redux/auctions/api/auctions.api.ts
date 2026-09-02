@@ -37,19 +37,40 @@ const auctionsApi = api.injectEndpoints({
     }),
 
     createAuction: builder.mutation<Auction, CreateAuctionData>({
-      query: (data) => {
-        const formData = new FormData();
-        formData.append('title', data.title);
-        formData.append('description', data.description);
-        formData.append('startingBid', data.startingBid.toString());
-        formData.append('endTime', data.endTime.toISOString());
-        formData.append('category', data.category);
-        data.images.forEach((image, index) => {
-          formData.append(`image${index}`, image);
-        });
-
-        return { url: '/auctions', method: 'POST', body: formData };
-      },
+      // POST /products (JSON). The backend has no /auctions route; image
+      // upload needs a dedicated endpoint and is a pre-existing gap.
+      query: (data) => ({
+        url: '/products',
+        method: 'POST',
+        body: {
+          title: data.title,
+          description: data.description,
+          startingBid: data.startingBid,
+          endTime: data.endTime.toISOString(),
+          category: data.category,
+          ...(data.hasReservePrice !== undefined && {
+            hasReservePrice: data.hasReservePrice,
+          }),
+          ...(data.reservePrice !== undefined && {
+            reservePrice: data.reservePrice,
+          }),
+          ...(data.reservePriceVisibility && {
+            reservePriceVisibility: data.reservePriceVisibility,
+          }),
+          ...(data.allowBuyNow !== undefined && {
+            allowBuyNow: data.allowBuyNow,
+          }),
+          ...(data.buyNowPrice !== undefined && {
+            buyNowPrice: data.buyNowPrice,
+          }),
+          ...(data.minBidIncrement !== undefined && {
+            minBidIncrement: data.minBidIncrement,
+          }),
+          ...(data.escrowReleaseHours !== undefined && {
+            escrowReleaseHours: data.escrowReleaseHours,
+          }),
+        },
+      }),
       invalidatesTags: [{ type: 'Auction', id: 'LIST' }],
     }),
 
