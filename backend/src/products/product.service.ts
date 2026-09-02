@@ -17,6 +17,8 @@ export class ProductService {
       sellerId,
       slug: this.generateSlug(dto.title),
       status: ProductStatus.DRAFT,
+      // U5 invariant: auctionType is fixed when the lot is approved, not before
+      auctionType: undefined,
     });
     return this.repo.save(product);
   }
@@ -248,6 +250,8 @@ export class ProductService {
     product.status = ProductStatus.ACTIVE;
     product.approvedBy = adminId;
     product.approvedAt = new Date();
+    // U5 invariant: the auction type is locked exactly once, at approval.
+    if (dto.auctionType) product.auctionType = dto.auctionType;
     return this.repo.save(product);
   }
 

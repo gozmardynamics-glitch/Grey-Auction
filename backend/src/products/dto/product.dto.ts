@@ -65,6 +65,11 @@ export class CreateProductDto {
   @IsBoolean()
   allowBuyNow?: boolean;
 
+  @ApiProperty({ required: false, enum: AuctionType, default: AuctionType.OPEN_AUCTION })
+  @IsOptional()
+  @IsEnum(AuctionType)
+  auctionType?: AuctionType;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
@@ -132,6 +137,12 @@ export class ApproveProductDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** U5: auction type is locked when the lot goes live. Defaults to open auction. */
+  @ApiProperty({ required: false, enum: AuctionType })
+  @IsOptional()
+  @IsEnum(AuctionType)
+  auctionType?: AuctionType;
 }
 
 export class RejectProductDto {

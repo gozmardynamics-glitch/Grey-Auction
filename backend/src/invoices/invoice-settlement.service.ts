@@ -77,10 +77,15 @@ export class InvoiceSettlementService {
               return { kind: 'no-bid', detail: product.title + ': no winning bid — closed' };
             }
 
-            // U5: override-aware fee resolution (product -> seller -> category -> default)
+            // U5: override-aware fee resolution (product -> seller -> buyer -> category -> default)
             const breakdown = await this.feeService.resolveAndCompute(
               Number(winningBid.amount),
-              { category: locked.category, sellerId: locked.sellerId, productId: locked.id },
+              {
+                category: locked.category,
+                sellerId: locked.sellerId,
+                productId: locked.id,
+                buyerId: winningBid.bidderId,
+              },
             );
 
             await this.invoiceService.createInvoice(manager, {

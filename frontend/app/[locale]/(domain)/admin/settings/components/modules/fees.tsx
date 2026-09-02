@@ -47,7 +47,7 @@ interface FeeConfig {
 }
 
 interface FeeOverrideRow {
-  scope: 'seller' | 'product';
+  scope: 'seller' | 'product' | 'buyer';
   scopeId: string;
   buyerFeePct: number | null;
   buyerFeeEnabled: boolean | null;
@@ -119,7 +119,7 @@ export default function FeesSettings() {
   const [ovLoading, setOvLoading] = useState(true);
   const [ovSaving, setOvSaving] = useState(false);
   const [ovForm, setOvForm] = useState({
-    scope: 'seller' as 'seller' | 'product',
+    scope: 'seller' as 'seller' | 'product' | 'buyer',
     scopeId: '',
     buyerFeePct: '',
     sellerFeePct: '',
@@ -727,7 +727,10 @@ export default function FeesSettings() {
               <Select
                 value={ovForm.scope}
                 onValueChange={(v) =>
-                  setOvForm((f) => ({ ...f, scope: v as 'seller' | 'product' }))
+                  setOvForm((f) => ({
+                    ...f,
+                    scope: v as 'seller' | 'product' | 'buyer',
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -736,12 +739,17 @@ export default function FeesSettings() {
                 <SelectContent>
                   <SelectItem value="seller">Seller</SelectItem>
                   <SelectItem value="product">Product</SelectItem>
+                  <SelectItem value="buyer">Buyer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">
-                {ovForm.scope === 'seller' ? 'Seller user ID' : 'Product ID'}
+                {ovForm.scope === 'product'
+                  ? 'Product ID'
+                  : ovForm.scope === 'buyer'
+                    ? 'Buyer user ID'
+                    : 'Seller user ID'}
               </Label>
               <Input
                 value={ovForm.scopeId}

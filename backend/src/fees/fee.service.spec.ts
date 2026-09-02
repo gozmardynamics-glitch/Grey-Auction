@@ -68,6 +68,31 @@ describe('FeeService (U5 resolution chain)', () => {
     expect(eff.source).toBe('seller');
   });
 
+  it('a buyer override beats seller/category/default but not product (U5 #1, buyer scope)', async () => {
+    overrideRepo.findOne.mockImplementation(async ({ where }: any) =>
+      where.scope === FeeOverrideScope.BUYER
+        ? { scope: 'buyer', scopeId: 'b1', buyerFeePct: '3.00', buyerFeeEnabled: true, sellerFeePct: null, sellerFeeEnabled: null, vatPct: null, vatBase: null }
+        : null,
+    );
+    // No product/seller overrides; buyer fee comes from the buyer layer
+    const eff = await service.resolveEffectiveConfig({ category: 'art', sellerId: 's1', buyerId: 'b1' });
+    expect(eff.buyerFeePct).toBe(3);
+    expect(eff.buyerFeeEnabled).toBe(true);
+    expect(eff.source).toBe('buyer');
+
+    // Product override still wins over the buyer layer
+    overrideRepo.findOne.mockImplementation(async ({ where }: any) =>
+      where.scope === FeeOverrideScope.PRODUCT
+        ? { scope: 'product', scopeId: 'p1', buyerFeePct: '1.00', buyerFeeEnabled: null, sellerFeePct: null, sellerFeeEnabled: null, vatPct: null, vatBase: null }
+        : where.scope === FeeOverrideScope.BUYER
+          ? { scope: 'buyer', scopeId: 'b1', buyerFeePct: '3.00', buyerFeeEnabled: null, sellerFeePct: null, sellerFeeEnabled: null, vatPct: null, vatBase: null }
+          : null,
+    );
+    const eff2 = await service.resolveEffectiveConfig({ sellerId: 's1', productId: 'p1', buyerId: 'b1' });
+    expect(eff2.buyerFeePct).toBe(1);
+    expect(eff2.source).toBe('product');
+  });
+
   it('a product override beats everything (U5 #1)', async () => {
     overrideRepo.findOne.mockImplementation(async ({ where }: any) =>
       where.scope === FeeOverrideScope.PRODUCT

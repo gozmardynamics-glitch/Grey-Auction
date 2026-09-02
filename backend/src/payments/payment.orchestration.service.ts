@@ -6,6 +6,8 @@ import { InvoiceService } from '../invoices/invoice.service';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { OrderService } from '../orders/order.service';
+import { EscrowService } from '../escrow/escrow.service';
+import { Invoice } from '../invoices/invoice.entity';
 import { Payment, PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.entity';
 import { createProviderAdapter } from './providers/provider.registry';
 
@@ -27,6 +29,7 @@ export class PaymentOrchestrationService {
     private readonly invoiceService: InvoiceService,
     private readonly walletService: WalletService,
     private readonly orderService: OrderService,
+    private readonly escrowService: EscrowService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -158,6 +161,19 @@ export class PaymentOrchestrationService {
       });
       // D3 seam: create/mark the order paid atomically with the invoice + payment.
       await this.orderService.markPaidInManager(manager, payment.invoiceId, payment.reference);
+      // U5 answer #4: place the escrow hold atomically with payment success.
+      // The auto-release sweep opens it after the invoice's fixed window (0 = immediate).
+      const invoice = await manager.getRepository(Invoice).findOne({
+        where: { id: payment.invoiceId },
+      });
+      if (invoice) {
+        await this.escrowService.holdInManager(manager, {
+          invoiceId: payment.invoiceId,
+          amount: Number(invoice.total),
+          buyerId: invoice.buyer_id,
+          sellerId: invoice.seller_id,
+        });
+      }
       return;
     }
     if (payment.type === PaymentType.DEPOSIT) {

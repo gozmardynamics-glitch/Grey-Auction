@@ -35,9 +35,9 @@ export interface UpsertFeeOverrideDto {
   vatBase?: VatBase | null;
 }
 
-/** Resolution chain: product -> seller -> category -> platform default. */
-const RESOLUTION_ORDER: FeeSourceOrder[] = ['product', 'seller', 'category', 'default'];
-type FeeSourceOrder = 'product' | 'seller' | 'category' | 'default';
+/** Resolution chain: product -> seller -> buyer -> category -> platform default. */
+const RESOLUTION_ORDER: FeeSourceOrder[] = ['product', 'seller', 'buyer', 'category', 'default'];
+type FeeSourceOrder = 'product' | 'seller' | 'buyer' | 'category' | 'default';
 
 @Injectable()
 export class FeeService {
@@ -129,6 +129,7 @@ export class FeeService {
     category?: string | null;
     sellerId?: string | null;
     productId?: string | null;
+    buyerId?: string | null;
   }): Promise<EffectiveFeeConfig> {
     const def = await this.findByCategory('default');
     const cat =
@@ -142,10 +143,14 @@ export class FeeService {
     const sellerOv = input.sellerId
       ? await this.getOverride(FeeOverrideScope.SELLER, input.sellerId)
       : null;
+    const buyerOv = input.buyerId
+      ? await this.getOverride(FeeOverrideScope.BUYER, input.buyerId)
+      : null;
 
     const layers: Array<{ source: FeeSourceOrder; ov: FeeOverride | null; cfg: FeeConfig | null }> = [
       { source: 'product', ov: productOv, cfg: null },
       { source: 'seller', ov: sellerOv, cfg: null },
+      { source: 'buyer', ov: buyerOv, cfg: null },
       { source: 'category', ov: null, cfg: cat },
       { source: 'default', ov: null, cfg: def },
     ];
@@ -162,6 +167,7 @@ export class FeeService {
       source: 'default',
     };
 
+    const claimed = new Set<string>();
     for (const layer of layers) {
       if (layer.source === 'default') break; // already seeded
       if (layer.source === 'category' && !layer.cfg) continue;
@@ -176,25 +182,40 @@ export class FeeService {
       if (layer.ov && !hasAny) continue;
       if (!layer.ov && !layer.cfg) continue;
 
-      eff.source = layer.source;
+      let contributed = false;
+      const claim = (key: string) => {
+        if (claimed.has(key)) return false;
+        claimed.add(key);
+        contributed = true;
+        return true;
+      };
 
       if (layer.ov) {
-        if (layer.ov.buyerFeePct != null) eff.buyerFeePct = Number(layer.ov.buyerFeePct);
-        if (layer.ov.buyerFeeEnabled != null) eff.buyerFeeEnabled = layer.ov.buyerFeeEnabled;
-        if (layer.ov.sellerFeePct != null) eff.sellerFeePct = Number(layer.ov.sellerFeePct);
-        if (layer.ov.sellerFeeEnabled != null) eff.sellerFeeEnabled = layer.ov.sellerFeeEnabled;
-        if (layer.ov.vatPct != null) eff.vatPct = Number(layer.ov.vatPct);
-        if (layer.ov.vatBase != null) eff.vatBase = layer.ov.vatBase;
+        if (layer.ov.buyerFeePct != null && claim('buyerFeePct'))
+          eff.buyerFeePct = Number(layer.ov.buyerFeePct);
+        if (layer.ov.buyerFeeEnabled != null && claim('buyerFeeEnabled'))
+          eff.buyerFeeEnabled = layer.ov.buyerFeeEnabled;
+        if (layer.ov.sellerFeePct != null && claim('sellerFeePct'))
+          eff.sellerFeePct = Number(layer.ov.sellerFeePct);
+        if (layer.ov.sellerFeeEnabled != null && claim('sellerFeeEnabled'))
+          eff.sellerFeeEnabled = layer.ov.sellerFeeEnabled;
+        if (layer.ov.vatPct != null && claim('vatPct'))
+          eff.vatPct = Number(layer.ov.vatPct);
+        if (layer.ov.vatBase != null && claim('vatBase'))
+          eff.vatBase = layer.ov.vatBase;
       } else if (layer.cfg) {
-        eff.buyerFeePct = Number(layer.cfg.commissionPct);
-        eff.buyerFeeEnabled = layer.cfg.buyerFeeEnabled;
-        eff.sellerFeePct = Number(layer.cfg.sellerCommissionPct);
-        eff.sellerFeeEnabled = layer.cfg.sellerFeeEnabled;
-        eff.vatPct = Number(layer.cfg.vatPct);
-        eff.vatBase = layer.cfg.vatBase;
-        eff.otherChargesPct = Number(layer.cfg.otherChargesPct);
-        eff.fixedFee = Number(layer.cfg.fixedFee);
+        if (claim('buyerFeePct')) eff.buyerFeePct = Number(layer.cfg.commissionPct);
+        if (claim('buyerFeeEnabled')) eff.buyerFeeEnabled = layer.cfg.buyerFeeEnabled;
+        if (claim('sellerFeePct')) eff.sellerFeePct = Number(layer.cfg.sellerCommissionPct);
+        if (claim('sellerFeeEnabled')) eff.sellerFeeEnabled = layer.cfg.sellerFeeEnabled;
+        if (claim('vatPct')) eff.vatPct = Number(layer.cfg.vatPct);
+        if (claim('vatBase')) eff.vatBase = layer.cfg.vatBase;
+        if (claim('otherChargesPct')) eff.otherChargesPct = Number(layer.cfg.otherChargesPct);
+        if (claim('fixedFee')) eff.fixedFee = Number(layer.cfg.fixedFee);
       }
+
+      // The first layer that contributes anything names the source.
+      if (contributed && eff.source === 'default') eff.source = layer.source;
     }
 
     return eff;
@@ -207,7 +228,12 @@ export class FeeService {
    */
   async resolveAndCompute(
     amount: number,
-    input: { category?: string | null; sellerId?: string | null; productId?: string | null },
+    input: {
+      category?: string | null;
+      sellerId?: string | null;
+      productId?: string | null;
+      buyerId?: string | null;
+    },
     preResolved?: EffectiveFeeConfig,
   ): Promise<FeeBreakdown> {
     const cfg = preResolved ?? (await this.resolveEffectiveConfig(input));

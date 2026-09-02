@@ -14,7 +14,7 @@ export enum VatBase {
   HAMMER_AND_FEES = 'hammer_and_fees',
 }
 
-export type FeeSource = 'default' | 'category' | 'seller' | 'product';
+export type FeeSource = 'default' | 'category' | 'buyer' | 'seller' | 'product';
 
 /** Effective (resolved) fee configuration after the product → seller → category → default chain. */
 export interface EffectiveFeeConfig {

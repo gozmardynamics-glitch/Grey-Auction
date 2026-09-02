@@ -23,7 +23,7 @@ export class U5FeeRules1789050000000 implements MigrationInterface {
       ADD COLUMN "buyerFeeEnabled" boolean NOT NULL DEFAULT true,
       ADD COLUMN "sellerFeeEnabled" boolean NOT NULL DEFAULT true`);
 
-    await queryRunner.query(`CREATE TYPE "fee_override_scope" AS ENUM ('seller', 'product')`);
+    await queryRunner.query(`CREATE TYPE "fee_override_scope" AS ENUM ('seller', 'product', 'buyer')`);
     await queryRunner.query(`CREATE TABLE "fee_overrides" (
       "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
       "scope" "fee_override_scope" NOT NULL,

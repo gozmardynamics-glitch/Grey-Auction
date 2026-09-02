@@ -34,31 +34,43 @@ export class EscrowService {
   /** Place funds in escrow for an invoice (normally triggered on invoice payment). */
   async hold(input: { invoiceId: string; amount: number; buyerId: string; sellerId: string }) {
     if (input.amount <= 0) throw new BadRequestException('Escrow amount must be positive');
-    return this.dataSource.transaction(async (manager) => {
-      const repo = manager.getRepository(EscrowHold);
-      const existing = await repo.findOne({
-        where: { invoiceId: input.invoiceId, status: In(OPEN_STATUSES) },
-        lock: { mode: 'pessimistic_write' },
-      });
-      if (existing) throw new ConflictException('Funds are already in escrow for this invoice');
+    const hold = await this.dataSource.transaction(async (manager) =>
+      this.holdInManager(manager, input),
+    );
+    if (!hold) throw new ConflictException('Funds are already in escrow for this invoice');
+    return hold;
+  }
 
-      // U5 answer #4 — the auto-release window was fixed on the invoice at
-      // creation (from the lot's escrowReleaseHours). Compute when it opens.
-      const invoice = await manager.getRepository(Invoice).findOne({
-        where: { id: input.invoiceId },
-      });
-      const windowHours = invoice?.escrow_window_hours ?? null;
-      const releaseAt = this.computeReleaseAt(windowHours, invoice?.paid_at);
-
-      return repo.save(repo.create({
-        invoiceId: input.invoiceId,
-        amount: input.amount,
-        buyerId: input.buyerId,
-        sellerId: input.sellerId,
-        status: EscrowStatus.HELD,
-        autoReleaseAt: releaseAt,
-      }));
+  /** U5 answer #4 — place the hold inside the caller's transaction (payment success).
+    *  Skips silently if a hold already exists (idempotent webhook replays). */
+  async holdInManager(
+    manager: EntityManager,
+    input: { invoiceId: string; amount: number; buyerId: string; sellerId: string },
+  ): Promise<EscrowHold | null> {
+    if (input.amount <= 0) return null;
+    const repo = manager.getRepository(EscrowHold);
+    const existing = await repo.findOne({
+      where: { invoiceId: input.invoiceId, status: In(OPEN_STATUSES) },
+      lock: { mode: 'pessimistic_write' },
     });
+    if (existing) return null;
+
+    // The auto-release window was fixed on the invoice at creation (from the
+    // lot's escrowReleaseHours). Compute when it opens.
+    const invoice = await manager.getRepository(Invoice).findOne({
+      where: { id: input.invoiceId },
+    });
+    const windowHours = invoice?.escrow_window_hours ?? null;
+    const releaseAt = this.computeReleaseAt(windowHours, invoice?.paid_at);
+
+    return repo.save(repo.create({
+      invoiceId: input.invoiceId,
+      amount: input.amount,
+      buyerId: input.buyerId,
+      sellerId: input.sellerId,
+      status: EscrowStatus.HELD,
+      autoReleaseAt: releaseAt,
+    }));
   }
 
   async getForInvoice(invoiceId: string, viewerId?: string): Promise<EscrowHold[]> {

@@ -11,15 +11,18 @@ import { VatBase } from './fee-breakdown';
 export enum FeeOverrideScope {
   SELLER = 'seller',
   PRODUCT = 'product',
+  BUYER = 'buyer',
 }
 
 /**
- * U5 answer #1 — per-seller AND per-product fee overrides.
+ * U5 answer #1 — per-seller / per-product / per-buyer fee overrides.
  *
  * A row scoped 'seller' carries scopeId = the seller's user id (matches
  * products.sellerId). A row scoped 'product' carries scopeId = product id.
+ * A row scoped 'buyer' carries scopeId = the buyer's user id and applies to
+ * every fee the platform charges that buyer (auction premium or buy-now).
  * Every fee field is nullable: null = inherit from the next layer of the
- * resolution chain (product → seller → category → platform default).
+ * resolution chain (product → seller → buyer → category → platform default).
  */
 @Entity('fee_overrides')
 @Index(['scope', 'scopeId'], { unique: true })

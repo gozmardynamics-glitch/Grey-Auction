@@ -64,6 +64,7 @@ export class OrderService {
         category: product.category,
         sellerId: product.sellerId,
         productId: product.id,
+        buyerId,
       });
 
       const invoice = await this.invoiceService.createInvoice(manager, {
