@@ -8,7 +8,67 @@
 
 ---
 
-## SESSION HANDOFF — START HERE (2026-09-01, workstream 2026-09-01)
+## SESSION HANDOFF — START HERE (2026-09-02)
+
+**TO RESUME:** just say *"check AUDIT_REPORT_v2 and continue"*.
+Bootstrap: DB `docker start greyauction-postgres` if stopped → backend
+`cd backend && npm run start:dev` (:3001) → frontend `cd frontend && npm run dev`
+(:3000) — or run `DEV_START.ps1` at the workspace root. Status board +
+priorities: docs/KEYS_AND_ACCESS.md (§14).
+
+**State:** master clean · head = 051a301 (vendor ponytail skills + verify
+notification triggers; refresh source of truth) · backend 252/252 unit +
+5/5 E2E + 8/8 integration · frontend 77/77 Vitest · builds green · eslint 0 ·
+npm audit 0/0. Notification triggers re-verified wired (bid.service
+notifyOutbid · invoice-settlement notifyAuctionWon/Ended · room-lifecycle
+notifyRoomStarted). Ponytail skills vendored (.agents/skills/ +
+AGENTS.ponytail.md).
+
+**NEXT WORKSTREAM — U5 fee rules (key-free, acceptance answers in
+KEYS_AND_ACCESS §10, answered 2026-09-01):**
+1. Buyer fee 5% / seller commission 5% — independently adjustable +
+   enable/disable per seller AND per product (settings-driven).
+2. VAT both bases — fees-only vs hammer+fees — via activation switch.
+3. Payout schedule customizable per user preference (no fixed T+N).
+4. Escrow auto-release window fixed AT auction creation; 0 = immediate.
+5. Min bid increment + reserve-price policy set by the seller.
+6. NGN default; USD/GHS/EUR display-only.
+7. Fees apply to direct sales (buy-now).
+
+Implementation sketch: extend `fee_configs`
+(backend/src/fees/fee-config.entity.ts — category-scoped
+commissionPct/vatPct/otherChargesPct/fixedFee/isActive) with per-seller +
+per-product override entities; VAT-base switch on settings; payout-schedule
+preference on seller; escrow window column captured at product/auction
+creation; bid increment/reserve on products; fee resolution order
+product → seller → category → default wired into invoice/settlement and
+direct-sale paths; admin/seller settings UI; tests replace seeded defaults.
+
+**Connections & keys (state at 2026-09-01 close):**
+- ✅ **Coolify API connected** (v4.1.2, server `localhost` @
+  host.docker.internal, VPS 173.212.230.3). Project GreyAuction
+  (uuid `b6as8aze8abhikytid2ysksw`) exists, EMPTY production env → next:
+  create apps (backend+frontend+postgres) via POST /applications from
+  github.com/gozmardynamics-glitch/Grey-Auction.
+- ❌ **Cloudflare API NOT connected** — awaiting user token (Zone→DNS→Edit +
+  Zone→Read, scoped to greyauction.com) OR confirmation DNS sits at the
+  registrar (user adds records manually). A-record = bare 173.212.230.3
+  (no port suffix).
+- **Keys received & verified** (git-ignored backend/.env): Paystack test ✅,
+  Flutterwave test + hash ✅, Google Client ID ✅, Coolify token ✅.
+- **Still awaited (priority order, KEYS_AND_ACCESS §14):** (1) R2 key pair +
+  public host — storage go-live; (2) Brevo re-issue + SMTP username +
+  SPF/DKIM; (3) FX feed URL (open.er-api.com offer stands); (4) SMS
+  (Termii/Twilio); (5) live payment keys when transacting; (6) LLM API keys
+  (OpenRouter, DeepSeek, Claude/Anthropic, Ollama, OpenAI + compatible base
+  URLs); (7) DNS host confirmation.
+
+**Services:** (re)start per §8 / `DEV_START.ps1`; see session log for current
+status. Demo accounts in §8.
+
+---
+
+## SESSION HANDOFF — previous (2026-09-01, workstream 2026-09-01)
 
 **TO RESUME (tomorrow morning):** just say *"check AUDIT_REPORT_v2 and continue"*.
 Bootstrap: DB `docker start greyauction-postgres` if stopped → backend
