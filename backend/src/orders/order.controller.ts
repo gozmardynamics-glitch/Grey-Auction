@@ -13,6 +13,14 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @Post('buy-now/:productId')
+  @ApiOperation({ summary: 'Buy a direct-sale lot now (U5: fees apply)' })
+  @ApiResponse({ status: 201, description: 'Order created', type: OrderApiResponseDto })
+  async buyNow(@CurrentUser() user: any, @Param('productId') productId: string) {
+    const order = await this.orderService.createForBuyNow(productId, user.id);
+    return { success: true, message: 'Order created', data: order };
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create an order from an invoice (buyer)' })
   @ApiResponse({ status: 201, description: 'Order created', type: OrderApiResponseDto })

@@ -8,6 +8,9 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Order, OrderStatus } from './order.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
+import { InvoiceService } from '../invoices/invoice.service';
+import { FeeService } from '../fees/fee.service';
+import { Product, AuctionType } from '../products/entities/product.entity';
 
 @Injectable()
 export class OrderService {
@@ -18,7 +21,69 @@ export class OrderService {
     private readonly invoiceRepo: Repository<Invoice>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly feeService: FeeService,
+    private readonly invoiceService: InvoiceService,
   ) {}
+
+  /**
+   * U5 answer #7 — direct sales (buy-now) go through the same fee rules as
+   * auctions: the override-aware breakdown is computed and an invoice is
+   * issued from the buy-now price. Idempotent per product while unpaid.
+   */
+  async createForBuyNow(productId: string, buyerId: string): Promise<Order> {
+    return this.dataSource.transaction(async (manager) => {
+      const productRepo = manager.getRepository(Product);
+      const product = await productRepo.findOne({
+        where: { id: productId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) throw new NotFoundException('Product not found');
+      if (product.auctionType !== AuctionType.DIRECT_SALE || !product.allowBuyNow) {
+        throw new BadRequestException('This lot is not a direct sale');
+      }
+      if (!product.buyNowPrice || Number(product.buyNowPrice) <= 0) {
+        throw new BadRequestException('Direct sale has no buy-now price');
+      }
+
+      // One open invoice per direct-sale lot at a time.
+      const invoiceRepo = manager.getRepository(Invoice);
+      const existing = await invoiceRepo.findOne({
+        where: { product_id: productId, status: InvoiceStatus.ISSUED },
+      });
+      if (existing) {
+        if (existing.buyer_id !== buyerId) {
+          throw new BadRequestException('Another buyer already started this purchase');
+        }
+        const dup = await this.orderRepo.findOne({ where: { invoiceId: existing.id } });
+        if (dup) return dup;
+        return this.orderRepo.save(this.orderRepo.create(this.toOrder(existing)));
+      }
+
+      const hammer = Number(product.buyNowPrice);
+      const breakdown = await this.feeService.resolveAndCompute(hammer, {
+        category: product.category,
+        sellerId: product.sellerId,
+        productId: product.id,
+      });
+
+      const invoice = await this.invoiceService.createInvoice(manager, {
+        auctionId: product.id,
+        productId: product.id,
+        buyerId,
+        sellerId: product.sellerId,
+        hammerPrice: hammer,
+        commission: breakdown.buyerFee,
+        vat: breakdown.vatOnBid + breakdown.vatOnBuyerFee,
+        fixedFee: breakdown.fixedFee,
+        sellerFee: breakdown.sellerFee,
+        feeSource: breakdown.source,
+        vatBase: breakdown.vatBase,
+        escrowWindowHours: product.escrowReleaseHours ?? 72,
+      });
+
+      return this.orderRepo.save(this.orderRepo.create(this.toOrder(invoice)));
+    });
+  }
 
   /**
    * Create an order for the buyer from an invoice (idempotent: one order per

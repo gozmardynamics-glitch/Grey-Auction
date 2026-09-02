@@ -77,9 +77,10 @@ export class InvoiceSettlementService {
               return { kind: 'no-bid', detail: product.title + ': no winning bid — closed' };
             }
 
-            const breakdown = await this.feeService.getBreakdown(
+            // U5: override-aware fee resolution (product -> seller -> category -> default)
+            const breakdown = await this.feeService.resolveAndCompute(
               Number(winningBid.amount),
-              locked.category,
+              { category: locked.category, sellerId: locked.sellerId, productId: locked.id },
             );
 
             await this.invoiceService.createInvoice(manager, {
@@ -88,9 +89,13 @@ export class InvoiceSettlementService {
               buyerId: winningBid.bidderId,
               sellerId: locked.sellerId,
               hammerPrice: Number(winningBid.amount),
-              commission: breakdown.commission,
-              vat: breakdown.vatOnBid + breakdown.vatOnCommission,
+              commission: breakdown.buyerFee,
+              vat: breakdown.vatOnBid + breakdown.vatOnBuyerFee,
               fixedFee: breakdown.fixedFee,
+              sellerFee: breakdown.sellerFee,
+              feeSource: breakdown.source,
+              vatBase: breakdown.vatBase,
+              escrowWindowHours: locked.escrowReleaseHours ?? 72,
             });
 
             locked.status = ProductStatus.SOLD;

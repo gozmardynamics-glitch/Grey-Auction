@@ -106,6 +106,16 @@ export class Product {
   @Column({ type: 'enum', enum: AuctionType, default: AuctionType.OPEN_AUCTION })
   auctionType: AuctionType;
 
+  // U5 answer #5 — seller-set minimum bid increment (NGN).
+  // null = use the platform's per-price-level ladder.
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  minBidIncrement: number;
+
+  // U5 answer #4 — escrow auto-release window in hours, FIXED AT CREATION.
+  // 0 = immediate release on payment (buyer assumed to have inspected and agreed).
+  @Column({ type: 'int', default: 72 })
+  escrowReleaseHours: number;
+
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.DRAFT })
   status: ProductStatus;
 

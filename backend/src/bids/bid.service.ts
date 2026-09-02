@@ -23,6 +23,16 @@ export function bidStep(currentBid: number): number {
   return 100000;
 }
 
+/**
+ * U5 answer #5 — the seller may set a per-lot minimum bid increment.
+ * Falls back to the platform ladder when the lot has no override.
+ */
+export function effectiveBidStep(currentBid: number, minBidIncrement?: number | null): number {
+  const set = Number(minBidIncrement);
+  if (minBidIncrement != null && Number.isFinite(set) && set > 0) return set;
+  return bidStep(currentBid);
+}
+
 export const ANTI_SNIPE_WINDOW_MS = 2 * 60 * 1000; // extend when < 2 min left
 export const ANTI_SNIPE_EXTEND_MS = 2 * 60 * 1000; // extend by 2 min
 
@@ -50,6 +60,7 @@ export function resolveAutoBids(
   currentBid: number,
   currentWinnerId: string,
   candidates: AutoBidCandidate[],
+  stepFn: (price: number) => number = bidStep,
   maxRounds = 50,
 ): ResolvedAutoBid[] {
   const bids: ResolvedAutoBid[] = [];
@@ -67,13 +78,13 @@ export function resolveAutoBids(
 
     let target: number;
     if (second) {
-      target = Math.min(highest.maxBid, second.maxBid + bidStep(price));
+      target = Math.min(highest.maxBid, second.maxBid + stepFn(price));
     } else if (highest.bidderId === winner) {
       // Already winning with no competitor left — stop.
       break;
     } else {
       // Outbid the current (manual) winner by one increment.
-      target = Math.min(highest.maxBid, price + bidStep(price));
+      target = Math.min(highest.maxBid, price + stepFn(price));
     }
 
     if (target <= price) break;
@@ -134,6 +145,18 @@ export class BidService {
 
       if (dto.amount < product.startingBid) {
         throw new BadRequestException('Bid must be at least the starting bid');
+      }
+
+      // ─── U5: enforce the seller-set minimum bid increment once bidding is live.
+      // When the lot has no override, manual bids only need to beat the current
+      // price (the platform ladder guides auto-bid stepping, as before).
+      const sellerStep = Number(product.minBidIncrement);
+      const hasSellerStep =
+        product.minBidIncrement != null && Number.isFinite(sellerStep) && sellerStep > 0;
+      if (product.currentBid > 0 && hasSellerStep && dto.amount < product.currentBid + sellerStep) {
+        throw new BadRequestException(
+          'Minimum bid increment is ' + sellerStep + ' — bid at least ' + (product.currentBid + sellerStep),
+        );
       }
 
       // ─── Seller-required minimum bid deposit gate (conditional) ──
@@ -221,10 +244,13 @@ export class BidService {
           maxBid: Number(r.maxBid),
         }));
 
+        const lotStep = (price: number): number =>
+          hasSellerStep ? sellerStep : bidStep(price);
         const resolved = resolveAutoBids(
           dto.amount,
           userId,
           candidates,
+          lotStep,
         );
 
         for (const auto of resolved) {

@@ -387,6 +387,22 @@ export class SellerService {
     return this.sellerRepository.save(seller);
   }
 
+  /**
+   * U5 answer #3 — set the seller's payout schedule preference.
+   * instant | daily | weekly | monthly (no fixed T+N holding period).
+   */
+  async setPayoutFrequency(id: string, frequency: string): Promise<Seller> {
+    const ALLOWED = ['instant', 'daily', 'weekly', 'monthly'];
+    if (!ALLOWED.includes(frequency)) {
+      throw new BadRequestException(
+        'payout frequency must be one of: ' + ALLOWED.join(', '),
+      );
+    }
+    const seller = await this.findById(id);
+    seller.payout_frequency = frequency;
+    return this.sellerRepository.save(seller);
+  }
+
   // ==========================================
   // STATISTICS & ANALYTICS
   // ==========================================

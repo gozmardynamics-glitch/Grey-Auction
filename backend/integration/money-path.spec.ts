@@ -132,6 +132,22 @@ describe("Money path (integration)", () => {
   });
 
   it("buyer initializes the payment (mock provider, no keys)", async () => {
+    // The suite assumes an offline init. If the developer's backend/.env now
+    // carries real provider keys, temporarily hide them so the init stays
+    // offline (the webhook test re-enables a test key below).
+    const savedPaystack = process.env.PAYSTACK_SECRET_KEY;
+    const savedFlutterwave = process.env.FLUTTERWAVE_SECRET_KEY;
+    delete process.env.PAYSTACK_SECRET_KEY;
+    delete process.env.FLUTTERWAVE_SECRET_KEY;
+    try {
+      await runPaymentInit();
+    } finally {
+      process.env.PAYSTACK_SECRET_KEY = savedPaystack;
+      process.env.FLUTTERWAVE_SECRET_KEY = savedFlutterwave;
+    }
+  });
+
+  async function runPaymentInit() {
     const res = await request(http())
       .post("/api/payments/init")
       .set("Authorization", "Bearer " + buyerToken)
@@ -142,7 +158,7 @@ describe("Money path (integration)", () => {
     expect(payment.status).toBe(PaymentStatus.PENDING);
     paymentRef = payment.reference;
     expect(paymentRef).toBeTruthy();
-  });
+  }
 
   it("signed webhook marks invoice paid and creates a paid order atomically", async () => {
     // Enable the Paystack secret AFTER init so init stays offline (unconfigured),

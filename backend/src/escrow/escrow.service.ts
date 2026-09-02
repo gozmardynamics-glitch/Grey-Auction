@@ -2,10 +2,11 @@ import {
   Injectable, NotFoundException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
+import { Invoice } from '../invoices/invoice.entity';
 
 const OPEN_STATUSES = [EscrowStatus.HELD, EscrowStatus.DISPUTED];
 const CLOSED_STATUSES = [EscrowStatus.RELEASED, EscrowStatus.REFUNDED];
@@ -40,12 +41,22 @@ export class EscrowService {
         lock: { mode: 'pessimistic_write' },
       });
       if (existing) throw new ConflictException('Funds are already in escrow for this invoice');
+
+      // U5 answer #4 — the auto-release window was fixed on the invoice at
+      // creation (from the lot's escrowReleaseHours). Compute when it opens.
+      const invoice = await manager.getRepository(Invoice).findOne({
+        where: { id: input.invoiceId },
+      });
+      const windowHours = invoice?.escrow_window_hours ?? null;
+      const releaseAt = this.computeReleaseAt(windowHours, invoice?.paid_at);
+
       return repo.save(repo.create({
         invoiceId: input.invoiceId,
         amount: input.amount,
         buyerId: input.buyerId,
         sellerId: input.sellerId,
         status: EscrowStatus.HELD,
+        autoReleaseAt: releaseAt,
       }));
     });
   }
@@ -116,5 +127,63 @@ export class EscrowService {
       throw new BadRequestException('Escrow hold is already settled');
     }
     return hold;
+  }
+
+  /**
+   * U5 answer #4 — compute the auto-release instant from the window that was
+   * fixed on the lot at creation. 0 = immediate (buyer assumed to have
+   * inspected and agreed); null = no auto-release (manual admin release).
+   */
+  computeReleaseAt(windowHours: number | null | undefined, paidAt?: Date | null): Date | null {
+    if (windowHours == null || !Number.isFinite(Number(windowHours))) return null;
+    const hours = Number(windowHours);
+    if (hours < 0) return null;
+    const anchor = paidAt ? new Date(paidAt).getTime() : Date.now();
+    return new Date(anchor + hours * 60 * 60 * 1000);
+  }
+
+  /**
+   * Auto-release every HELD hold whose autoReleaseAt has passed (U5 #4).
+   * Returns the number of holds released. Called by the escrow cron.
+   */
+  async autoReleaseDue(now = new Date()): Promise<number> {
+    const due = await this.holds.find({
+      where: { status: EscrowStatus.HELD, autoReleaseAt: LessThan(now) },
+      take: 100,
+    });
+
+    let released = 0;
+    for (const hold of due) {
+      try {
+        await this.dataSource.transaction(async (manager) => {
+          const repo = manager.getRepository(EscrowHold);
+          const locked = await repo.findOne({
+            where: { id: hold.id },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (
+            !locked ||
+            locked.status !== EscrowStatus.HELD ||
+            !locked.autoReleaseAt ||
+            locked.autoReleaseAt > now
+          ) {
+            return;
+          }
+          locked.status = EscrowStatus.RELEASED;
+          locked.releasedAt = now;
+          await repo.save(locked);
+          await this.walletService.creditInManager(manager, locked.sellerId, {
+            amount: locked.amount,
+            reference: 'escrow_auto_release:' + locked.id,
+            description: 'Escrow auto-release for invoice ' + locked.invoiceId,
+            type: WalletTransactionType.ESCROW_RELEASE,
+          });
+          released += 1;
+        });
+      } catch {
+        // a failed release must not block the sweep; it retries next cron
+      }
+    }
+    return released;
   }
 }

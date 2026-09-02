@@ -20,6 +20,14 @@ export interface GenerateInvoiceDto {
   commission: number;
   vat: number;
   fixedFee: number;
+  /** U5: seller-side platform commission (from the fee-resolution source). */
+  sellerFee?: number;
+  /** U5: fee-resolution provenance: product | seller | category | default. */
+  feeSource?: string;
+  /** U5: which VAT base was active when the invoice was issued. */
+  vatBase?: string;
+  /** U5: escrow auto-release window snapshot (hours); 0 = immediate. */
+  escrowWindowHours?: number | null;
 }
 
 export interface MarkPaidDto {
@@ -87,6 +95,11 @@ export class InvoiceService {
       commission: data.commission,
       vat: data.vat,
       fixed_fee: data.fixedFee,
+      seller_fee: data.sellerFee ?? 0,
+      fee_source: data.feeSource ?? 'default',
+      vat_base: data.vatBase ?? 'hammer_and_fees',
+      escrow_window_hours: data.escrowWindowHours ?? null,
+      escrow_release_at: null,
       total,
       status: InvoiceStatus.ISSUED,
       issued_at: new Date(),

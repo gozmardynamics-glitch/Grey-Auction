@@ -5,13 +5,21 @@ import { NotFoundException, ForbiddenException, BadRequestException } from '@nes
 import { OrderService } from './order.service';
 import { Order, OrderStatus } from './order.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
+import { FeeService } from '../fees/fee.service';
+import { InvoiceService } from '../invoices/invoice.service';
+import { Product, AuctionType } from '../products/entities/product.entity';
 
 describe('OrderService', () => {
   let service: OrderService;
   const orderRepo = { findOne: jest.fn(), find: jest.fn(), create: jest.fn(), save: jest.fn() };
   const invoiceRepo = { findOne: jest.fn() };
+  const productRepo = { findOne: jest.fn() };
+  const feeService = { resolveAndCompute: jest.fn() };
+  const invoiceService = { createInvoice: jest.fn() };
   const manager = {
-    getRepository: jest.fn((entity) => (entity === Order ? orderRepo : invoiceRepo)),
+    getRepository: jest.fn((entity) =>
+      entity === Order ? orderRepo : entity === Product ? productRepo : invoiceRepo,
+    ),
   };
   const dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
 
@@ -28,6 +36,9 @@ describe('OrderService', () => {
         OrderService,
         { provide: getRepositoryToken(Order), useValue: orderRepo },
         { provide: getRepositoryToken(Invoice), useValue: invoiceRepo },
+        { provide: getRepositoryToken(Product), useValue: productRepo },
+        { provide: FeeService, useValue: feeService },
+        { provide: InvoiceService, useValue: invoiceService },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -123,5 +134,77 @@ describe('OrderService', () => {
     expect(orderRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({ where: [{ buyerId: 'u1' }, { sellerId: 'u1' }] }),
     );
+  });
+
+  describe('createForBuyNow (U5 #7 — fees on direct sales)', () => {
+    const directLot = {
+      id: 'p9',
+      auctionType: AuctionType.DIRECT_SALE,
+      allowBuyNow: true,
+      buyNowPrice: '20000.00',
+      category: 'art',
+      sellerId: 's1',
+      escrowReleaseHours: 0,
+    } as any;
+
+    beforeEach(() => {
+      (productRepo.findOne as jest.Mock).mockResolvedValue(directLot);
+      (feeService.resolveAndCompute as jest.Mock).mockResolvedValue({
+        bidAmount: 20000,
+        buyerFee: 1000,
+        sellerFee: 1000,
+        vatOnBid: 1500,
+        vatOnBuyerFee: 75,
+        otherCharges: 0,
+        fixedFee: 0,
+        total: 22575,
+        sellerNet: 19000,
+        vatBase: 'hammer_and_fees',
+        source: 'default',
+      });
+      (invoiceRepo.findOne as jest.Mock).mockResolvedValue(null);
+      (invoiceService.createInvoice as jest.Mock).mockResolvedValue({
+        id: 'inv9', invoice_number: 'INV-2026-000009', auction_id: 'p9',
+        product_id: 'p9', buyer_id: 'b1', seller_id: 's1',
+        hammer_price: '20000.00', commission: '1000.00', vat: '1575.00',
+        fixed_fee: '0.00', total: '22575.00', status: InvoiceStatus.ISSUED,
+        payment_reference: null,
+      });
+      (orderRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (orderRepo.save as jest.Mock).mockImplementation(async (x: any) => ({ id: 'o9', ...x }));
+    });
+
+    it('issues an invoice from the buy-now price with the resolved fees', async () => {
+      const res = await service.createForBuyNow('p9', 'b1');
+      expect(feeService.resolveAndCompute).toHaveBeenCalledWith(
+        20000,
+        expect.objectContaining({ category: 'art', sellerId: 's1', productId: 'p9' }),
+      );
+      expect(invoiceService.createInvoice).toHaveBeenCalledWith(
+        manager,
+        expect.objectContaining({
+          hammerPrice: 20000,
+          commission: 1000,
+          sellerFee: 1000,
+          escrowWindowHours: 0,
+        }),
+      );
+      expect(res.total).toBe(22575);
+    });
+
+    it('rejects a lot that is not a direct sale', async () => {
+      (productRepo.findOne as jest.Mock).mockResolvedValue({
+        ...directLot,
+        auctionType: AuctionType.OPEN_AUCTION,
+      });
+      await expect(service.createForBuyNow('p9', 'b1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects a second buyer while an invoice is already open', async () => {
+      (invoiceRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'inv8', buyer_id: 'someone-else', status: InvoiceStatus.ISSUED,
+      });
+      await expect(service.createForBuyNow('p9', 'b1')).rejects.toThrow(BadRequestException);
+    });
   });
 });

@@ -19,6 +19,7 @@ import {
 } from './entities';
 import { Product } from '../products/entities/product.entity';
 import { Invoice } from '../invoices/invoice.entity';
+import { FeeModule } from '../fees/fee.module';
 import {
   SellerGuard,
   VerifiedSellerGuard,
@@ -38,6 +39,7 @@ import {
     ]),
     StorageModule,
     EmailModule,
+    FeeModule,
   ],
   controllers: [SellerController],
   providers: [

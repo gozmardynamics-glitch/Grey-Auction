@@ -25,6 +25,7 @@ import {
 } from '@/shared/components/common';
 
 import { cn } from '@/lib/utils';
+import { useAppSelector } from '@/redux/store';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -34,6 +35,10 @@ interface FeeConfig {
   displayName: string;
   commissionPct: number;
   vatPct: number;
+  vatBase?: 'fees_only' | 'hammer_and_fees';
+  sellerCommissionPct?: number;
+  buyerFeeEnabled?: boolean;
+  sellerFeeEnabled?: boolean;
   otherChargesPct: number;
   fixedFee: number;
   isActive: boolean;
@@ -41,11 +46,26 @@ interface FeeConfig {
   updatedAt?: string;
 }
 
+interface FeeOverrideRow {
+  scope: 'seller' | 'product';
+  scopeId: string;
+  buyerFeePct: number | null;
+  buyerFeeEnabled: boolean | null;
+  sellerFeePct: number | null;
+  sellerFeeEnabled: boolean | null;
+  vatPct: number | null;
+  vatBase: 'fees_only' | 'hammer_and_fees' | null;
+}
+
 interface FeeFormState {
   category: string;
   displayName: string;
   commissionPct: string;
   vatPct: string;
+  vatBase: 'fees_only' | 'hammer_and_fees';
+  sellerCommissionPct: string;
+  buyerFeeEnabled: boolean;
+  sellerFeeEnabled: boolean;
   otherChargesPct: string;
   fixedFee: string;
   isActive: boolean;
@@ -56,6 +76,10 @@ const EMPTY_FORM: FeeFormState = {
   displayName: '',
   commissionPct: '',
   vatPct: '',
+  vatBase: 'hammer_and_fees',
+  sellerCommissionPct: '5',
+  buyerFeeEnabled: true,
+  sellerFeeEnabled: true,
   otherChargesPct: '',
   fixedFee: '',
   isActive: true,
@@ -80,6 +104,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function FeesSettings() {
+  const token = useAppSelector((state) => state.auth.token);
   const [configs, setConfigs] = useState<FeeConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -88,6 +113,19 @@ export default function FeesSettings() {
   const [form, setForm] = useState<FeeFormState>(EMPTY_FORM);
   const [previewCategory, setPreviewCategory] = useState('');
   const [sampleAmount, setSampleAmount] = useState('1000000');
+
+  // ─── U5: per-seller / per-product overrides ───
+  const [overrides, setOverrides] = useState<FeeOverrideRow[]>([]);
+  const [ovLoading, setOvLoading] = useState(true);
+  const [ovSaving, setOvSaving] = useState(false);
+  const [ovForm, setOvForm] = useState({
+    scope: 'seller' as 'seller' | 'product',
+    scopeId: '',
+    buyerFeePct: '',
+    sellerFeePct: '',
+    vatPct: '',
+    vatBase: '' as '' | 'fees_only' | 'hammer_and_fees',
+  });
 
   const loadConfigs = useCallback(() => {
     fetch(`${API_BASE}/fees`)
@@ -115,6 +153,75 @@ export default function FeesSettings() {
     loadConfigs();
   }, [loadConfigs]);
 
+  const loadOverrides = useCallback(() => {
+    setOvLoading(true);
+    fetch(`${API_BASE}/fees/overrides`)
+      .then((res) => res.json())
+      .then((json) => {
+        const data: FeeOverrideRow[] =
+          json?.success && Array.isArray(json.data) ? json.data : [];
+        setOverrides(data);
+      })
+      .catch(() => toast.error('Failed to load fee overrides.'))
+      .finally(() => setOvLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadOverrides();
+  }, [loadOverrides]);
+
+  const handleOverrideSave = async () => {
+    if (!ovForm.scopeId.trim()) {
+      toast.error('Enter the seller or product ID.');
+      return;
+    }
+    setOvSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/fees/overrides`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          scope: ovForm.scope,
+          scopeId: ovForm.scopeId.trim(),
+          buyerFeePct: ovForm.buyerFeePct === '' ? null : Number(ovForm.buyerFeePct),
+          sellerFeePct: ovForm.sellerFeePct === '' ? null : Number(ovForm.sellerFeePct),
+          vatPct: ovForm.vatPct === '' ? null : Number(ovForm.vatPct),
+          vatBase: ovForm.vatBase === '' ? null : ovForm.vatBase,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json?.success === false) throw new Error('save failed');
+      toast.success('Fee override saved.');
+      setOvForm({ scope: 'seller', scopeId: '', buyerFeePct: '', sellerFeePct: '', vatPct: '', vatBase: '' });
+      loadOverrides();
+    } catch {
+      toast.error('Failed to save fee override.');
+    } finally {
+      setOvSaving(false);
+    }
+  };
+
+  const handleOverrideDelete = async (row: FeeOverrideRow) => {
+    if (!window.confirm(`Remove the ${row.scope} override?`)) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/fees/overrides/${row.scope}/${row.scopeId}`,
+        {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      );
+      if (!res.ok) throw new Error('delete failed');
+      toast.success('Fee override removed.');
+      loadOverrides();
+    } catch {
+      toast.error('Failed to remove fee override.');
+    }
+  };
+
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
@@ -133,6 +240,10 @@ export default function FeesSettings() {
       displayName: config.displayName,
       commissionPct: String(config.commissionPct),
       vatPct: String(config.vatPct),
+      vatBase: config.vatBase ?? 'hammer_and_fees',
+      sellerCommissionPct: String(config.sellerCommissionPct ?? '5'),
+      buyerFeeEnabled: config.buyerFeeEnabled ?? true,
+      sellerFeeEnabled: config.sellerFeeEnabled ?? true,
       otherChargesPct: String(config.otherChargesPct),
       fixedFee: String(config.fixedFee),
       isActive: config.isActive,
@@ -150,13 +261,20 @@ export default function FeesSettings() {
         displayName: form.displayName.trim() || form.category.trim(),
         commissionPct: Number(form.commissionPct) || 0,
         vatPct: Number(form.vatPct) || 0,
+        vatBase: form.vatBase,
+        sellerCommissionPct: Number(form.sellerCommissionPct) || 0,
+        buyerFeeEnabled: form.buyerFeeEnabled,
+        sellerFeeEnabled: form.sellerFeeEnabled,
         otherChargesPct: Number(form.otherChargesPct) || 0,
         fixedFee: Number(form.fixedFee) || 0,
         isActive: form.isActive,
       };
       const res = await fetch(`${API_BASE}/fees`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -182,6 +300,7 @@ export default function FeesSettings() {
     try {
       const res = await fetch(`${API_BASE}/fees/${config.id}`, {
         method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error('delete failed');
       toast.success('Fee configuration deleted.');
@@ -197,7 +316,10 @@ export default function FeesSettings() {
     try {
       const res = await fetch(`${API_BASE}/fees`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           category: config.category,
           displayName: config.displayName,
@@ -221,8 +343,12 @@ export default function FeesSettings() {
     configs.find((c) => c.category === previewCategory) ?? configs[0];
 
   const amount = Number(sampleAmount) || 0;
+  const previewVatBase = previewConfig?.vatBase ?? 'hammer_and_fees';
   const commission = (amount * (previewConfig?.commissionPct ?? 0)) / 100;
-  const vat = (amount * (previewConfig?.vatPct ?? 0)) / 100;
+  const vat =
+    previewVatBase === 'hammer_and_fees'
+      ? (amount * (previewConfig?.vatPct ?? 0)) / 100 + (commission * (previewConfig?.vatPct ?? 0)) / 100
+      : (commission * (previewConfig?.vatPct ?? 0)) / 100;
   const other = (amount * (previewConfig?.otherChargesPct ?? 0)) / 100;
   const fixed = previewConfig?.fixedFee ?? 0;
   const totalFees = commission + vat + other + fixed;
@@ -286,7 +412,7 @@ export default function FeesSettings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Commission</Label>
+                  <Label className="text-sm">Buyer fee (commission)</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -350,6 +476,72 @@ export default function FeesSettings() {
                     onChange={(e) => updateField('fixedFee', e.target.value)}
                     placeholder="0"
                   />
+                </div>
+
+                {/* ─── U5 fee rules ─────────────────────────────── */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Seller commission (U5)</Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.sellerCommissionPct}
+                      onChange={(e) =>
+                        updateField('sellerCommissionPct', e.target.value)
+                      }
+                      placeholder="5"
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">VAT base (U5 switch)</Label>
+                  <Select
+                    value={form.vatBase}
+                    onValueChange={(v) =>
+                      updateField('vatBase', v as FeeFormState['vatBase'])
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fees_only">
+                        Fees only (VAT on fees)
+                      </SelectItem>
+                      <SelectItem value="hammer_and_fees">
+                        Hammer + fees (VAT on price + fees)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Buyer fee enabled (U5)</Label>
+                  <div className="flex h-12 items-center gap-2">
+                    <Switch
+                      checked={form.buyerFeeEnabled}
+                      onCheckedChange={(c) => updateField('buyerFeeEnabled', c)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {form.buyerFeeEnabled ? 'Charging buyer fee' : 'Off'}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Seller fee enabled (U5)</Label>
+                  <div className="flex h-12 items-center gap-2">
+                    <Switch
+                      checked={form.sellerFeeEnabled}
+                      onCheckedChange={(c) => updateField('sellerFeeEnabled', c)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {form.sellerFeeEnabled ? 'Charging seller commission' : 'Off'}
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">Active</Label>
@@ -517,6 +709,143 @@ export default function FeesSettings() {
           })}
         </div>
       )}
+
+      {/* ─── U5: per-seller / per-product overrides ────────────── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Fee overrides (U5)</CardTitle>
+          <CardDescription>
+            Per-seller and per-product fee rules. The first override wins —
+            a product override beats a seller override, which beats the
+            category configuration. Empty fields inherit the next layer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">Scope</Label>
+              <Select
+                value={ovForm.scope}
+                onValueChange={(v) =>
+                  setOvForm((f) => ({ ...f, scope: v as 'seller' | 'product' }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="seller">Seller</SelectItem>
+                  <SelectItem value="product">Product</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">
+                {ovForm.scope === 'seller' ? 'Seller user ID' : 'Product ID'}
+              </Label>
+              <Input
+                value={ovForm.scopeId}
+                onChange={(e) => setOvForm((f) => ({ ...f, scopeId: e.target.value }))}
+                placeholder="UUID"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">VAT base</Label>
+              <Select
+                value={ovForm.vatBase}
+                onValueChange={(v) =>
+                  setOvForm((f) => ({
+                    ...f,
+                    vatBase: v as '' | 'fees_only' | 'hammer_and_fees',
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="inherit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fees_only">Fees only</SelectItem>
+                  <SelectItem value="hammer_and_fees">Hammer + fees</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Buyer fee (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={ovForm.buyerFeePct}
+                onChange={(e) =>
+                  setOvForm((f) => ({ ...f, buyerFeePct: e.target.value }))
+                }
+                placeholder="inherit"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Seller fee (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={ovForm.sellerFeePct}
+                onChange={(e) =>
+                  setOvForm((f) => ({ ...f, sellerFeePct: e.target.value }))
+                }
+                placeholder="inherit"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">VAT rate (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={ovForm.vatPct}
+                onChange={(e) => setOvForm((f) => ({ ...f, vatPct: e.target.value }))}
+                placeholder="inherit"
+              />
+            </div>
+          </div>
+          <Button onClick={handleOverrideSave} disabled={ovSaving}>
+            {ovSaving ? 'Saving…' : 'Save override'}
+          </Button>
+
+          {ovLoading ? (
+            <Skeleton className="h-12 w-full" />
+          ) : overrides.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No overrides yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {overrides.map((row) => (
+                <div
+                  key={`${row.scope}-${row.scopeId}`}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline" className="capitalize">
+                      {row.scope}
+                    </Badge>
+                    <span className="font-mono text-xs">{row.scopeId}</span>
+                    <span className="text-muted-foreground">
+                      buyer {row.buyerFeePct ?? '—'} · seller {row.sellerFeePct ?? '—'} ·
+                      VAT {row.vatPct ?? '—'}
+                      {row.vatBase ? ` (${row.vatBase === 'fees_only' ? 'fees only' : 'hammer + fees'})` : ''}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOverrideDelete(row)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ─── Example breakdown preview ──────────────────────────── */}
       {configs.length > 0 && (

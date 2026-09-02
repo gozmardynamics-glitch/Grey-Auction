@@ -5,6 +5,7 @@ import { DataSource, Repository } from 'typeorm';
 import {
   BidService,
   bidStep,
+  effectiveBidStep,
   resolveAutoBids,
   ANTI_SNIPE_WINDOW_MS,
   ANTI_SNIPE_EXTEND_MS,
@@ -169,6 +170,42 @@ describe('BidService', () => {
 
       await expect(service.placeBid('product-1', 'user-1', { amount: 50 })).rejects.toThrow(BadRequestException);
     });
+
+    it('rejects a bid below the seller-set minimum increment (U5 #5)', async () => {
+      // explicit values — mockProduct is mutated by earlier tests in this file
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock).mockResolvedValue({
+          ...mockProduct,
+          currentBid: 1000,
+          startingBid: 100,
+          minBidIncrement: 500,
+        });
+        return cb(manager);
+      });
+
+      // 1200 > currentBid 1000 but is short of the 500 increment (needs >= 1500)
+      await expect(service.placeBid('product-1', 'user-1', { amount: 1200 })).rejects.toThrow(
+        /Minimum bid increment is 500/,
+      );
+    });
+
+    it('accepts a bid that respects the seller-set increment (U5 #5)', async () => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (cb: any) => {
+        (manager.findOne as jest.Mock).mockResolvedValue({
+          ...mockProduct,
+          currentBid: 1000,
+          startingBid: 100,
+          minBidIncrement: 500,
+        });
+        (manager.create as jest.Mock).mockReturnValue(mockBid);
+        (manager.save as jest.Mock).mockResolvedValue(mockBid);
+        return cb(manager);
+      });
+
+      await expect(
+        service.placeBid('product-1', 'user-1', { amount: 1500 }),
+      ).resolves.toBeDefined();
+    });
   });
 
   describe('getAuctionBids', () => {
@@ -230,6 +267,26 @@ describe('BidService', () => {
       expect(bidStep(2500000)).toBe(25000);
       expect(bidStep(7500000)).toBe(50000);
       expect(bidStep(15000000)).toBe(100000);
+    });
+  });
+
+  describe('effectiveBidStep (U5 #5 — seller-set minimum increment)', () => {
+    it('uses the seller-set increment when present and positive', () => {
+      expect(effectiveBidStep(15000, 2000)).toBe(2000);
+    });
+
+    it('falls back to the platform ladder when unset', () => {
+      expect(effectiveBidStep(15000, null)).toBe(1000);
+      expect(effectiveBidStep(15000, undefined)).toBe(1000);
+    });
+
+    it('ignores zero/negative overrides (would freeze bidding)', () => {
+      expect(effectiveBidStep(15000, 0)).toBe(1000);
+      expect(effectiveBidStep(15000, -5)).toBe(1000);
+    });
+
+    it('a 500 seller increment is honoured at low price levels', () => {
+      expect(effectiveBidStep(500, 500)).toBe(500);
     });
   });
 

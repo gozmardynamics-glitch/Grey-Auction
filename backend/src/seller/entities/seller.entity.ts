@@ -227,6 +227,11 @@ export class Seller {
   @Column({ type: 'varchar', length: 3, default: 'NGN' })
   currency: string; // ISO 4217
 
+  // U5 answer #3 — customizable payout schedule (per seller preference).
+  // instant | daily | weekly | monthly — no fixed T+N holding period.
+  @Column({ type: 'varchar', length: 20, default: 'weekly' })
+  payout_frequency: string;
+
   // ==========================================
   // Performance Metrics (Cached)
   // ==========================================

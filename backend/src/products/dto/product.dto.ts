@@ -69,9 +69,37 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   auctionDuration?: string;
+
+  /** U5: seller-set minimum bid increment; omit = platform ladder. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minBidIncrement?: number;
+
+  /** U5: escrow auto-release window fixed at creation; 0 = immediate. */
+  @ApiProperty({ required: false, default: 72 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  escrowReleaseHours?: number;
 }
 
 export class UpdateProductDto {
+  /** U5: seller-set minimum bid increment (draft/pending only). */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minBidIncrement?: number;
+
+  /** U5: escrow auto-release window in hours (draft/pending only). */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  escrowReleaseHours?: number;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

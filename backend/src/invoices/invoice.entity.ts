@@ -66,6 +66,27 @@ export class Invoice {
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   total: number;
 
+  // ─── U5 fee-rule audit columns ─────────────────────────────
+  // Seller-side platform commission deducted from the seller's proceeds.
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  seller_fee: number;
+
+  // Where the fee values came from: product | seller | category | default.
+  @Column({ type: 'varchar', length: 20, default: 'default' })
+  fee_source: string;
+
+  // Which VAT base was active: fees_only | hammer_and_fees.
+  @Column({ type: 'varchar', length: 20, default: 'hammer_and_fees' })
+  vat_base: string;
+
+  // Escrow auto-release snapshot (hours), fixed at creation; 0 = immediate.
+  @Column({ type: 'int', nullable: true })
+  escrow_window_hours: number;
+
+  // When the escrow auto-releases (paid_at + window).
+  @Column({ type: 'timestamp', nullable: true })
+  escrow_release_at: Date;
+
   // ==========================================
   // Status & Payment
   // ==========================================

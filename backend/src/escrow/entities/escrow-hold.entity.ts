@@ -49,6 +49,11 @@ export class EscrowHold {
   @Column({ type: 'timestamp', nullable: true })
   refundedAt: Date;
 
+  // U5 answer #4 — when this hold auto-releases to the seller
+  // (fixed from the lot's escrowReleaseHours at auction creation).
+  @Column({ type: 'timestamp', nullable: true })
+  autoReleaseAt: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -4,16 +4,21 @@ import { NotFoundException, BadRequestException, ConflictException } from '@nest
 import { DataSource } from 'typeorm';
 import { EscrowService } from './escrow.service';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
+import { Invoice } from '../invoices/invoice.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 
 describe('EscrowService', () => {
   let service: EscrowService;
   const holds = { findOne: jest.fn(), find: jest.fn(), create: jest.fn(), save: jest.fn() };
+  const invoiceRepo = { findOne: jest.fn().mockResolvedValue(null) };
   // dataSource.transaction runs its callback with a manager whose getRepository
   // returns the mocked repository, so the transaction path is exercised.
+  const manager = {
+    getRepository: jest.fn((entity: any) => (entity === Invoice ? invoiceRepo : holds)),
+  };
   const dataSource = {
-    transaction: jest.fn(async (cb: any) => cb({ getRepository: () => holds })),
+    transaction: jest.fn(async (cb: any) => cb(manager)),
   };
   const walletService = { creditInManager: jest.fn() };
 
@@ -23,6 +28,7 @@ describe('EscrowService', () => {
       providers: [
         EscrowService,
         { provide: getRepositoryToken(EscrowHold), useValue: holds },
+        { provide: getRepositoryToken(Invoice), useValue: invoiceRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: WalletService, useValue: walletService },
       ],
@@ -103,5 +109,69 @@ describe('EscrowService', () => {
     const rows = await service.getForInvoice('inv-1', 'b1');
     expect(rows).toHaveLength(1);
     expect(rows[0].id).toBe('h1');
+  });
+
+  describe('escrow auto-release window (U5 #4)', () => {
+    it('computeReleaseAt anchors on paid time and honours the hours window', () => {
+      const paid = new Date('2026-09-02T10:00:00Z');
+      expect(service.computeReleaseAt(24, paid).toISOString()).toBe('2026-09-03T10:00:00.000Z');
+      // 0 = immediate release at payment time
+      expect(service.computeReleaseAt(0, paid).toISOString()).toBe(paid.toISOString());
+      // null window = manual release only
+      expect(service.computeReleaseAt(null, paid)).toBeNull();
+      // negative windows are treated as no auto-release
+      expect(service.computeReleaseAt(-1, paid)).toBeNull();
+    });
+
+    it('hold() copies the invoice window onto the hold row', async () => {
+      (holds.findOne as jest.Mock).mockResolvedValue(null);
+      (holds.create as jest.Mock).mockImplementation((x) => x);
+      (holds.save as jest.Mock).mockImplementation(async (x) => ({ id: 'h2', ...x }));
+      (invoiceRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'inv-1',
+        escrow_window_hours: 48,
+        paid_at: new Date('2026-09-02T10:00:00Z'),
+      });
+
+      const res = await service.hold(input);
+      expect(res.autoReleaseAt).toBeInstanceOf(Date);
+      expect(res.autoReleaseAt.toISOString()).toBe('2026-09-04T10:00:00.000Z');
+    });
+
+    it('autoReleaseDue releases only HELD holds past their timestamp and credits the seller', async () => {
+      const due = [{ id: 'h1', status: EscrowStatus.HELD, autoReleaseAt: new Date(Date.now() - 1000), amount: 5000, sellerId: 's1', invoiceId: 'inv-1' }];
+      (holds.find as jest.Mock).mockResolvedValue(due);
+      // inside the sweep transaction the locked row is still HELD and due
+      (holds.findOne as jest.Mock).mockResolvedValue(due[0]);
+      (holds.save as jest.Mock).mockImplementation(async (x) => x);
+
+      const released = await service.autoReleaseDue();
+
+      expect(released).toBe(1);
+      expect(walletService.creditInManager).toHaveBeenCalledWith(
+        expect.anything(),
+        's1',
+        expect.objectContaining({
+          amount: 5000,
+          type: WalletTransactionType.ESCROW_RELEASE,
+          reference: 'escrow_auto_release:h1',
+        }),
+      );
+    });
+
+    it('autoReleaseDue skips a hold that was settled by a concurrent run', async () => {
+      (holds.find as jest.Mock).mockResolvedValue([
+        { id: 'h2', status: EscrowStatus.HELD, autoReleaseAt: new Date(Date.now() - 1000) },
+      ]);
+      (holds.findOne as jest.Mock).mockResolvedValue({
+        id: 'h2',
+        status: EscrowStatus.RELEASED,
+        autoReleaseAt: new Date(Date.now() - 1000),
+      });
+
+      const released = await service.autoReleaseDue();
+      expect(released).toBe(0);
+      expect(walletService.creditInManager).not.toHaveBeenCalled();
+    });
   });
 });

@@ -8,7 +8,7 @@
 
 ---
 
-## SESSION HANDOFF — START HERE (2026-09-02)
+## SESSION HANDOFF — START HERE (2026-09-02, updated after U5)
 
 **TO RESUME:** just say *"check AUDIT_REPORT_v2 and continue"*.
 Bootstrap: DB `docker start greyauction-postgres` if stopped → backend
@@ -16,33 +16,52 @@ Bootstrap: DB `docker start greyauction-postgres` if stopped → backend
 (:3000) — or run `DEV_START.ps1` at the workspace root. Status board +
 priorities: docs/KEYS_AND_ACCESS.md (§14).
 
-**State:** master clean · head = 051a301 (vendor ponytail skills + verify
-notification triggers; refresh source of truth) · backend 252/252 unit +
-5/5 E2E + 8/8 integration · frontend 77/77 Vitest · builds green · eslint 0 ·
-npm audit 0/0. Notification triggers re-verified wired (bid.service
-notifyOutbid · invoice-settlement notifyAuctionWon/Ended · room-lifecycle
-notifyRoomStarted). Ponytail skills vendored (.agents/skills/ +
-AGENTS.ponytail.md).
+**State:** backend 277/277 unit + 5/5 E2E + 8/8 integration
+(money-path re-run post-U5 against the migration-built itest schema;
+offline-payment-init fix in the spec now that backend/.env carries real
+Paystack test keys) · frontend 80/80 Vitest · tsc green both sides ·
+dev servers boot clean (:3001 / :3000).
 
-**NEXT WORKSTREAM — U5 fee rules (key-free, acceptance answers in
-KEYS_AND_ACCESS §10, answered 2026-09-01):**
-1. Buyer fee 5% / seller commission 5% — independently adjustable +
-   enable/disable per seller AND per product (settings-driven).
-2. VAT both bases — fees-only vs hammer+fees — via activation switch.
-3. Payout schedule customizable per user preference (no fixed T+N).
-4. Escrow auto-release window fixed AT auction creation; 0 = immediate.
-5. Min bid increment + reserve-price policy set by the seller.
-6. NGN default; USD/GHS/EUR display-only.
-7. Fees apply to direct sales (buy-now).
+**U5 fee rules — IMPLEMENTED (backend + frontend, 2026-09-02):**
+- [x] **#1 Per-seller + per-product fee overrides** — `fee_overrides` table
+  (nullable = inherit; resolution product → seller → category → default)
+  in `backend/src/fees/` (`fee-override.entity.ts`, `fee.service.ts`,
+  `fee-breakdown.ts`); buyer fee 5% / seller commission 5% defaults, each
+  independently adjustable + toggleable. Admin REST: GET/PUT/DELETE
+  `/fees/overrides` (super/platform/finance admin). Seller self-service:
+  GET/PUT `/sellers/settings/fees`.
+- [x] **#2 VAT both bases** — `vatBase` switch (`fees_only` |
+  `hammer_and_fees`) on fee configs + overrides; invoice records the
+  resolved `vat_base`.
+- [x] **#3 Payout schedule** — `sellers.payout_frequency`
+  (instant|daily|weekly|monthly, default weekly), PATCH
+  `/sellers/settings/payout-frequency`.
+- [x] **#4 Escrow auto-release window fixed at creation** —
+  `products.escrow_release_hours` (default 72; immutable once the auction
+  leaves DRAFT/PENDING_APPROVAL/REJECTED — product.service.update rejects
+  changes); snapshot copied to `invoices.escrow_window_hours` at invoice
+  creation; escrow `hold()` computes `auto_release_at` (0 = immediate);
+  `EscrowAutoReleaseService` sweeps HELD holds every 5 min (null/negative
+  window = manual admin release only).
+- [x] **#5 Min bid increment + reserve policy** — `products.min_bid_increment`
+  enforced on manual + auto bids when > 0 (else legacy ladder); reserve
+  fields already existed (`reservePrice` / `hasReservePrice` /
+  `reservePriceVisibility`) — no backend change needed, documented as-is.
+- [x] **#6 NGN default, display-only FX** — unchanged (pre-existing).
+- [x] **#7 Fees on direct sales** — `POST /orders/buy-now/:productId`
+  (pessimistic-lock, race-safe single lot) creates a fee-bearing invoice via
+  the same resolution chain; a second buyer hitting an in-progress lot gets
+  a clear error.
+- [x] Frontend: admin settings → Fees module gains buyer/seller fee %,
+  on/off toggles, VAT-base switch + per-seller/per-product override editor;
+  seller settings gains "Fees & Payouts" module (fee prefs + payout
+  schedule). New Vitest: seller `fees_payouts` module (80/80 total).
+- [x] Prod migration: `backend/src/database/migrations/1789050000000-U5FeeRules.ts`
+  (dev DB auto-syncs via synchronize; run on prod deploy).
 
-Implementation sketch: extend `fee_configs`
-(backend/src/fees/fee-config.entity.ts — category-scoped
-commissionPct/vatPct/otherChargesPct/fixedFee/isActive) with per-seller +
-per-product override entities; VAT-base switch on settings; payout-schedule
-preference on seller; escrow window column captured at product/auction
-creation; bid increment/reserve on products; fee resolution order
-product → seller → category → default wired into invoice/settlement and
-direct-sale paths; admin/seller settings UI; tests replace seeded defaults.
+**NEXT:** commit U5 work, then deploy/keys track (Coolify app creation,
+R2/Brevo/FX/SMS keys per §14) and remaining UX workstreams (U1–U4, U6)
+per the status board below.
 
 **Connections & keys (state at 2026-09-01 close):**
 - ✅ **Coolify API connected** (v4.1.2, server `localhost` @
@@ -183,10 +202,10 @@ working tree clean; only branch is `master` (stale fully-merged
 | frontend npm audit | **0 vulnerabilities** (next-auth 5.0.0-beta.32) |
 | backend tsc --noEmit | clean |
 | frontend tsc --noEmit | clean |
-| backend unit/service tests | 252/252 (38 suites) |
+| backend unit/service tests | 277/277 (40 suites) after U5 |
 | backend HTTP-layer E2E | 5/5 |
 | backend money-path integration | 8/8 (Postgres greyauction_itest) |
-| frontend Vitest | 67/67 · prod build green |
+| frontend Vitest | 80/80 after U5 · tsc green |
 | backend nest build (CLI 11) | green |
 | live boot smoke | /api/health 200 · /api/products 200 · /api/docs-json 182 paths/82 schemas |
 | storage smoke (vs live MinIO) | 24/24 |

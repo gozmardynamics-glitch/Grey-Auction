@@ -49,7 +49,12 @@ import {
   RespondToReviewDto,
   FlagReviewDto,
   ReviewQueryDto,
+  PayoutFrequencyDto,
+  SellerFeeOverrideDto,
 } from './dto';
+import { FeeService } from '../fees/fee.service';
+import { FeeOverrideScope } from '../fees/fee-override.entity';
+import { VatBase } from '../fees/fee-breakdown';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
@@ -83,6 +88,7 @@ export class SellerController {
     private readonly statisticsService: SellerStatisticsService,
     private readonly storageService: StorageService,
     private readonly emailService: EmailService,
+    private readonly feeService: FeeService,
   ) {}
 
   // ==========================================
@@ -185,6 +191,61 @@ export class SellerController {
       message: 'Profile updated successfully',
       data: updated,
     };
+  }
+
+  /** U5 answer #3 — customizable payout schedule (per seller preference). */
+  @Patch('settings/payout-frequency')
+  @UseGuards(JwtAuthGuard, SellerGuard)
+  @SellerOnly()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set payout schedule preference (instant | daily | weekly | monthly)' })
+  async setPayoutFrequency(
+    @CurrentSeller() seller: Seller,
+    @Body() dto: PayoutFrequencyDto,
+  ) {
+    const updated = await this.sellerService.setPayoutFrequency(seller.id, dto.frequency);
+    return {
+      success: true,
+      message: 'Payout frequency updated',
+      data: updated,
+    };
+  }
+
+  /** U5 answer #1 — the current seller's own fee override. */
+  @Get('settings/fees')
+  @UseGuards(JwtAuthGuard, SellerGuard)
+  @SellerOnly()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get the current seller's fee override (U5)" })
+  async getMyFeeOverride(@CurrentSeller() seller: Seller) {
+    const data = await this.feeService.getOverride(
+      FeeOverrideScope.SELLER,
+      seller.user_id,
+    );
+    return { success: true, data };
+  }
+
+  /** U5 answer #1 — upsert the current seller's own fee override. */
+  @Put('settings/fees')
+  @UseGuards(JwtAuthGuard, SellerGuard)
+  @SellerOnly()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Set the current seller's fee override (U5)" })
+  async setMyFeeOverride(
+    @CurrentSeller() seller: Seller,
+    @Body() dto: SellerFeeOverrideDto,
+  ) {
+    const data = await this.feeService.upsertOverride({
+      scope: FeeOverrideScope.SELLER,
+      scopeId: seller.user_id,
+      buyerFeePct: dto.buyerFeePct,
+      buyerFeeEnabled: dto.buyerFeeEnabled,
+      sellerFeePct: dto.sellerFeePct,
+      sellerFeeEnabled: dto.sellerFeeEnabled,
+      vatPct: dto.vatPct,
+      vatBase: (dto.vatBase ?? undefined) as VatBase | undefined,
+    });
+    return { success: true, message: 'Fee preferences saved', data };
   }
 
   @Get(':id/public')

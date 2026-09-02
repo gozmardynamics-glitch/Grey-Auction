@@ -217,6 +217,22 @@ export class ProductService {
   async update(id: string, dto: UpdateProductDto, sellerId: string): Promise<Product> {
     const product = await this.findById(id);
     if (product.sellerId !== sellerId) throw new BadRequestException('Not your product');
+
+    // U5 answer #4 — the escrow auto-release window is FIXED AT CREATION once
+    // the lot is live (active/sold/etc). Drafts and pending-approval lots may
+    // still edit it.
+    if (
+      dto.escrowReleaseHours !== undefined &&
+      product.status !== ProductStatus.DRAFT &&
+      product.status !== ProductStatus.PENDING_APPROVAL &&
+      product.status !== ProductStatus.REJECTED &&
+      Number(dto.escrowReleaseHours) !== Number(product.escrowReleaseHours ?? 72)
+    ) {
+      throw new BadRequestException(
+        'The escrow release window is fixed at auction creation and can no longer be changed',
+      );
+    }
+
     Object.assign(product, dto);
     return this.repo.save(product);
   }

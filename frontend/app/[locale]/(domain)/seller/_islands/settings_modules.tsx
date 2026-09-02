@@ -23,6 +23,7 @@ const MODULE_MAP: Record<SettingsModuleKey, React.ComponentType> = {
   security: dynamic(() => import('../settings/components/modules/security'), { loading: settingsLoader }),
   store: dynamic(() => import('../settings/components/modules/store'), { loading: settingsLoader }),
   payments: dynamic(() => import('../settings/components/modules/payments'), { loading: settingsLoader }),
+  'fees-payouts': dynamic(() => import('../settings/components/modules/fees_payouts'), { loading: settingsLoader }),
   'auction-payment': dynamic(() => import('../settings/components/modules/auction_payment'), { loading: settingsLoader }),
   notifications: dynamic(() => import('../settings/components/modules/notifications'), { loading: settingsLoader }),
   preferences: dynamic(() => import('../settings/components/modules/preferences'), { loading: settingsLoader }),
