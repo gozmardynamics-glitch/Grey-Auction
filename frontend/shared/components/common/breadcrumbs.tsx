@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,29 +32,29 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
     <Breadcrumb className="mb-4">
       <BreadcrumbList>
         {visibleItems.map((item, index) => {
-          if (item === null) {
-            return (
+          const isLast = index === visibleItems.length - 1;
+          const content =
+            item === null ? (
               <BreadcrumbItem key={`ellipsis-${index}`}>
                 <BreadcrumbEllipsis />
               </BreadcrumbItem>
+            ) : isLast || !item.href ? (
+              <BreadcrumbItem key={`${item.label}-${index}`}>
+                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+              </BreadcrumbItem>
+            ) : (
+              <BreadcrumbItem key={`${item.label}-${index}`}>
+                <BreadcrumbLink asChild>
+                  <Link href={item.href}>{item.label}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
             );
-          }
-
-          const isLast = index === visibleItems.length - 1;
 
           return (
-            <BreadcrumbItem key={`${item.label}-${index}`}>
-              {isLast || !item.href ? (
-                <BreadcrumbPage>{item.label}</BreadcrumbPage>
-              ) : (
-                <>
-                  <BreadcrumbLink asChild>
-                    <Link href={item.href}>{item.label}</Link>
-                  </BreadcrumbLink>
-                  <BreadcrumbSeparator />
-                </>
-              )}
-            </BreadcrumbItem>
+            <Fragment key={`crumb-${index}`}>
+              {content}
+              {!isLast && <BreadcrumbSeparator />}
+            </Fragment>
           );
         })}
       </BreadcrumbList>

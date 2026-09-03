@@ -25,8 +25,28 @@ export const CATEGORIES_MAP: Record<string, string[]> = {
     'Cycling Wear',
   ],
   'Beauty & Health': ['Skincare', 'Haircare', 'Supplements', 'Devices'],
-  Government: ['Assets', 'Vehicles', 'Equipment', 'Property'],
-  Embassy: ['Vehicles', 'Household Items', 'Office Equipment'],
-  Corporate: ['Fleet', 'IT Equipment', 'Office Furniture', 'Machinery'],
-  'Private Room': ['Invitation Only'],
+  Government: [
+    'Federal',
+    'State',
+    'Ministries',
+    'Parastatals',
+    'Agencies & Commissions',
+    'Security & Defence',
+  ],
+  Embassy: ['Embassy Household', 'Diplomatic Vehicles', 'Consular Assets'],
+  Corporate: [
+    'Fleet Vehicles',
+    'IT Equipment',
+    'Office Furniture',
+    'Machinery & Plant',
+    'Property & Land',
+  ],
+  'Private Room': [],
 };
+
+/** Categories whose subcategories are institutional arms (drives the tabbed listing). */
+export const BRANCH_CATEGORIES: string[] = [
+  'Government',
+  'Embassy',
+  'Corporate',
+];

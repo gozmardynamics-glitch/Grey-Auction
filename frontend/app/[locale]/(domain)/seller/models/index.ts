@@ -113,6 +113,10 @@ const CATEGORIES = [
   'Fashion',
   'Construction',
   'Agriculture',
+  'Government',
+  'Embassy',
+  'Corporate',
+  'Private Room',
 ] as const;
 
 const SUB_CATEGORIES: Record<string, string[]> = {
@@ -135,6 +139,23 @@ const SUB_CATEGORIES: Record<string, string[]> = {
   Fashion: ['Watches', 'Jewelry', 'Bags', 'Clothing', 'Shoes'],
   Construction: ['Heavy Equipment', 'Tools', 'Materials', 'Vehicles'],
   Agriculture: ['Tractors', 'Harvesters', 'Land', 'Livestock', 'Seeds'],
+  Government: [
+    'Federal',
+    'State',
+    'Ministries',
+    'Parastatals',
+    'Agencies & Commissions',
+    'Security & Defence',
+  ],
+  Embassy: ['Embassy Household', 'Diplomatic Vehicles', 'Consular Assets'],
+  Corporate: [
+    'Fleet Vehicles',
+    'IT Equipment',
+    'Office Furniture',
+    'Machinery & Plant',
+    'Property & Land',
+  ],
+  'Private Room': ['Members Only'],
 };
 
 const AUCTION_DURATIONS: AuctionDuration[] = [

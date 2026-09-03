@@ -18,6 +18,7 @@ const initialState: AuctionsState = {
   bids: [],
   filters: {
     categories: [],
+    subCategory: '',
     countries: [],
     brands: [],
     priceRange: [0, 50000000],
@@ -57,12 +58,13 @@ const auctionsSlice = createSlice({
         state.currentAuction.totalBids += 1;
       }
     },
-    setFilters: (state, action: PayloadAction<AuctionFilters>) => {
+    setFilters: (state, action: PayloadAction<Partial<AuctionFilters>>) => {
       state.filters = { ...state.filters, ...action.payload };
     },
     clearFilters: (state) => {
       state.filters = {
         categories: [],
+        subCategory: '',
         countries: [],
         brands: [],
         priceRange: [0, 50000000],

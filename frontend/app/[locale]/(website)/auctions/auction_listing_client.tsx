@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { Card, CardContent } from '@/shared/components/common/card';
@@ -32,6 +32,8 @@ import {
   setMobileFiltersOpen,
 } from '@/redux/slices/ui.slice';
 import LatestAuctionsBanner from '../components/latest_auctions';
+import { CATEGORIES_MAP, BRANCH_CATEGORIES } from '@/shared/data/categories';
+import { CategorySubcategoryTabs } from './category_subcategory_tabs';
 import type { Auction } from '../models';
 
 const ITEMS_PER_PAGE = 12;
@@ -47,16 +49,27 @@ export default function AuctionListingClient({
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
 
+  // SSR-safe: the URL-driven category crumb only appears after mount so the
+  // server HTML and the first client render can never diverge.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const filters = useAppSelector((state) => state.auctions.filters);
   const currentPage = useAppSelector((state) => state.ui.currentPage);
   const viewMode = useAppSelector((state) => state.ui.viewMode);
   const mobileFiltersOpen = useAppSelector((state) => state.ui.mobileFiltersOpen);
   const auctions = useAppSelector((state) => state.auctions.auctions);
 
+  const activeCategory = filters.categories.length === 1 ? filters.categories[0] : '';
+  const subOptions = activeCategory && BRANCH_CATEGORIES.includes(activeCategory) ? CATEGORIES_MAP[activeCategory] || [] : [];
+
   const filteredAuctions = useMemo(() => {
     let result = [...auctions];
     if (filters.categories.length > 0) {
       result = result.filter((a) => filters.categories.includes(a.category || ''));
+    }
+    if (activeCategory && filters.subCategory) {
+      result = result.filter((a) => (a.subCategory || '') === filters.subCategory);
     }
     if (filters.sortBy === 'price-asc') {
       result.sort((a, b) => a.currentBid - b.currentBid);
@@ -80,7 +93,7 @@ export default function AuctionListingClient({
       { label: 'Home', href: '/' },
       { label: 'Auctions' },
     ];
-    if (filters.categories.length > 0) {
+    if (mounted && filters.categories.length > 0) {
       const categorySlug = filters.categories[0];
       const displayName = categorySlug
         .split('-')
@@ -93,7 +106,7 @@ export default function AuctionListingClient({
       items[items.length - 1] = { label: displayName };
     }
     return items;
-  }, [filters.categories]);
+  }, [filters.categories, mounted]);
 
   // Initialize auctions data in Redux
   useEffect(() => {
@@ -102,14 +115,15 @@ export default function AuctionListingClient({
     }
   }, [dispatch, auctions.length, initialAuctions]);
 
-  // Sync URL category query param to Redux filters
+  // Sync URL category + subcategory query params to Redux filters
   useEffect(() => {
     const categoryParam = searchParams.get('category');
+    const subParam = searchParams.get('subcategory');
     if (categoryParam) {
       dispatch(
         setFilters({
-          ...filters,
           categories: [categoryParam],
+          subCategory: subParam || '',
         })
       );
       dispatch(setCurrentPage(1));
@@ -138,6 +152,31 @@ export default function AuctionListingClient({
     dispatch(clearFilters());
     dispatch(setCurrentPage(1));
   }, [dispatch]);
+
+  // Per-arm counts for the subcategory tabs (scoped to the active category)
+  const subCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!activeCategory) return counts;
+    for (const a of auctions) {
+      if ((a.category || '') === activeCategory) {
+        const s = a.subCategory || '';
+        counts[s] = (counts[s] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [auctions, activeCategory]);
+
+  const handleSubCategorySelect = useCallback(
+    (sub: string) => {
+      dispatch(setFilters({ subCategory: sub }));
+      dispatch(setCurrentPage(1));
+      const q = new URLSearchParams(searchParams.toString());
+      if (sub) q.set('subcategory', sub);
+      else q.delete('subcategory');
+      router.replace(`/auctions?${q.toString()}`, { scroll: false });
+    },
+    [dispatch, searchParams, router]
+  );
 
   const handlePageChange = useCallback(
     (page: number) => dispatch(setCurrentPage(page)),
@@ -220,6 +259,17 @@ export default function AuctionListingClient({
           {/* ─── Main Content ─────────────────────────────────────── */}
           <div className="min-w-0 flex-1">
             <Breadcrumbs items={breadcrumbItems} />
+
+            {/* Institutional-arm tabs (Government / Embassy / Corporate …) */}
+            {subOptions.length > 0 && (
+              <CategorySubcategoryTabs
+                options={subOptions}
+                selected={filters.subCategory || ''}
+                counts={subCounts}
+                total={(subCounts[''] || 0) + subOptions.reduce((acc, o) => acc + (subCounts[o] || 0), 0)}
+                onSelect={handleSubCategorySelect}
+              />
+            )}
 
             {/* Mobile Title + Filter Icon */}
             <div className="mb-4 flex items-center justify-between lg:hidden">

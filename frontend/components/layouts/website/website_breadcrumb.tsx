@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronRight, Home } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
@@ -53,6 +53,11 @@ const queryParamLabels: Record<string, string> = {
 export default function WebsiteBreadcrumb() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // SSR-safe: query-param crumbs appear only after mount so server HTML and
+  // the first client render always match (searchParams can be unavailable
+  // during prerender / first hydration).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const generateBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean);
@@ -69,9 +74,10 @@ export default function WebsiteBreadcrumb() {
       breadcrumbs.push({ href: currentPath, label });
     });
 
-    // Append relevant query params as breadcrumb segments
-    for (const [key, value] of searchParams.entries()) {
-      if (queryParamLabels[key] && value) {
+    // Append relevant query params as breadcrumb segments (only after mount)
+    if (mounted) {
+      for (const [key, value] of searchParams.entries()) {
+        if (queryParamLabels[key] && value) {
         const label = value
           .replace(/-/g, ' ')
           .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -80,11 +86,12 @@ export default function WebsiteBreadcrumb() {
           label,
         });
       }
+      }
     }
 
     return breadcrumbs;
   };
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const breadcrumbs = generateBreadcrumbs();
 
   return (

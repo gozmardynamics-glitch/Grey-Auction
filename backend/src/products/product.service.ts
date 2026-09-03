@@ -39,12 +39,13 @@ export class ProductService {
 
   async findAll(query: ProductQueryDto) {
     // Public listing defaults to ACTIVE auctions unless a status is requested
-    const { status, category, search, page = 1, limit = 20, auctionType, allowBuyNow } = query;
+    const { status, category, subCategory, search, page = 1, limit = 20, auctionType, allowBuyNow } = query;
     const where: any = {};
 
     if (status) where.status = status;
     else where.status = ProductStatus.ACTIVE;
     if (category) where.category = category;
+    if (subCategory) where.subCategory = subCategory;
     if (auctionType) where.auctionType = auctionType;
     if (allowBuyNow !== undefined) where.allowBuyNow = allowBuyNow;
 

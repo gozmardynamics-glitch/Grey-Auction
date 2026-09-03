@@ -871,7 +871,8 @@ const USE_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
 // ─── Website ─────────────────────────────────────────────────────────────
 
 export async function getAuctions() {
-  const data = await apiFetch('/products');
+  // Fetch a generous page so client-side category / arm (subcategory) filters see all active lots.
+  const data = await apiFetch('/products?limit=200');
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);
   return USE_MOCK_FALLBACK ? mockAuctions : [];

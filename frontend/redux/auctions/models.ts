@@ -12,6 +12,7 @@ export interface Auction {
   imageUrl?: string;
   images?: string[];
   category: string;
+  subCategory?: string;
   sellerId: string;
   sellerName: string;
   status: 'active' | 'live' | 'new' | 'sold';
@@ -43,6 +44,7 @@ export interface Bid {
 
 export interface AuctionFilters {
   categories: string[];
+  subCategory?: string;
   countries: string[];
   brands: string[];
   priceRange: [number, number];
