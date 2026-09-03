@@ -11,6 +11,7 @@ import {
 import { Auction } from '../../models';
 import { dummyAuctions } from '../../models/data';
 import { AuctionCard } from './auction_card';
+import { useStaggerReveal } from '@/shared/hooks/useScrollReveal';
 
 interface FeaturedAuctionsProps {
   auctions?: Auction[];
@@ -37,6 +38,8 @@ export default function FeaturedAuctions({
     ? `${(selectedCategory || 'Featured').charAt(0).toUpperCase() + (selectedCategory || 'Featured').slice(1)} Auctions`
     : 'Featured Auctions';
 
+  const staggerRef = useStaggerReveal<HTMLDivElement>(filteredAuctions.length, { staggerMs: 100 });
+
   // Single auction view
   if (auction) {
     return (
@@ -58,65 +61,48 @@ export default function FeaturedAuctions({
   if (!filteredAuctions || filteredAuctions.length === 0) {
     return (
       <EmptyState
-        title={
-          selectedCategory
-            ? `No auctions found in ${selectedCategory}`
-            : 'No auctions available'
-        }
-        description={
-          selectedCategory
-            ? 'Try selecting a different category or check back later.'
-            : 'Check back soon for new auctions.'
-        }
+        title={selectedCategory ? `No auctions found in ${selectedCategory}` : 'No auctions available'}
+        description="Check back soon for new listings"
       />
     );
   }
 
-  // Paginated grid: 4 columns × 2 rows = 8 per page
-  const itemsPerPage = 10;
-  const pages: Auction[][] = [];
-  for (let i = 0; i < filteredAuctions.length; i += itemsPerPage) {
-    pages.push(filteredAuctions.slice(i, i + itemsPerPage));
-  }
-
   return (
-    <Carousel
-      opts={{
-        align: 'start',
-        slidesToScroll: 1,
-      }}
-      className="w-full"
-    >
-      {/* Header with nav buttons */}
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">{categoryLabel}</h2>
-        <div className="flex items-center gap-2">
-          <CarouselPrevious className="static translate-x-0 translate-y-0" />
-          <CarouselNext className="static translate-x-0 translate-y-0" />
+    <section className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-secondary font-semibold mb-1">Discover</p>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">{categoryLabel}</h2>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <CarouselPrevious className="static translate-y-0 h-9 w-9 rounded-lg border-border/60" />
+          <CarouselNext className="static translate-y-0 h-9 w-9 rounded-lg border-border/60" />
         </div>
       </div>
 
-      <CarouselContent className="-ml-4">
-        {pages.map((page, pageIndex) => (
-          <CarouselItem key={pageIndex} className="basis-full pl-4">
-            <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-3 xl:grid-cols-5">
-              {page.map((auction) => (
-                <div
-                  key={auction.id}
-                  className="min-w-[280px] shrink-0 md:min-w-0 md:shrink"
-                >
-                  <AuctionCard
-                    auction={auction}
-                    onBidClick={onBidClick}
-                    onWishlistClick={onWishlistClick}
-                    onShareClick={onShareClick}
-                  />
-                </div>
-              ))}
-            </div>
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-    </Carousel>
+      <Carousel
+        opts={{ align: 'start', loop: false }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-3" ref={staggerRef}>
+          {filteredAuctions.map((item) => (
+            <CarouselItem key={item.id} className="pl-3 basis-[280px] sm:basis-[300px] md:basis-[320px]">
+              <div className="reveal">
+                <AuctionCard
+                  auction={item}
+                  onBidClick={onBidClick}
+                  onWishlistClick={onWishlistClick}
+                  onShareClick={onShareClick}
+                />
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <div className="flex md:hidden justify-center gap-2 mt-4">
+          <CarouselPrevious className="static translate-y-0 h-9 w-9 rounded-lg" />
+          <CarouselNext className="static translate-y-0 h-9 w-9 rounded-lg" />
+        </div>
+      </Carousel>
+    </section>
   );
 }
