@@ -15,16 +15,34 @@ const sizeMap = {
   lg: { digit: 'text-2xl font-bold md:text-3xl', sep: 'text-2xl md:text-3xl', gap: 'gap-2 md:gap-3' },
 } as const;
 
+// SSR-safe initial state: a stable placeholder that matches on both server
+// and client so the hydration tree never diverges. The real countdown kicks
+// in once useEffect fires on the client.
+const SSR_PLACEHOLDER = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+
 export function CountdownTimer({ endTime, size = 'md', className = '' }: CountdownTimerProps) {
-  const [time, setTime] = useState(() => calculateTimeRemaining(new Date(endTime)));
+  const [time, setTime] = useState(SSR_PLACEHOLDER);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const end = new Date(endTime);
     const update = () => setTime(calculateTimeRemaining(end));
     update();
+    setMounted(true);
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [endTime]);
+
+  // While SSR placeholder is active (before useEffect), render a stable
+  // skeleton that matches the server output exactly — no hydration mismatch.
+  if (!mounted) {
+    const s = sizeMap[size];
+    return (
+      <span className={`inline-flex items-center ${s.gap} ${s.digit} text-muted-foreground font-medium ${className}`}>
+        --:--
+      </span>
+    );
+  }
 
   const expired = time.days === 0 && time.hours === 0 && time.minutes === 0 && time.seconds === 0;
 
