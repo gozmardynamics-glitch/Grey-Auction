@@ -36,8 +36,8 @@ export function SplitSlide({
 }) {
   return (
     <div
-      className="relative grid grid-cols-1 h-[440px] lg:grid-cols-2 gap-6 lg:gap-10 items-center px-4 py-8 sm:p-8 lg:p-12 rounded-2xl overflow-hidden"
-      style={{ minHeight: '380px' }}
+      className="relative grid grid-cols-1 h-[520px] md:h-[600px] lg:grid-cols-2 gap-6 lg:gap-10 items-center px-4 py-8 sm:p-8 lg:p-12 rounded-2xl overflow-hidden"
+      style={{ minHeight: '500px' }}
     >
       <Image
         src={slide.backgroundImage}
@@ -94,7 +94,7 @@ export function SplitSlide({
               className="object-cover"
               sizes="(max-width: 1024px) 0vw, 40vw"
             />
-            <div className="relative min-h-[300px] lg:min-h-[400px]">
+            <div className="relative min-h-[380px] lg:min-h-[520px]">
               <div className="p-6 space-y-4 text-secondary-foreground">
                 <div>
                   <h3 className="text-2xl font-bold">{slide.product.title}</h3>

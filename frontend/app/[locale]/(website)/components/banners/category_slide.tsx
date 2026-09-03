@@ -20,8 +20,8 @@ export function CategorySlide({
 }) {
   return (
     <div
-      className="relative h-[500px] rounded-xl overflow-hidden"
-      style={{ minHeight: '400px' }}
+      className="relative h-[560px] md:h-[600px] rounded-2xl overflow-hidden"
+      style={{ minHeight: '540px' }}
     >
       <Image
         src={slide.backgroundImage}

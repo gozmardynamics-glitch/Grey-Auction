@@ -15,8 +15,8 @@ export function FeaturedSlide({
 }) {
   return (
     <div
-      className="relative h-[440px] md:h-[480px] rounded-2xl overflow-hidden"
-      style={{ minHeight: '400px' }}
+      className="relative h-[520px] md:h-[600px] rounded-2xl overflow-hidden"
+      style={{ minHeight: '500px' }}
     >
       <Image
         src={slide.backgroundImage}
