@@ -1,0 +1,25 @@
+parsedRoutes=12
+== color-contrast total=72
+routes: /en=6 /en/auctions=6 /en/faq=6 /en/about-us=6 /en/contact=6 /en/terms=6 /en/privacy-policy=6 /en/blog=6 /en/career=6 /en/advisors=6 /en/direct-sales=6 /en/subscribe=6
+  /en | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.hover\:bg-primary-foreground\/10:nt
+  /en | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.hover\:bg-primary-foreground\/10:nt
+  /en | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.hover\:bg-primary-foreground\/10:nt
+  /en | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.hover\:bg-primary-foreground\/10:nt
+  /en/auctions | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/auctions | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/auctions | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/auctions | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/faq | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/faq | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/faq | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/faq | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/about-us | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/about-us | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/about-us | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/about-us | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/contact | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/contact | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/contact | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/contact | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/terms | fg=#fafcff bg=#ffffff r=1.02 fs=6.8pt (9px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi
+  /en/terms | fg=#f7faff bg=#ffffff r=1.04 fs=9.0pt (12px) | .justify-start.border-primary-foreground\/20.text-primary-foreground\/80:nth-chi

@@ -66,18 +66,18 @@
   --radius: 0.625rem;
   --badge: #9b51e0;
 
-  /* Blue primary family */
-  --primary: #0067f5;
-  --primary-1: #0052c4;
-  --primary-2: #0045a3;
+  /* Blue primary family — darkened for WCAG AA text contrast (>=4.5:1) */
+  --primary: #005ac8;
+  --primary-1: #004a9f;
+  --primary-2: #003e86;
   --primary-3: #1a7dff;
   --primary-4: #3d92ff;
   --primary-foreground: #f5f9ff;
 
-  /* Emerald — success / live states */
-  --tertiary: #059669;
-  --tertiary-1: #047857;
-  --tertiary-2: #065f46;
+  /* Emerald — success / live states (AA-safe for text & badges) */
+  --tertiary: #047857;
+  --tertiary-1: #065f46;
+  --tertiary-2: #064e3b;
 
   /* Gold accent — restrained highlight (badges, small marks) */
   --secondary: #f8bd00;
@@ -98,7 +98,7 @@
   --destructive: #dc2626;
   --border: #dde4ec;
   --input: #dde4ec;
-  --ring: #0067f5;
+  --ring: #005ac8;
   --chart-1: #0067f5;
   --chart-2: #f8bd00;
   --chart-3: #1a7dff;
@@ -118,16 +118,16 @@
 .grey {
   --badge: #9b51e0;
 
-  --primary: #0067f5;
-  --primary-1: #0052c4;
-  --primary-2: #0045a3;
+  --primary: #005ac8;
+  --primary-1: #004a9f;
+  --primary-2: #003e86;
   --primary-3: #1a7dff;
   --primary-4: #3d92ff;
   --primary-foreground: #f5f9ff;
 
-  --tertiary: #059669;
-  --tertiary-1: #047857;
-  --tertiary-2: #065f46;
+  --tertiary: #047857;
+  --tertiary-1: #065f46;
+  --tertiary-2: #064e3b;
 
   --secondary: #f8bd00;
   --secondary-foreground: #1c1710;
@@ -146,7 +146,7 @@
   --destructive: #dc2626;
   --border: #c3c8d0;
   --input: #c3c8d0;
-  --ring: #0067f5;
+  --ring: #005ac8;
   --chart-1: #0067f5;
   --chart-2: #f8bd00;
   --chart-3: #1a7dff;
@@ -169,10 +169,10 @@
 
   --primary: #3d92ff;
   --primary-1: #1a7dff;
-  --primary-2: #0067f5;
+  --primary-2: #005ac8;
   --primary-3: #5ca7ff;
   --primary-4: #7fb5ff;
-  --primary-foreground: #f0f6ff;
+  --primary-foreground: #081120;
 
   --tertiary: #34d399;
   --tertiary-1: #059669;
@@ -269,8 +269,8 @@ html {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 103, 245, 0.35); }
-  50% { box-shadow: 0 0 0 8px rgba(0, 103, 245, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 90, 200, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 90, 200, 0); }
 }
 
 @keyframes float {
@@ -298,12 +298,12 @@ html {
 @keyframes shadow-breathe {
   0%, 100% {
     box-shadow:
-      0 12px 28px -14px rgba(0, 103, 245, 0.14),
+      0 12px 28px -14px rgba(0, 90, 200, 0.14),
       0 4px 10px -6px rgba(17, 28, 43, 0.05);
   }
   50% {
     box-shadow:
-      0 18px 38px -14px rgba(0, 103, 245, 0.22),
+      0 18px 38px -14px rgba(0, 90, 200, 0.22),
       0 6px 14px -6px rgba(17, 28, 43, 0.07);
   }
 }
@@ -391,8 +391,8 @@ html.dark body::before {
   .hover-card-accent:hover {
     transform: translateY(-3px);
     box-shadow:
-      0 0 0 1px rgba(0, 103, 245, 0.25),
-      0 16px 32px -12px rgba(0, 103, 245, 0.12),
+      0 0 0 1px rgba(0, 90, 200, 0.25),
+      0 16px 32px -12px rgba(0, 90, 200, 0.12),
       0 6px 16px -6px rgba(17, 28, 43, 0.08);
   }
 
@@ -401,7 +401,7 @@ html.dark body::before {
   }
   .hover-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px -8px rgba(0, 103, 245, 0.35);
+    box-shadow: 0 8px 20px -8px rgba(0, 90, 200, 0.35);
   }
   .hover-cta:active {
     transform: translateY(0) scale(0.98);
@@ -495,10 +495,10 @@ html.dark body::before {
     @apply outline-none transition-shadow duration-200;
   }
   .focus-ring:focus-visible {
-    box-shadow: 0 0 0 3px rgba(0, 103, 245, 0.35);
+    box-shadow: 0 0 0 3px rgba(0, 90, 200, 0.35);
   }
   .dark .focus-ring:focus-visible {
-    box-shadow: 0 0 0 3px rgba(92, 167, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(92, 167, 255, 0.45);
   }
 
   /* Image-card breathing shadow — light-coloured, gently animated */

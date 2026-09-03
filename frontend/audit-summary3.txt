@@ -1,0 +1,25 @@
+parsedRoutes=12
+== color-contrast total=24
+routes: /en=2 /en/auctions=2 /en/faq=2 /en/about-us=2 /en/contact=2 /en/terms=2 /en/privacy-policy=2 /en/blog=2 /en/career=2 /en/advisors=2 /en/direct-sales=2 /en/subscribe=2
+  /en | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.gap-1.text-xs
+  /en/auctions | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40:nth-child(1)
+  /en/auctions | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40:nth-child(2)
+  /en/faq | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40:nth-child(1)
+  /en/faq | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40:nth-child(2)
+  /en/about-us | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/about-us | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs.gap-1
+  /en/contact | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/contact | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(2)
+  /en/terms | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/terms | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(2)
+  /en/privacy-policy | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/privacy-policy | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(2)
+  /en/blog | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40:nth-child(1)
+  /en/blog | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40:nth-child(2)
+  /en/career | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/career | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(2)
+  /en/advisors | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/advisors | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(2)
+  /en/direct-sales | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(1)
+  /en/direct-sales | fg=#6a7380 bg=#0e1a2b r=3.64 fs=9.0pt (12px) | .text-primary-foreground\/40.text-xs:nth-child(2)

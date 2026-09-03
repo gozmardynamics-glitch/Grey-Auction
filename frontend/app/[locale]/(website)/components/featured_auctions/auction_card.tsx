@@ -38,7 +38,7 @@ function getCountryFlag(countryCode: string): string {
 
 function StatusBadge({ status }: { status: Auction['status'] }) {
   const config = {
-    active: { bg: 'bg-emerald-600', ring: 'ring-emerald-500/30', text: 'Live', dot: 'bg-emerald-300' },
+    active: { bg: 'bg-emerald-700', ring: 'ring-emerald-600/40', text: 'Live', dot: 'bg-emerald-300' },
     live:   { bg: 'bg-red-600',     ring: 'ring-red-500/30',     text: 'Live Now', dot: 'bg-red-300 animate-pulse' },
     new:    { bg: 'bg-blue-600',    ring: 'ring-blue-500/30',    text: 'New', dot: 'bg-blue-300' },
     sold:   { bg: 'bg-gray-600',    ring: 'ring-gray-500/30',    text: 'Sold', dot: 'bg-gray-300' },

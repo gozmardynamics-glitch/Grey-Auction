@@ -116,18 +116,18 @@ export default function Footer() {
               <h3 className="text-sm font-bold text-primary-foreground uppercase tracking-wider mb-5">Stay Updated</h3>
               <NewsletterForm />
               <div className="space-y-3 pt-2">
-                <Button variant="outline" size="sm" className="w-full justify-start gap-2 rounded-lg border-primary-foreground/20 text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground">
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 rounded-lg border border-primary-foreground/20 bg-transparent text-[#e8edf5] hover:bg-white/10 hover:text-white">
                   <AppleIcon className="h-5 w-5" />
                   <div className="flex flex-col text-left">
-                    <span className="text-[9px] text-primary-foreground/50">Download on</span>
-                    <span className="text-xs font-semibold">App Store</span>
+                    <span className="text-[9px] text-[#aab6c5]">Download on</span>
+                    <span className="text-xs font-semibold text-white">App Store</span>
                   </div>
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start gap-2 rounded-lg border-primary-foreground/20 text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground">
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 rounded-lg border border-primary-foreground/20 bg-transparent text-[#e8edf5] hover:bg-white/10 hover:text-white">
                   <PlayStoreIcon className="h-5 w-5" />
                   <div className="flex flex-col text-left">
-                    <span className="text-[9px] text-primary-foreground/50">Get it on</span>
-                    <span className="text-xs font-semibold">Google Play</span>
+                    <span className="text-[9px] text-[#aab6c5]">Get it on</span>
+                    <span className="text-xs font-semibold text-white">Google Play</span>
                   </div>
                 </Button>
               </div>
@@ -138,10 +138,10 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-white/10 px-6 py-4 md:px-12 lg:px-16">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-primary-foreground/40">
+            <p className="text-xs text-[#98a4b3]">
               © {new Date().getFullYear()} Grey Auctions. All rights reserved.
             </p>
-            <p className="text-xs text-primary-foreground/40 flex items-center gap-1">
+            <p className="text-xs text-[#98a4b3] flex items-center gap-1">
               Made with <Heart className="h-3 w-3 text-secondary fill-secondary" /> in Lagos
             </p>
           </div>

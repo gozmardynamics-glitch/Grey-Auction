@@ -40,10 +40,12 @@ export function NewsletterForm() {
     }, 600);
   };
 
+  // Rendered inside the dark navy footer → light text on navy, white input with
+  // dark text so both foreground and placeholder meet WCAG AA.
   return (
     <div className="w-full max-w-sm space-y-2">
-      <h4 className="font-semibold text-foreground">Newsletter</h4>
-      <p className="text-sm text-muted-foreground">
+      <h4 className="font-semibold text-white">Newsletter</h4>
+      <p className="text-sm text-[#c3cdda]">
         Subscribe to get updates on new auctions and exclusive deals.
       </p>
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
@@ -53,7 +55,7 @@ export function NewsletterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
-          className="h-10 rounded-full bg-background"
+          className="h-10 rounded-full border-white/10 bg-white text-[#101c2b] placeholder:text-[#64748b]"
         />
         <Button
           type="submit"
