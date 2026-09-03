@@ -91,7 +91,7 @@ export function AuctionCard({
   // ─── List View ───────────────────────────────────────────────────
   if (viewMode === 'list') {
     return (
-      <Card className="group flex flex-row overflow-hidden rounded-xl border border-border/60 soft-border hover-card-glow cursor-pointer" onClick={handleCardClick}>
+      <Card className="group flex flex-row overflow-hidden rounded-xl border border-border/60 soft-border hover-card-accent img-card-shadow cursor-pointer" onClick={handleCardClick}>
         <div className="relative h-auto w-[120px] shrink-0 overflow-hidden bg-muted sm:w-[180px]">
           <Image
             src={auction.imageUrl || auction.images?.[0] || '/placeholder.svg'}
@@ -144,7 +144,7 @@ export function AuctionCard({
   // ─── Grid View ───────────────────────────────────────────────────
   return (
     <Card
-      className="group overflow-hidden rounded-xl border border-border/60 soft-border hover-card-glow flex flex-col cursor-pointer"
+      className="group overflow-hidden rounded-xl border border-border/60 soft-border hover-card-accent img-card-shadow flex flex-col cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Image */}

@@ -289,6 +289,64 @@ html {
   50% { transform: scale(1.05); }
 }
 
+@keyframes bg-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shadow-breathe {
+  0%, 100% {
+    box-shadow:
+      0 12px 28px -14px rgba(0, 103, 245, 0.14),
+      0 4px 10px -6px rgba(17, 28, 43, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 18px 38px -14px rgba(0, 103, 245, 0.22),
+      0 6px 14px -6px rgba(17, 28, 43, 0.07);
+  }
+}
+
+@keyframes shadow-breathe-dark {
+  0%, 100% { box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.45); }
+  50% { box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.62); }
+}
+
+/* ─── Animated page background (light & grey themes) ──────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    #f7fafd 0%,
+    #ecf2f9 25%,
+    #f3f7fb 50%,
+    #e9f0f8 75%,
+    #f7fafd 100%
+  );
+  background-size: 300% 300%;
+  animation: bg-pan 36s ease-in-out infinite;
+}
+
+html.grey body::before {
+  background: linear-gradient(
+    120deg,
+    #eaecef 0%,
+    #dfe2e7 25%,
+    #e7e9ed 50%,
+    #d9dde3 75%,
+    #eaecef 100%
+  );
+}
+
+html.dark body::before {
+  content: none;
+}
+
 /* ─── Utility Classes ─────────────────────────────────────────────────── */
 
 @layer utilities {
@@ -442,6 +500,17 @@ html {
   .dark .focus-ring:focus-visible {
     box-shadow: 0 0 0 3px rgba(92, 167, 255, 0.4);
   }
+
+  /* Image-card breathing shadow — light-coloured, gently animated */
+  .img-card-shadow {
+    animation: shadow-breathe 6s ease-in-out infinite;
+  }
+  .img-card-shadow:hover {
+    animation: none;
+  }
+  html.dark .img-card-shadow {
+    animation: shadow-breathe-dark 6s ease-in-out infinite;
+  }
 }
 
 /* ─── Reduced Motion ─────────────────────────────────────────────────── */
@@ -457,6 +526,8 @@ html {
   .animate-count-pulse, .animate-heartPop {
     animation: none;
   }
+  body::before { animation: none; }
+  .img-card-shadow, html.dark .img-card-shadow { animation: none; }
   .hover-card:hover, .hover-card-accent:hover, .hover-cta:hover, .hover-icon:hover {
     transform: none;
   }
