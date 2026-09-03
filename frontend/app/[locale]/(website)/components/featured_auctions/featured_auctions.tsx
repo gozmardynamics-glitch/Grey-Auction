@@ -74,10 +74,6 @@ export default function FeaturedAuctions({
           <p className="text-xs uppercase tracking-[0.25em] text-secondary font-semibold mb-1">Discover</p>
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">{categoryLabel}</h2>
         </div>
-        <div className="hidden md:flex items-center gap-2">
-          <CarouselPrevious className="static translate-y-0 h-9 w-9 rounded-lg border-border/60" />
-          <CarouselNext className="static translate-y-0 h-9 w-9 rounded-lg border-border/60" />
-        </div>
       </div>
 
       <Carousel
@@ -98,6 +94,10 @@ export default function FeaturedAuctions({
             </CarouselItem>
           ))}
         </CarouselContent>
+        <div className="hidden md:flex justify-end gap-2 mt-4">
+          <CarouselPrevious className="static translate-y-0 h-9 w-9 rounded-lg border-border/60" />
+          <CarouselNext className="static translate-y-0 h-9 w-9 rounded-lg border-border/60" />
+        </div>
         <div className="flex md:hidden justify-center gap-2 mt-4">
           <CarouselPrevious className="static translate-y-0 h-9 w-9 rounded-lg" />
           <CarouselNext className="static translate-y-0 h-9 w-9 rounded-lg" />
