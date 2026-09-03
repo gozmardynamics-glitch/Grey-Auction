@@ -26,7 +26,17 @@ for (const path of publicPaths) {
     if (resp && resp.status() !== 200) {
       throw new Error(`${path} returned HTTP ${resp.status()}`);
     }
-    await page.waitForTimeout(600);
+    // Wait for hydration AND client-side data: large skeleton blocks gone
+    // (ignore tiny pulsing dots like the Live badge).
+    await page.waitForFunction(
+      () => document.readyState === 'complete' &&
+        [...document.querySelectorAll('.animate-pulse')]
+          .filter((el) => el.getBoundingClientRect().width > 24)
+          .length === 0,
+      { timeout: 25_000 },
+    ).catch(() => {});
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1500);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

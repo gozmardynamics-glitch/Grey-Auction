@@ -306,6 +306,7 @@ export default function AuctionListingClient({
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}
                     size="sm"
                     className="h-8 w-8 p-0"
+                    aria-label="Grid view"
                     onClick={() => dispatch(setViewMode('grid'))}
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -314,6 +315,7 @@ export default function AuctionListingClient({
                     variant={viewMode === 'list' ? 'default' : 'ghost'}
                     size="sm"
                     className="h-8 w-8 p-0"
+                    aria-label="List view"
                     onClick={() => dispatch(setViewMode('list'))}
                   >
                     <List className="h-4 w-4" />
@@ -332,7 +334,7 @@ export default function AuctionListingClient({
                     )
                   }
                 >
-                  <SelectTrigger className="hidden w-[160px] sm:flex">
+                  <SelectTrigger aria-label="Sort results" className="hidden w-[160px] sm:flex">
                     <SelectValue placeholder="Default sorting" />
                   </SelectTrigger>
                   <SelectContent>

@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "cookie_consent",
+      "value": "%7B%22necessary%22%3Atrue%2C%22analytics%22%3Atrue%2C%22marketing%22%3Atrue%7D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1819996290,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

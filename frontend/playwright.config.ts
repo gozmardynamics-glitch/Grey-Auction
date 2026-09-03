@@ -1,7 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Accessibility (axe/WCAG) audit runner.
-// Requires: backend on :3001, frontend on :3000 (see README/Quick Reference).
+// E2E runner: public a11y/responsive/feature specs (anonymous, cookie banner
+// pre-accepted via static storageState) + authenticated admin dashboard smoke.
+// Requires: backend on :3001, frontend on :3000 (see e2e/README).
+const PUBLIC_STATE = 'playwright/.auth/public.json';
+const ADMIN_STATE = 'playwright/.auth/admin.json';
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
@@ -15,6 +19,21 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+      use: { storageState: PUBLIC_STATE },
+    },
+    {
+      name: 'chromium-public',
+      testIgnore: /dashboard\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: PUBLIC_STATE },
+    },
+    {
+      name: 'chromium-auth',
+      testMatch: /dashboard\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: ADMIN_STATE },
+      dependencies: ['setup'],
+    },
   ],
 });

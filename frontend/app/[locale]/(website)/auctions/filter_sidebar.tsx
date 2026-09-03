@@ -170,6 +170,7 @@ export default function FilterSidebar() {
         <div className="flex items-center gap-2">
           <Input
             type="number"
+            aria-label="Minimum price"
             value={filters.priceRange[0]}
             onChange={(e) =>
               dispatch(
@@ -184,6 +185,7 @@ export default function FilterSidebar() {
           <span className="text-muted-foreground">–</span>
           <Input
             type="number"
+            aria-label="Maximum price"
             value={filters.priceRange[1]}
             onChange={(e) =>
               dispatch(

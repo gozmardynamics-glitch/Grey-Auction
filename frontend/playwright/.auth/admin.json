@@ -1,0 +1,65 @@
+{
+  "cookies": [
+    {
+      "name": "NEXT_LOCALE",
+      "value": "en",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "authjs.csrf-token",
+      "value": "c8aa6e25f8642a700261e3fb29533eef094e6512888062a21797d9b41f34cfd8%7Cdd6702b2b3e3369f47ed2f9c8c10521a39e8e49adcd0037fa6d628c64ed9708e",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "cookie_consent",
+      "value": "%7B%22necessary%22%3Atrue%2C%22analytics%22%3Atrue%2C%22marketing%22%3Atrue%7D",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1819997010.031617,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "authjs.callback-url",
+      "value": "http%3A%2F%2Flocalhost%3A3000%2Fen%2Fauth%2Flogin",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "authjs.session-token",
+      "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiQVB3a0J5YS1pMEJnT1ltZmhCcmFNaWlrTVQ1RkprMHFKYXJFdkhkcm5vZ0dVRDd2SnA0aWVBVWRhZG9Qa1NWRWZPal9uWEtGRzFFazIteXl6OW1UcEEifQ..TB_-QXaGSaW8-Rfd9XO2iw.ect30DMQ2Uc_qLv-wybQ-8lG7YLOREFy3FjMZb_spjSWZYsAOAY-3abyLgQfH-xdeRoK4-_vuRjjpqZVXN4_Mt171UZVxJqNdUKm_6JKrDhl6Q1akCGXdmGV0z0cWxS2uGfQN86uHfQYQl1qfOtk9jcWrbRhx3HvYxAjIjieRM6FIF0484HnAIFUq38ezTkD0M7fu-dXLVQAKctoXVLVgKbYHbK1_Ew2o_vXYA_Co_yhJwkQPjfaTq1aQLQ_lM0ebBL21CjsvhsfXg-MdRNPDxYIfDdI3oCklFFo79TI6bjFA0HUiuR2WgdbQ87yR5ZV6ik9OToNjAB2Z5dCseQCSsfjlzo0SMIeWHSTE1YaWMK2lk2e61teXWAJRp3Izic-n6SEXAmSENenNBD9frkzRWjsozLIowFhjb9ZYNTqcco6pngqRiJVWLekUlfYefW8im_pKdwOIuQDH8CYL94ISNMkGVBjTKp4jyQBTI3DrFKi9VwbCFwPv9AIz5vOV32geWJiSvB-bqIRVuzBuxMR0UTIpUd8cAoXGGrz9PxsTikpNVBetEx8fFIS0OFkwc32GO7ZcSPqrXbOVB-o-pEBJlB9zekm0EomfwPZamQYsGys4cnVLkazT-MC18noR8IShiV8B5N1vI_K_qLDYURb4rcn9Kb4dW98sNpJMF1iMQw.qIcx0kFR6mW0n6qIhui7onAYgrROgcPhliR_C0GAXoI",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1791053010.798337,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "ai_chatbot_history",
+          "value": "[{\"role\":\"assistant\",\"content\":\"Hello! I'm the Grey Auctions assistant. How can I help you today?\"}]"
+        }
+      ]
+    }
+  ]
+}

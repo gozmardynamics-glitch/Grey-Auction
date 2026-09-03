@@ -70,18 +70,21 @@ export default function ContactPage() {
                 <div className="flex items-center gap-3">
                   <a
                     href="#"
+                    aria-label="Facebook"
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <Facebook className="h-5 w-5" />
                   </a>
                   <a
                     href="#"
+                    aria-label="YouTube"
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <Youtube className="h-5 w-5" />
                   </a>
                   <a
                     href="#"
+                    aria-label="LinkedIn"
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <Linkedin className="h-5 w-5" />

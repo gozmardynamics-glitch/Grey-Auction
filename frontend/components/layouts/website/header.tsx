@@ -125,7 +125,7 @@ export default function Header() {
               <div className="hidden items-center md:flex">
                 <form className="flex items-center gap-0">
                   <Select>
-                    <SelectTrigger className="h-11 w-auto rounded-l-xl rounded-r-none border border-r-0 border-border bg-card/80 px-4 text-sm shadow-none focus-ring">
+                    <SelectTrigger aria-label="Search category" className="h-11 w-auto rounded-l-xl rounded-r-none border border-r-0 border-border bg-card/80 px-4 text-sm shadow-none focus-ring">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
