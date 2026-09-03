@@ -42,7 +42,7 @@ export default function CategoriesCarousel({
           image: c.imageUrl || '/placeholder.svg',
         }))
       : curatedCategories;
-  const visibleCategories = sourceCategories.slice(0, 10);
+  const visibleCategories = sourceCategories;
 
   const [isMobile, setIsMobile] = useState(false);
 

@@ -25,4 +25,8 @@ export const CATEGORIES_MAP: Record<string, string[]> = {
     'Cycling Wear',
   ],
   'Beauty & Health': ['Skincare', 'Haircare', 'Supplements', 'Devices'],
+  Government: ['Assets', 'Vehicles', 'Equipment', 'Property'],
+  Embassy: ['Vehicles', 'Household Items', 'Office Equipment'],
+  Corporate: ['Fleet', 'IT Equipment', 'Office Furniture', 'Machinery'],
+  'Private Room': ['Invitation Only'],
 };

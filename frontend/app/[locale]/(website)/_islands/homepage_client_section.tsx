@@ -6,6 +6,7 @@ import { useAppSelector, useAppDispatch } from '@/redux/store';
 import { setSelectedCategory } from '@/redux/slices/categories.slice';
 import { Skeleton } from '@/shared/components/common';
 import Banner from '../components/banner';
+import AuctionTypesSection from '../components/auction_types_section';
 import type { Auction, Category } from '../models';
 
 const sectionLoader = () => <Skeleton className="h-[300px] w-full rounded-xl" />;
@@ -70,6 +71,7 @@ export default function HomepageClientSection({
           dispatch(setSelectedCategory(categorySlug || categories[0]?.slug || ''))
         }
       />
+      <AuctionTypesSection />
       <FeaturedCosmeticsAuctions
         onCategoryClick={handleCategoryClick}
         onSubCategoryClick={handleSubCategoryClick}

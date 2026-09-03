@@ -437,6 +437,10 @@ const CATEGORIES = [
   'Beauty and Health',
   'Office Inventory',
   'Food Industry',
+  'Government',
+  'Embassy',
+  'Corporate',
+  'Private Room',
 ];
 
 const COUNTRIES = [
