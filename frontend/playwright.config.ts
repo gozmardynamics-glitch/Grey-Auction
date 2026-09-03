@@ -26,12 +26,12 @@ export default defineConfig({
     },
     {
       name: 'chromium-public',
-      testIgnore: /dashboard\.spec\.ts/,
+      testIgnore: /(dashboard|ai-admin)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: PUBLIC_STATE },
     },
     {
       name: 'chromium-auth',
-      testMatch: /dashboard\.spec\.ts/,
+      testMatch: /(dashboard|ai-admin)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: ADMIN_STATE },
       dependencies: ['setup'],
     },
