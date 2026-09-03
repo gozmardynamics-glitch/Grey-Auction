@@ -54,11 +54,11 @@ const footerLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-primary-foreground overflow-hidden">
+    <footer className="bg-[#0e1a2b] text-[#e8edf5] overflow-hidden">
       <div className="relative max-w-[96%] md:max-w-full md:mx-0 mx-auto">
         {/* Main footer content */}
-        <div className="px-6 py-16 md:px-12 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12">
+        <div className="px-6 py-10 md:px-12 lg:px-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
             {/* Brand column */}
             <div className="lg:col-span-4 space-y-6">
               <Logo className="text-2xl text-primary-foreground" />
@@ -136,7 +136,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-primary-foreground/10 px-6 py-5 md:px-12 lg:px-16">
+        <div className="border-t border-white/10 px-6 py-4 md:px-12 lg:px-16">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-primary-foreground/40">
               © {new Date().getFullYear()} Grey Auctions. All rights reserved.

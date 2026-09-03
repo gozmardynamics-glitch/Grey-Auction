@@ -16,16 +16,16 @@ const benefits: string[] = [
 
 export default function JoinAuctionsCTA() {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-16 bg-gradient-to-br from-primary/[0.04] via-background to-secondary/[0.04] -mx-4 sm:-mx-0">
+    <section className="py-12 px-4 sm:px-6 lg:px-16 bg-primary/[0.03] -mx-4 sm:-mx-0">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           {/* Left — Content */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-secondary font-semibold mb-3">Get Started</p>
+              <p className="text-xs uppercase tracking-[0.25em] text-primary font-semibold mb-2">Get Started</p>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground leading-[1.1] tracking-tight">
                 Join live auctions in{' '}
-                <span className="text-gradient-gold">three easy steps</span>
+                <span className="text-primary">three easy steps</span>
               </h2>
             </div>
 
@@ -42,7 +42,7 @@ export default function JoinAuctionsCTA() {
 
             <Button
               size="xl"
-              className="rounded-xl bg-gradient-to-r from-primary to-primary-1 text-primary-foreground font-semibold px-8 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5 group/btn"
+              className="rounded-xl bg-primary text-primary-foreground font-semibold px-8 shadow-md shadow-primary/20 hover:bg-primary-1 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 group/btn"
             >
               Start Bidding
               <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover/btn:translate-x-1" />
@@ -50,13 +50,13 @@ export default function JoinAuctionsCTA() {
           </div>
 
           {/* Right — Steps */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {steps.map((step, index) => (
               <div
                 key={index}
-                className="group flex items-start gap-5 p-5 rounded-2xl border border-border/60 bg-card/80 soft-border hover-card-glow transition-all duration-300"
+                className="group flex items-start gap-4 p-4 rounded-xl border border-border/60 bg-card soft-border hover-card-accent transition-all duration-300"
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary font-extrabold text-lg">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-extrabold text-lg">
                   {step.number}
                 </div>
                 <div>

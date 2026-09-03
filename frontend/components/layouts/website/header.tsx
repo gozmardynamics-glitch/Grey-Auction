@@ -51,6 +51,7 @@ import { NotificationBell } from '@/shared/components/common/notification_bell';
 import { setMenuOpen } from '@/redux/slices/ui.slice';
 import { LogoutDialog } from '@/shared/components/common/logout-dialog';
 import WebsiteBreadcrumb from './website_breadcrumb';
+import { ThemeSwitcher } from './theme-switcher';
 import { useLayoutPadding } from '@/hooks/use-layout-padding';
 
 const MobileMenu = dynamic(() => import('./mobile-menu'), { ssr: false });
@@ -114,8 +115,9 @@ export default function Header() {
             {/* Logo */}
             <div className="flex items-center gap-6 lg:gap-12">
               <Link href="/" className="flex items-center group">
-                <h1 className="text-2xl font-bold text-foreground tracking-tight group-hover:opacity-80 transition-opacity">
-                  Grey<span className="text-gradient-gold ml-0.5">Auctions</span>
+                <h1 className="text-2xl font-bold tracking-tight group-hover:opacity-80 transition-opacity">
+                  <span className="text-foreground">Grey</span>
+                  <span className="text-primary ml-1">Auctions</span>
                 </h1>
               </Link>
 
@@ -171,9 +173,10 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              <ThemeSwitcher />
               <Button
                 onClick={() => nextRouter.push('/seller')}
-                className="rounded-xl bg-gradient-to-r from-secondary to-amber-400 px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-1 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Become a Seller
               </Button>

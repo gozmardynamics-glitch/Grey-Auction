@@ -15,8 +15,8 @@ export function FeaturedSlide({
 }) {
   return (
     <div
-      className="relative h-[520px] md:h-[560px] rounded-2xl overflow-hidden"
-      style={{ minHeight: '420px' }}
+      className="relative h-[440px] md:h-[480px] rounded-2xl overflow-hidden"
+      style={{ minHeight: '400px' }}
     >
       <Image
         src={slide.backgroundImage}
@@ -31,7 +31,7 @@ export function FeaturedSlide({
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 lg:px-14 max-w-3xl space-y-6">
+      <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 lg:px-14 max-w-3xl space-y-4">
         {/* Current Bid */}
         {slide.currentBid != null && (
           <div className="animate-fade-in-up">
@@ -60,7 +60,7 @@ export function FeaturedSlide({
         <div className="animate-fade-in-up stagger-3">
           <Button
             size="xl"
-            className="rounded-xl bg-gradient-to-r from-secondary to-amber-400 text-primary font-bold px-8 py-4 text-base shadow-lg shadow-secondary/25 hover:shadow-xl hover:shadow-secondary/30 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 group/btn"
+            className="rounded-xl bg-white text-[#111c2b] font-semibold px-8 py-4 text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 group/btn hover:bg-white/95"
             onClick={onPrimary}
           >
             {slide.primaryCta}
@@ -70,7 +70,7 @@ export function FeaturedSlide({
       </div>
 
       {/* Decorative corner accent */}
-      <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-secondary/20 to-transparent" />
+      <div className="absolute bottom-0 right-0 w-28 h-28 bg-gradient-to-tl from-primary/25 to-transparent" />
     </div>
   );
 }

@@ -68,10 +68,10 @@ export default function FeaturedAuctions({
   }
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-secondary font-semibold mb-1">Discover</p>
+          <p className="text-xs uppercase tracking-[0.25em] text-primary font-semibold mb-0.5">Discover</p>
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">{categoryLabel}</h2>
         </div>
       </div>

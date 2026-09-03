@@ -36,8 +36,8 @@ export function SplitSlide({
 }) {
   return (
     <div
-      className="relative grid grid-cols-1 h-[500px] lg:grid-cols-2 gap-8 lg:gap-12 items-center px-4 py-8 sm:p-8 lg:p-12 rounded-xl overflow-hidden"
-      style={{ minHeight: '400px' }}
+      className="relative grid grid-cols-1 h-[440px] lg:grid-cols-2 gap-6 lg:gap-10 items-center px-4 py-8 sm:p-8 lg:p-12 rounded-2xl overflow-hidden"
+      style={{ minHeight: '380px' }}
     >
       <Image
         src={slide.backgroundImage}
@@ -48,7 +48,7 @@ export function SplitSlide({
         priority={isFirstSlide}
       />
       {/* Left Column */}
-      <div className="relative z-10 space-y-6">
+      <div className="relative z-10 space-y-4">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-foreground">
           {slide.heading}
         </h1>

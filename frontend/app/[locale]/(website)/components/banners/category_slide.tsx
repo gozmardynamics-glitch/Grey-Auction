@@ -35,9 +35,9 @@ export function CategorySlide({
       <div className="absolute inset-0 bg-black/40" />
 
       {/* Content */}
-      <div className="relative z-10 h-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center px-4 sm:px-8 lg:px-12">
+      <div className="relative z-10 h-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-center px-4 sm:px-8 lg:px-12">
         {/* Left */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-primary-foreground">
             {slide.heading}
           </h1>

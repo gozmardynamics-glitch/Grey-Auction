@@ -16,9 +16,9 @@ export default function TrustStatsBanner() {
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
       }} />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <p className="text-xs uppercase tracking-[0.25em] text-secondary font-semibold mb-2">Trusted Platform</p>
+      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <p className="text-xs uppercase tracking-[0.25em] text-primary font-semibold mb-1.5">Trusted Platform</p>
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">Numbers That Speak</h2>
         </div>
         <div className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:gap-8">

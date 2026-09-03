@@ -13,7 +13,7 @@ export default async function WebsitePage() {
   ]);
 
   return (
-    <div className="px-4 py-6 sm:px-0 space-y-24">
+    <div className="px-4 py-6 sm:px-0 space-y-12">
       <HomepageClientSection auctions={auctions} categories={categories} />
       <TrustStatsBanner />
       <JoinAuction />

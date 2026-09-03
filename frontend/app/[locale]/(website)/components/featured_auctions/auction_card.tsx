@@ -148,7 +148,7 @@ export function AuctionCard({
       onClick={handleCardClick}
     >
       {/* Image */}
-      <div className="relative h-56 overflow-hidden bg-muted">
+      <div className="relative h-48 overflow-hidden bg-muted">
         <Image
           src={auction.imageUrl || auction.images?.[0] || '/placeholder.svg'}
           alt={auction.title}
@@ -182,7 +182,7 @@ export function AuctionCard({
       </div>
 
       {/* Timer strip */}
-      <div className="bg-primary/[0.03] px-4 py-2.5 border-t border-border/40">
+      <div className="bg-primary/[0.04] px-3.5 py-2 border-t border-border/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-medium text-foreground">
             <Clock className="h-3.5 w-3.5 text-primary/70 shrink-0" />
@@ -209,7 +209,7 @@ export function AuctionCard({
       </div>
 
       {/* Content */}
-      <CardContent className="flex-1 space-y-2 p-4">
+      <CardContent className="flex-1 space-y-1.5 p-3.5">
         <h3 className="text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200">
           {auction.title}
         </h3>
@@ -230,7 +230,7 @@ export function AuctionCard({
       </CardContent>
 
       {/* Buttons */}
-      <CardFooter className="flex w-full gap-2 p-4 pt-0" onClick={(e) => e.stopPropagation()}>
+      <CardFooter className="flex w-full gap-2 p-3.5 pt-0" onClick={(e) => e.stopPropagation()}>
         {auction.status === 'active' ? (
           <>
             <Button variant="outline" size="sm" className="flex-1 h-9 text-xs rounded-lg border-primary/20 text-primary hover:bg-primary/5 font-medium" onClick={(e) => { e.stopPropagation(); onBuyNowClick?.(auction.id); }}>
