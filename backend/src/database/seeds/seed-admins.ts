@@ -15,6 +15,14 @@ import * as bcrypt from 'bcryptjs';
  *   ts-node -r tsconfig-paths/register src/database/seeds/seed-admins.ts
  */
 async function bootstrap() {
+  // This seed ships default admin credentials in source. It must NEVER touch
+  // a production database — provision real admins with one-time passwords
+  // through a manual, audited process instead.
+  if (process.env.NODE_ENV === 'production') {
+    console.error('Refusing to seed admin accounts with NODE_ENV=production.');
+    console.error('Provision real admin credentials manually instead.');
+    process.exit(1);
+  }
   const app = await NestFactory.createApplicationContext(AppModule);
   const adminService = app.get(AdminService);
   const userRepo: Repository<User> = app.get(getRepositoryToken(User));

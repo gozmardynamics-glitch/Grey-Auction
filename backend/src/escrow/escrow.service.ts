@@ -1,12 +1,12 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ConflictException,
+  Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
-import { Invoice } from '../invoices/invoice.entity';
+import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
 
 const OPEN_STATUSES = [EscrowStatus.HELD, EscrowStatus.DISPUTED];
 const CLOSED_STATUSES = [EscrowStatus.RELEASED, EscrowStatus.REFUNDED];
@@ -34,8 +34,29 @@ export class EscrowService {
   /** Place funds in escrow for an invoice (normally triggered on invoice payment). */
   async hold(input: { invoiceId: string; amount: number; buyerId: string; sellerId: string }) {
     if (input.amount <= 0) throw new BadRequestException('Escrow amount must be positive');
+    // Server-authoritative hold: buyer identity, amount and seller ALWAYS come
+    // from the invoice, never from the request. Without this, any authenticated
+    // user could fabricate an arbitrary hold that the auto-release sweep
+    // converts into a real wallet credit (free money).
+    const invoice = await this.dataSource.getRepository(Invoice).findOne({
+      where: { id: input.invoiceId },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (invoice.buyer_id !== input.buyerId) {
+      throw new ForbiddenException('This invoice does not belong to you');
+    }
+    if (invoice.status !== InvoiceStatus.ISSUED) {
+      throw new BadRequestException(
+        'Invoice is not payable (status: ' + invoice.status + ')',
+      );
+    }
     const hold = await this.dataSource.transaction(async (manager) =>
-      this.holdInManager(manager, input),
+      this.holdInManager(manager, {
+        invoiceId: invoice.id,
+        amount: Number(invoice.total),
+        buyerId: invoice.buyer_id,
+        sellerId: invoice.seller_id,
+      }),
     );
     if (!hold) throw new ConflictException('Funds are already in escrow for this invoice');
     return hold;

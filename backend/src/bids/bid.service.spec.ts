@@ -218,6 +218,8 @@ describe('BidService', () => {
       expect(bidRepository.find).toHaveBeenCalledWith({
         where: { productId: 'product-1' },
         relations: ['bidder'],
+        // Public projection — bidder is limited to display-safe fields.
+        select: { bidder: { id: true, name: true, createdAt: true } },
         order: { createdAt: 'DESC' },
       });
       expect(result).toEqual(bids);

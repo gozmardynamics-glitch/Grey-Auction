@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { PaymentService } from './payment.service';
@@ -7,7 +12,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { OrderService } from '../orders/order.service';
 import { EscrowService } from '../escrow/escrow.service';
-import { Invoice } from '../invoices/invoice.entity';
+import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
 import { Payment, PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.entity';
 import { createProviderAdapter } from './providers/provider.registry';
 
@@ -36,6 +41,31 @@ export class PaymentOrchestrationService {
 
   /** Create the app payment record and ask the chosen provider to initialize. */
   async initialize(command: InitPaymentCommand) {
+    // Invoice payments are server-authoritative: the buyer may reference an
+    // invoice, but the charged amount is ALWAYS the invoice total (fees + VAT
+    // included). Without this, an authenticated buyer could initialize a
+    // token payment against a large invoice and the success webhook would
+    // still mark it paid. The client's amount is ignored for invoice payments.
+    let amount = Number(command.amount);
+    if (command.type === PaymentType.INVOICE) {
+      if (!command.invoiceId) {
+        throw new BadRequestException('invoiceId is required for invoice payments');
+      }
+      const invoice = await this.invoiceService.findById(command.invoiceId);
+      if (!invoice) {
+        throw new NotFoundException('Invoice not found');
+      }
+      if (invoice.buyer_id !== command.userId) {
+        throw new ForbiddenException('This invoice does not belong to you');
+      }
+      if (invoice.status !== InvoiceStatus.ISSUED) {
+        throw new BadRequestException(
+          'Invoice is not payable (status: ' + invoice.status + ')',
+        );
+      }
+      amount = Number(invoice.total);
+    }
+
     const reference = command.metadata?.reference
       ? String(command.metadata.reference)
       : 'PAY-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -46,7 +76,7 @@ export class PaymentOrchestrationService {
       type: command.type,
       provider: command.provider,
       reference,
-      amount: command.amount,
+      amount,
       metadata: command.metadata || {},
     });
 

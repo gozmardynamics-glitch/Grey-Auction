@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Body, Param, Query,
-  UseGuards, HttpStatus,
+  UseGuards, HttpStatus, ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { BidApiResponseDto } from './dto/bid-response.dto';
@@ -38,8 +38,15 @@ export class BidController {
   }
 
   @Get('users/:userId/bids')
-  @ApiOperation({ summary: 'Get bids by user' })
-  async getUserBids(@Param('userId') userId: string) {
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get bids by user (owner only)' })
+  async getUserBids(@Param('userId') userId: string, @CurrentUser() user: any) {
+    // Bidding history is private — only the owner (admins have their own
+    // endpoints) may read it. Previously this was public for any userId.
+    if (userId !== user?.id) {
+      throw new ForbiddenException('You may only view your own bids');
+    }
     const bids = await this.bidService.getUserBids(userId);
     return { success: true, data: bids };
   }

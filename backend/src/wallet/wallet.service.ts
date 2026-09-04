@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
@@ -124,6 +125,15 @@ export class WalletService {
   async deposit(userId: string, dto: DepositDto) {
     if (!dto.amount || dto.amount <= 0) {
       throw new BadRequestException('Amount must be a positive number');
+    }
+    // Production fail-closed: real wallet credits may ONLY originate from the
+    // signature-verified payment webhook (payments/init type=deposit ->
+    // provider -> webhook -> orchestration). This endpoint is a local/dev
+    // convenience and previously minted arbitrary balance from any request.
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException(
+        'Direct wallet deposits are disabled — fund your wallet through checkout',
+      );
     }
     try {
       return await this.dataSource.transaction((manager) =>

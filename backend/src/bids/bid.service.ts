@@ -291,9 +291,14 @@ export class BidService {
   }
 
   async getAuctionBids(productId: string): Promise<Bid[]> {
+    // Public endpoint: hydrate ONLY display-safe bidder fields. Selecting the
+    // full User relation would serialize passwordHash/OTP state to anyone.
     return this.repo.find({
       where: { productId },
       relations: ['bidder'],
+      select: {
+        bidder: { id: true, name: true, createdAt: true },
+      },
       order: { createdAt: 'DESC' },
     });
   }

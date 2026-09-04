@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum UserRole {
@@ -15,6 +16,7 @@ export class User {
   email: string;
 
   @Column()
+  @Exclude({ toPlainOnly: true })
   passwordHash: string;
 
   @Column({
@@ -38,10 +40,13 @@ export class User {
   clerkId: string;
 
   // OTP email-verification state (persisted so verifyOtp can match).
+  // @Exclude: these must never appear in any API response.
   @Column({ type: 'varchar', length: 6, nullable: true })
+  @Exclude({ toPlainOnly: true })
   otpCode: string;
 
   @Column({ type: 'timestamp', nullable: true })
+  @Exclude({ toPlainOnly: true })
   otpExpiry: Date;
 
   @Column({ type: 'varchar', length: 30, nullable: true })

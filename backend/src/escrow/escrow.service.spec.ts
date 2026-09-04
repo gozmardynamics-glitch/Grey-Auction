@@ -19,6 +19,7 @@ describe('EscrowService', () => {
   };
   const dataSource = {
     transaction: jest.fn(async (cb: any) => cb(manager)),
+    getRepository: jest.fn((entity: any) => (entity === Invoice ? invoiceRepo : holds)),
   };
   const walletService = { creditInManager: jest.fn() };
 
@@ -34,6 +35,16 @@ describe('EscrowService', () => {
       ],
     }).compile();
     service = module.get<EscrowService>(EscrowService);
+    // Default: hold()'s invoice precheck sees a payable, buyer-owned invoice.
+    (invoiceRepo.findOne as jest.Mock).mockResolvedValue({
+      id: 'inv-1',
+      buyer_id: 'b1',
+      seller_id: 's1',
+      total: '2500000',
+      status: 'issued',
+      escrow_window_hours: null,
+      paid_at: null,
+    });
   });
 
   const input = { invoiceId: 'inv-1', amount: 2500000, buyerId: 'b1', sellerId: 's1' };
@@ -129,6 +140,10 @@ describe('EscrowService', () => {
       (holds.save as jest.Mock).mockImplementation(async (x) => ({ id: 'h2', ...x }));
       (invoiceRepo.findOne as jest.Mock).mockResolvedValue({
         id: 'inv-1',
+        buyer_id: 'b1',
+        seller_id: 's1',
+        total: '2500000',
+        status: 'issued',
         escrow_window_hours: 48,
         paid_at: new Date('2026-09-02T10:00:00Z'),
       });
