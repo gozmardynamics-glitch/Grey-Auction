@@ -81,6 +81,15 @@ _Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS
      password policy, theme-FOUC script, CSP connect-src de-wilcarded +
      env-driven `remotePatterns`. Remaining: OPay/Interswitch sandbox pass
      (needs vendor keys), i18n/empty-states sweep, full response-DTO pass.
+   - **Wave 3 (same day): open-items progress** — website chrome i18n wired
+     (header/footer/mobile-menu render from the en/fr/nl catalogs; new keys
+     added in lockstep), shared `EmptyState` adopted in admin transaction
+     tabs + seller auction modal, room creator projected PII-safe on the
+     public rooms endpoints, OPay/Interswitch adapters audited (both
+     TODO(vendor) notes refreshed; adapter specs already cover every code
+     path, so the sandbox pass is verification-only). Remaining: dashboard
+     i18n batch, EmptyState sweep across remaining lists, vendor keys, DTO
+     pass.
 
 1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
    (`auth()` → Bearer); all admin AI server pages render data on first paint; the

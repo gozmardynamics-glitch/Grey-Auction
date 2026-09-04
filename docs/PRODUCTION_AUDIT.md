@@ -111,8 +111,8 @@ See 2.1 — buttons now produce real outcomes: success redirects to the hosted c
 ### 3.2 Known UX gaps
 - **[RESOLVED — wave 2] Checkout Order Summary shows ₦0** — fixed server-side via `?invoiceId=` (see 2.1).
 - **[RESOLVED — wave 2] Theme flash** — a synchronous init script at the top of `<body>` applies the stored theme class pre-paint (next-themes technique; hydration-safe).
-- **[FUTURE · P2] i18n sweep:** user-facing hardcoded English strings exist in shared components (header/footer/dashboard spot-checks); a full pass through `messages/` + components is needed before non-English locales ship.
-- **[FUTURE · P2] Empty states:** list pages should standardize their empty-state component (currently mixed skeleton/spinner/message patterns).
+- **[IN PROGRESS — wave 3] i18n sweep:** the website chrome batch is wired — header, footer and mobile menu now render from the `header`/`footer` catalogs (en/fr/nl kept in lockstep, new keys added for account/menu aria/footer link columns/tagline). Remaining: dashboard + admin surfaces.
+- **[IN PROGRESS — wave 3] Empty states:** the shared `EmptyState` (already exported from the common barrel) is now adopted in the admin buyer/seller transaction tabs and the seller auction-details modal; the room bid feed's empty note was centered. Remaining: sweep the remaining list surfaces onto it.
 - **[FUTURE · P2] Contrast placeholders:** dark-theme placeholder contrast on card inputs was flagged for a visual pass (not machine-verifiable by axe).
 
 ### 3.3 Accessibility posture
@@ -187,10 +187,10 @@ Public routes pass axe (12/12) including landmarks, labels and contrast rules; a
 | 14 | P1 | Confirmation | Page shows client-side state only | RESOLVED (this wave) |
 | 15 | P1 | Webhooks | Provider-amount vs payment.amount check | RESOLVED (this wave) |
 | 16 | P1 | Settings | In-memory settings store | RESOLVED (this wave) |
-| 17 | P2 | Users | PII beyond credentials in payloads | PARTIAL (rooms projection; full DTO pass future) |
+| 17 | P2 | Users | PII beyond credentials in payloads | PARTIAL (participants + room creator projected; full DTO pass future) |
 | 18 | P2 | Tickets | List/detail owner-or-admin scoping | RESOLVED (this wave) |
 | 19 | P2 | Legacy | Delete legacy payments trio, idempotent replays | RESOLVED (this wave) |
-| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; dialog verified native; i18n/empty-states future) |
+| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; dialog verified native; header/footer i18n + EmptyState adoption done in wave 3; dashboards remain) |
 | 21 | P2 | Config | CSP hardening, images remotePatterns | RESOLVED (this wave) |
 | 22 | P2 | Ops | invoice_number collision retry, cron overlap guard, admin password policy | RESOLVED (this wave) |
-| 23 | — | Vendors | OPay/Interswitch sandbox verification (TODO(vendor)) | FUTURE (pre-existing) |
+| 23 | — | Vendors | OPay/Interswitch sandbox verification (TODO(vendor)) | FUTURE — code paths 100% unit-covered (mocked HTTP, real HMAC/hash), sandbox pass is verification-only |
