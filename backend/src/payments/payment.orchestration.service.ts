@@ -116,7 +116,7 @@ export class PaymentOrchestrationService {
    */
   async reconcilePayment(payment: Payment): Promise<Payment> {
     const adapter = createProviderAdapter(payment.provider);
-    const result = await adapter.verify(payment.reference);
+    const result = await adapter.verify(payment.reference, { amount: payment.amount });
 
     if (result.verified && result.status === PaymentStatus.SUCCEEDED) {
       return this.applySucceeded(payment, result.providerReference ?? payment.providerReference);

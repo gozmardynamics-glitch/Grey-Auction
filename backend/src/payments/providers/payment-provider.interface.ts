@@ -39,7 +39,13 @@ export interface PaymentProviderAdapter {
   /** True once the provider's credentials are configured. */
   configured(): boolean;
   initialize(txn: ProviderInitTxn): Promise<ProviderInitResult>;
-  verify(reference: string): Promise<ProviderVerifyResult>;
+  /**
+   * Verify a transaction by reference. `options.amount` (major units) is the
+   * original payment amount — providers whose status query requires it
+   * (e.g. Interswitch gettransaction.json) use it for the MAC/amount check;
+   * providers that query by reference alone ignore it.
+   */
+  verify(reference: string, options?: { amount?: number }): Promise<ProviderVerifyResult>;
   /** Parse + signature-validate a provider webhook. */
   parseWebhook(
     payload: unknown,
