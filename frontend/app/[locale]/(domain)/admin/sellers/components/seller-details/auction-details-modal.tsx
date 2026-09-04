@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  EmptyState,
   Separator,
   Table,
   TableBody,
@@ -196,9 +197,11 @@ export default function AuctionDetailsModal({
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Bid History</h3>
               {auction.bidHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">
-                  No bids yet.
-                </p>
+                <EmptyState
+                  title="No bids yet"
+                  description="Bids placed on this auction will appear here."
+                  className="py-8"
+                />
               ) : (
                 <div className="rounded-md border overflow-x-auto">
                   <Table>

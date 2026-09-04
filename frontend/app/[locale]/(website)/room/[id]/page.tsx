@@ -658,7 +658,7 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
                 <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                   <h3 className="text-sm font-semibold">Recent Bids</h3>
                   {liveBids.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="py-3 text-center text-sm text-muted-foreground">
                       No bids yet — be the first to bid!
                     </p>
                   ) : (

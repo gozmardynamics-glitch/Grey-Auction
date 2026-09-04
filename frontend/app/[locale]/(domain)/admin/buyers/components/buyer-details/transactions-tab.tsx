@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react';
 import {
   Badge,
   Button,
+  EmptyState,
   Table,
   TableBody,
   TableCell,
@@ -43,9 +44,11 @@ export function TransactionsTab({
 
   if (!transactions || transactions.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-4">
-        No transactions yet.
-      </p>
+      <EmptyState
+        title="No transactions yet"
+        description="Transactions will appear here once this buyer starts transacting."
+        className="py-10"
+      />
     );
   }
   return (
