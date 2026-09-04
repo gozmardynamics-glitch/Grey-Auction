@@ -99,6 +99,15 @@ _Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS
      dashboards render translated navs in en/fr/nl. Remaining: deep
      dashboard module content (forms/modals/table headers), EmptyState
      sweep, vendor keys, DTO pass.
+   - **Wave 3c: dashboard home i18n** — buyer.home (26 keys), seller.home
+     (33) and admin.home (28) added to en/fr/nl in lockstep; welcome/stat/
+     chart/legend/table-header/empty-state strings on all three dashboard
+     home surfaces resolve per locale. Table column arrays converted to
+     hook factories (single consumers verified); seller analytics month
+     labels follow `useLocale()`. Each slice tested (tsc + vitest 80/80 +
+     live 3-locale probe) and committed separately. Remaining: wallet/
+     settings/modals detail surfaces, EmptyState sweep, vendor keys, DTO
+     pass.
 
 1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
    (`auth()` → Bearer); all admin AI server pages render data on first paint; the
