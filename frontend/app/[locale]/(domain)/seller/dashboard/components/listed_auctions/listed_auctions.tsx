@@ -8,18 +8,21 @@ import {
   DataTable,
 } from '@/shared/components/common';
 import { FileText } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
-import { columns, type ListedAuctions } from './listed_auctions_column';
+import { useListedAuctionsColumns, type ListedAuctions } from './listed_auctions_column';
 
 interface ListedAuctionsProps {
   data?: ListedAuctions[];
 }
 
 export default function ListedAuctionsComponent({ data = [] }: ListedAuctionsProps) {
+  const t = useTranslations('seller.home');
+  const columns = useListedAuctionsColumns();
   return (
     <Card className="">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Listed Auctions</CardTitle>
+        <CardTitle className="text-base font-medium">{t('listedAuctions')}</CardTitle>
       </CardHeader>
       <CardContent>
         <DataTable
@@ -27,8 +30,8 @@ export default function ListedAuctionsComponent({ data = [] }: ListedAuctionsPro
           data={data}
           pagination={false}
           emptyIcon={<FileText className="h-8 w-8" />}
-          emptyTitle="No pending actions"
-          emptyDescription="New requests will appear here when action is required."
+          emptyTitle={t('noListedTitle')}
+          emptyDescription={t('noListedDescription')}
         />
       </CardContent>
     </Card>

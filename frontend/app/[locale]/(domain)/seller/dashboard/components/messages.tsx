@@ -11,6 +11,7 @@ import {
   EmptyState,
 } from '@/shared/components/common';
 import { MessageSquare } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Message {
   id: string;
@@ -28,17 +29,18 @@ interface MessagesProps {
 const defaultMessages: Message[] = [];
 
 export default function Messages({ messages = defaultMessages }: MessagesProps) {
+  const t = useTranslations('seller.home');
   return (
     <Card className="">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Messages</CardTitle>
+        <CardTitle className="text-base font-medium">{t('messages')}</CardTitle>
       </CardHeader>
       <CardContent>
         {messages.length === 0 ? (
           <EmptyState
             icon={<MessageSquare className="h-10 w-10" />}
-            title="No Messages"
-            description="Messages from buyers will appear here."
+            title={t('noMessagesTitle')}
+            description={t('noMessagesDescription')}
             className="py-8"
           />
         ) : (

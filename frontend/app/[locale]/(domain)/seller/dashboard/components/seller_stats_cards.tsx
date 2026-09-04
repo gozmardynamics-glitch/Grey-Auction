@@ -1,5 +1,6 @@
 import StatsCard from '@/shared/components/common/stats_card';
 import { Gavel, HandCoins, Users, ClipboardList } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface DashboardStatsProps {
   activeAuctions: number;
@@ -22,10 +23,11 @@ export default function DashboardStats({
   usersTrend = 0,
   requestsTrend = 0,
 }: DashboardStatsProps) {
+  const t = useTranslations('seller.home.stats');
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <StatsCard
-        title="Active Auctions"
+        title={t('activeAuctions')}
         value={activeAuctions}
         icon={Gavel}
         trend={auctionsTrend}
@@ -33,7 +35,7 @@ export default function DashboardStats({
         iconBgColor="bg-background"
       />
       <StatsCard
-        title="Bids"
+        title={t('bids')}
         value={bids}
         icon={HandCoins}
         trend={bidsTrend}
@@ -41,7 +43,7 @@ export default function DashboardStats({
         iconBgColor="bg-background"
       />
       <StatsCard
-        title="Users"
+        title={t('users')}
         value={users}
         icon={Users}
         trend={usersTrend}
@@ -49,7 +51,7 @@ export default function DashboardStats({
         iconBgColor="bg-background"
       />
       <StatsCard
-        title="Pending Requests"
+        title={t('pendingRequests')}
         value={pendingRequests}
         icon={ClipboardList}
         trend={requestsTrend}

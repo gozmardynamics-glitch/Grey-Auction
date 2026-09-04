@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/redux/store';
 import { Card, CardContent, CardHeader, CardTitle, Skeleton } from '@/shared/components/common';
 import { ShoppingBag, Package, Star, Wallet, type LucideIcon } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface PeriodStats {
   total_sales: number;
@@ -42,6 +43,8 @@ const INFLATABLE = (p: RawPeriodStats | null | undefined): PeriodStats => ({
 });
 
 export default function SellerAnalytics() {
+  const t = useTranslations('seller.home');
+  const locale = useLocale();
   const token = useAppSelector((state) => state.auth.token);
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
   const [months, setMonths] = useState<{ label: string; sales: number; orders: number }[]>([]);
@@ -59,7 +62,7 @@ export default function SellerAnalytics() {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const year = d.getFullYear();
         const month = d.getMonth() + 1;
-        const label = d.toLocaleString('en', { month: 'short' });
+        const label = d.toLocaleString(locale, { month: 'short' });
         requests.push(
           fetch(
             apiBase + '/seller/statistics/me?period=MONTHLY&year=' + year + '&month=' + month,
@@ -91,15 +94,15 @@ export default function SellerAnalytics() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi icon={Wallet} label="Sales (this month)" value={current ? String(current.total_sales) : '0'} />
-        <Kpi icon={ShoppingBag} label="Orders" value={String(current?.total_orders ?? 0)} />
-        <Kpi icon={Package} label="Products sold" value={String(current?.products_sold ?? 0)} />
-        <Kpi icon={Star} label="Avg rating" value={current ? current.average_rating.toFixed(1) : '0.0'} />
+        <Kpi icon={Wallet} label={t('salesThisMonth')} value={current ? String(current.total_sales) : '0'} />
+        <Kpi icon={ShoppingBag} label={t('orders')} value={String(current?.total_orders ?? 0)} />
+        <Kpi icon={Package} label={t('productsSold')} value={String(current?.products_sold ?? 0)} />
+        <Kpi icon={Star} label={t('avgRating')} value={current ? current.average_rating.toFixed(1) : '0.0'} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Monthly sales (last 6 months)</CardTitle>
+          <CardTitle className="text-sm">{t('monthlySalesTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex h-40 items-end gap-2">
@@ -120,28 +123,28 @@ export default function SellerAnalytics() {
       {current && (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle className="text-sm">Listed vs sold</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">{t('listedVsSold')}</CardTitle></CardHeader>
             <CardContent className="flex items-center justify-around text-center text-sm">
               <div>
                 <p className="text-lg font-semibold">{current.products_listed}</p>
-                <p className="text-xs text-muted-foreground">Listed</p>
+                <p className="text-xs text-muted-foreground">{t('listed')}</p>
               </div>
               <div>
                 <p className="text-lg font-semibold">{current.products_sold}</p>
-                <p className="text-xs text-muted-foreground">Sold</p>
+                <p className="text-xs text-muted-foreground">{t('sold')}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-sm">Reviews (this month)</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">{t('reviewsTitle')}</CardTitle></CardHeader>
             <CardContent className="flex items-center justify-around text-center text-sm">
               <div>
                 <p className="text-lg font-semibold">{current.positive_reviews}</p>
-                <p className="text-xs text-muted-foreground">Positive (4-5)</p>
+                <p className="text-xs text-muted-foreground">{t('positive')}</p>
               </div>
               <div>
                 <p className="text-lg font-semibold">{current.negative_reviews}</p>
-                <p className="text-xs text-muted-foreground">Negative (1-2)</p>
+                <p className="text-xs text-muted-foreground">{t('negative')}</p>
               </div>
             </CardContent>
           </Card>

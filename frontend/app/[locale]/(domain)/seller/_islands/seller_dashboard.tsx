@@ -13,6 +13,7 @@ import SellerAnalytics from '../dashboard/components/seller_analytics';
 import ListedAuctions from '../dashboard/components/listed_auctions/listed_auctions';
 import Messages from '../dashboard/components/messages';
 import { Upload } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const TotalRevenue = dynamic(() => import('../dashboard/components/total_revenue'), {
   loading: () => <Skeleton className="h-[300px] rounded-lg" />,
@@ -20,15 +21,16 @@ const TotalRevenue = dynamic(() => import('../dashboard/components/total_revenue
 });
 
 export default function SellerDashboardIsland() {
+  const t = useTranslations('seller.home');
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Overview</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t('overview')}</h1>
         <div className="flex items-center gap-2">
           <DatePickerWithRange />
           <Button size="lg">
             <Upload />
-            Export
+            {t('export')}
           </Button>
         </div>
       </div>
