@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAppSelector, useAppDispatch } from '@/redux/store';
 import { useRouter as useNextRouter } from 'next/navigation';
 import { useRouter, usePathname } from '@/i18n/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { routing } from '@/i18n/routing';
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
@@ -75,6 +75,7 @@ export default function Header() {
   const nextRouter = useNextRouter();
   const pathname = usePathname();
   const locale = useLocale();
+  const t = useTranslations('header');
   const { showBreadcrumb } = useLayoutPadding();
   const isSignedIn = useAppSelector((state) => state.auth.isAuthenticated);
   const role = useAppSelector((state) => state.auth.user?.role);
@@ -125,8 +126,8 @@ export default function Header() {
               <div className="hidden items-center md:flex">
                 <form className="flex items-center gap-0">
                   <Select>
-                    <SelectTrigger aria-label="Search category" className="h-11 w-auto rounded-l-xl rounded-r-none border border-r-0 border-border bg-card/80 px-4 text-sm shadow-none focus-ring">
-                      <SelectValue placeholder="Category" />
+                    <SelectTrigger aria-label={t('searchCategory')} className="h-11 w-auto rounded-l-xl rounded-r-none border border-r-0 border-border bg-card/80 px-4 text-sm shadow-none focus-ring">
+                      <SelectValue placeholder={t('category')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="transport">Transport</SelectItem>
@@ -141,7 +142,7 @@ export default function Header() {
                     <InputWithIcon
                       className="h-11 w-72 lg:w-80 rounded-l-none rounded-r-xl border-l-0 border-border bg-card/80 focus-ring"
                       type="search"
-                      placeholder="Search for lots..."
+                      placeholder={t('searchPlaceholder')}
                       icon={Search}
                     />
                   </div>
@@ -178,7 +179,7 @@ export default function Header() {
                 onClick={() => nextRouter.push('/seller')}
                 className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-1 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
               >
-                Become a Seller
+                {t('becomeSeller')}
               </Button>
             </div>
 
@@ -187,7 +188,7 @@ export default function Header() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Open navigation menu"
+                aria-label={t('openMenu')}
                 onClick={() => dispatch(setMenuOpen(true))}
                 className="min-h-11 min-w-11 text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -208,7 +209,7 @@ export default function Header() {
                 className="rounded-lg font-medium transition-all duration-200"
                 onClick={() => router.push('/auctions')}
               >
-                All Auctions
+                {t('allAuctions')}
               </Button>
 
               {/* All Categories Mega Menu */}
@@ -217,7 +218,7 @@ export default function Header() {
                   <NavigationMenuItem>
                     <NavigationMenuTrigger className="bg-primary/5 text-primary rounded-lg text-sm font-medium">
                       <TextAlignStart className="mr-2 h-4 w-4" />
-                      <span className="hidden md:flex">Categories</span>
+                      <span className="hidden md:flex">{t('allCategories')}</span>
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <div className="flex w-[750px] xl:w-[850px]">
@@ -249,9 +250,9 @@ export default function Header() {
                         </div>
                         <div className="flex-1 overflow-auto flex-col p-4">
                           <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-foreground">Featured Lots</h3>
+                            <h3 className="text-sm font-semibold text-foreground">{t('featuredLots')}</h3>
                             <Link href="/auctions" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                              View All
+                              {t('viewAll')}
                               <ChevronDown className="h-3 w-3 -rotate-90" />
                             </Link>
                           </div>
@@ -285,13 +286,13 @@ export default function Header() {
               <Button asChild variant="ghost" size="sm" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                 <Link href="/wishlist">
                   <Heart className="h-4 w-4" />
-                  <span className="hidden md:flex text-sm">Wishlist</span>
+                  <span className="hidden md:flex text-sm">{t('wishlist')}</span>
                 </Link>
               </Button>
               <Button asChild variant="ghost" size="sm" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                 <Link href="/cart">
                   <ShoppingBag className="h-4 w-4" />
-                  <span className="hidden md:flex text-sm">Cart</span>
+                  <span className="hidden md:flex text-sm">{t('cart')}</span>
                 </Link>
               </Button>
               <CurrencySelect />
@@ -299,7 +300,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                     <User className="h-4 w-4" />
-                    <span className="hidden md:flex text-sm">Account</span>
+                    <span className="hidden md:flex text-sm">{t('account')}</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -307,18 +308,18 @@ export default function Header() {
                   {isSignedIn ? (
                     <>
                       <DropdownMenuItem onClick={() => nextRouter.push(`/${role}/dashboard`)}>
-                        <User className="mr-2 h-4 w-4" /> My Account
+                        <User className="mr-2 h-4 w-4" /> {t('myAccount')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <LogoutDialog>
                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                          <LogOut className="mr-2 h-4 w-4" /> {t('signOut')}
                         </DropdownMenuItem>
                       </LogoutDialog>
                     </>
                   ) : (
                     <DropdownMenuItem onClick={() => nextRouter.push('/auth/login')}>
-                      <LogIn className="mr-2 h-4 w-4" /> Sign In
+                      <LogIn className="mr-2 h-4 w-4" /> {t('signIn')}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

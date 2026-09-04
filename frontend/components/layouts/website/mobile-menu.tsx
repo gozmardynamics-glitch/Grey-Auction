@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/redux/store';
 import { setMenuOpen } from '@/redux/slices/ui.slice';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   ChevronRight,
   ArrowLeft,
@@ -57,6 +58,8 @@ type MenuView = 'main' | 'categories' | 'contact';
 export default function MobileMenu() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const tHeader = useTranslations('header');
+  const tFooter = useTranslations('footer');
   const isMenuOpen = useAppSelector((state) => state.ui.isMenuOpen);
   const [view, setView] = useState<MenuView>('main');
 
@@ -90,7 +93,7 @@ export default function MobileMenu() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Close navigation menu"
+                aria-label={tHeader('closeMenu')}
                 onClick={handleClose}
                 className="min-h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground"
               >
@@ -118,7 +121,7 @@ export default function MobileMenu() {
                     onClick={() => handleNavigate('/auctions')}
                     className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-foreground hover:bg-muted h-auto rounded-none"
                   >
-                    All Auctions
+                    {tHeader('allAuctions')}
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </li>
@@ -128,7 +131,7 @@ export default function MobileMenu() {
                     onClick={() => setView('categories')}
                     className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-foreground hover:bg-muted h-auto rounded-none"
                   >
-                    Categories
+                    {tHeader('allCategories')}
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </li>
@@ -138,7 +141,7 @@ export default function MobileMenu() {
                     onClick={() => setView('contact')}
                     className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-foreground hover:bg-muted h-auto rounded-none"
                   >
-                    Contact Us
+                    {tFooter('contactUs')}
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </li>
@@ -148,7 +151,7 @@ export default function MobileMenu() {
                     onClick={() => handleNavigate('/faqs')}
                     className="flex w-full items-center justify-between px-5 py-4 text-sm font-medium text-foreground hover:bg-muted h-auto rounded-none"
                   >
-                    FAQs
+                    {tFooter('faq')}
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </li>
@@ -175,14 +178,14 @@ export default function MobileMenu() {
                 size="lg"
                 onClick={() => handleNavigate('/auth/login')}
               >
-                Log In
+                {tHeader('signIn')}
               </Button>
               <Button
                 className="w-full bg-blue-600 hover:bg-blue-700 text-primary-foreground"
                 size="lg"
                 onClick={() => handleNavigate('/seller')}
               >
-                Become a Seller
+                {tHeader('becomeSeller')}
               </Button>
             </div>
           </>
@@ -195,14 +198,14 @@ export default function MobileMenu() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Back to main menu"
+                aria-label={tHeader('backToMenu')}
                 onClick={() => setView('main')}
                 className="min-h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <SheetTitle className="text-lg font-semibold">
-                Categories
+                {tHeader('allCategories')}
               </SheetTitle>
             </SheetHeader>
 
@@ -230,7 +233,7 @@ export default function MobileMenu() {
               {featuredAuction && (
                 <div className="p-5">
                   <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">
-                    Featured Auction
+                    {tHeader('featuredLots')}
                   </p>
                   <Link
                     href={`/auctions/${featuredAuction.id}`}
@@ -272,14 +275,14 @@ export default function MobileMenu() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Back to main menu"
+                aria-label={tHeader('backToMenu')}
                 onClick={() => setView('main')}
                 className="min-h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <SheetTitle className="text-lg font-semibold">
-                Contact Us
+                {tFooter('contactUs')}
               </SheetTitle>
             </SheetHeader>
 
@@ -292,7 +295,7 @@ export default function MobileMenu() {
                   >
                     <span className="flex items-center gap-3">
                       <Mail className="h-5 w-5 text-muted-foreground" />
-                      Email
+                      {tFooter('email')}
                     </span>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </a>

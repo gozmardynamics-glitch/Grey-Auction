@@ -12,7 +12,12 @@
     "signOut": "Uitloggen",
     "settings": "Instellingen",
     "featuredLots": "Aanbevolen kavels",
-    "viewAll": "Alles bekijken"
+    "viewAll": "Alles bekijken",
+    "account": "Account",
+    "openMenu": "Navigatiemenu openen",
+    "closeMenu": "Navigatiemenu sluiten",
+    "backToMenu": "Terug naar hoofdmenu",
+    "searchCategory": "Zoekcategorie"
   },
   "footer": {
     "company": "Bedrijf",
@@ -31,7 +36,19 @@
     "faq": "FAQ",
     "privacyPolicy": "Privacybeleid",
     "termsAndConditions": "Algemene voorwaarden",
-    "copyright": "Alle rechten voorbehouden"
+    "copyright": "Alle rechten voorbehouden",
+    "auctions": "Veilingen",
+    "browseAll": "Alles doorbladeren",
+    "directSales": "Directe verkoop",
+    "advisors": "Adviseurs",
+    "subscribe": "Abonneren",
+    "stayUpdated": "Blijf op de hoogte",
+    "downloadOn": "Downloaden op",
+    "getItOn": "Nu verkrijgbaar bij",
+    "madeWith": "Gemaakt met",
+    "inLagos": "in Lagos",
+    "email": "E-mail",
+    "tagline": "Nigeria's toonaangevende veilingplatform. Ontdek unieke items, bied met vertrouwen en win buitengewone deals."
   },
   "cookieConsent": {
     "title": "Wij waarderen uw privacy",
@@ -218,12 +235,12 @@
     "lastUpdated": "Laatst bijgewerkt",
     "never": "Nooit",
     "refresh": "Vernieuwen uit feed",
-    "refreshing": "Bezig met vernieuwen…",
+    "refreshing": "Bezig met vernieuwenâ€¦",
     "save": "Opslaan",
-    "saving": "Opslaan…",
+    "saving": "Opslaanâ€¦",
     "cancel": "Annuleren",
     "edit": "Bewerken",
-    "loading": "Wisselkoersen laden…",
+    "loading": "Wisselkoersen ladenâ€¦",
     "emptyTitle": "Geen wisselkoersen",
     "emptyDescription": "Er zijn nog geen wisselkoersen geconfigureerd.",
     "errorTitle": "Koersen laden mislukt",
@@ -233,7 +250,7 @@
     "saved": "Koers voor {code} opgeslagen",
     "saveFailed": "Koers voor {code} opslaan mislukt",
     "refreshed": "Koersen vernieuwd ({count} bijgewerkt)",
-    "noUpdates": "Vernieuwen voltooid — geen koersen bijgewerkt",
+    "noUpdates": "Vernieuwen voltooid â€” geen koersen bijgewerkt",
     "refreshFailed": "Koersen vernieuwen mislukt"
   }
   },

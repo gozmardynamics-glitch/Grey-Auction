@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Linkedin, Mail, MapPin, Twitter, ArrowUpRight, Heart } from 'lucide-react';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
@@ -22,37 +23,43 @@ const socialLinks = [
   { icon: Linkedin, href: '#', label: 'LinkedIn' },
 ];
 
-const footerLinks = [
-  {
-    title: 'Company',
-    links: [
-      { label: 'About Us', href: '/about-us' },
-      { label: 'Careers', href: '/career' },
-      { label: 'Blog', href: '/blog' },
-      { label: 'Contact', href: '/contact' },
-    ],
-  },
-  {
-    title: 'Support',
-    links: [
-      { label: 'FAQ', href: '/faq' },
-      { label: 'Privacy Policy', href: '/privacy-policy' },
-      { label: 'Terms & Conditions', href: '/terms' },
-      { label: 'Shipping', href: '/faq' },
-    ],
-  },
-  {
-    title: 'Auctions',
-    links: [
-      { label: 'Browse All', href: '/auctions' },
-      { label: 'Direct Sales', href: '/direct-sales' },
-      { label: 'Advisors', href: '/advisors' },
-      { label: 'Subscribe', href: '/subscribe' },
-    ],
-  },
-];
+/** Link columns are built inside the component so labels come from the catalog. */
+function buildFooterColumns(t: (key: string) => string) {
+  return [
+    {
+      title: t('company'),
+      links: [
+        { label: t('aboutUs'), href: '/about-us' },
+        { label: t('career'), href: '/career' },
+        { label: t('blog'), href: '/blog' },
+        { label: t('contactUs'), href: '/contact' },
+      ],
+    },
+    {
+      title: t('support'),
+      links: [
+        { label: t('faq'), href: '/faq' },
+        { label: t('privacyPolicy'), href: '/privacy-policy' },
+        { label: t('termsAndConditions'), href: '/terms' },
+        { label: t('deliveryInfo'), href: '/faq' },
+      ],
+    },
+    {
+      title: t('auctions'),
+      links: [
+        { label: t('browseAll'), href: '/auctions' },
+        { label: t('directSales'), href: '/direct-sales' },
+        { label: t('advisors'), href: '/advisors' },
+        { label: t('subscribe'), href: '/subscribe' },
+      ],
+    },
+  ];
+}
 
-export default function Footer() {
+export default async function Footer() {
+  const t = await getTranslations('footer');
+  const footerLinks = buildFooterColumns(t);
+
   return (
     <footer className="bg-[#0e1a2b] text-[#e8edf5] overflow-hidden">
       <div className="relative max-w-[96%] md:max-w-full md:mx-0 mx-auto">
@@ -63,7 +70,7 @@ export default function Footer() {
             <div className="lg:col-span-4 space-y-6">
               <Logo className="text-2xl text-primary-foreground" />
               <p className="text-sm text-primary-foreground/60 leading-relaxed max-w-xs">
-                Nigeria&apos;s premier auction platform. Discover unique items, bid with confidence, and win extraordinary deals.
+                {t('tagline')}
               </p>
               <div className="space-y-3 text-sm text-primary-foreground/60">
                 <div className="flex items-start gap-2">
@@ -113,20 +120,20 @@ export default function Footer() {
 
             {/* Newsletter + App */}
             <div className="lg:col-span-2 space-y-6">
-              <h3 className="text-sm font-bold text-primary-foreground uppercase tracking-wider mb-5">Stay Updated</h3>
+              <h3 className="text-sm font-bold text-primary-foreground uppercase tracking-wider mb-5">{t('stayUpdated')}</h3>
               <NewsletterForm />
               <div className="space-y-3 pt-2">
                 <Button variant="ghost" size="sm" className="w-full justify-start gap-2 rounded-lg border border-primary-foreground/20 bg-transparent text-[#e8edf5] hover:bg-white/10 hover:text-white">
                   <AppleIcon className="h-5 w-5" />
                   <div className="flex flex-col text-left">
-                    <span className="text-[9px] text-[#aab6c5]">Download on</span>
+                    <span className="text-[9px] text-[#aab6c5]">{t('downloadOn')}</span>
                     <span className="text-xs font-semibold text-white">App Store</span>
                   </div>
                 </Button>
                 <Button variant="ghost" size="sm" className="w-full justify-start gap-2 rounded-lg border border-primary-foreground/20 bg-transparent text-[#e8edf5] hover:bg-white/10 hover:text-white">
                   <PlayStoreIcon className="h-5 w-5" />
                   <div className="flex flex-col text-left">
-                    <span className="text-[9px] text-[#aab6c5]">Get it on</span>
+                    <span className="text-[9px] text-[#aab6c5]">{t('getItOn')}</span>
                     <span className="text-xs font-semibold text-white">Google Play</span>
                   </div>
                 </Button>
@@ -139,10 +146,10 @@ export default function Footer() {
         <div className="border-t border-white/10 px-6 py-4 md:px-12 lg:px-16">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-[#98a4b3]">
-              © {new Date().getFullYear()} Grey Auctions. All rights reserved.
+              © {new Date().getFullYear()} Grey Auctions. {t('copyright')}.
             </p>
             <p className="text-xs text-[#98a4b3] flex items-center gap-1">
-              Made with <Heart className="h-3 w-3 text-secondary fill-secondary" /> in Lagos
+              {t('madeWith')} <Heart className="h-3 w-3 text-secondary fill-secondary" /> {t('inLagos')}
             </p>
           </div>
         </div>

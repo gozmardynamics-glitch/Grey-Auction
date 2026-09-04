@@ -12,11 +12,16 @@
     "signOut": "Se déconnecter",
     "settings": "Paramètres",
     "featuredLots": "Lots en vedette",
-    "viewAll": "Voir tout"
+    "viewAll": "Voir tout",
+    "account": "Compte",
+    "openMenu": "Ouvrir le menu de navigation",
+    "closeMenu": "Fermer le menu de navigation",
+    "backToMenu": "Retour au menu principal",
+    "searchCategory": "Catégorie de recherche"
   },
   "footer": {
     "company": "Entreprise",
-    "aboutUs": "À propos",
+    "aboutUs": "Ã€ propos",
     "howItWorks": "Comment ça marche",
     "career": "Carrière",
     "marketplace": "Marché",
@@ -31,7 +36,19 @@
     "faq": "FAQ",
     "privacyPolicy": "Politique de confidentialité",
     "termsAndConditions": "Conditions générales",
-    "copyright": "Tous droits réservés"
+    "copyright": "Tous droits réservés",
+    "auctions": "Enchères",
+    "browseAll": "Tout parcourir",
+    "directSales": "Ventes directes",
+    "advisors": "Conseillers",
+    "subscribe": "S'abonner",
+    "stayUpdated": "Restez informé",
+    "downloadOn": "Télécharger sur",
+    "getItOn": "Disponible sur",
+    "madeWith": "Conçu avec",
+    "inLagos": "à Lagos",
+    "email": "E-mail",
+    "tagline": "La première plateforme d'enchères du Nigeria. Découvrez des objets uniques, enchérissez en toute confiance et remportez des offres exceptionnelles."
   },
   "cookieConsent": {
     "title": "Nous respectons votre vie privée",
@@ -148,7 +165,7 @@
     "bidAmount": "Montant de l'offre",
     "confirmBid": "Confirmer l'offre",
     "bidSuccess": "Offre placée avec succès !",
-    "bidError": "Échec du placement de l'offre"
+    "bidError": "Ã‰chec du placement de l'offre"
   },
   "seller": {
     "dashboard": "Tableau de bord vendeur",
@@ -197,7 +214,7 @@
     "privacyPolicy": "Politique de confidentialité",
     "settings": "Paramètres",
     "auditLogs": "Journaux d'audit",
-    "systemStatus": "État du système",
+    "systemStatus": "Ã‰tat du système",
     "rolesPermissions": "Rôles et permissions",
     "emailSettings": "Paramètres e-mail",
     "approve": "Approuver",
@@ -218,23 +235,23 @@
     "lastUpdated": "Dernière mise à jour",
     "never": "Jamais",
     "refresh": "Actualiser depuis le flux",
-    "refreshing": "Actualisation…",
+    "refreshing": "Actualisationâ€¦",
     "save": "Enregistrer",
-    "saving": "Enregistrement…",
+    "saving": "Enregistrementâ€¦",
     "cancel": "Annuler",
     "edit": "Modifier",
-    "loading": "Chargement des taux de change…",
+    "loading": "Chargement des taux de changeâ€¦",
     "emptyTitle": "Aucun taux de change",
     "emptyDescription": "Aucun taux de change n'est encore configuré.",
-    "errorTitle": "Échec du chargement des taux",
+    "errorTitle": "Ã‰chec du chargement des taux",
     "errorDescription": "Impossible de charger les taux de change. Veuillez réessayer.",
     "retry": "Réessayer",
     "invalidRate": "Saisissez un taux valide supérieur à 0.",
     "saved": "Taux pour {code} enregistré",
-    "saveFailed": "Échec de l'enregistrement du taux pour {code}",
+    "saveFailed": "Ã‰chec de l'enregistrement du taux pour {code}",
     "refreshed": "Taux actualisés ({count} mis à jour)",
-    "noUpdates": "Actualisation terminée — aucun taux mis à jour",
-    "refreshFailed": "Échec de l'actualisation des taux"
+    "noUpdates": "Actualisation terminée â€” aucun taux mis à jour",
+    "refreshFailed": "Ã‰chec de l'actualisation des taux"
   }
   },
   "chatbot": {

@@ -12,7 +12,12 @@
     "signOut": "Sign Out",
     "settings": "Settings",
     "featuredLots": "Featured Lots",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "account": "Account",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu",
+    "backToMenu": "Back to main menu",
+    "searchCategory": "Search category"
   },
   "footer": {
     "company": "Company",
@@ -31,7 +36,19 @@
     "faq": "FAQ",
     "privacyPolicy": "Privacy Policy",
     "termsAndConditions": "Terms & Conditions",
-    "copyright": "All Rights Reserved"
+    "copyright": "All Rights Reserved",
+    "auctions": "Auctions",
+    "browseAll": "Browse All",
+    "directSales": "Direct Sales",
+    "advisors": "Advisors",
+    "subscribe": "Subscribe",
+    "stayUpdated": "Stay Updated",
+    "downloadOn": "Download on",
+    "getItOn": "Get it on",
+    "madeWith": "Made with",
+    "inLagos": "in Lagos",
+    "email": "Email",
+    "tagline": "Nigeria's premier auction platform. Discover unique items, bid with confidence, and win extraordinary deals."
   },
   "cookieConsent": {
     "title": "We value your privacy",
@@ -218,12 +235,12 @@
     "lastUpdated": "Last Updated",
     "never": "Never",
     "refresh": "Refresh from Feed",
-    "refreshing": "Refreshing…",
+    "refreshing": "Refreshingâ€¦",
     "save": "Save",
-    "saving": "Saving…",
+    "saving": "Savingâ€¦",
     "cancel": "Cancel",
     "edit": "Edit",
-    "loading": "Loading exchange rates…",
+    "loading": "Loading exchange ratesâ€¦",
     "emptyTitle": "No exchange rates",
     "emptyDescription": "No exchange rates are configured yet.",
     "errorTitle": "Failed to load rates",
@@ -233,7 +250,7 @@
     "saved": "Rate for {code} saved",
     "saveFailed": "Failed to save rate for {code}",
     "refreshed": "Rates refreshed ({count} updated)",
-    "noUpdates": "Refresh completed — no rates updated",
+    "noUpdates": "Refresh completed â€” no rates updated",
     "refreshFailed": "Failed to refresh rates"
   }
   },
