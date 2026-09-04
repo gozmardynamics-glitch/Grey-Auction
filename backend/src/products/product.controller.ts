@@ -32,7 +32,17 @@ export class ProductController {
 
   @Post('bulk')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  // Memory-stored uploads are capped: without limits any authenticated user
+  // could stream an unbounded body into RAM (memory-exhaustion DoS).
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 2 * 1024 * 1024, files: 1 },
+      fileFilter: (_req, file, cb) => {
+        const ok = /^text\/csv$|^application\/vnd\.ms-excel$/.test(file.mimetype);
+        cb(ok ? null : new BadRequestException('Only CSV files are allowed'), ok);
+      },
+    }),
+  )
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Bulk-create products from a CSV file' })
@@ -47,6 +57,9 @@ export class ProductController {
     const { data, errors } = csvToObjects(rows);
     if (errors.length > 0) {
       throw new BadRequestException(errors[0]);
+    }
+    if (data.length > 500) {
+      throw new BadRequestException('Bulk import is limited to 500 rows per file');
     }
     const result = await this.productService.bulkCreate(data, user.id);
     return {

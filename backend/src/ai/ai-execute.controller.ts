@@ -33,18 +33,7 @@ export class AIExecuteController {
   }
 }
 
-@ApiTags('AI Execute')
-@Controller('ai')
-export class AIPublicExecuteController {
-  constructor(private readonly orchestrator: AIOrchestratorService) {}
-
-  @Post('public/execute')
-  @ApiOperation({ summary: 'Execute an AI feature (public, no auth required)' })
-  async execute(@Body() dto: ExecuteAIDto) {
-    const result = await this.orchestrator.execute(
-      dto.featureKey,
-      { messages: [], prompt: JSON.stringify(dto.input) },
-    );
-    return { success: true, data: result };
-  }
-}
+// NOTE: the former AIPublicExecuteController (POST /ai/public/execute) was
+// removed: it allowed unauthenticated, essentially unmetered LLM provider
+// spend and shared one in-memory rate bucket across all users. AI features
+// now require a signed-in account (POST /ai/execute).

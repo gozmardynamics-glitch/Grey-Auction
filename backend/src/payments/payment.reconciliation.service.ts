@@ -22,7 +22,15 @@ export class PaymentReconciliationService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async sweep(): Promise<void> {
-    const pending = await this.paymentService.findPending(this.staleMs, this.batchSize);
+    let pending: Awaited<ReturnType<PaymentService['findPending']>>;
+    try {
+      pending = await this.paymentService.findPending(this.staleMs, this.batchSize);
+    } catch (error: any) {
+      this.logger.error(
+        'Reconciliation sweep could not load pending payments: ' + (error?.message ?? error),
+      );
+      return;
+    }
     if (pending.length === 0) return;
 
     for (const payment of pending) {

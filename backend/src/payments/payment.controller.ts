@@ -38,7 +38,9 @@ export class PaymentController {
     const result = await this.gateway.initializePayment(dto);
 
     // In mock mode, auto-mark the linked invoice as paid so the flow completes
-    if (!result.configured && dto.invoiceId) {
+    // (DEV ONLY — a production boot without gateway keys must never settle
+    // invoices for free.)
+    if (!result.configured && dto.invoiceId && process.env.NODE_ENV !== 'production') {
       await this.invoiceService
         .markPaid(dto.invoiceId, {
           paymentMethod: 'Mock Payment',
@@ -51,6 +53,8 @@ export class PaymentController {
   }
 
   @Get('verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Verify a payment by reference' })
   async verify(@Query('reference') reference: string) {
     const result = await this.gateway.verifyPayment(reference);
@@ -109,6 +113,8 @@ export class PaymentController {
   }
 
   @Get('providers')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List payment providers and whether each is configured' })
   async providers() {
     return { success: true, data: this.orchestration.providersStatus() };

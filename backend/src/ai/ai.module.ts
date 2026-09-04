@@ -6,14 +6,14 @@ import { AIFeatureConfig } from './entities/ai-feature-config.entity';
 import { AIUsageLog } from './entities/ai-usage-log.entity';
 import { AIService } from './ai.service';
 import { AIController } from './ai.controller';
-import { AIExecuteController, AIPublicExecuteController } from './ai-execute.controller';
+import { AIExecuteController } from './ai-execute.controller';
 import { AIOrchestratorService } from '../common/ai/services/ai-orchestrator.service';
 import { AIUsageLogService } from '../common/ai/services/ai-usage-log.service';
 import { ProviderHealthMonitorService } from './provider-health-monitor.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([LLMProvider, LLMModel, AIFeatureConfig, AIUsageLog])],
-  controllers: [AIController, AIExecuteController, AIPublicExecuteController],
+  controllers: [AIController, AIExecuteController],
   providers: [
     AIService,
     AIOrchestratorService,

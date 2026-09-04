@@ -14,6 +14,8 @@ export class TicketController {
   async findAll() { return this.service.findAll(); }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async findOne(@Param('id') id: string) { return this.service.findById(id); }
 
   @Post()
