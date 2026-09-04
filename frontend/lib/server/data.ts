@@ -1000,6 +1000,29 @@ export async function getOrderById(orderId: string) {
   return apiFetch(`/orders/${encodeURIComponent(orderId)}`);
 }
 
+/**
+ * Buyer-facing invoice summary for the checkout pages (party-guarded API;
+ * apiFetch attaches the session JWT). Returns null when the invoice does not
+ * exist or does not belong to the signed-in user.
+ */
+export async function getBuyerInvoice(invoiceId: string) {
+  if (!invoiceId) return null;
+  try {
+    const inv = (await apiFetch(`/invoices/${encodeURIComponent(invoiceId)}`)) as
+      | { id?: string; invoice_number?: string; total?: number | string; status?: string }
+      | null;
+    if (!inv?.id) return null;
+    return {
+      id: inv.id,
+      invoiceNumber: inv.invoice_number || '',
+      total: Number(inv.total ?? 0),
+      status: inv.status || 'issued',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getWishlistItems() {
   // Wishlist is frontend-owned state (Redux); no backend module exists
   return [];

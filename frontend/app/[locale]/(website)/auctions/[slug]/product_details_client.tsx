@@ -208,7 +208,11 @@ export default function ProductDetailsClient({
         }
       }
       toast.success('Purchase started — continuing to payment.');
-      router.push('/checkout/payment');
+      router.push(
+        invoiceId
+          ? `/checkout/payment?invoiceId=${encodeURIComponent(String(invoiceId))}`
+          : '/checkout/payment',
+      );
     } catch {
       toast.error('Buy now failed. Please try again.');
     }

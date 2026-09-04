@@ -1,8 +1,18 @@
-import { getOrderItems } from '@/lib/server/data';
+import { getOrderItems, getBuyerInvoice } from '@/lib/server/data';
 import LatestAuctionsBanner from '../../components/latest_auctions';
 import PaymentForm from '../../_islands/payment_form';
 
-export default async function PaymentMethodPage() {
+interface PaymentMethodPageProps {
+  // Next.js async request API: searchParams is a Promise in server components.
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function PaymentMethodPage({ searchParams }: PaymentMethodPageProps) {
+  const sp = await searchParams;
+  const invoiceId = typeof sp.invoiceId === 'string' ? sp.invoiceId : undefined;
+  // Server-rendered, session-authorized invoice: the Order Summary shows the
+  // REAL fee-bearing total instead of the stubbed (empty) order items.
+  const invoice = invoiceId ? await getBuyerInvoice(invoiceId) : null;
   const orderItems = await getOrderItems();
 
   return (
@@ -12,7 +22,7 @@ export default async function PaymentMethodPage() {
           Payment Method
         </h1>
 
-        <PaymentForm orderItems={orderItems} />
+        <PaymentForm orderItems={orderItems} invoice={invoice} />
 
         <div className="mt-12">
           <LatestAuctionsBanner />

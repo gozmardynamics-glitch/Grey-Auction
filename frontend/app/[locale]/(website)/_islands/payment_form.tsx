@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -45,18 +45,43 @@ interface OrderItem {
   price: number;
 }
 
-interface PaymentFormProps {
-  orderItems: OrderItem[];
+/** Server-verified invoice (party-guarded API) rendered into the summary. */
+interface InvoiceSummary {
+  id: string;
+  invoiceNumber: string;
+  total: number;
+  status: string;
 }
 
-export default function PaymentForm({ orderItems }: PaymentFormProps) {
+interface PaymentFormProps {
+  orderItems: OrderItem[];
+  invoice?: InvoiceSummary | null;
+}
+
+export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [provider, setProvider] = useState<PaymentProviderId>('paystack');
   const [instruction, setInstruction] = useState<string | null>(null);
+  // Fallback when the page was reached without the invoice query param: the
+  // buy-now flow persists the id in sessionStorage before redirecting here.
+  const [sessionInvoiceId, setSessionInvoiceId] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setSessionInvoiceId(sessionStorage.getItem('greyauction:buyNowInvoiceId'));
+    } catch {
+      /* storage unavailable — init proceeds without invoice linkage */
+    }
+  }, []);
 
-  const total = orderItems.reduce((sum, item) => sum + item.price, 0);
+  // The server-verified invoice is the authoritative summary; without one the
+  // (currently empty) order items stand in.
+  const summaryItems = invoice
+    ? [{ name: `Invoice ${invoice.invoiceNumber || invoice.id}`, price: invoice.total }]
+    : orderItems;
+  const total = summaryItems.reduce((sum, item) => sum + item.price, 0);
+  const effectiveInvoiceId = invoice?.id ?? sessionInvoiceId;
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -74,15 +99,9 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-      // The buy-now flow persists the fee-bearing invoice id in sessionStorage
-      // before redirecting here; forwarding it links the Payment to the
-      // invoice so webhook success flips the right order to paid (U5 flow).
-      let invoiceId: string | null = null;
-      try {
-        invoiceId = sessionStorage.getItem('greyauction:buyNowInvoiceId');
-      } catch {
-        /* storage unavailable — init proceeds without invoice linkage */
-      }
+      // Forwarding the invoice id links the Payment to the invoice so webhook
+      // success flips the right order to paid (U5 flow). The server still
+      // derives the charged amount from the invoice — never from this body.
 
       // Buyer picks the payment platform; we create a Payment record and let the
       // chosen provider initialize. Redirect providers return a hosted checkout
@@ -101,9 +120,12 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
           type: 'invoice',
           provider,
           amount: total,
-          callbackUrl: window.location.origin + '/checkout/confirmation',
+          callbackUrl:
+            window.location.origin +
+            '/checkout/confirmation' +
+            (effectiveInvoiceId ? '?invoiceId=' + encodeURIComponent(effectiveInvoiceId) : ''),
           metadata: {},
-          ...(invoiceId ? { invoiceId } : {}),
+          ...(effectiveInvoiceId ? { invoiceId: effectiveInvoiceId } : {}),
         }),
       });
 
@@ -317,7 +339,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
             <CardTitle className="text-base">Your Order</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {orderItems.map((item, idx) => (
+            {summaryItems.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between">
                 <span className="max-w-[180px] text-sm text-foreground line-clamp-1">
                   {item.name}
