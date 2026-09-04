@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common/card';
 import { Badge } from '@/shared/components/common/badge';
 import { toast } from 'sonner';
@@ -17,13 +18,17 @@ interface AIDashboardProps {
 
 export default function AIDashboard({ providers, summary }: AIDashboardProps) {
   const [usageLogs, setUsageLogs] = useState<AIUsageLog[]>([]);
+  const { data: session } = useSession();
 
   const fetchUsage = useCallback(() => {
-    fetch(`${API_URL}/admin/ai/usage`)
+    const token = session?.user?.accessToken;
+    fetch(`${API_URL}/admin/ai/usage`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then((response) => response.json())
       .then((data) => setUsageLogs(data.data || []))
       .catch(() => toast.error('Failed to load usage data'));
-  }, []);
+  }, [session]);
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);
 
