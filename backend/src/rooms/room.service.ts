@@ -82,9 +82,14 @@ export class RoomService {
   }
 
   async getParticipants(roomId: string): Promise<RoomParticipant[]> {
+    // Member-facing: hydrate ONLY display-safe user fields (same posture as
+    // the public bid feed) instead of the full User row.
     return this.participantRepo.find({
       where: { roomId },
       relations: ['user'],
+      select: {
+        user: { id: true, name: true, createdAt: true },
+      },
     });
   }
 

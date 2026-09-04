@@ -8,6 +8,9 @@ export class TicketService {
   constructor(@InjectRepository(Ticket) private readonly repo: Repository<Ticket>) {}
 
   findAll() { return this.repo.find({ order: { createdAt: 'DESC' } }); }
+  findAllByUser(userId: string) {
+    return this.repo.find({ where: { userId }, order: { createdAt: 'DESC' } });
+  }
   findById(id: string) { return this.repo.findOne({ where: { id } }); }
 
   async create(dto: Partial<Ticket>) {
