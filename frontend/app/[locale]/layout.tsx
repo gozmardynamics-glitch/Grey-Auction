@@ -42,6 +42,13 @@ const fontMono = {
   style: { fontFamily: "'Geist Mono', 'Geist Mono Fallback', 'Courier New', monospace" },
 };
 
+/**
+ * Theme FOUC fix: apply the stored theme class to <html> before first paint.
+ * Runs synchronously at the top of <body> (same technique as next-themes);
+ * hydration-safe because <html> carries suppressHydrationWarning.
+ */
+const themeInitScript = `(function(){try{var t=localStorage.getItem('greyauction-theme');if(t==='dark'||t==='grey'){var r=document.documentElement;r.classList.remove('light','grey','dark');r.classList.add(t);}}catch(e){}})();`;
+
 export default async function LocaleLayout({
   children,
   params,
@@ -64,6 +71,10 @@ export default async function LocaleLayout({
         suppressHydrationWarning
         className={`${manrope.variable} ${fontSans.variable} ${fontMono.variable} antialiased`}
       >
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <CurrencyProvider>
