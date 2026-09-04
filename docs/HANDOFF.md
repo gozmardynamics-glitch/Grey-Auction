@@ -1,6 +1,8 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: end of the quality-plan session. Everything below is committed and pushed to `origin/master` (head `08bb985`)._
+_Checkpoint: end of the i18n/deep-dashboards session (2026-09-04, evening). Head `51402a5` —
+**28 commits ahead of `origin/master`, NOT pushed** (push needs explicit user go-ahead).
+Working tree clean; all suites green. Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
 
 ## Repo & environment
 
@@ -11,6 +13,19 @@ _Checkpoint: end of the quality-plan session. Everything below is committed and 
 - ⚠️ If ports 3000/3001 refuse connections after a machine restart: start **Docker Desktop**, then
   `docker start greyauction-postgres`, then start backend + frontend. A backend started before Postgres stays wedged — restart it.
 
+## Session gotchas (learned the hard way — read before debugging)
+
+- **`next dev` does NOT hot-reload `messages/*.json`** — after any catalog edit, restart the
+  frontend or pages serve stale strings (or 500 if a mid-edit catalog is picked up).
+- **Never re-save the JSON catalogs with PowerShell 5.1** (`Set-Content -Encoding UTF8` adds a BOM
+  and double-encodes accents). Edit with the file tools or node only. If you see `Ã‰/â€¦/â€"` in
+  rendered strings, that's cp1252 mojibake — repair with a byte-level node pass, not find/replace.
+- **The backend watcher can die silently between sessions** — if Playwright auth-minting, seeded-lot
+  specs, or the homepage a11y scan fail all at once, check `GET http://localhost:3001/api/health`
+  before blaming the frontend. Restart with detached `npm run start:dev`.
+- Playwright runs with `workers: 2`; a single auth-mint flake that passes on retry is contention,
+  not a regression (retries absorb it — exit code is what counts).
+
 ## Test accounts
 
 | Role | Email | Password |
@@ -19,122 +34,98 @@ _Checkpoint: end of the quality-plan session. Everything below is committed and 
 | Seller | demo@seller.com | Seller@12345 |
 | Buyer | demo@buyer.com | Buyer@12345 |
 
-## What was delivered (recent commits, newest first)
-
-- `08bb985` docs(qa): consolidated QA status report; e2e: admin AI console smoke
-- `63bff81` test(e2e): feature + authed dashboard specs; a11y hydration waits; accessible names for icon buttons/selects/price inputs
-- `b1a6440` fix(a11y): WCAG AA contrast across public routes (primary `#005ac8`, emerald-700 badges, navy-footer newsletter/app-buttons/copyright)
-- `f66a691` feat(auctions): institutional-arm tabs (Government/Embassy/Corporate), backend `subCategory` query filter, curated seller dropdowns, hydration-safe breadcrumbs (fixed invalid nested `<li>`)
-- `0b77cd6` feat(ui): Government/Embassy/Corporate/Private Room surfaced on homepage + categories + menus
-
-## How to verify everything is green (2 minutes)
+## Current suite state (verified end of session)
 
 ```bash
-# 1. infrastructure: docker running + greyauction-postgres up
-# 2. backend:   cd backend && npm run start:dev      (port 3001)
-# 3. frontend:  cd frontend && npm run dev           (port 3000)
 cd frontend
 npx tsc --noEmit        # clean
-npx vitest run          # 80/80
-npx playwright test     # 48/48 (needs FE+BE up; see notes below)
-cd ../backend && npx jest   # 278/278
+npx vitest run          # 80/80 (17 files)
+npx playwright test     # 55/55 (1 known auth-mint contention flake, passes on retry)
+cd ../backend && npx jest   # 293/293 (43 suites)
 ```
 
 Playwright notes:
-- Cookie-consent banner is pre-accepted for all runs via `frontend/playwright/.auth/public.json`.
-- Auth'd specs use `frontend/playwright/.auth/admin.json`. If missing/expired, regenerate:
+- Cookie-consent banner is pre-accepted via `frontend/playwright/.auth/public.json`.
+- Auth'd specs use `frontend/playwright/.auth/{admin,seller,buyer}.json`. If missing/expired:
   `cd frontend && node scripts/_make-auth.js`.
-- `docs/QA_STATUS.md` has the full suite map and current results.
+- `docs/QA_STATUS.md` has the full suite map.
+
+## What was delivered (this session, newest first)
+
+- `51402a5` docs: dashboard home i18n recorded in audit + handoff
+- `ab10366` i18n(admin): admin dashboard home (admin.home, 28 keys)
+- `5c1764a` i18n(seller): seller dashboard home (seller.home, 33 keys)
+- `fd278c7` i18n(buyer): buyer dashboard home (buyer.home, 26 keys)
+- `b19bc9d` docs: dashboard i18n batch recorded
+- `ef2c5a2` i18n: dashboard nav sidebars (buyer/seller/admin.nav, 33 keys) + cp1252 mojibake repair
+- `c1440fd`..`06b7d4a` wave 3 + wave 2 chain: rooms PII projection, website chrome i18n
+  (header/footer/mobile-menu), shared EmptyState adoption, payments/settings/tickets/ops hardening,
+  checkout invoice wiring, theme FOUC + CSP, docs. (See `git log` and PRODUCTION_AUDIT.md.)
+
+## i18n architecture (established patterns — reuse these)
+
+- Catalogs: `frontend/messages/{en,fr,nl}.json`, strict key parity (validated every batch).
+- Namespaces: `header`, `footer`, `common` (now includes `viewAll`), `auth`, `bidding`, `checkout`,
+  `dashboard`, `buyer` (`nav` 12 + `home` 26 keys), `seller` (`nav` 10 + `home` 33), `admin`
+  (`nav` 11 + `home` 28 + legacy flat keys + `exchangeRates`), plus pre-existing others.
+- **Pattern 1 — model-as-keys**: label arrays (`BUYER_MODULES`, `SELLER_SETTINGS_MODULES`,
+  `SETTINGS_MODULES`) carry catalog keys; the consuming sidebar calls `t(item.label)`.
+- **Pattern 2 — column hook factories**: table column arrays became `useXColumns()` hooks so
+  headers resolve per locale (applied to buyer home ×2, seller listed auctions, admin pending requests).
+- **Pattern 3 — inline chart configs**: module-level `chartConfig` consts moved inside components
+  so chart tooltips/legends translate (seller revenue, admin pies).
+- **Pattern 4 — ICU params**: `{name}`/`{percentage}`/`{code}` interpolation instead of string concat.
+- Verification recipe per slice: `tsc` → `vitest run` → **restart frontend** → authenticated
+  Playwright probe with storageState asserting localized strings + no raw `ns.key` leaks in all 3 locales.
+- Deliberately NOT translated: mock row data (dummy auctions/invoices), CATEGORIES_MAP category
+  values, LOCALE_LABELS language names (own-language convention).
+
+## Continue tomorrow — backlog in priority order
+
+1. **Deep dashboard detail i18n** (the layer below the dashboards' home surfaces). Targets, biggest
+   first: buyer wallet flows (deposit/withdraw modals + their step components, PIN flows, receipt),
+   buyer settings tabs (profile/security/notifications/payment), seller settings modules
+   (my-profile, store, fees-payouts, plan-packages…), admin settings modules (fees.tsx is the
+   heaviest file in the domain, general, preferences, roles…), admin list-table chrome
+   (auctions/bids/buyers/sellers/tickets headers + filter buttons). Reuse patterns 1–4 above;
+   add new namespaces per area (e.g. `buyer.wallet`, `admin.fees`) rather than growing flat ones.
+2. **EmptyState sweep** — shared `EmptyState` is adopted in admin transaction tabs + seller auction
+   modal; remaining list surfaces (buyer my-bids/purchases/wishlist tables, seller listings/sales,
+   admin tables) still use ad-hoc or DataTable-default empty notes. Standardize onto the shared
+   component; DataTable already accepts `emptyTitle`/`emptyDescription`/`emptyIcon`.
+3. **Push authorization** — 28 local commits awaiting the user's explicit go-ahead (`git push`).
+4. **OPay/Interswitch sandbox verification** — code-complete + 100% unit-covered; blocked on real
+   `OPAY_*` / `INTERSWITCH_*` vendor keys (user action). Webhooks fail closed until then.
+5. **Full response-DTO pass** (nice-to-have) — known PII leaks fixed (participants, room creator);
+   a systematic DTO layer would prevent the next one.
+6. **Listing fetch structural step** — server-side filtering + backend-served arm-tab counts
+   (replaces the client-side bounded aggregate from item 4 of the old backlog).
+7. **Physical U5 test runbook** (`docs/PHYSICAL_TEST_U5.md`) — on-device pass when the team is ready.
 
 ## Feature state (what works today)
 
-- **Institutional-arm tabs**: `/auctions?category=Government` shows All/Federal/State/Ministries/Parastatals/Agencies &
-  Commissions/Security & Defence tabs with live counts; URL sync `&subcategory=…`; same for Embassy + Corporate.
-  Flat categories (Electronics, Art, …) show no tabs. Seller wizard has curated arm dropdowns for the 3 branches.
-  Taxonomy lives in `frontend/shared/data/categories.ts` (single source feeding mega menu + tabs + wizard).
-- **3 themes** (Light default / Grey / Dark) with animated gradients + breathing card shadows; switcher in header,
-  persists via `localStorage['greyauction-theme']`; `prefers-reduced-motion` respected.
-- **Payments (U5 flow)**: Paystack live; escrow auto-hold on payment success; fee resolution chain product→seller→buyer→category→default.
-  Phase scripts: `backend/scripts/payment-test-phase.ps1`, `sim-paystack-webhook.mjs`. Don't touch the two U5 test lots
-  (category `'art'`, direct_sale) or the two draft lots.
-- **Wallet, bidding rooms (invites), tickets, chat, exchange rates, subscription plans, admin console**: built.
-- **AI**: fully built but disabled by design — 8 providers with NO keys, 15 features `isEnabled=false`. Seller AI buttons
-  fail with a clean actionable toast. Enabling = add an API key in Admin → AI, then toggle features. No code needed.
-
-## Known issues / next backlog (priority order)
-
-_Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS.md for details)._
-
-0. **Production-readiness audit (2026-09-04)** — full report in
-   `docs/PRODUCTION_AUDIT.md`: 15 issues FIXED (server-authoritative payment
-   amounts, escrow/wallet minting closed, passwordHash/OTP exposure contained,
-   checkout init authenticated with honest failures, seed credentials gated),
-   11 items documented as future work (webhook amount checks, settings
-   persistence, checkout summary wiring, vendor sandbox pass). Read it before
-   any deploy.
-   - **Wave 2 (same day): 9 of the 11 future-work items resolved** — webhook
-     amount-vs-payment checks (fail-closed), settings entity + migration,
-     legacy payments trio deleted with idempotent replays, checkout summary
-     now server-rendered from the invoice, confirmation page reflects real
-     payment state, ticket owner-or-admin scoping, room-participant PII
-     projection, invoice-number advisory lock, cron overlap guards, admin
-     password policy, theme-FOUC script, CSP connect-src de-wilcarded +
-     env-driven `remotePatterns`. Remaining: OPay/Interswitch sandbox pass
-     (needs vendor keys), i18n/empty-states sweep, full response-DTO pass.
-   - **Wave 3 (same day): open-items progress** — website chrome i18n wired
-     (header/footer/mobile-menu render from the en/fr/nl catalogs; new keys
-     added in lockstep), shared `EmptyState` adopted in admin transaction
-     tabs + seller auction modal, room creator projected PII-safe on the
-     public rooms endpoints, OPay/Interswitch adapters audited (both
-     TODO(vendor) notes refreshed; adapter specs already cover every code
-     path, so the sandbox pass is verification-only). Remaining: dashboard
-     i18n batch, EmptyState sweep across remaining lists, vendor keys, DTO
-     pass.
-   - **Wave 3b: dashboard i18n batch** — buyer module sidebar and the
-     seller/admin settings sidebars now resolve nav labels (incl. Log Out)
-     from new `buyer/seller/admin.nav` namespaces added to en/fr/nl in
-     lockstep; module models carry catalog keys instead of literals (each
-     array has a single consumer). Legacy cp1252 mojibake in the catalogs
-     (…/—/É/À artifacts) repaired; live probe confirmed all three
-     dashboards render translated navs in en/fr/nl. Remaining: deep
-     dashboard module content (forms/modals/table headers), EmptyState
-     sweep, vendor keys, DTO pass.
-   - **Wave 3c: dashboard home i18n** — buyer.home (26 keys), seller.home
-     (33) and admin.home (28) added to en/fr/nl in lockstep; welcome/stat/
-     chart/legend/table-header/empty-state strings on all three dashboard
-     home surfaces resolve per locale. Table column arrays converted to
-     hook factories (single consumers verified); seller analytics month
-     labels follow `useLocale()`. Each slice tested (tsc + vitest 80/80 +
-     live 3-locale probe) and committed separately. Remaining: wallet/
-     settings/modals detail surfaces, EmptyState sweep, vendor keys, DTO
-     pass.
-
-1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
-   (`auth()` → Bearer); all admin AI server pages render data on first paint; the
-   dashboard island's usage fetch carries the token too; e2e pins the regression.
-2. ~~**OPay + Interswitch providers**~~ — **ONBOARDED (code-complete)**: real
-   contracts implemented (OPay Cashier API per its official OpenAPI; Interswitch
-   Webpay Direct status query + signed redirect), 13 new jest tests. Remaining:
-   vendor sandbox pass (keys + webhook signature confirmation) before live traffic;
-   webhooks fail closed until then.
-3. ~~**Auth'd e2e breadth**~~ — **DONE**: `auth.setup.ts` mints seller + buyer
-   storageStates; `e2e/seller.spec.ts` + `e2e/buyer.spec.ts` under new
-   `chromium-seller`/`chromium-buyer` projects. Minted session files are
-   gitignored; regenerate `admin.json` with `node scripts/_make-auth.js` as before.
-4. **Listing fetch**: the silent `limit=200` ceiling is replaced by a bounded
-   paginated aggregate (short-page stop, 1000-lot cap). Structural next step:
-   server-side filtering + backend-served arm-tab counts.
-5. Physical U5 test runbook (`docs/PHYSICAL_TEST_U5.md`) — continue the on-device
-   pass when the team is ready. The checkout `invoiceId` gap noted there is fixed
-   (payment form forwards it from sessionStorage now).
-6. **Suite stability on this box**: Playwright runs with `workers: 2` — unbounded
-   project workers starve the dev servers (login minting + axe scans time out).
-   Current numbers: tsc clean · vitest 80/80 · jest 291/291 (42 suites) ·
-   playwright 55/55.
+- **Institutional-arm tabs**: `/auctions?category=Government` shows All/Federal/State/Ministries/
+  Parastatals/Agencies & Commissions/Security & Defence tabs with live counts; URL sync
+  `&subcategory=…`; same for Embassy + Corporate. Taxonomy:
+  `frontend/shared/data/categories.ts`.
+- **3 themes** (Light/Grey/Dark) with pre-paint init script (no FOUC); persists via
+  `localStorage['greyauction-theme']`.
+- **Payments (U5 flow)**: Paystack live; escrow auto-hold; server-authoritative amount checks
+  (webhook + reconciliation, fail-closed); fee chain product→seller→buyer→category→default.
+  Don't touch the two U5 test lots (category `'art'`, direct_sale) or the two draft lots.
+- **i18n**: en/fr/nl with website chrome, all three dashboard navs, and all three dashboard home
+  surfaces fully translated (see patterns above).
+- **Wallet, bidding rooms (invites), tickets, chat, exchange rates, subscription plans, admin
+  console**: built.
+- **AI**: fully built but disabled by design — no provider keys, features `isEnabled=false`.
+  Enabling = add a key in Admin → AI and toggle features. No code needed.
 
 ## Conventions to keep
 
-- Never commit generated logs (`*.log` at repo root of frontend), `test-results/`, or temp SQL files.
-- The Next.js AGENTS.md notice in `frontend/` is auto-generated by `next dev` — leave it in diffs.
-- Frontend tests: vitest colocated; e2e in `frontend/e2e/`. Backend: jest, 40 suites.
+- Never commit generated logs (`*.log`), `test-results/`, or temp SQL files.
+- The Next.js AGENTS.md/CLAUDE.md files in `frontend/` are auto-generated by `next dev` — leave
+  them out of diffs (they re-create themselves when removed).
+- Frontend tests: vitest colocated; e2e in `frontend/e2e/`. Backend: jest.
 - U5 invariants: don't break fee field-claiming, escrow auto-hold, or `POST /orders/buy-now/:productId`.
+- Locale catalogs: edit via file tools or node only (never PS5.1 re-save); keep en/fr/nl in lockstep;
+  restart the dev server after catalog edits.
