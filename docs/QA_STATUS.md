@@ -20,7 +20,39 @@ _Generated during the phased quality plan (a11y fixes → e2e specs → AI verif
 | Backend (jest) | see sweep section below |
 | Frontend vitest | 80/80 passing |
 | Frontend tsc | clean (exit 0) |
-| Playwright e2e | 46–49 passing incl. a11y 12/12, responsive 25/25, feature tabs/theme/cards, authed dashboard + AI console |
+| Playwright e2e | 55/55 passing incl. a11y 12/12, responsive 25/25, feature tabs/theme/cards, authed admin + seller + buyer dashboards + AI console |
+
+## Session 2026-09-04 — backlog execution
+
+- **AI SSR JWT gap FIXED**: `admin/ai/_islands/ai-api.ts` is now session-aware
+  (`auth()` → Bearer, same pattern as `lib/server/data.ts`), so all six admin AI
+  server pages render real data on first paint. The dashboard island's client
+  usage fetch also carries the session token now. `e2e/ai-admin.spec.ts`
+  asserts seeded providers are visible on first paint (regression-pinned).
+- **Seller/buyer auth'd e2e ADDED**: `auth.setup.ts` mints `seller.json` /
+  `buyer.json` storageStates via UI login (admin state still reused from
+  `scripts/_make-auth.js`). `e2e/seller.spec.ts` (overview overflow, payment
+  page, bidding-room) and `e2e/buyer.spec.ts` (account area, wallet module)
+  run under new `chromium-seller` / `chromium-buyer` projects. Minted
+  session files are gitignored; only `admin.json` stays tracked.
+- **Listing fetch ceiling FIXED**: `getAuctions()` aggregates the API's real
+  pagination contract (`page`/`limit` → `{ data, total }`) with a short-page
+  stop and a 1000-lot ceiling, replacing the silent `limit=200` cap. One
+  backend fetch at current inventory; structural server-side filtering +
+  backend-served tab counts remain the long-term item.
+- **OPay + Interswitch onboarded (code-complete)**: OPay implements the
+  official Cashier API contract (HMAC-SHA512 body signature, kobo amounts,
+  `code: '00000'` envelope); Interswitch implements Webpay Direct
+  (`gettransaction.json` status query with SHA512 MAC over
+  `productId+reference+macKey`, signed redirect init, kobo amounts). Both
+  webhooks FAIL CLOSED pending vendor sandbox verification; the
+  reconciliation cron re-confirms via status queries. 13 new jest tests.
+- **Checkout invoiceId gap FIXED** (U5 runbook known-gap): the payment form
+  now forwards the buy-now invoice id from sessionStorage, so webhook success
+  links to the invoice without Swagger init.
+- **Stability note**: Playwright now runs `workers: 2` — unbounded project
+  workers starve the dev servers on this box (logins and axe scans time out
+  mid-run); capped workers give a reliable 55/55 in ~2.5 minutes.
 
 ## Phase 1 — Accessibility (WCAG 2.1 A/AA, axe-core)
 
@@ -74,14 +106,18 @@ What was wrong and what changed:
 
 | Suite | Result |
 | --- | --- |
-| Backend jest | **278/278 passed** (40 suites) |
+| Backend jest | **291/291 passed** (42 suites) |
 | Frontend vitest | **80/80 passed** |
 | Frontend tsc | **clean** |
-| Playwright full | **48/48 passed** (a11y 12, responsive 25, features 7, dashboard+AI 4) |
+| Playwright full | **55/55 passed** (a11y 12, responsive 25, features 7, admin+AI 4, seller 3, buyer 2, sessions 2) |
 
 ## Remaining backlog (for a future phase)
 
-- **Backend AI SSR gap**: forward the admin JWT in the AI dashboard's server-side fetch so the provider grid renders
-  without a client round-trip.
-- **Payment providers**: OPay + Interswitch are vendor-pending skeletons; onboard or remove from the admin list.
-- **Auth'd e2e breadth**: extend the storageState pattern to seller + buyer dashboards (wallet, rooms, checkout).
+- ~~Backend AI SSR gap~~ — **fixed 2026-09-04**.
+- ~~Payment providers~~ — **onboarded 2026-09-04**; remaining: vendor sandbox
+  verification pass (keys + webhook signature confirmation) before live traffic.
+- ~~Auth'd e2e breadth~~ — **added 2026-09-04** (seller + buyer projects).
+- **Structural listing pagination**: move filtering to the backend and serve
+  arm-tab counts from the API (current aggregate removes the 200-lot ceiling
+  but still ships the full set to the client).
+- **Physical U5 pass** on devices (`docs/PHYSICAL_TEST_U5.md`).

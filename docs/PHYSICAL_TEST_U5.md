@@ -3,6 +3,24 @@
 Manual test plan for the U5 fee-rules features. Dev servers must be running
 (backend `:3001`, frontend `:3000`). Swagger: <http://localhost:3001/api/docs>.
 
+## What is already covered automatically (2026-09-04 prep pass)
+
+The physical pass below stays the source of truth for on-device UX, but the
+following now run without a human:
+
+- **Backend jest** covers the fee-resolution chain, escrow auto-hold and the
+  buy-now endpoint contract (`npx jest` — includes the payments provider
+  suites for OPay/Interswitch added 2026-09-04).
+- **Frontend e2e** smokes the seller dashboard (overview/payment/bidding-room)
+  and buyer dashboard (account + wallet module) with minted storageStates
+  (`e2e/seller.spec.ts`, `e2e/buyer.spec.ts` — sessions minted in
+  `auth.setup.ts`), plus the listing/a11y/responsive suites.
+- The old manual setup steps that automation now covers: admin AI console
+  reachability (`e2e/ai-admin.spec.ts` asserts the provider grid renders data
+  on first paint) and the checkout invoiceId linkage (fixed, see Known gaps).
+- Still manual: Phases 2-7 on real devices (webhook simulation needs the
+  two-phase backend restart; escrow sweep timing is easiest to observe live).
+
 Everything below was verified end-to-end in the dev environment on 2026-09-02
 (buy-now → offline init → signed webhook → invoice paid → escrow hold →
 auto-release → seller wallet credit).
@@ -167,6 +185,9 @@ paid — no manual step. `auto_release_at` = paid_at + escrowReleaseHours.
 - ~~Per-buyer fee override~~ — **implemented** (buyer scope, admin-managed).
 - The create-listing UI has no direct-sale/open-auction switch — set the
   type at approval via Swagger (Phase 2 step 4).
-- Checkout "Payment Method" page does not pass `invoiceId` to
-  `/payments/init` (pre-existing); Phase 6 uses Swagger init directly.
+- ~~Checkout "Payment Method" page does not pass `invoiceId` to
+  `/payments/init`~~ — **fixed 2026-09-04**: the checkout payment form now
+  forwards the buy-now invoice id (persisted in sessionStorage by the
+  product page) so webhook success links straight to the invoice. Phase 6
+  can use either the UI or Swagger init.
 - Email sending fails harmlessly in dev (no Brevo SMTP) — ignore the logs.

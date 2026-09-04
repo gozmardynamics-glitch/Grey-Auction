@@ -63,15 +63,30 @@ Playwright notes:
 
 ## Known issues / next backlog (priority order)
 
-1. **AI dashboard SSR gap (backend)**: `/admin/ai` server-side fetch of `/admin/ai/providers` doesn't forward the admin
-   JWT → provider grid renders empty on first paint (client fetch works). Fix in
-   `frontend/app/[locale]/(domain)/admin/ai/page.tsx` / `_islands/ai-api.ts` — forward the next-auth session token.
-2. **OPay + Interswitch payment providers** are vendor-pending skeletons (`TODO(vendor)` in `backend/src/providers/`).
-   Either onboard the contracts (init/verify/webhook signature) or remove them from the admin provider list.
-3. **Auth'd e2e breadth**: reuse the `storageState` pattern for seller + buyer dashboards (wallet, rooms, checkout).
-4. **Auction listing default fetch** was raised to `limit=200` (`frontend/lib/server/data.ts`) — fine for now, but a
-   paginated/scroll approach is the real fix as inventory grows.
-5. Physical U5 test runbook (`docs/PHYSICAL_TEST_U5.md`) — continue the on-device pass when the team is ready.
+_Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS.md for details)._
+
+1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
+   (`auth()` → Bearer); all admin AI server pages render data on first paint; the
+   dashboard island's usage fetch carries the token too; e2e pins the regression.
+2. ~~**OPay + Interswitch providers**~~ — **ONBOARDED (code-complete)**: real
+   contracts implemented (OPay Cashier API per its official OpenAPI; Interswitch
+   Webpay Direct status query + signed redirect), 13 new jest tests. Remaining:
+   vendor sandbox pass (keys + webhook signature confirmation) before live traffic;
+   webhooks fail closed until then.
+3. ~~**Auth'd e2e breadth**~~ — **DONE**: `auth.setup.ts` mints seller + buyer
+   storageStates; `e2e/seller.spec.ts` + `e2e/buyer.spec.ts` under new
+   `chromium-seller`/`chromium-buyer` projects. Minted session files are
+   gitignored; regenerate `admin.json` with `node scripts/_make-auth.js` as before.
+4. **Listing fetch**: the silent `limit=200` ceiling is replaced by a bounded
+   paginated aggregate (short-page stop, 1000-lot cap). Structural next step:
+   server-side filtering + backend-served arm-tab counts.
+5. Physical U5 test runbook (`docs/PHYSICAL_TEST_U5.md`) — continue the on-device
+   pass when the team is ready. The checkout `invoiceId` gap noted there is fixed
+   (payment form forwards it from sessionStorage now).
+6. **Suite stability on this box**: Playwright runs with `workers: 2` — unbounded
+   project workers starve the dev servers (login minting + axe scans time out).
+   Current numbers: tsc clean · vitest 80/80 · jest 291/291 (42 suites) ·
+   playwright 55/55.
 
 ## Conventions to keep
 
