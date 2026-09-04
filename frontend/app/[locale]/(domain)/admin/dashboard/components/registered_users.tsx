@@ -1,6 +1,7 @@
 'use client';
 
 import { Label, Pie, PieChart } from 'recharts';
+import { useTranslations } from 'next-intl';
 import {
   Card,
   CardContent,
@@ -19,24 +20,26 @@ interface RegisteredUsersProps {
   sellers?: number;
 }
 
-const chartConfig = {
-  users: {
-    label: 'Users',
-  },
-  buyer: {
-    label: 'Buyer',
-    color: 'var(--chart-1)',
-  },
-  seller: {
-    label: 'Seller',
-    color: 'var(--chart-2)',
-  },
-} satisfies ChartConfig;
-
 export default function RegisteredUsers({
   buyers = 0,
   sellers = 0,
 }: RegisteredUsersProps) {
+  const t = useTranslations('admin.home');
+
+  const chartConfig = {
+    users: {
+      label: t('registeredUsers'),
+    },
+    buyer: {
+      label: t('buyer'),
+      color: 'var(--chart-1)',
+    },
+    seller: {
+      label: t('seller'),
+      color: 'var(--chart-2)',
+    },
+  } satisfies ChartConfig;
+
   const total = buyers + sellers;
 
   const chartData = [
@@ -53,7 +56,7 @@ export default function RegisteredUsers({
     <Card className='bg-background'>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">
-          Registered Users
+          {t('registeredUsers')}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center">
@@ -103,11 +106,11 @@ export default function RegisteredUsers({
         <div className="flex items-center gap-6 mt-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="h-3 w-3 rounded-full bg-chart-1" />
-            <span className="text-muted-foreground">Buyer</span>
+            <span className="text-muted-foreground">{t('buyer')}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="h-3 w-3 rounded-full bg-chart-2" />
-            <span className="text-muted-foreground">Seller</span>
+            <span className="text-muted-foreground">{t('seller')}</span>
           </div>
         </div>
       </CardContent>

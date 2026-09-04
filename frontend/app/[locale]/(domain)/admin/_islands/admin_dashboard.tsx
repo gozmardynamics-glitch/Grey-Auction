@@ -8,6 +8,8 @@ import {
   Skeleton,
 } from '@/shared/components/common';
 
+import { useTranslations } from 'next-intl';
+
 import AdminStatsCards from '../dashboard/components/admin_stats_cards';
 import PendingRequests from '../dashboard/components/pending_requests/pending requests';
 
@@ -25,14 +27,15 @@ const AuctionActivity = dynamic(() => import('../dashboard/components/auction_ac
 });
 
 export default function AdminDashboardIsland() {
+  const t = useTranslations('admin.home');
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Overview</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t('overview')}</h1>
         <div className="flex items-center gap-2">
           <DatePickerWithRange />
           <Button size="lg">
-            Export
+            {t('export')}
           </Button>
         </div>
       </div>

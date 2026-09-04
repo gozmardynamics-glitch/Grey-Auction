@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useTranslations } from 'next-intl';
 import {
     Button,
   Card,
@@ -52,25 +53,26 @@ const defaultData: RevenueDataPoint[] = [
   { month: 'Dec', sales: 0, expense: 0 },
 ];
 
-const chartConfig = {
-  sales: {
-    label: 'Sales',
-    color: 'var(--chart-1)',
-  },
-  expense: {
-    label: 'Expense',
-    color: 'var(--chart-2)',
-  },
-} satisfies ChartConfig;
-
 const timeFilters: TimeFilter[] = ['12 months', '3 months', '7 days'];
+
+const filterLabelKeys: Record<TimeFilter, string> = {
+  '12 months': 'twelveMonths',
+  '3 months': 'threeMonths',
+  '7 days': 'sevenDays',
+};
 
 export default function TotalRevenue({
   data = defaultData,
   totalRevenue = 0,
   percentageChange = 0,
 }: TotalRevenueProps) {
+  const t = useTranslations('admin.home');
   const [activeFilter, setActiveFilter] = useState<TimeFilter>('12 months');
+
+  const chartConfig = {
+    sales: { label: t('sales'), color: 'var(--chart-1)' },
+    expense: { label: t('expense'), color: 'var(--chart-2)' },
+  } satisfies ChartConfig;
 
 
  
@@ -79,12 +81,12 @@ export default function TotalRevenue({
     <Card className="bg-background">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-base font-medium">Total Revenue</CardTitle>
+          <CardTitle className="text-base font-medium">{t('totalRevenue')}</CardTitle>
           <div className="text-3xl font-bold">
             {formatCurrency(totalRevenue)}
           </div>
           <p className="text-sm text-muted-foreground">
-            ({percentageChange}%) from last month
+            {t('fromLastMonth', { percentage: percentageChange })}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-xl bg-card p-1">
@@ -99,7 +101,7 @@ export default function TotalRevenue({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {filter}
+              {t(filterLabelKeys[filter])}
             </Button>
           ))}
         </div>
@@ -108,11 +110,11 @@ export default function TotalRevenue({
         <div className="mb-4 flex items-center gap-4 justify-end">
           <div className="flex items-center gap-2 text-sm">
             <span className="h-3 w-3 rounded-full bg-chart-1" />
-            <span className="text-muted-foreground">Sales</span>
+            <span className="text-muted-foreground">{t('sales')}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="h-3 w-3 rounded-full bg-chart-2" />
-            <span className="text-muted-foreground">Expense</span>
+            <span className="text-muted-foreground">{t('expense')}</span>
           </div>
         </div>
         <ChartContainer config={chartConfig} className="max-h-[300px] w-full [&_.recharts-cartesian-axis-tick_text]:fill-foreground">

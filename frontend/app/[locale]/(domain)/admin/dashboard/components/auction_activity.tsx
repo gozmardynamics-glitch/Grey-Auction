@@ -1,5 +1,6 @@
 
 import { Label, Pie, PieChart } from 'recharts';
+import { useTranslations } from 'next-intl';
 import {
   Card,
   CardContent,
@@ -20,34 +21,36 @@ interface AuctionActivityProps {
   completed?: number;
 }
 
-const chartConfig = {
-  auctions: {
-    label: 'Auctions',
-  },
-  active: {
-    label: 'Active',
-    color: 'var(--chart-1)',
-  },
-  pending: {
-    label: 'Pending',
-    color: 'var(--chart-3)',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    color: 'var(--chart-4)',
-  },
-  completed: {
-    label: 'Completed',
-    color: 'var(--chart-5)',
-  },
-} satisfies ChartConfig;
-
 export default function AuctionActivity({
   active = 0,
   pending = 0,
   cancelled = 0,
   completed = 0,
 }: AuctionActivityProps) {
+  const t = useTranslations('admin.home');
+
+  const chartConfig = {
+    auctions: {
+      label: t('auctionActivity'),
+    },
+    active: {
+      label: t('active'),
+      color: 'var(--chart-1)',
+    },
+    pending: {
+      label: t('pending'),
+      color: 'var(--chart-3)',
+    },
+    cancelled: {
+      label: t('cancelled'),
+      color: 'var(--chart-4)',
+    },
+    completed: {
+      label: t('completed'),
+      color: 'var(--chart-5)',
+    },
+  } satisfies ChartConfig;
+
   const total = active + pending + cancelled + completed;
 
   const chartData = [
@@ -72,17 +75,17 @@ export default function AuctionActivity({
   const displayData = total === 0 ? emptyData : chartData;
 
   const stats = [
-    { label: 'Active', value: active, color: 'var(--chart-1)' },
-    { label: 'Pending', value: pending, color: 'var(--chart-3)' },
-    { label: 'Cancelled', value: cancelled, color: 'var(--chart-4)' },
-    { label: 'Completed', value: completed, color: 'var(--chart-5)' },
+    { label: t('active'), value: active, color: 'var(--chart-1)' },
+    { label: t('pending'), value: pending, color: 'var(--chart-3)' },
+    { label: t('cancelled'), value: cancelled, color: 'var(--chart-4)' },
+    { label: t('completed'), value: completed, color: 'var(--chart-5)' },
   ];
 
   return (
     <Card className='bg-background'>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">
-          Auction Activity
+          {t('auctionActivity')}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center">

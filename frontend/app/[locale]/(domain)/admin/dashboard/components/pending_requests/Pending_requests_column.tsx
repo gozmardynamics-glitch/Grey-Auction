@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 export interface PendingRequest {
   id: string;
@@ -24,53 +25,57 @@ const statusVariants: Record<PendingRequest['status'], BadgeVariant> = {
   Rejected: 'destructive',
 };
 
-export const columns: ColumnDef<PendingRequest>[] = [
-  {
-    accessorKey: 'id',
-    header: 'ID',
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.getValue('id')}</span>
-    ),
-  },
-  {
-    accessorKey: 'type',
-    header: 'Type',
-  },
-  {
-    accessorKey: 'description',
-    header: 'Description',
-    cell: ({ row }) => (
-      <span className="max-w-[200px] truncate block">
-        {row.getValue('description')}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'priority',
-    header: 'Priority',
-    cell: ({ row }) => {
-      const priority = row.getValue('priority') as PendingRequest['priority'];
-      return (
-        <Badge variant={priorityVariants[priority]}>
-          {priority}
-        </Badge>
-      );
+/** Column factory so headers resolve through next-intl per locale. */
+export function usePendingRequestColumns(): ColumnDef<PendingRequest>[] {
+  const t = useTranslations('admin.home');
+  return [
+    {
+      accessorKey: 'id',
+      header: t('id'),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.getValue('id')}</span>
+      ),
     },
-  },
-  {
-    accessorKey: 'date',
-    header: 'Date',
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => {
-      const status = row.getValue('status') as PendingRequest['status'];
-      return (
-        <Badge variant={statusVariants[status]}>
-          {status}
-        </Badge>
-      );
+    {
+      accessorKey: 'type',
+      header: t('type'),
     },
-  },
-];
+    {
+      accessorKey: 'description',
+      header: t('description'),
+      cell: ({ row }) => (
+        <span className="max-w-[200px] truncate block">
+          {row.getValue('description')}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'priority',
+      header: t('priority'),
+      cell: ({ row }) => {
+        const priority = row.getValue('priority') as PendingRequest['priority'];
+        return (
+          <Badge variant={priorityVariants[priority]}>
+            {priority}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: 'date',
+      header: t('date'),
+    },
+    {
+      accessorKey: 'status',
+      header: t('status'),
+      cell: ({ row }) => {
+        const status = row.getValue('status') as PendingRequest['status'];
+        return (
+          <Badge variant={statusVariants[status]}>
+            {status}
+          </Badge>
+        );
+      },
+    },
+  ];
+}
