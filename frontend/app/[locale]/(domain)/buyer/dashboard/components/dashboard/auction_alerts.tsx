@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle, Bell, Clock, Trophy, Radio } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Button, Card, EmptyState } from '@/shared/components/common';
 
@@ -17,10 +18,11 @@ const alertIcons: Record<
 };
 
 export default function AuctionAlerts() {
+  const t = useTranslations('buyer.home');
   return (
     <Card className="space-y-3 rounded-lg p-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Auction Alerts</h3>
+        <h3 className="text-sm font-semibold">{t('auctionAlerts')}</h3>
         <Button variant="ghost" size="icon" className="h-7 w-7">
           <Radio className="h-3.5 w-3.5 text-tertiary" />
         </Button>
@@ -28,8 +30,8 @@ export default function AuctionAlerts() {
       {alerts.length === 0 ? (
         <EmptyState
           icon={<Bell className="h-10 w-10" />}
-          title="No Alerts"
-          description="Auction alerts will appear here when there's activity on your bids."
+          title={t('noAlertsTitle')}
+          description={t('noAlertsDescription')}
           className="py-8"
         />
       ) : (

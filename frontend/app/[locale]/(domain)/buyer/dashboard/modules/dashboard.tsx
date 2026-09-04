@@ -1,14 +1,17 @@
+import { useTranslations } from 'next-intl';
+
 import BuyerStats from '../components/dashboard/stats';
 import ActiveAuctions from '../components/dashboard/active_auctions';
 import AuctionAlerts from '../components/dashboard/auction_alerts';
 import RecentInvoices from '../components/dashboard/recent_invoices';
 
 export default function BuyerDashboardModule() {
+  const t = useTranslations('buyer.home');
   return (
     <div className="space-y-6 p-6">
       {/* Welcome */}
       <h2 className="text-lg font-semibold">
-        Welcome, Jayden <span className="inline-block">&#x1F44B;</span>
+        {t('welcome', { name: 'Jayden' })} <span className="inline-block">&#x1F44B;</span>
       </h2>
 
       {/* Stats */}

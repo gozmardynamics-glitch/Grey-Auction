@@ -79,7 +79,8 @@
     "confirm": "Confirmer",
     "close": "Fermer",
     "yes": "Oui",
-    "no": "Non"
+    "no": "Non",
+    "viewAll": "Tout voir"
   },
   "auth": {
     "welcomeBack": "Content de vous revoir !",
@@ -202,6 +203,34 @@
     }
   },
   "buyer": {
+    "home": {
+      "welcome": "Bienvenue, {name}",
+      "activeBids": "Offres actives",
+      "winning": "Gagnant",
+      "outbid": "Surenchéri",
+      "endingSoon": "Bientôt clôturé",
+      "noStatsTitle": "Aucune statistique pour le moment",
+      "noStatsDescription": "Votre activité d'enchères apparaîtra ici dès votre première offre.",
+      "auctionAlerts": "Alertes enchères",
+      "noAlertsTitle": "Aucune alerte",
+      "noAlertsDescription": "Les alertes apparaîtront dès qu'il y a de l'activité sur vos offres.",
+      "activeAuctions": "Enchères actives",
+      "noActiveAuctionsTitle": "Aucune enchère active",
+      "noActiveAuctionsDescription": "Les enchères auxquelles vous participez apparaîtront ici.",
+      "recentInvoices": "Factures récentes",
+      "noInvoicesTitle": "Aucune facture",
+      "noInvoicesDescription": "Vos factures récentes apparaîtront après un achat.",
+      "item": "Article",
+      "currentBid": "Offre actuelle",
+      "time": "Temps",
+      "status": "Statut",
+      "invoiceId": "N° de facture",
+      "vendor": "Vendeur",
+      "amount": "Montant",
+      "date": "Date",
+      "viewDetails": "Voir les détails",
+      "download": "Télécharger"
+    },
     "dashboard": "Tableau de bord acheteur",
     "myBids": "Mes offres",
     "purchases": "Mes achats",

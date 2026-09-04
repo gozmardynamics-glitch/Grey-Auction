@@ -1,28 +1,29 @@
 import { Clock, Megaphone, TrendingDown, Trophy } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, EmptyState } from '@/shared/components/common';
 
 const stats = [
   {
-    label: 'Active Bids',
+    label: 'activeBids',
     value: 6,
     icon: Megaphone,
     color: 'text-blue-600 bg-blue-100',
   },
   {
-    label: 'Winning',
+    label: 'winning',
     value: 4,
     icon: Trophy,
     color: 'text-green-600 bg-tertiary/10',
   },
   {
-    label: 'Outbid',
+    label: 'outbid',
     value: 1,
     icon: TrendingDown,
     color: 'text-red-600 bg-red-100',
   },
   {
-    label: 'Ending Soon',
+    label: 'endingSoon',
     value: 1,
     icon: Clock,
     color: 'text-orange-600 bg-orange-100',
@@ -30,11 +31,12 @@ const stats = [
 ];
 
 export default function BuyerStats() {
+  const t = useTranslations('buyer.home');
   if (stats.length === 0) {
     return (
       <EmptyState
-        title="No dashboard stats yet"
-        description="Your bidding activity will show up here once you place your first bid."
+        title={t('noStatsTitle')}
+        description={t('noStatsDescription')}
       />
     );
   }
@@ -52,7 +54,7 @@ export default function BuyerStats() {
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                <p className="text-xs text-muted-foreground">{t(stat.label)}</p>
               </div>
               <div>
                 <p className="text-lg font-bold">{stat.value}</p>

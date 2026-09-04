@@ -79,7 +79,8 @@
     "confirm": "Confirm",
     "close": "Close",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "viewAll": "View All"
   },
   "auth": {
     "welcomeBack": "Welcome Back!",
@@ -202,6 +203,34 @@
     }
   },
   "buyer": {
+    "home": {
+      "welcome": "Welcome, {name}",
+      "activeBids": "Active Bids",
+      "winning": "Winning",
+      "outbid": "Outbid",
+      "endingSoon": "Ending Soon",
+      "noStatsTitle": "No dashboard stats yet",
+      "noStatsDescription": "Your bidding activity will show up here once you place your first bid.",
+      "auctionAlerts": "Auction Alerts",
+      "noAlertsTitle": "No Alerts",
+      "noAlertsDescription": "Auction alerts will appear here when there's activity on your bids.",
+      "activeAuctions": "Active Auctions",
+      "noActiveAuctionsTitle": "No Active Auctions",
+      "noActiveAuctionsDescription": "Auctions you participate in will appear here.",
+      "recentInvoices": "Recent Invoices",
+      "noInvoicesTitle": "No Invoices Yet",
+      "noInvoicesDescription": "Your recent invoices will appear here once you make a purchase.",
+      "item": "Item",
+      "currentBid": "Current Bid",
+      "time": "Time",
+      "status": "Status",
+      "invoiceId": "Invoice ID",
+      "vendor": "Vendor",
+      "amount": "Amount",
+      "date": "Date",
+      "viewDetails": "View details",
+      "download": "Download"
+    },
     "dashboard": "Buyer Dashboard",
     "myBids": "My Bids",
     "purchases": "My Purchases",

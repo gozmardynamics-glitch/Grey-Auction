@@ -79,7 +79,8 @@
     "confirm": "Bevestigen",
     "close": "Sluiten",
     "yes": "Ja",
-    "no": "Nee"
+    "no": "Nee",
+    "viewAll": "Alles bekijken"
   },
   "auth": {
     "welcomeBack": "Welkom terug!",
@@ -202,6 +203,34 @@
     }
   },
   "buyer": {
+    "home": {
+      "welcome": "Welkom, {name}",
+      "activeBids": "Actieve biedingen",
+      "winning": "Winnend",
+      "outbid": "Overboden",
+      "endingSoon": "Eindigt binnenkort",
+      "noStatsTitle": "Nog geen dashboardstatistieken",
+      "noStatsDescription": "Uw biedactiviteit verschijnt hier zodra u uw eerste bod plaatst.",
+      "auctionAlerts": "Veilingmeldingen",
+      "noAlertsTitle": "Geen meldingen",
+      "noAlertsDescription": "Veilingmeldingen verschijnen hier zodra er activiteit is op uw biedingen.",
+      "activeAuctions": "Actieve veilingen",
+      "noActiveAuctionsTitle": "Geen actieve veilingen",
+      "noActiveAuctionsDescription": "Veilingen waaraan u deelneemt verschijnen hier.",
+      "recentInvoices": "Recente facturen",
+      "noInvoicesTitle": "Nog geen facturen",
+      "noInvoicesDescription": "Uw recente facturen verschijnen hier zodra u een aankoop doet.",
+      "item": "Item",
+      "currentBid": "Huidig bod",
+      "time": "Tijd",
+      "status": "Status",
+      "invoiceId": "Factuurnummer",
+      "vendor": "Verkoper",
+      "amount": "Bedrag",
+      "date": "Datum",
+      "viewDetails": "Details bekijken",
+      "download": "Downloaden"
+    },
     "dashboard": "Koperdashboard",
     "myBids": "Mijn biedingen",
     "purchases": "Mijn aankopen",
