@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PaymentGatewayService } from './payment-gateway.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { PaymentOrchestrationService } from './payment.orchestration.service';
@@ -14,7 +13,7 @@ import { EscrowModule } from '../escrow/escrow.module';
 @Module({
   imports: [TypeOrmModule.forFeature([Payment]), InvoiceModule, WalletModule, OrderModule, EscrowModule],
   controllers: [PaymentController],
-  providers: [PaymentGatewayService, PaymentService, PaymentOrchestrationService, PaymentReconciliationService],
-  exports: [PaymentGatewayService, PaymentService, PaymentOrchestrationService],
+  providers: [PaymentService, PaymentOrchestrationService, PaymentReconciliationService],
+  exports: [PaymentService, PaymentOrchestrationService],
 })
 export class PaymentModule {}

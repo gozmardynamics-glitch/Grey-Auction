@@ -66,7 +66,7 @@ describe('PaymentOrchestrationService', () => {
   it('marks an invoice paid and flips the payment atomically on a valid succeeded webhook', async () => {
     const { payload, headers, raw } = makeHook('REF', 'success');
     const payment = {
-      id: 'p1', type: PaymentType.INVOICE, invoiceId: 'inv1',
+      id: 'p1', type: PaymentType.INVOICE, invoiceId: 'inv1', amount: 5000,
       provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.PENDING, providerReference: null,
     };
     (paymentService.findByReference as jest.Mock).mockResolvedValue(payment);
@@ -115,7 +115,7 @@ describe('PaymentOrchestrationService', () => {
   it('does not double-apply when a payment is already succeeded', async () => {
     const { payload, headers, raw } = makeHook('REF', 'success');
     const payment = {
-      id: 'p1', type: PaymentType.INVOICE, invoiceId: 'inv1',
+      id: 'p1', type: PaymentType.INVOICE, invoiceId: 'inv1', amount: 5000,
       provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.SUCCEEDED, providerReference: null,
     };
     (paymentService.findByReference as jest.Mock).mockResolvedValue(payment);
@@ -126,5 +126,24 @@ describe('PaymentOrchestrationService', () => {
     expect(res.success).toBe(true);
     expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
     expect(orderService.markPaidInManager).not.toHaveBeenCalled();
+  });
+
+  it('refuses to settle a succeeded webhook whose amount mismatches the app payment', async () => {
+    // hook amount 500000 kobo = 5000 naira; the app payment claims 4999.99.
+    const { payload, headers, raw } = makeHook('REF', 'success');
+    const payment = {
+      id: 'p3', type: PaymentType.INVOICE, invoiceId: 'inv1', amount: 4999.99,
+      provider: PaymentProvider.PAYSTACK, reference: 'REF', status: PaymentStatus.PENDING, providerReference: null,
+    };
+    (paymentService.findByReference as jest.Mock).mockResolvedValue(payment);
+    (paymentRepo.findOne as jest.Mock).mockResolvedValue(payment);
+
+    const res = await service.handleWebhook(PaymentProvider.PAYSTACK, payload, headers, raw);
+
+    expect(res.success).toBe(false);
+    expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
+    expect(orderService.markPaidInManager).not.toHaveBeenCalled();
+    expect(escrowService.holdInManager).not.toHaveBeenCalled();
+    expect(paymentService.updateStatus).not.toHaveBeenCalled();
   });
 });

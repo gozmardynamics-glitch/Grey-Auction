@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
@@ -29,6 +30,8 @@ export interface InitPaymentCommand {
 
 @Injectable()
 export class PaymentOrchestrationService {
+  private readonly logger = new Logger(PaymentOrchestrationService.name);
+
   constructor(
     private readonly paymentService: PaymentService,
     private readonly invoiceService: InvoiceService,
@@ -119,6 +122,15 @@ export class PaymentOrchestrationService {
     }
 
     if (hook.status === PaymentStatus.SUCCEEDED) {
+      // Defense-in-depth: the provider-confirmed amount (adapters normalize it
+      // to major units) must match the app payment. On mismatch, refuse to
+      // settle and leave the payment PENDING for manual review.
+      if (hook.amount !== undefined && Math.abs(Number(hook.amount) - Number(payment.amount)) > 0.01) {
+        this.logger.warn(
+          `Webhook amount mismatch for ${payment.reference}: provider=${hook.amount} app=${payment.amount} — not settling`,
+        );
+        return { success: false, message: 'Amount mismatch — payment left pending for review' };
+      }
       return {
         success: true,
         payment: await this.applySucceeded(payment, hook.providerReference ?? payment.providerReference),
@@ -149,6 +161,13 @@ export class PaymentOrchestrationService {
     const result = await adapter.verify(payment.reference, { amount: payment.amount });
 
     if (result.verified && result.status === PaymentStatus.SUCCEEDED) {
+      // Same server-side amount authority as the webhook path.
+      if (result.amount !== undefined && Math.abs(Number(result.amount) - Number(payment.amount)) > 0.01) {
+        this.logger.warn(
+          `Reconciliation amount mismatch for ${payment.reference}: provider=${result.amount} app=${payment.amount} — not settling`,
+        );
+        return payment;
+      }
       return this.applySucceeded(payment, result.providerReference ?? payment.providerReference);
     }
 

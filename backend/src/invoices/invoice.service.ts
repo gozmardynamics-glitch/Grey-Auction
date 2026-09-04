@@ -74,6 +74,10 @@ export class InvoiceService {
    */
   async createInvoice(manager: EntityManager, data: GenerateInvoiceDto): Promise<Invoice> {
     const repo = manager.getRepository(Invoice);
+    // Serialize number allocation: two concurrent creators (webhook vs cron)
+    // both computing count+1 would collide on the unique invoice_number.
+    // The lock is transaction-scoped and released automatically at commit.
+    await manager.query(`SELECT pg_advisory_xact_lock(hashtext('greyauction_invoice_number')::bigint)`);
     const count = await repo.count();
     const next = count + 1;
     const year = new Date().getFullYear();
@@ -190,7 +194,9 @@ export class InvoiceService {
       throw new NotFoundException('Invoice not found');
     }
     if (invoice.status === InvoiceStatus.PAID) {
-      throw new BadRequestException('Invoice is already paid');
+      // Idempotent: provider retries / duplicate webhooks must succeed without
+      // re-charging state or throwing — the caller gets the paid invoice.
+      return invoice;
     }
     if (invoice.status === InvoiceStatus.CANCELLED) {
       throw new BadRequestException('Cannot pay a cancelled invoice');
