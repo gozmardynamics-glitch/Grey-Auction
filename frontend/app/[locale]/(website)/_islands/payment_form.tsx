@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,16 +45,13 @@ interface OrderItem {
   price: number;
 }
 
-interface PaymentFormValuesWithEmail extends PaymentFormValues {
-  email?: string;
-}
-
 interface PaymentFormProps {
   orderItems: OrderItem[];
 }
 
 export default function PaymentForm({ orderItems }: PaymentFormProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [provider, setProvider] = useState<PaymentProviderId>('paystack');
   const [instruction, setInstruction] = useState<string | null>(null);
@@ -88,19 +87,33 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
       // Buyer picks the payment platform; we create a Payment record and let the
       // chosen provider initialize. Redirect providers return a hosted checkout
       // URL; transfer/account providers return a payment instruction.
+      const token = session?.user?.accessToken ?? null;
       const res = await fetch(`${apiBase}/payments/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        // NOTE: `email` is intentionally NOT sent — the init DTO whitelists
+        // fields and rejects unknown ones; the backend takes the buyer email
+        // from the authenticated session instead.
         body: JSON.stringify({
           type: 'invoice',
           provider,
           amount: total,
-          email: (data as PaymentFormValuesWithEmail).email || 'buyer@greyauction.com',
           callbackUrl: window.location.origin + '/checkout/confirmation',
           metadata: {},
           ...(invoiceId ? { invoiceId } : {}),
         }),
       });
+
+      if (!res.ok) {
+        // Never fake success: a failed init must stop here with a visible
+        // error instead of routing to the confirmation page.
+        const err = await res.json().catch(() => null);
+        toast.error(err?.message || 'Could not start the payment. Please try again.');
+        return;
+      }
 
       const json = await res.json().catch(() => null);
       const d = json?.data;
@@ -117,10 +130,10 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
         return;
       }
 
-      // Mock/unconfigured — complete the flow locally.
+      // Mock/unconfigured provider (dev only) — complete the flow locally.
       router.push('/checkout/confirmation');
     } catch {
-      router.push('/checkout/confirmation');
+      toast.error('Payment could not be started. Please try again.');
     } finally {
       setIsLoading(false);
     }

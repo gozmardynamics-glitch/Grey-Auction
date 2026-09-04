@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 import {
   ActionSuccessDialog,
@@ -34,6 +35,7 @@ export default function DepositModal({
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethodOption>('bank-transfer');
   const [provider, setProvider] = useState<PaymentProviderId>('paystack');
+  const { data: session } = useSession();
 
   // Direct debit state
   const [ddAccountNumber, setDdAccountNumber] = useState('');
@@ -66,9 +68,13 @@ export default function DepositModal({
   const handleConfirmDeposit = async () => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const token = session?.user?.accessToken ?? null;
       const res = await fetch(apiBase + '/payments/init', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           type: 'deposit',
           provider,
@@ -77,6 +83,12 @@ export default function DepositModal({
           metadata: {},
         }),
       });
+      if (!res.ok) {
+        // A failed init (401/400/validation) must surface as failure, never
+        // silently fall through to the success step.
+        setStep('failure');
+        return;
+      }
       const json = await res.json().catch(() => null);
       const d = json?.data;
       if (d?.checkoutUrl) {

@@ -18,7 +18,10 @@ export default defineConfig({
   // and heavy axe scans time out under contention). With fullyParallel: false
   // this only serializes projects; the cost is a slower, reliable run.
   workers: 2,
-  retries: 0,
+  // One local retry absorbs the rare auth-project timeout this dev box hits
+  // under full-suite load (login minting / heavy pages competing with the
+  // dev servers). CI keeps the strict zero-retry gate.
+  retries: process.env.CI ? 0 : 1,
   reporter: [['list']],
   use: {
     baseURL: process.env.A11Y_BASE_URL || 'http://localhost:3000',
