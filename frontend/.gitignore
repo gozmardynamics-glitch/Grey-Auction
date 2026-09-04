@@ -47,3 +47,7 @@ next-env.d.ts
 .claude/
 /AGENTS.md
 /CLAUDE.md
+
+# playwright minted per-machine sessions (setup mints these; admin.json stays tracked)
+playwright/.auth/seller.json
+playwright/.auth/buyer.json
