@@ -90,6 +90,15 @@ _Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS
      path, so the sandbox pass is verification-only). Remaining: dashboard
      i18n batch, EmptyState sweep across remaining lists, vendor keys, DTO
      pass.
+   - **Wave 3b: dashboard i18n batch** — buyer module sidebar and the
+     seller/admin settings sidebars now resolve nav labels (incl. Log Out)
+     from new `buyer/seller/admin.nav` namespaces added to en/fr/nl in
+     lockstep; module models carry catalog keys instead of literals (each
+     array has a single consumer). Legacy cp1252 mojibake in the catalogs
+     (…/—/É/À artifacts) repaired; live probe confirmed all three
+     dashboards render translated navs in en/fr/nl. Remaining: deep
+     dashboard module content (forms/modals/table headers), EmptyState
+     sweep, vendor keys, DTO pass.
 
 1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
    (`auth()` → Bearer); all admin AI server pages render data on first paint; the
