@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/shared/components/common';
 import {
@@ -16,6 +18,7 @@ export default function SellerSettingsSidebar({
   activeModule,
   onModuleChange,
 }: SettingsSidebarProps) {
+  const t = useTranslations('seller.nav');
   return (
     <div className="w-full md:w-[200px] shrink-0 border-b md:border-b-0 md:border-r py-2 bg-muted md:bg-card">
       <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible px-2">
@@ -36,7 +39,7 @@ export default function SellerSettingsSidebar({
               )}
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              {t(item.label)}
             </Button>
           );
         })}

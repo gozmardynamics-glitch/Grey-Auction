@@ -12,18 +12,22 @@ import {
 } from 'lucide-react';
 import { SlidersHorizontal } from 'lucide-react';
 
+/**
+ * Nav labels are translation KEYS into the `admin.nav` namespace — the
+ * settings sidebar resolves them with next-intl so they follow the locale.
+ */
 export const SETTINGS_MODULES = [
-  { key: 'general', label: 'General', icon: Cog },
-  { key: 'email', label: 'Email', icon: Mail },
-  { key: 'roles-permission', label: 'Roles & Permission', icon: ShieldCheck },
-  { key: 'auctions', label: 'Auctions', icon: Gavel },
-  { key: 'payments', label: 'Payments', icon: CreditCard },
-  { key: 'fees', label: 'Fees & Charges', icon: Percent },
-  { key: 'notifications', label: 'Notifications', icon: Bell },
-  { key: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
-  { key: 'security', label: 'Security', icon: Lock },
-  { key: 'audit-logs', label: 'Audit Logs', icon: FileText },
-  { key: 'system-status', label: 'System Status', icon: Activity },
+  { key: 'general', label: 'general', icon: Cog },
+  { key: 'email', label: 'email', icon: Mail },
+  { key: 'roles-permission', label: 'rolesPermission', icon: ShieldCheck },
+  { key: 'auctions', label: 'auctions', icon: Gavel },
+  { key: 'payments', label: 'payments', icon: CreditCard },
+  { key: 'fees', label: 'fees', icon: Percent },
+  { key: 'notifications', label: 'notifications', icon: Bell },
+  { key: 'preferences', label: 'preferences', icon: SlidersHorizontal },
+  { key: 'security', label: 'security', icon: Lock },
+  { key: 'audit-logs', label: 'auditLogs', icon: FileText },
+  { key: 'system-status', label: 'systemStatus', icon: Activity },
 ] as const;
 
 

@@ -1,4 +1,5 @@
 import { LogOut } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Button, Card, LogoutDialog } from '@/shared/components/common';
 
@@ -14,6 +15,7 @@ export default function BuyerSettingsSidebar({
   activeModule,
   onModuleChange,
 }: SettingsSidebarProps) {
+  const t = useTranslations('buyer.nav');
   return (
     <Card className="min-w-0 shadow-none rounded-xl h-fit p-4 md:p-6 sticky top-0">
       <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible px-2">
@@ -34,7 +36,7 @@ export default function BuyerSettingsSidebar({
               )}
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              {t(item.label)}
             </Button>
           );
         })}
@@ -46,7 +48,7 @@ export default function BuyerSettingsSidebar({
             className="flex shrink-0 md:w-full md:justify-start items-center gap-2.5 rounded-md px-3 py-2 text-sm md:text-lg font-medium whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
-            Log Out
+            {t('logOut')}
           </Button>
         </LogoutDialog>
       </nav>
