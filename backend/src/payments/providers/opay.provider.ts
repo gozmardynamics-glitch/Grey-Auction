@@ -21,11 +21,12 @@ import type {
  * - Amounts are in the smallest currency unit (kobo), same as Paystack.
  * - Order status enum: INITIAL | PENDING | SUCCESS | FAIL | CLOSE.
  *
- * TODO(vendor): the webhook signature scheme is not in the public OpenAPI.
- * Webhooks are parsed but FAILED CLOSED (verified=false); the reconciliation
- * cron re-confirms every payment via /cashier/status, which is authoritative.
- * The signature header name defaults to x-opay-signature (env-overridable)
- * so the sandbox pass only needs to flip verification on.
+ * Webhook verification ASSUMES HMAC-SHA512(privateKey, raw body) delivered in
+ * the x-opay-signature header (env-overridable via OPAY_WEBHOOK_SIGNATURE_HEADER).
+ * TODO(vendor): that scheme is not in the public OpenAPI — confirm header name
+ * + scheme in the sandbox pass. Until OPAY_* keys are configured verification
+ * FAILS CLOSED (verified=false); the reconciliation cron re-confirms every
+ * payment via /cashier/status, which is authoritative.
  */
 export class OpayProvider implements PaymentProviderAdapter {
   readonly provider = PaymentProvider.OPAY;

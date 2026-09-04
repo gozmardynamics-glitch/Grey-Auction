@@ -27,7 +27,12 @@ export class RoomService {
 
   async findAll(page = 1, limit = 20) {
     const [data, total] = await this.repo.findAndCount({
+      // Public listing: hydrate ONLY display-safe creator fields (the full
+      // User row would leak email/phone/address to anonymous visitors).
       relations: ['createdBy'],
+      select: {
+        createdBy: { id: true, name: true, createdAt: true },
+      },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -46,7 +51,11 @@ export class RoomService {
   async findById(id: string): Promise<Room> {
     const room = await this.repo.findOne({
       where: { id },
+      // Same public-endpoint posture as findAll: creator gets a safe projection.
       relations: ['createdBy'],
+      select: {
+        createdBy: { id: true, name: true, createdAt: true },
+      },
     });
     if (!room) throw new NotFoundException('Room not found');
     return room;
