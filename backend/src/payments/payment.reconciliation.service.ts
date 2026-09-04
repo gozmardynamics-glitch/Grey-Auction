@@ -14,6 +14,8 @@ export class PaymentReconciliationService {
   private readonly logger = new Logger(PaymentReconciliationService.name);
   private readonly staleMs = 10 * 60 * 1000;
   private readonly batchSize = 25;
+  /** Overlap guard: a slow sweep must not run concurrently with the next. */
+  private running = false;
 
   constructor(
     private readonly paymentService: PaymentService,
@@ -22,6 +24,16 @@ export class PaymentReconciliationService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async sweep(): Promise<void> {
+    if (this.running) return; // previous tick still in flight
+    this.running = true;
+    try {
+      await this.runSweep();
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private async runSweep(): Promise<void> {
     let pending: Awaited<ReturnType<PaymentService['findPending']>>;
     try {
       pending = await this.paymentService.findPending(this.staleMs, this.batchSize);

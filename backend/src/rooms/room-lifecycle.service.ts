@@ -15,6 +15,8 @@ import { NotificationService } from '../notification/notification.service';
 @Injectable()
 export class RoomLifecycleService {
   private readonly logger = new Logger(RoomLifecycleService.name);
+  /** Overlap guard: a slow tick must not run concurrently with the next. */
+  private running = false;
 
   constructor(
     @InjectRepository(Room)
@@ -27,6 +29,16 @@ export class RoomLifecycleService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async tick() {
+    if (this.running) return; // previous tick still in flight
+    this.running = true;
+    try {
+      await this.runTick();
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private async runTick() {
     const now = new Date();
 
     const started = await this.repo.find({

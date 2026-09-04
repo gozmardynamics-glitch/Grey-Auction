@@ -22,7 +22,23 @@ export class AdminService {
     });
   }
 
+  /** Platform password policy for administrative accounts. */
+  static assertPasswordPolicy(password: string): void {
+    const problems: string[] = [];
+    if (password.length < 12) problems.push('at least 12 characters');
+    if (!/[A-Z]/.test(password)) problems.push('an uppercase letter');
+    if (!/[a-z]/.test(password)) problems.push('a lowercase letter');
+    if (!/[0-9]/.test(password)) problems.push('a digit');
+    if (!/[^A-Za-z0-9]/.test(password)) problems.push('a special character');
+    if (problems.length) {
+      throw new BadRequestException(
+        'Password must contain ' + problems.join(', ') + '.',
+      );
+    }
+  }
+
   async createAdmin(dto: { email: string; password: string; name: string; role?: AdminRole }) {
+    AdminService.assertPasswordPolicy(dto.password);
     const existing = await this.adminRepo.findOne({ where: { email: dto.email } });
     if (existing) throw new BadRequestException('Admin with this email already exists');
 

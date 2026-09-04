@@ -14,7 +14,7 @@ describe('InvoiceService', () => {
   const userRepo = { findOne: jest.fn() };
   const productRepo = { findOne: jest.fn() };
   const emailService = { sendReceiptEmail: jest.fn(), sendInvoiceEmail: jest.fn() };
-  const manager = { getRepository: jest.fn(() => invoiceRepo) };
+  const manager = { getRepository: jest.fn(() => invoiceRepo), query: jest.fn(async () => []) };
   const dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
 
   beforeEach(async () => {
@@ -47,9 +47,11 @@ describe('InvoiceService', () => {
     );
   });
 
-  it('rejects paying an already-paid invoice', async () => {
+  it('is idempotent for an already-paid invoice (webhook replays)', async () => {
     (invoiceRepo.findOne as jest.Mock).mockResolvedValue({ id: 'inv1', status: InvoiceStatus.PAID });
-    await expect(service.markPaid('inv1', {})).rejects.toThrow(BadRequestException);
+    const res = await service.markPaid('inv1', {});
+    expect(res.status).toBe(InvoiceStatus.PAID);
+    expect(invoiceRepo.save).not.toHaveBeenCalled();
   });
 
   it('rejects paying a cancelled invoice', async () => {
