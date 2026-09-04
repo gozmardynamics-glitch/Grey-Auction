@@ -72,6 +72,15 @@ _Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS
    11 items documented as future work (webhook amount checks, settings
    persistence, checkout summary wiring, vendor sandbox pass). Read it before
    any deploy.
+   - **Wave 2 (same day): 9 of the 11 future-work items resolved** — webhook
+     amount-vs-payment checks (fail-closed), settings entity + migration,
+     legacy payments trio deleted with idempotent replays, checkout summary
+     now server-rendered from the invoice, confirmation page reflects real
+     payment state, ticket owner-or-admin scoping, room-participant PII
+     projection, invoice-number advisory lock, cron overlap guards, admin
+     password policy, theme-FOUC script, CSP connect-src de-wilcarded +
+     env-driven `remotePatterns`. Remaining: OPay/Interswitch sandbox pass
+     (needs vendor keys), i18n/empty-states sweep, full response-DTO pass.
 
 1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
    (`auth()` → Bearer); all admin AI server pages render data on first paint; the

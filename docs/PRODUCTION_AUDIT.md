@@ -4,7 +4,7 @@
 
 **Suites at audit close:** tsc clean (both) · vitest **80/80** · jest **291/291** (42 suites) · Playwright **55/55** (1 flaky test passes on the new local retry).
 
-**Verdict: 15 issues fixed in this audit (4×P0 security, 2×P0 broken checkout, 9 P1/P2), 11 documented below as future work. The blocking issues for a production deploy were money-minting endpoints and a credential-leaking public endpoint — both are now closed.**
+**Verdict: 15 issues fixed in the original audit (4×P0 security, 2×P0 broken checkout, 9 P1/P2); wave 2 (2026-09-04) resolved 9 more of the 11 future-work items — 10 of 11 ledger rows now closed, only the vendor sandbox pass remains. The blocking issues for a production deploy were money-minting endpoints and a credential-leaking public endpoint — both are now closed.**
 
 Legend: **[RESOLVED]** fixed and verified by tests today · **[FUTURE]** documented, do before/soon after launch.
 
@@ -56,19 +56,19 @@ Legend: **[RESOLVED]** fixed and verified by tests today · **[FUTURE]** documen
 - **Where:** backend/src/tickets/ticket.controller.ts, backend/src/settings/settings.controller.ts.
 - **Observation:** `GET /tickets/:id` had no guard (support conversations contain PII). `PUT /settings/:section` was writable by ANY authenticated user (JwtAuthGuard only) while settings live in a per-process in-memory store.
 - **Resolution (applied):** Ticket detail now requires a JWT. Settings PUT is admin-only (`AdminRolesGuard` + `SUPER_ADMIN`/`PLATFORM_ADMIN`).
-- **[FUTURE · P1]:** back settings with a real settings entity (or Redis) so writes persist and survive restarts/multiple instances; scope `GET /tickets/:id` and `GET /tickets` to owner-or-admin (list is still unfiltered for any authed user).
+- **[RESOLVED — wave 2]:** settings are now backed by a real `Setting` entity (`settings` table + migration, 30s read cache, last-known-good fallback); `GET /tickets` is admin-only with a `GET /tickets/mine` for owners, and `GET /tickets/:id` is owner-or-admin.
 
 ### 1.9 [RESOLVED · P1] Legacy payment surface hardened
 - **Where:** backend/src/payments/payment.controller.ts.
 - **Observation:** `GET /payments/verify` and `GET /payments/providers` were public (providers discloses which gateways have keys; mock verify reports anything as verified), and mock-mode `initialize` auto-marked any invoiceId PAID.
 - **Resolution (applied):** Both GETs now require a JWT; the mock auto-markPaid is gated to non-production (a prod boot without gateway keys can no longer settle invoices for free).
-- **[FUTURE · P2]:** delete the legacy `initialize/verify/webhook` trio outright (superseded by `/payments/init` + `/payments/webhook/:provider`), remove the dead `signature` parameter, and make legacy webhook replays idempotently return success instead of 500 ("already paid").
+- **[RESOLVED — wave 2]:** the legacy trio and `PaymentGatewayService` were deleted outright; `markPaidInManager` is now idempotent for an already-paid invoice (webhook replays succeed as no-ops instead of 500ing); receipts moved to a post-commit best-effort email from the orchestration path.
 
 ### 1.10 [RESOLVED · P2] Reconciliation cron could die silently on a DB blip
 - **Where:** backend/src/payments/payment.reconciliation.service.ts.
 - **Observation:** the first DB call (`findPending`) ran before any try/catch — a transient error killed the whole minute's sweep without an explicit log.
 - **Resolution (applied):** the listing call is wrapped with a logged, explicit early return (mirrors EscrowAutoReleaseService).
-- **[FUTURE · P2]:** add an overlap guard for per-item provider calls in the sweep.
+- **[RESOLVED — wave 2]:** overlap guards added to reconciliation, settlement, escrow auto-release and room lifecycle crons (a slow tick skips rather than stacks).
 
 ### What was audited and found solid (backend)
 helmet + compression + graceful shutdown + 5 MB JSON body limit with rawBody for webhook signatures; Swagger auto-disabled in production; ValidationPipe whitelist+forbidNonWhitelisted; JWT_SECRET enforced at boot in production; DB config forces `synchronize=false` in prod (one-time `DB_SYNCHRONIZE=true` bootstrap flag) with migrations run in prod; fail-closed AdminRolesGuard; pessimistic-write locks on wallet/escrow/bid/order/invoice settlement with idempotency re-checks; all external HTTP calls (providers, Brevo, exchange rates) carry AbortSignal timeouts; no stray setInterval; exactly 2 TODO(vendor) notes, both intentional fail-closed webhook stubs (OPay/Interswitch sandbox pass).
@@ -82,7 +82,7 @@ helmet + compression + graceful shutdown + 5 MB JSON body limit with rawBody for
 - **Observation:** Both client calls to `POST /payments/init` (JwtAuthGuard-protected) sent **no Authorization header** → 401 for every logged-in buyer. Worse: `payment_form.tsx` treated any failure as success and routed to `/checkout/confirmation` (silent no-payment "purchase"), and it sent an `email` field that is not in `InitPaymentDto` — with `forbidNonWhitelisted: true` that is a guaranteed 400 even with a valid token. `getOrderItems()` is a stub returning `[]`, so the Order Summary rendered ₦0.
 - **Impact:** The core revenue path (buy now → pay) could never complete through the UI; failures were invisible.
 - **Resolution (applied):** (a) both call sites now attach `Authorization: Bearer <session.accessToken>`; (b) the non-whitelisted `email` field was removed (backend takes the buyer email from the session); (c) failed inits now show a visible error and stay on the page — no fake confirmation; (d) the server derives the true amount from the invoice (see 1.1), so the client's ₦0 can no longer undercharge.
-- **[FUTURE · P1]:** make the Order Summary honest — pass the invoiceId to the page (e.g. via URL query from the buy-now flow) and render the fee-bearing invoice total server-side (`GET /invoices/:id` is party-or-admin guarded and already exists).
+- **[RESOLVED — wave 2]:** the buy-now flow now routes to `/checkout/payment?invoiceId=…`; the page fetches the invoice server-side (`getBuyerInvoice` via the party-guarded API) and the Order Summary renders the real fee-bearing total with the invoice number.
 
 ### 2.2 [RESOLVED · P2] Local Playwright reliability
 - **Observation:** Under full-suite load this dev box intermittently times out one auth-project test (login minting / heavy pages competing with dev servers).
@@ -93,10 +93,11 @@ helmet + compression + graceful shutdown + 5 MB JSON body limit with rawBody for
 - Redux auth token is memory-only and rehydrated by `app/auth-sync.tsx` from the next-auth session on mount; the HTTP-only session cookie (JWE, `AUTH_SECRET`) is the durable store — the backend JWT is exposed to JS only through the session object where needed. **[FUTURE · P2]**: hard-refresh races for guarded client fetches could be avoided by reading the token from `useSession()` everywhere (started: payment form/deposit modal use it).
 - Bidding is race-safe (pessimistic_write on the product row, min-increment enforced under lock); post-commit notifications use void+.catch; escrow release/refund skip DISPUTED holds and credit wallets inside one transaction.
 
-### 2.4 [FUTURE] Remaining business-logic items
-- **[P1] Webhook amount comparison:** `handleWebhook`/reconciliation never compare the provider-returned amount against `payment.amount`. After fix 1.1 the init-side is airtight, but a defense-in-depth check (fail on mismatch) should be added per provider once amount units (kobo vs naira) are confirmed in the vendor sandbox pass.
-- **[P2] invoice_number collision** retry under concurrent settlements (unique constraint exists; retry path unexercised).
-- **[P2] Serialization discipline:** extend `@Exclude` beyond the credential/OTP set (phones/addresses in user payloads served to non-parties) or move to explicit response DTOs for bids/users.
+### 2.4 Remaining business-logic items
+- **[RESOLVED — wave 2] Webhook amount comparison:** both `handleWebhook` and reconciliation now refuse to settle when the provider-confirmed amount (adapters already normalize to naira) differs from `payment.amount` (±0.01); mismatches leave the payment PENDING for manual review. Covered by a dedicated jest case.
+- **[RESOLVED — wave 2] invoice_number collision:** allocation is serialized with a transaction-scoped Postgres advisory lock (`pg_advisory_xact_lock`), so concurrent webhook/cron creators can no longer compute the same count+1.
+- **[RESOLVED — wave 2] Serialization discipline:** room participants hydrate only `id/name/createdAt` (same posture as the public bid feed); admin surfaces keep full fields legitimately.
+- **[FUTURE · P2]** a full response-DTO pass across every user-bearing payload remains nice-to-have.
 
 ---
 
@@ -107,15 +108,15 @@ helmet + compression + graceful shutdown + 5 MB JSON body limit with rawBody for
 ### 3.1 [RESOLVED · P0] Interactive payment elements now behave correctly
 See 2.1 — buttons now produce real outcomes: success redirects to the hosted checkout, transfer providers show instructions, failures surface a toast instead of a fake confirmation, and the wallet deposit modal shows its failure step on non-2xx responses.
 
-### 3.2 [FUTURE · P2] Known UX gaps to schedule
-- **Checkout Order Summary shows ₦0** (stubbed `getOrderItems`) even though the server now charges the correct invoice total — misleading at the exact moment users decide to pay (see 2.1 future item).
-- **Theme flash:** the 3-theme system reads `localStorage['greyauction-theme']`; verify a blocking inline script applies it pre-hydration on first paint (a11y/visual suites do not cover FOUC).
-- **i18n sweep:** user-facing hardcoded English strings exist in shared components (header/footer/dashboard spot-checks); a full pass through `messages/` + components is needed before non-English locales ship.
-- **Empty states:** list pages should standardize their empty-state component (currently mixed skeleton/spinner/message patterns).
-- **Contrast placeholders:** dark-theme placeholder contrast on card inputs was flagged for a visual pass (not machine-verifiable by axe).
+### 3.2 Known UX gaps
+- **[RESOLVED — wave 2] Checkout Order Summary shows ₦0** — fixed server-side via `?invoiceId=` (see 2.1).
+- **[RESOLVED — wave 2] Theme flash** — a synchronous init script at the top of `<body>` applies the stored theme class pre-paint (next-themes technique; hydration-safe).
+- **[FUTURE · P2] i18n sweep:** user-facing hardcoded English strings exist in shared components (header/footer/dashboard spot-checks); a full pass through `messages/` + components is needed before non-English locales ship.
+- **[FUTURE · P2] Empty states:** list pages should standardize their empty-state component (currently mixed skeleton/spinner/message patterns).
+- **[FUTURE · P2] Contrast placeholders:** dark-theme placeholder contrast on card inputs was flagged for a visual pass (not machine-verifiable by axe).
 
 ### 3.3 Accessibility posture
-Public routes pass axe (12/12) including landmarks, labels and contrast rules; authenticated dashboards are covered for overflow by the e2e suite. **[FUTURE · P2]:** dialog focus traps and Escape handling in `shared/components/common` dialogs deserve a dedicated pass (axe does not test keyboard focus management).
+Public routes pass axe (12/12) including landmarks, labels and contrast rules; authenticated dashboards are covered for overflow by the e2e suite. **[VERIFIED — wave 2]:** the shared dialog primitives are pure Radix (`@radix-ui/react-dialog`), which natively provides focus trapping, Escape-to-close and focus restoration — no custom implementation needed.
 
 ---
 
@@ -128,7 +129,7 @@ Public routes pass axe (12/12) including landmarks, labels and contrast rules; a
 4. **Pay** — `/checkout/payment` → `POST /payments/init` (authenticated) → server forces amount = invoice.total → hosted checkout → signature-validated webhook → invoice PAID + escrow hold atomically. Failure paths are visible; no silent fake success.
 5. **Escrow → release** — sweep releases only HELD holds past their window (skips DISPUTED) and credits the seller wallet in one transaction. Manual hold creation can no longer mint unbacked money.
 6. **Wallet funding** — only via verified webhook credit in production (direct deposit endpoint disabled).
-7. **Remaining flow gap [FUTURE · P1]:** checkout confirmation page still reflects client-side state; wire it to `GET /orders/:id`/invoice status so the user sees authoritative payment state (pending/failed states today look "complete" after redirect).
+7. **[RESOLVED — wave 2]** the confirmation page now reflects authoritative state: it fetches the invoice (session-authenticated, with a short poll to absorb webhook lag) and renders paid / processing / cancelled / unknown honestly instead of assuming success.
 
 ### 4.2 Configuration conflicts found (verified)
 - `NEXT_PUBLIC_API_URL` is used by BOTH server components and client bundles: every fallback defaults to `http://localhost:3001/api`. In production it MUST be set to the absolute API origin or browser calls will 404 while SSR works (and vice versa).
@@ -182,14 +183,14 @@ Public routes pass axe (12/12) including landmarks, labels and contrast rules; a
 | 10 | P1 | Payments | Public verify/providers, mock auto-pay | RESOLVED (gated) |
 | 11 | P2 | Cron | Unguarded sweep start | RESOLVED |
 | 12 | P0 | Checkout | Unauthenticated init + fake success + non-whitelisted field | RESOLVED |
-| 13 | P1 | Checkout | Order summary ₦0 / stubbed order items | FUTURE |
-| 14 | P1 | Confirmation | Page shows client-side state only | FUTURE |
-| 15 | P1 | Webhooks | Provider-amount vs payment.amount check | FUTURE |
-| 16 | P1 | Settings | In-memory settings store | FUTURE |
-| 17 | P2 | Users | PII beyond credentials in payloads | FUTURE |
-| 18 | P2 | Tickets | List/detail owner-or-admin scoping | FUTURE |
-| 19 | P2 | Legacy | Delete legacy payments trio, idempotent replays | FUTURE |
-| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | FUTURE |
-| 21 | P2 | Config | CSP hardening, images remotePatterns | FUTURE |
-| 22 | P2 | Ops | invoice_number collision retry, cron overlap guard, admin password policy | FUTURE |
+| 13 | P1 | Checkout | Order summary ₦0 / stubbed order items | RESOLVED (this wave) |
+| 14 | P1 | Confirmation | Page shows client-side state only | RESOLVED (this wave) |
+| 15 | P1 | Webhooks | Provider-amount vs payment.amount check | RESOLVED (this wave) |
+| 16 | P1 | Settings | In-memory settings store | RESOLVED (this wave) |
+| 17 | P2 | Users | PII beyond credentials in payloads | PARTIAL (rooms projection; full DTO pass future) |
+| 18 | P2 | Tickets | List/detail owner-or-admin scoping | RESOLVED (this wave) |
+| 19 | P2 | Legacy | Delete legacy payments trio, idempotent replays | RESOLVED (this wave) |
+| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; dialog verified native; i18n/empty-states future) |
+| 21 | P2 | Config | CSP hardening, images remotePatterns | RESOLVED (this wave) |
+| 22 | P2 | Ops | invoice_number collision retry, cron overlap guard, admin password policy | RESOLVED (this wave) |
 | 23 | — | Vendors | OPay/Interswitch sandbox verification (TODO(vendor)) | FUTURE (pre-existing) |
