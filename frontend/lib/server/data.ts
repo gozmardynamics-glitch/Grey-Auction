@@ -871,10 +871,25 @@ const USE_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
 // ─── Website ─────────────────────────────────────────────────────────────
 
 export async function getAuctions() {
-  // Fetch a generous page so client-side category / arm (subcategory) filters see all active lots.
-  const data = await apiFetch('/products?limit=200');
-  const list = unwrapList(data);
-  if (list && list.length > 0) return list.map(normalizeAuction);
+  // Aggregate every active lot via the API's paginated contract
+  // (GET /products?page=N&limit=M -> { data, total, page, limit }) so the
+  // client-side category / arm (subcategory) filters and live tab counts see
+  // the complete set. The previous hard `limit=200` silently hid lots once
+  // inventory passed 200. Loop stops on the first short page, so current
+  // inventory sizes still cost a single fetch; the 1000-lot ceiling keeps
+  // payloads sane. The structural next step — server-side filtering/paging
+  // with tab counts served by the backend — is tracked in the handoff backlog.
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 10; // ceiling: 1000 lots
+  const collected: unknown[] = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const data = await apiFetch(`/products?page=${page}&limit=${PAGE_SIZE}`);
+    const list = unwrapList(data);
+    if (!list || list.length === 0) break;
+    collected.push(...list);
+    if (list.length < PAGE_SIZE) break;
+  }
+  if (collected.length > 0) return collected.map(normalizeAuction);
   return USE_MOCK_FALLBACK ? mockAuctions : [];
 }
 
