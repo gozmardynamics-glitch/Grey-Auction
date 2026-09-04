@@ -65,6 +65,14 @@ Playwright notes:
 
 _Updated 2026-09-04 (session: ①–④ executed, suites green — see QA_STATUS.md for details)._
 
+0. **Production-readiness audit (2026-09-04)** — full report in
+   `docs/PRODUCTION_AUDIT.md`: 15 issues FIXED (server-authoritative payment
+   amounts, escrow/wallet minting closed, passwordHash/OTP exposure contained,
+   checkout init authenticated with honest failures, seed credentials gated),
+   11 items documented as future work (webhook amount checks, settings
+   persistence, checkout summary wiring, vendor sandbox pass). Read it before
+   any deploy.
+
 1. ~~**AI dashboard SSR gap**~~ — **FIXED**: `_islands/ai-api.ts` is session-aware
    (`auth()` → Bearer); all admin AI server pages render data on first paint; the
    dashboard island's usage fetch carries the token too; e2e pins the regression.
