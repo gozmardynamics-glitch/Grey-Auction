@@ -75,6 +75,16 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+      // The buy-now flow persists the fee-bearing invoice id in sessionStorage
+      // before redirecting here; forwarding it links the Payment to the
+      // invoice so webhook success flips the right order to paid (U5 flow).
+      let invoiceId: string | null = null;
+      try {
+        invoiceId = sessionStorage.getItem('greyauction:buyNowInvoiceId');
+      } catch {
+        /* storage unavailable — init proceeds without invoice linkage */
+      }
+
       // Buyer picks the payment platform; we create a Payment record and let the
       // chosen provider initialize. Redirect providers return a hosted checkout
       // URL; transfer/account providers return a payment instruction.
@@ -88,6 +98,7 @@ export default function PaymentForm({ orderItems }: PaymentFormProps) {
           email: (data as PaymentFormValuesWithEmail).email || 'buyer@greyauction.com',
           callbackUrl: window.location.origin + '/checkout/confirmation',
           metadata: {},
+          ...(invoiceId ? { invoiceId } : {}),
         }),
       });
 
