@@ -1,4 +1,4 @@
-# U5 Physical Test Runbook (updated 2026-09-02, after live E2E verification)
+# U5 Physical Test Runbook (updated 2026-09-05 — added Phase 8 vendor sandbox verification)
 
 Manual test plan for the U5 fee-rules features. Dev servers must be running
 (backend `:3001`, frontend `:3000`). Swagger: <http://localhost:3001/api/docs>.
@@ -18,7 +18,7 @@ following now run without a human:
 - The old manual setup steps that automation now covers: admin AI console
   reachability (`e2e/ai-admin.spec.ts` asserts the provider grid renders data
   on first paint) and the checkout invoiceId linkage (fixed, see Known gaps).
-- Still manual: Phases 2-7 on real devices (webhook simulation needs the
+- Still manual: Phases 2-8 on real devices (webhook simulation needs the
   two-phase backend restart; escrow sweep timing is easiest to observe live).
 
 Everything below was verified end-to-end in the dev environment on 2026-09-02
@@ -191,3 +191,67 @@ paid — no manual step. `auto_release_at` = paid_at + escrowReleaseHours.
   product page) so webhook success links straight to the invoice. Phase 6
   can use either the UI or Swagger init.
 - Email sending fails harmlessly in dev (no Brevo SMTP) — ignore the logs.
+- **OPay/Interswitch remain blocked on vendor sandbox keys** — Phase 8 below
+  is executable the day the keys land; until then webhooks fail closed by
+  design (`verified=false` → no settlement).
+## Phase 8 — OPay / Interswitch sandbox verification (blocked on vendor keys)
+
+Both adapters are code-complete with 100% unit coverage (backend `jest` —
+`opay.provider.spec.ts`, `interswitch.provider.spec.ts`). What remains is the
+on-device sandbox pass once real keys exist. Arrange in this order:
+
+### 8.0 — Status check
+
+`GET /api/payments/providers` (authorized) lists every provider with its
+`configured` flag. Paystack stays `true`; OPay/Interswitch flip to `true`
+only after step 8.1.
+
+### 8.1 — Configure keys (backend/.env, then restart the backend)
+
+    OPAY_MERCHANT_ID / OPAY_PUBLIC_KEY / OPAY_PRIVATE_KEY (or OPAY_SECRET_KEY)
+    OPAY_BASE_URL   (default https://liveapi.opaycheckout.com/api/v1/international —
+                     point it at the sandbox host the vendor gives you)
+    OPAY_COUNTRY    (default NG)
+    OPAY_WEBHOOK_SIGNATURE_HEADER (if the sandbox signs callbacks on a
+                     different header than x-opay-signature)
+
+    INTERSWITCH_PRODUCT_ID / INTERSWITCH_PAY_ITEM_ID / INTERSWITCH_MAC_KEY
+    INTERSWITCH_GATEWAY_URL / INTERSWITCH_TXN_URL (sandbox hosts, if provided)
+    INTERSWITCH_WEBHOOK_HASH  (shared secret; required — webhooks fail closed
+                     without it)
+
+### 8.2 — OPay sandbox pass
+
+1. As buyer: `POST /api/payments/init` with `"provider": "opay"` and the
+   invoice/wallet payload → expect `data.checkoutUrl` (hosted checkout) →
+   complete a sandbox payment.
+2. The provider calls back to `POST /api/payments/webhook/opay`. Signature
+   headers must verify; the invoice flips to `paid`, escrow hold created.
+3. Idempotency: replay the same webhook → no double settlement.
+4. Tamper test: modify the payload (or sign with the wrong key) → rejected,
+   nothing settles (fail-closed).
+5. If the sandbox uses a signature scheme differing from the HMAC impl,
+   record the vendor doc link here and adjust `opay.provider.ts` before
+   enabling live traffic.
+
+### 8.3 — Interswitch (Webpay Direct) sandbox pass
+
+1. As buyer: `POST /api/payments/init` with `"provider": "interswitch"` →
+   expect a signed **redirect URL** (Webpay Direct has no JSON init API):
+   `{gatewayUrl}?productid=…&transactionreference=…&amount=<kobo>&…&hash=SHA512(productid+ref+mackey)`.
+2. Complete the sandbox payment; verify the redirect back to
+   `site_redirect_url`.
+3. Transaction status query: `GET {txnUrl}?productid=…&transactionreference=…&amount=<kobo>`
+   with header `Hash: SHA512(productid + reference + mackey)` → response
+   code `00`, amount in kobo must match the original payment.
+4. Webhook/IPN → `POST /api/payments/webhook/interswitch`: **fail-closed**
+   unless `INTERSWITCH_WEBHOOK_HASH` is set. Confirm the vendor's actual IPN
+   signature scheme in the sandbox pass (open TODO in the adapter header) and
+   record it here; do not enable live traffic before that.
+5. Idempotency + tamper tests as in 8.2.
+
+### 8.4 — Records to capture (paste into PRODUCTION_AUDIT.md)
+
+- Sandbox transaction references + statuses for both providers.
+- The exact webhook signature headers/schemes observed (both vendors).
+- Any adapter adjustments made during the pass (commit refs).

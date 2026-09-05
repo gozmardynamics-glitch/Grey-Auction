@@ -33,7 +33,7 @@
 - [ ] Server-side filtering + backend-served arm-tab counts (replaces client-side bounded aggregate).
 
 ## 7. Physical U5 test runbook
-- [ ] `docs/PHYSICAL_TEST_U5.md` reviewed/updated so the on-device pass is executable when the team is ready.
+- [x] `docs/PHYSICAL_TEST_U5.md` reviewed/updated — added Phase 8 (OPay/Interswitch sandbox pass: env keys, provider status check, init/webhook steps, fail-closed tamper tests, audit records to capture).
 
 ## Bookkeeping (end of day)
 - [ ] Update `docs/HANDOFF.md` checkpoint, `docs/PRODUCTION_AUDIT.md` ledger, `pendingwork.md` placeholders.
