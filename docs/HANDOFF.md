@@ -1,8 +1,8 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: end of the i18n/deep-dashboards session (2026-09-04, evening). Head `51402a5` —
-**28 commits ahead of `origin/master`, NOT pushed** (push needs explicit user go-ahead).
-Working tree clean; all suites green. Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
+_Checkpoint: wave-3 session in progress (2026-09-05). Head at last doc commit — see `git log`.
+**40+ commits ahead of `origin/master`, NOT pushed** (push needs explicit user go-ahead).
+Suites at last full verification: tsc clean · vitest 80/80 · jest 296/296 (43 suites). Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
 
 ## Repo & environment
 
