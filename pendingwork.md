@@ -1,7 +1,7 @@
 # GreyAuction Platform — Pending Work & Implementation Roadmap
 
 > **Living document — single source of truth for project tracking.**  
-> Last updated: 2026-09-05T12:00 (wave-3 i18n + response-DTO pass session) | Status: **DEPLOYED** (Coolify + VPS)  
+> Last updated: 2026-09-05 EOD (wave-3 i18n complete: buyer wallet/settings, seller settings, admin settings, admin list-table chrome; response-DTO pass; arm-counts endpoint; 45 commits ahead, push pending user go-ahead) | Status: **DEPLOYED** (Coolify + VPS)  
 > GitHub: `github.com/gozmardynamics-glitch/Grey-Auction` | Env: `https://coolify.gozmar.com`
 
 ---

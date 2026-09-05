@@ -190,7 +190,7 @@ Public routes pass axe (12/12) including landmarks, labels and contrast rules; a
 | 17 | P2 | Users | PII beyond credentials in payloads | RESOLVED (wave 3: shared `USER_PUBLIC_SELECT` projection across bids/rooms incl. the room bid feed; convention fixed in code) |
 | 18 | P2 | Tickets | List/detail owner-or-admin scoping | RESOLVED (this wave) |
 | 19 | P2 | Legacy | Delete legacy payments trio, idempotent replays | RESOLVED (this wave) |
-| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; header/footer + dashboard navs + all three dashboard homes done; wave 3 2026-09-05: buyer wallet flows, buyer settings tabs and seller settings modules translated; admin settings + list-table chrome in progress; EmptyState sweep remaining) |
+| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; header/footer + dashboard navs + all three dashboard homes done; wave 3 2026-09-05 complete: buyer wallet/flows + settings, seller settings, admin settings, and the full admin list-table chrome across auctions/bids/buyers/sellers/tickets; catalogs at 1534 keys ×3 locales; remaining raw strings are enum/status values, shared tab-filter labels in admin/models/data.ts, and mock-data values — deliberate) |
 | 21 | P2 | Config | CSP hardening, images remotePatterns | RESOLVED (this wave) |
 | 22 | P2 | Ops | invoice_number collision retry, cron overlap guard, admin password policy | RESOLVED (this wave) |
 | 23 | — | Vendors | OPay/Interswitch sandbox verification (TODO(vendor)) | FUTURE — code paths 100% unit-covered (mocked HTTP, real HMAC/hash), sandbox pass is verification-only |

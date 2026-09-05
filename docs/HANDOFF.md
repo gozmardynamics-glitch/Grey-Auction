@@ -1,8 +1,8 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: wave-3 session in progress (2026-09-05). Head at last doc commit — see `git log`.
-**40+ commits ahead of `origin/master`, NOT pushed** (push needs explicit user go-ahead).
-Suites at last full verification: tsc clean · vitest 80/80 · jest 296/296 (43 suites). Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
+_Checkpoint: end of wave-3 session (2026-09-05). Head `6ce225c` —
+**45 commits ahead of `origin/master`, NOT pushed** (push needs explicit user go-ahead).
+Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest 296/296 (43 suites) · Playwright 55/55 effective (2 ai-admin failures from a stale admin storageState, re-verified 5/5 after re-mint). Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
 
 ## Repo & environment
 
@@ -25,6 +25,10 @@ Suites at last full verification: tsc clean · vitest 80/80 · jest 296/296 (43 
   before blaming the frontend. Restart with detached `npm run start:dev`.
 - Playwright runs with `workers: 2`; a single auth-mint flake that passes on retry is contention,
   not a regression (retries absorb it — exit code is what counts).
+- **An expired auth storageState does NOT redirect — it empties.** Pages whose data comes from
+  JWT-guarded SSR fetches (e.g. the admin AI console) render their empty state ("No Providers")
+  instead of erroring, so specs asserting data visibility fail mysteriously. Re-mint
+  (`node scripts/_make-auth.js`) before blaming the code. (Hit 2026-09-05 on `ai-admin.spec.ts`.)
 
 ## Test accounts
 
@@ -40,8 +44,8 @@ Suites at last full verification: tsc clean · vitest 80/80 · jest 296/296 (43 
 cd frontend
 npx tsc --noEmit        # clean
 npx vitest run          # 80/80 (17 files)
-npx playwright test     # 55/55 (1 known auth-mint contention flake, passes on retry)
-cd ../backend && npx jest   # 293/293 (43 suites)
+npx playwright test     # 55/55 effective (see stale-auth gotcha above)
+cd ../backend && npx jest   # 296/296 (43 suites)
 ```
 
 Playwright notes:
@@ -52,6 +56,18 @@ Playwright notes:
 
 ## What was delivered (this session, newest first)
 
+- `6ce225c` i18n(admin): admin list-table chrome across all five domains (auctions/bids/buyers/sellers/tickets;
+  column-hook factories, detail modals incl. approve/reject confirmations, spec dialogs model-as-keys;
+  catalogs 1534 keys ×3 locales)
+- `332d47e` i18n(buyer): wishlist module (buyer.wishlist)
+- `e8920a4` i18n(admin): admin settings modules (admin.settings, 353 keys)
+- `d8072e3` i18n(seller): seller settings modules (seller.settings, 173 keys)
+- `521ac5e` i18n(buyer): buyer settings tabs (buyer.settings, 86 keys)
+- `2593a07` i18n(buyer): buyer wallet flows (buyer.wallet, 173 keys)
+- `35d1d47` refactor(security): shared USER_PUBLIC_SELECT projection (response-DTO pass)
+- `d59fc8a` + `11e23b8` server-served arm-tab counts endpoint + URL-scoped server filtering
+- `6ec110a` EmptyState sweep completion (contextual empty state on room-creation auctions step)
+- `2a17cd1` docs: U5 runbook Phase 8 (OPay/Interswitch sandbox pass)
 - `51402a5` docs: dashboard home i18n recorded in audit + handoff
 - `ab10366` i18n(admin): admin dashboard home (admin.home, 28 keys)
 - `5c1764a` i18n(seller): seller dashboard home (seller.home, 33 keys)
