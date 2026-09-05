@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -28,6 +29,7 @@ import {
 } from '../../../models/schema';
 
 export default function EmailSettings() {
+  const t = useTranslations('admin.settings.email');
   // ─── SMTP Form ──────────────────────────────────────────────────────
   const smtpForm = useForm<SmtpConfigValues>({
     resolver: zodResolver(smtpConfigSchema),
@@ -48,10 +50,10 @@ export default function EmailSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'smtp', ...data }),
       });
-      toast.success('SMTP configuration saved.');
+      toast.success(t('smtpSaved'));
     } catch (error) {
       console.error('Failed to save SMTP config:', error);
-      toast.error('Failed to save SMTP configuration.');
+      toast.error(t('smtpSaveFailed'));
     }
   };
 
@@ -72,10 +74,10 @@ export default function EmailSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'mailing', ...data }),
       });
-      toast.success('Mailing settings saved.');
+      toast.success(t('mailingSaved'));
     } catch (error) {
       console.error('Failed to save mailing config:', error);
-      toast.error('Failed to save mailing settings.');
+      toast.error(t('mailingSaveFailed'));
     }
   };
 
@@ -87,7 +89,7 @@ export default function EmailSettings() {
           onSubmit={smtpForm.handleSubmit(onSaveSmtp)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Configuration</h3>
+          <h3 className="text-base font-semibold">{t('configuration')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -97,10 +99,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      SMTP Host
+                      {t('smtpHost')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the SMTP host of your email service.
+                      {t('smtpHostHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -120,10 +122,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      SMTP Port
+                      {t('smtpPort')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the email port from.
+                      {t('smtpPortHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -143,10 +145,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      SMTP Encryption
+                      {t('smtpEncryption')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the encryption of your email.
+                      {t('smtpEncryptionHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -162,7 +164,7 @@ export default function EmailSettings() {
                       <SelectContent>
                         <SelectItem value="TLS">TLS</SelectItem>
                         <SelectItem value="SSL">SSL</SelectItem>
-                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="None">{t('encryptionNone')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -178,10 +180,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      SMTP Username
+                      {t('smtpUsername')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the email of your website.
+                      {t('smtpUsernameHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -201,10 +203,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      SMTP Password
+                      {t('smtpPassword')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the password of your website email.
+                      {t('smtpPasswordHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -223,7 +225,7 @@ export default function EmailSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -235,7 +237,7 @@ export default function EmailSettings() {
           onSubmit={mailingForm.handleSubmit(onSaveMailing)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Mailing</h3>
+          <h3 className="text-base font-semibold">{t('mailing')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -245,10 +247,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Email From: Name
+                      {t('emailFromName')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the name on your email.
+                      {t('emailFromNameHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -268,10 +270,10 @@ export default function EmailSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Email From: Address
+                      {t('emailFromAddress')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the email address of email.
+                      {t('emailFromAddressHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -285,7 +287,7 @@ export default function EmailSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

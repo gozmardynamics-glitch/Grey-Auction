@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common';
 
 const ENV_HINTS: Record<string, string> = {
@@ -12,6 +13,7 @@ const ENV_HINTS: Record<string, string> = {
 
 /** Live provider status from GET /payments/providers, with env placeholders. */
 export function PaymentProvidersStatus() {
+  const t = useTranslations('admin.settings.paymentProviders');
   const [providers, setProviders] = useState<{ provider: string; configured: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,23 +32,24 @@ export function PaymentProvidersStatus() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Payment Providers</CardTitle>
+        <CardTitle className="text-base">{t('title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {loading && <p className="text-sm text-muted-foreground">Loading provider status…</p>}
+        {loading && <p className="text-sm text-muted-foreground">{t('loading')}</p>}
         {!loading && providers.length === 0 && (
-          <p className="text-sm text-muted-foreground">No provider status available.</p>
+          <p className="text-sm text-muted-foreground">{t('empty')}</p>
         )}
         {providers.map((p) => (
           <div key={p.provider} className="flex flex-col gap-1 rounded-md border-border p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium capitalize">{p.provider}</span>
               <Badge variant="secondary" className={p.configured ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'}>
-                {p.configured ? 'Configured' : 'Not configured'}
+                {p.configured ? t('configured') : t('notConfigured')}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Set in env: <code className="font-mono text-[11px]">{ENV_HINTS[p.provider] ?? '—'}</code>
+              {t('setInEnv')}{' '}
+              <code className="font-mono text-[11px]">{ENV_HINTS[p.provider] ?? '—'}</code>
             </p>
           </div>
         ))}

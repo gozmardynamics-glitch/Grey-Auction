@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Card, Input, ScrollArea, Skeleton } from '@/shared/components/common';
 import { SettingsModuleKey } from '../models/settings';
@@ -17,6 +18,20 @@ const settingsLoader = () => (
     <Skeleton className="h-10 w-full" />
   </div>
 );
+
+const MODULE_TITLE_KEYS: Record<SettingsModuleKey, string> = {
+  general: 'general.title',
+  email: 'email.title',
+  'roles-permission': 'roles.title',
+  payments: 'payments.title',
+  fees: 'fees.title',
+  auctions: 'auctions.title',
+  notifications: 'notifications.title',
+  preferences: 'preferences.title',
+  security: 'security.title',
+  'audit-logs': 'auditLogs.title',
+  'system-status': 'systemStatus.title',
+};
 
 const MODULE_MAP: Record<SettingsModuleKey, React.ComponentType> = {
   general: dynamic(() => import('../settings/components/modules/general'), { loading: settingsLoader }),
@@ -33,6 +48,7 @@ const MODULE_MAP: Record<SettingsModuleKey, React.ComponentType> = {
 };
 
 export default function AdminSettingsModules() {
+  const t = useTranslations('admin.settings');
   const [activeModule, setActiveModule] =
     useState<SettingsModuleKey>('general');
 
@@ -50,15 +66,13 @@ export default function AdminSettingsModules() {
       <div className="flex flex-1 flex-col">
         {/* Module header with search */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b px-4 sm:px-6 py-3">
-          <h2 className="text-base font-semibold capitalize">
-            {activeModule
-              .replace('-', ' & ')
-              .replace(/\b\w/g, (c) => c.toUpperCase())}
+          <h2 className="text-base font-semibold">
+            {t(MODULE_TITLE_KEYS[activeModule])}
           </h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search"
+              placeholder={t('search')}
               className="w-full sm:w-[180px] pl-9 bg-background h-9"
             />
           </div>

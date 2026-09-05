@@ -2,43 +2,45 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button, Label, Switch } from '@/shared/components/common';
 
 interface NotificationItem {
   key: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   enabled: boolean;
 }
 
 const defaultNotifications: NotificationItem[] = [
   {
     key: 'auction',
-    label: 'Auction',
-    description: 'Get updates about listings and bidding activity.',
+    labelKey: 'auction',
+    descriptionKey: 'auctionHint',
     enabled: true,
   },
   {
     key: 'paymentSuccessful',
-    label: 'Payment successful',
-    description: 'Stay informed about payments.',
+    labelKey: 'paymentSuccessful',
+    descriptionKey: 'paymentSuccessfulHint',
     enabled: true,
   },
   {
     key: 'withdrawalInitiated',
-    label: 'Withdrawal initiated',
-    description: 'Get notified when sellers initiates withdrawal.',
+    labelKey: 'withdrawalInitiated',
+    descriptionKey: 'withdrawalInitiatedHint',
     enabled: true,
   },
   {
     key: 'withdrawalCompleted',
-    label: 'Withdrawal completed',
-    description: 'Get notified when withdrawal is successful.',
+    labelKey: 'withdrawalCompleted',
+    descriptionKey: 'withdrawalCompletedHint',
     enabled: true,
   },
 ];
 
 export default function NotificationsSettings() {
+  const t = useTranslations('admin.settings.notifications');
   const [notifications, setNotifications] =
     useState<NotificationItem[]>(defaultNotifications);
 
@@ -56,10 +58,10 @@ export default function NotificationsSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notifications }),
       });
-      toast.success('Notification settings saved.');
+      toast.success(t('saved'));
     } catch (error) {
       console.error('Failed to save notifications:', error);
-      toast.error('Failed to save notification settings.');
+      toast.error(t('saveFailed'));
     }
   };
 
@@ -71,9 +73,9 @@ export default function NotificationsSettings() {
           className="flex items-center justify-between"
         >
           <div>
-            <Label className="text-sm font-medium">{item.label}</Label>
+            <Label className="text-sm font-medium">{t(item.labelKey)}</Label>
             <p className="text-xs text-muted-foreground">
-              {item.description}
+              {t(item.descriptionKey)}
             </p>
           </div>
           <Switch
@@ -83,7 +85,7 @@ export default function NotificationsSettings() {
         </div>
       ))}
       <div className="pt-2">
-        <Button onClick={onSave}>Save Changes</Button>
+        <Button onClick={onSave}>{t('saveChanges')}</Button>
       </div>
     </div>
   );

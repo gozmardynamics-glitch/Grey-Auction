@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Percent, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import {
   Badge,
@@ -104,6 +105,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function FeesSettings() {
+  const t = useTranslations('admin.settings.fees');
   const token = useAppSelector((state) => state.auth.token);
   const [configs, setConfigs] = useState<FeeConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +146,7 @@ export default function FeesSettings() {
       })
       .catch((error) => {
         console.error('Failed to load fee configurations:', error);
-        toast.error('Failed to load fee configurations.');
+        toast.error(t('loadFailed'));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -162,7 +164,7 @@ export default function FeesSettings() {
           json?.success && Array.isArray(json.data) ? json.data : [];
         setOverrides(data);
       })
-      .catch(() => toast.error('Failed to load fee overrides.'))
+      .catch(() => toast.error(t('loadOverridesFailed')))
       .finally(() => setOvLoading(false));
   }, []);
 
@@ -172,7 +174,7 @@ export default function FeesSettings() {
 
   const handleOverrideSave = async () => {
     if (!ovForm.scopeId.trim()) {
-      toast.error('Enter the seller or product ID.');
+      toast.error(t('enterScopeId'));
       return;
     }
     setOvSaving(true);
@@ -194,18 +196,18 @@ export default function FeesSettings() {
       });
       const json = await res.json();
       if (!res.ok || json?.success === false) throw new Error('save failed');
-      toast.success('Fee override saved.');
+      toast.success(t('overrideSaved'));
       setOvForm({ scope: 'seller', scopeId: '', buyerFeePct: '', sellerFeePct: '', vatPct: '', vatBase: '' });
       loadOverrides();
     } catch {
-      toast.error('Failed to save fee override.');
+      toast.error(t('overrideSaveFailed'));
     } finally {
       setOvSaving(false);
     }
   };
 
   const handleOverrideDelete = async (row: FeeOverrideRow) => {
-    if (!window.confirm(`Remove the ${row.scope} override?`)) return;
+    if (!window.confirm(t('confirmRemoveOverride', { scope: row.scope }))) return;
     try {
       const res = await fetch(
         `${API_BASE}/fees/overrides/${row.scope}/${row.scopeId}`,
@@ -215,10 +217,10 @@ export default function FeesSettings() {
         },
       );
       if (!res.ok) throw new Error('delete failed');
-      toast.success('Fee override removed.');
+      toast.success(t('overrideRemoved'));
       loadOverrides();
     } catch {
-      toast.error('Failed to remove fee override.');
+      toast.error(t('overrideRemoveFailed'));
     }
   };
 
@@ -281,14 +283,14 @@ export default function FeesSettings() {
       if (!res.ok || json?.success === false) {
         throw new Error('save failed');
       }
-      toast.success('Fee configuration saved.');
+      toast.success(t('saved'));
       setShowForm(false);
       resetForm();
       setLoading(true);
       loadConfigs();
     } catch (error) {
       console.error('Failed to save fee configuration:', error);
-      toast.error('Failed to save fee configuration.');
+      toast.error(t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -296,19 +298,19 @@ export default function FeesSettings() {
 
   const handleDelete = async (config: FeeConfig) => {
     const name = config.displayName || config.category;
-    if (!window.confirm(`Delete fee configuration for "${name}"?`)) return;
+    if (!window.confirm(t('confirmDelete', { name }))) return;
     try {
       const res = await fetch(`${API_BASE}/fees/${config.id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error('delete failed');
-      toast.success('Fee configuration deleted.');
+      toast.success(t('deleted'));
       setLoading(true);
       loadConfigs();
     } catch (error) {
       console.error('Failed to delete fee configuration:', error);
-      toast.error('Failed to delete fee configuration.');
+      toast.error(t('deleteFailed'));
     }
   };
 
@@ -335,7 +337,7 @@ export default function FeesSettings() {
       loadConfigs();
     } catch (error) {
       console.error('Failed to update fee configuration:', error);
-      toast.error('Failed to update fee configuration.');
+      toast.error(t('updateFailed'));
     }
   };
 
@@ -360,11 +362,10 @@ export default function FeesSettings() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h3 className="text-base font-semibold">
-            Fees &amp; Charges Configuration
+            {t('title')}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Configure platform commission, VAT, other charges and fixed fees
-            per category.
+            {t('description')}
           </p>
         </div>
         <Button
@@ -374,7 +375,7 @@ export default function FeesSettings() {
           }}
         >
           <Plus className="h-4 w-4" />
-          Add configuration
+          {t('addConfiguration')}
         </Button>
       </div>
 
@@ -383,36 +384,36 @@ export default function FeesSettings() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
-              {editingId ? 'Edit configuration' : 'Add configuration'}
+              {editingId ? t('editConfiguration') : t('addConfiguration')}
             </CardTitle>
             <CardDescription>
               {editingId
-                ? 'Update the fee rates for this category.'
-                : 'Define commission, VAT, other charges and a fixed fee for a category.'}
+                ? t('formDescriptionEdit')
+                : t('formDescriptionAdd')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Category slug</Label>
+                  <Label className="text-sm">{t('categorySlug')}</Label>
                   <Input
                     value={form.category}
                     onChange={(e) => updateField('category', e.target.value)}
-                    placeholder="e.g. vehicles"
+                    placeholder={t('categorySlugPlaceholder')}
                     disabled={editingId !== null}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Display name</Label>
+                  <Label className="text-sm">{t('displayName')}</Label>
                   <Input
                     value={form.displayName}
                     onChange={(e) => updateField('displayName', e.target.value)}
-                    placeholder="e.g. Vehicles"
+                    placeholder={t('displayNamePlaceholder')}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Buyer fee (commission)</Label>
+                  <Label className="text-sm">{t('buyerFeeCommission')}</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -431,7 +432,7 @@ export default function FeesSettings() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">VAT</Label>
+                  <Label className="text-sm">{t('vat')}</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -448,7 +449,7 @@ export default function FeesSettings() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Other charges</Label>
+                  <Label className="text-sm">{t('otherCharges')}</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -467,7 +468,7 @@ export default function FeesSettings() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Fixed fee (₦)</Label>
+                  <Label className="text-sm">{t('fixedFee')}</Label>
                   <Input
                     type="number"
                     min={0}
@@ -480,7 +481,7 @@ export default function FeesSettings() {
 
                 {/* ─── U5 fee rules ─────────────────────────────── */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Seller commission (U5)</Label>
+                  <Label className="text-sm">{t('sellerCommission')}</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -499,7 +500,7 @@ export default function FeesSettings() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">VAT base (U5 switch)</Label>
+                  <Label className="text-sm">{t('vatBase')}</Label>
                   <Select
                     value={form.vatBase}
                     onValueChange={(v) =>
@@ -511,47 +512,47 @@ export default function FeesSettings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="fees_only">
-                        Fees only (VAT on fees)
+                        {t('vatBaseFeesOnly')}
                       </SelectItem>
                       <SelectItem value="hammer_and_fees">
-                        Hammer + fees (VAT on price + fees)
+                        {t('vatBaseHammerAndFees')}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Buyer fee enabled (U5)</Label>
+                  <Label className="text-sm">{t('buyerFeeEnabled')}</Label>
                   <div className="flex h-12 items-center gap-2">
                     <Switch
                       checked={form.buyerFeeEnabled}
                       onCheckedChange={(c) => updateField('buyerFeeEnabled', c)}
                     />
                     <span className="text-sm text-muted-foreground">
-                      {form.buyerFeeEnabled ? 'Charging buyer fee' : 'Off'}
+                      {form.buyerFeeEnabled ? t('chargingBuyerFee') : t('off')}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Seller fee enabled (U5)</Label>
+                  <Label className="text-sm">{t('sellerFeeEnabled')}</Label>
                   <div className="flex h-12 items-center gap-2">
                     <Switch
                       checked={form.sellerFeeEnabled}
                       onCheckedChange={(c) => updateField('sellerFeeEnabled', c)}
                     />
                     <span className="text-sm text-muted-foreground">
-                      {form.sellerFeeEnabled ? 'Charging seller commission' : 'Off'}
+                      {form.sellerFeeEnabled ? t('chargingSellerCommission') : t('off')}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Active</Label>
+                  <Label className="text-sm">{t('active')}</Label>
                   <div className="flex h-12 items-center gap-2">
                     <Switch
                       checked={form.isActive}
                       onCheckedChange={(c) => updateField('isActive', c)}
                     />
                     <span className="text-sm text-muted-foreground">
-                      {form.isActive ? 'Enabled' : 'Disabled'}
+                      {form.isActive ? t('enabled') : t('disabled')}
                     </span>
                   </div>
                 </div>
@@ -561,7 +562,7 @@ export default function FeesSettings() {
                   type="submit"
                   disabled={saving || !form.category.trim()}
                 >
-                  {saving ? 'Saving…' : 'Save configuration'}
+                  {saving ? t('saving') : t('saveConfiguration')}
                 </Button>
                 <Button
                   type="button"
@@ -571,7 +572,7 @@ export default function FeesSettings() {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
               </div>
             </form>
@@ -600,8 +601,8 @@ export default function FeesSettings() {
       ) : configs.length === 0 ? (
         <EmptyState
           icon={<Percent className="h-10 w-10" />}
-          title="No fee configurations yet"
-          description="Add a configuration to define commission, VAT and other charges."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
           action={
             <Button
               onClick={() => {
@@ -610,7 +611,7 @@ export default function FeesSettings() {
               }}
             >
               <Plus className="h-4 w-4" />
-              Add configuration
+              {t('addConfiguration')}
             </Button>
           }
         />
@@ -640,7 +641,7 @@ export default function FeesSettings() {
                         </Badge>
                         {isDefault && (
                           <Badge variant="outline" className="text-[11px]">
-                            Platform Default
+                            {t('platformDefault')}
                           </Badge>
                         )}
                       </div>
@@ -654,29 +655,29 @@ export default function FeesSettings() {
                   </div>
                   {isDefault && (
                     <p className="pt-1 text-xs text-muted-foreground">
-                      Applies when no category-specific config exists.
+                      {t('defaultAppliesHint')}
                     </p>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <Stat
-                      label="Commission"
+                      label={t('commission')}
                       value={`${config.commissionPct}%`}
                     />
-                    <Stat label="VAT" value={`${config.vatPct}%`} />
+                    <Stat label={t('vat')} value={`${config.vatPct}%`} />
                     <Stat
-                      label="Other charges"
+                      label={t('otherCharges')}
                       value={`${config.otherChargesPct}%`}
                     />
                     <Stat
-                      label="Fixed fee"
+                      label={t('fixedFeeStat')}
                       value={formatMoney(config.fixedFee)}
                     />
                   </div>
                   <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-xs text-muted-foreground">
-                      {config.isActive ? 'Active' : 'Inactive'}
+                      {config.isActive ? t('active') : t('inactive')}
                     </span>
                     <div className="flex items-center gap-2">
                       <Button
@@ -687,12 +688,12 @@ export default function FeesSettings() {
                           startEdit(config);
                         }}
                       >
-                        Edit
+                        {t('edit')}
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label="Delete configuration"
+                        aria-label={t('deleteConfiguration')}
                         className="text-destructive hover:text-destructive"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -713,17 +714,15 @@ export default function FeesSettings() {
       {/* ─── U5: per-seller / per-product overrides ────────────── */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Fee overrides (U5)</CardTitle>
+          <CardTitle className="text-base">{t('overridesTitle')}</CardTitle>
           <CardDescription>
-            Per-seller and per-product fee rules. The first override wins —
-            a product override beats a seller override, which beats the
-            category configuration. Empty fields inherit the next layer.
+            {t('overridesDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-sm">Scope</Label>
+              <Label className="text-sm">{t('scope')}</Label>
               <Select
                 value={ovForm.scope}
                 onValueChange={(v) =>
@@ -737,28 +736,28 @@ export default function FeesSettings() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="seller">Seller</SelectItem>
-                  <SelectItem value="product">Product</SelectItem>
-                  <SelectItem value="buyer">Buyer</SelectItem>
+                  <SelectItem value="seller">{t('seller')}</SelectItem>
+                  <SelectItem value="product">{t('product')}</SelectItem>
+                  <SelectItem value="buyer">{t('buyer')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">
                 {ovForm.scope === 'product'
-                  ? 'Product ID'
+                  ? t('productId')
                   : ovForm.scope === 'buyer'
-                    ? 'Buyer user ID'
-                    : 'Seller user ID'}
+                    ? t('buyerUserId')
+                    : t('sellerUserId')}
               </Label>
               <Input
                 value={ovForm.scopeId}
                 onChange={(e) => setOvForm((f) => ({ ...f, scopeId: e.target.value }))}
-                placeholder="UUID"
+                placeholder={t('uuidPlaceholder')}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">VAT base</Label>
+              <Label className="text-sm">{t('vatBaseLabel')}</Label>
               <Select
                 value={ovForm.vatBase}
                 onValueChange={(v) =>
@@ -769,16 +768,16 @@ export default function FeesSettings() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="inherit" />
+                  <SelectValue placeholder={t('inherit')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fees_only">Fees only</SelectItem>
-                  <SelectItem value="hammer_and_fees">Hammer + fees</SelectItem>
+                  <SelectItem value="fees_only">{t('feesOnly')}</SelectItem>
+                  <SelectItem value="hammer_and_fees">{t('hammerAndFees')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Buyer fee (%)</Label>
+              <Label className="text-sm">{t('buyerFeePct')}</Label>
               <Input
                 type="number"
                 min={0}
@@ -787,11 +786,11 @@ export default function FeesSettings() {
                 onChange={(e) =>
                   setOvForm((f) => ({ ...f, buyerFeePct: e.target.value }))
                 }
-                placeholder="inherit"
+                placeholder={t('inherit')}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Seller fee (%)</Label>
+              <Label className="text-sm">{t('sellerFeePct')}</Label>
               <Input
                 type="number"
                 min={0}
@@ -800,29 +799,29 @@ export default function FeesSettings() {
                 onChange={(e) =>
                   setOvForm((f) => ({ ...f, sellerFeePct: e.target.value }))
                 }
-                placeholder="inherit"
+                placeholder={t('inherit')}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">VAT rate (%)</Label>
+              <Label className="text-sm">{t('vatPct')}</Label>
               <Input
                 type="number"
                 min={0}
                 step="0.01"
                 value={ovForm.vatPct}
                 onChange={(e) => setOvForm((f) => ({ ...f, vatPct: e.target.value }))}
-                placeholder="inherit"
+                placeholder={t('inherit')}
               />
             </div>
           </div>
           <Button onClick={handleOverrideSave} disabled={ovSaving}>
-            {ovSaving ? 'Saving…' : 'Save override'}
+            {ovSaving ? t('saving') : t('saveOverride')}
           </Button>
 
           {ovLoading ? (
             <Skeleton className="h-12 w-full" />
           ) : overrides.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No overrides yet.</p>
+            <p className="text-sm text-muted-foreground">{t('noOverrides')}</p>
           ) : (
             <div className="space-y-2">
               {overrides.map((row) => (
@@ -836,9 +835,9 @@ export default function FeesSettings() {
                     </Badge>
                     <span className="font-mono text-xs">{row.scopeId}</span>
                     <span className="text-muted-foreground">
-                      buyer {row.buyerFeePct ?? '—'} · seller {row.sellerFeePct ?? '—'} ·
-                      VAT {row.vatPct ?? '—'}
-                      {row.vatBase ? ` (${row.vatBase === 'fees_only' ? 'fees only' : 'hammer + fees'})` : ''}
+                      {t('summaryBuyer')} {row.buyerFeePct ?? '—'} · {t('summarySeller')} {row.sellerFeePct ?? '—'} ·{' '}
+                      {t('vat')} {row.vatPct ?? '—'}
+                      {row.vatBase ? ` (${row.vatBase === 'fees_only' ? t('feesOnly') : t('hammerAndFees')})` : ''}
                     </span>
                   </div>
                   <Button
@@ -859,16 +858,15 @@ export default function FeesSettings() {
       {configs.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Example breakdown</CardTitle>
+            <CardTitle className="text-base">{t('exampleTitle')}</CardTitle>
             <CardDescription>
-              Preview how the selected configuration applies to a sample
-              amount.
+              {t('exampleDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
               <div className="flex-1 space-y-1.5">
-                <Label className="text-sm">Sample amount</Label>
+                <Label className="text-sm">{t('sampleAmount')}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -877,7 +875,7 @@ export default function FeesSettings() {
                 />
               </div>
               <div className="flex-1 space-y-1.5">
-                <Label className="text-sm">Configuration</Label>
+                <Label className="text-sm">{t('configuration')}</Label>
                 <Select
                   value={previewConfig?.category ?? ''}
                   onValueChange={setPreviewCategory}
@@ -897,19 +895,19 @@ export default function FeesSettings() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat label="Commission" value={formatMoney(commission)} />
-              <Stat label="VAT" value={formatMoney(vat)} />
-              <Stat label="Other charges" value={formatMoney(other)} />
-              <Stat label="Fixed fee" value={formatMoney(fixed)} />
+              <Stat label={t('commission')} value={formatMoney(commission)} />
+              <Stat label={t('vat')} value={formatMoney(vat)} />
+              <Stat label={t('otherCharges')} value={formatMoney(other)} />
+              <Stat label={t('fixedFeeStat')} value={formatMoney(fixed)} />
             </div>
 
             <div className="space-y-2 rounded-lg border p-4">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total fees</span>
+                <span className="text-muted-foreground">{t('totalFees')}</span>
                 <span className="font-medium">{formatMoney(totalFees)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total payable</span>
+                <span className="text-muted-foreground">{t('totalPayable')}</span>
                 <span className="font-semibold">{formatMoney(totalPayable)}</span>
               </div>
             </div>

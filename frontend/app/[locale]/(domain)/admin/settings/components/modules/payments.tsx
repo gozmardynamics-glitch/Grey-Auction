@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import {
   Button,
@@ -30,6 +31,7 @@ import {
 import PaymentProvidersStatus from './payment_providers_status';
 
 export default function PaymentsSettings() {
+  const t = useTranslations('admin.settings.payments');
   // ─── Payment Gateway Form ──────────────────────────────────────────
   const gatewayForm = useForm<PaymentGatewayValues>({
     resolver: zodResolver(paymentGatewaySchema),
@@ -44,7 +46,7 @@ export default function PaymentsSettings() {
 
   const onSaveGateway = () => {
     
-    toast.success('Payment gateway settings saved.');
+    toast.success(t('gatewaySaved'));
   };
 
   // ─── Withdraw Form ─────────────────────────────────────────────────
@@ -60,7 +62,7 @@ export default function PaymentsSettings() {
 
   const onSaveWithdraw = () => {
     
-    toast.success('Withdraw settings saved.');
+    toast.success(t('withdrawSaved'));
   };
 
   return (
@@ -74,7 +76,7 @@ export default function PaymentsSettings() {
           onSubmit={gatewayForm.handleSubmit(onSaveGateway)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Payment Gateway</h3>
+          <h3 className="text-base font-semibold">{t('paymentGateway')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -84,10 +86,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Provider
+                      {t('provider')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the payment provider.
+                      {t('providerHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -121,10 +123,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      API Client ID
+                      {t('apiClientId')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enter the unique identifier.
+                      {t('apiClientIdHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -144,10 +146,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Secret Key
+                      {t('secretKey')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enter the key for authentication.
+                      {t('secretKeyHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -172,10 +174,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Payment Gateway
+                      {t('paymentGatewayToggle')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable payment gateway for transactions.
+                      {t('paymentGatewayToggleHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -187,7 +189,7 @@ export default function PaymentsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -197,7 +199,7 @@ export default function PaymentsSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -209,7 +211,7 @@ export default function PaymentsSettings() {
           onSubmit={withdrawForm.handleSubmit(onSaveWithdraw)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Withdraw</h3>
+          <h3 className="text-base font-semibold">{t('withdraw')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -219,10 +221,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Method
+                      {t('method')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the withdrawal method.
+                      {t('methodHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -237,12 +239,12 @@ export default function PaymentsSettings() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Bank Transfer">
-                          Bank Transfer
+                          {t('bankTransfer')}
                         </SelectItem>
                         <SelectItem value="Mobile Money">
-                          Mobile Money
+                          {t('mobileMoney')}
                         </SelectItem>
-                        <SelectItem value="Crypto">Crypto</SelectItem>
+                        <SelectItem value="Crypto">{t('crypto')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -258,10 +260,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Minimum Withdraw
+                      {t('minWithdraw')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      The minimum amount of withdraw per transaction.
+                      {t('minWithdrawHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -281,10 +283,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Maximum Withdraw
+                      {t('maxWithdraw')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      The maximum amount of withdraw per transaction.
+                      {t('maxWithdrawHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -304,10 +306,10 @@ export default function PaymentsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Auto-approve Withdrawals
+                      {t('autoApprove')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable withdrawals to be approved by the system.
+                      {t('autoApproveHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -319,7 +321,7 @@ export default function PaymentsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -329,7 +331,7 @@ export default function PaymentsSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

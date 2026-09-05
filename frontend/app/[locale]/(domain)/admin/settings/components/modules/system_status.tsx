@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Card,
@@ -12,6 +13,7 @@ import {
 } from '@/shared/components/common';
 
 export default function SystemStatusSettings() {
+  const t = useTranslations('admin.settings.systemStatus');
   const [performance, setPerformance] = useState({
     cache: true,
     cdn: true,
@@ -21,65 +23,65 @@ export default function SystemStatusSettings() {
 
   const infoItems = [
     {
-      label: 'System Version',
-      description: 'Current system version.',
+      labelKey: 'systemVersion',
+      descriptionKey: 'systemVersionHint',
       value: 'v1.0',
     },
     {
-      label: 'Database Version',
-      description: 'Current database version.',
+      labelKey: 'databaseVersion',
+      descriptionKey: 'databaseVersionHint',
       value: 'PostgreSQL 14.2',
     },
     {
-      label: 'Last Backup',
-      description: 'System last backup.',
+      labelKey: 'lastBackup',
+      descriptionKey: 'lastBackupHint',
       value: '10-01-2026 • 11:23 AM',
     },
     {
-      label: 'System Uptime',
-      description: 'The system running time.',
+      labelKey: 'systemUptime',
+      descriptionKey: 'systemUptimeHint',
       value: '15 days, 7 hours',
     },
   ];
 
   const healthCards = [
     {
-      label: 'SSL Certificate',
-      description: 'Valid until Dec 15, 2026',
+      labelKey: 'sslCertificate',
+      descriptionKey: 'sslCertificateHint',
     },
     {
-      label: 'Firewall',
-      description: 'Active and configured',
+      labelKey: 'firewall',
+      descriptionKey: 'firewallHint',
     },
     {
-      label: 'Database Security',
-      description: 'Encrypted and backed up',
+      labelKey: 'databaseSecurity',
+      descriptionKey: 'databaseSecurityHint',
     },
   ];
 
   const managementActions = [
-    'Optimize Database',
-    'Clear Cache',
-    'Check Updates',
-    'Export Data',
+    'optimizeDatabase',
+    'clearCache',
+    'checkUpdates',
+    'exportData',
   ];
 
   return (
     <div className="space-y-8 p-6">
       {/* ─── Info ──────────────────────────────────────────────── */}
       <section className="space-y-6">
-        <h3 className="text-base font-semibold">Info</h3>
+        <h3 className="text-base font-semibold">{t('info')}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
           {infoItems.map((item) => (
             <>
-              <div key={`label-${item.label}`}>
-                <Label className="text-sm font-medium">{item.label}</Label>
+              <div key={item.labelKey}>
+                <Label className="text-sm font-medium">{t(item.labelKey)}</Label>
                 <p className="text-xs text-muted-foreground">
-                  {item.description}
+                  {t(item.descriptionKey)}
                 </p>
               </div>
-              <span key={`value-${item.label}`} className="text-sm">
+              <span key={`value-${item.labelKey}`} className="text-sm">
                 {item.value}
               </span>
             </>
@@ -89,17 +91,17 @@ export default function SystemStatusSettings() {
 
       {/* ─── Health ────────────────────────────────────────────── */}
       <section className="space-y-4">
-        <h3 className="text-base font-semibold">Health</h3>
+        <h3 className="text-base font-semibold">{t('health')}</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {healthCards.map((card) => (
-            <Card key={card.label}>
+            <Card key={card.labelKey}>
               <CardContent className="flex items-start gap-3 p-4">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-tertiary" />
                 <div>
-                  <p className="text-sm font-medium">{card.label}</p>
+                  <p className="text-sm font-medium">{t(card.labelKey)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {card.description}
+                    {t(card.descriptionKey)}
                   </p>
                 </div>
               </CardContent>
@@ -112,13 +114,13 @@ export default function SystemStatusSettings() {
 
       {/* ─── Performance ───────────────────────────────────────── */}
       <section className="space-y-6">
-        <h3 className="text-base font-semibold">Health</h3>
+        <h3 className="text-base font-semibold">{t('performance')}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
           <div>
-            <Label className="text-sm font-medium">Cache</Label>
+            <Label className="text-sm font-medium">{t('cache')}</Label>
             <p className="text-xs text-muted-foreground">
-              Enable application caching.
+              {t('cacheHint')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -128,13 +130,13 @@ export default function SystemStatusSettings() {
                 setPerformance((s) => ({ ...s, cache: c }))
               }
             />
-            <span className="text-sm text-muted-foreground">Enable</span>
+            <span className="text-sm text-muted-foreground">{t('enable')}</span>
           </div>
 
           <div>
-            <Label className="text-sm font-medium">CDN</Label>
+            <Label className="text-sm font-medium">{t('cdn')}</Label>
             <p className="text-xs text-muted-foreground">
-              Use CDN for static assets.
+              {t('cdnHint')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -142,13 +144,13 @@ export default function SystemStatusSettings() {
               checked={performance.cdn}
               onCheckedChange={(c) => setPerformance((s) => ({ ...s, cdn: c }))}
             />
-            <span className="text-sm text-muted-foreground">Enable</span>
+            <span className="text-sm text-muted-foreground">{t('enable')}</span>
           </div>
 
           <div>
-            <Label className="text-sm font-medium">API Rate Limit</Label>
+            <Label className="text-sm font-medium">{t('apiRateLimit')}</Label>
             <p className="text-xs text-muted-foreground">
-              Limit API requests per user.
+              {t('apiRateLimitHint')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -158,13 +160,13 @@ export default function SystemStatusSettings() {
                 setPerformance((s) => ({ ...s, apiRateLimit: c }))
               }
             />
-            <span className="text-sm text-muted-foreground">Enable</span>
+            <span className="text-sm text-muted-foreground">{t('enable')}</span>
           </div>
 
           <div>
-            <Label className="text-sm font-medium">Debug Mode</Label>
+            <Label className="text-sm font-medium">{t('debugMode')}</Label>
             <p className="text-xs text-muted-foreground">
-              Show detailed error messages.
+              {t('debugModeHint')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -174,7 +176,7 @@ export default function SystemStatusSettings() {
                 setPerformance((s) => ({ ...s, debugMode: c }))
               }
             />
-            <span className="text-sm text-muted-foreground">Enable</span>
+            <span className="text-sm text-muted-foreground">{t('enable')}</span>
           </div>
         </div>
       </section>
@@ -183,7 +185,7 @@ export default function SystemStatusSettings() {
 
       {/* ─── Management ────────────────────────────────────────── */}
       <section className="space-y-4">
-        <h3 className="text-base font-semibold">Management</h3>
+        <h3 className="text-base font-semibold">{t('management')}</h3>
         <div className="flex flex-wrap gap-3">
           {managementActions.map((action) => (
             <Button
@@ -191,7 +193,7 @@ export default function SystemStatusSettings() {
               variant="outline"
               onClick={undefined}
             >
-              {action}
+              {t(action)}
             </Button>
           ))}
         </div>

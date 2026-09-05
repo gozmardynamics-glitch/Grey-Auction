@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -24,6 +25,7 @@ import {
 } from '../../../models/schema';
 
 export default function AuctionsSettings() {
+  const t = useTranslations('admin.settings.auctions');
   // ─── Settings Form ─────────────────────────────────────────────────
   const settingsForm = useForm<AuctionSettingsValues>({
     resolver: zodResolver(auctionSettingsSchema),
@@ -38,7 +40,7 @@ export default function AuctionsSettings() {
 
   const onSaveSettings = () => {
     
-    toast.success('Auction settings saved.');
+    toast.success(t('settingsSaved'));
   };
 
   // ─── Advanced Form ─────────────────────────────────────────────────
@@ -51,7 +53,7 @@ export default function AuctionsSettings() {
 
   const onSaveAdvanced = () => {
     
-    toast.success('Advanced auction settings saved.');
+    toast.success(t('advancedSaved'));
   };
 
   return (
@@ -62,7 +64,7 @@ export default function AuctionsSettings() {
           onSubmit={settingsForm.handleSubmit(onSaveSettings)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Settings</h3>
+          <h3 className="text-base font-semibold">{t('settings')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -72,10 +74,10 @@ export default function AuctionsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Minimum Auction Duration
+                      {t('minDuration')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the lowest duration for auctions.
+                      {t('minDurationHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -95,10 +97,10 @@ export default function AuctionsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Maximum Auction Duration
+                      {t('maxDuration')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the highest duration for auctions.
+                      {t('maxDurationHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -118,10 +120,10 @@ export default function AuctionsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Bid Increment
+                      {t('bidIncrement')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the minimum price increase on bid placement.
+                      {t('bidIncrementHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -141,10 +143,10 @@ export default function AuctionsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Auto-close Auction on End Time
+                      {t('autoCloseOnEndTime')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable to make auction end.
+                      {t('autoCloseOnEndTimeHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -156,7 +158,7 @@ export default function AuctionsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -172,10 +174,10 @@ export default function AuctionsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Auto-close Auction on End Time
+                      {t('autoCloseOnEndTime')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable to make auction end.
+                      {t('autoCloseOnEndTimeHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -187,7 +189,7 @@ export default function AuctionsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -197,7 +199,7 @@ export default function AuctionsSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -209,7 +211,7 @@ export default function AuctionsSettings() {
           onSubmit={advancedForm.handleSubmit(onSaveAdvanced)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Advanced</h3>
+          <h3 className="text-base font-semibold">{t('advanced')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -219,10 +221,10 @@ export default function AuctionsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Auto-reject Unpaid Winning Bids
+                      {t('autoRejectUnpaid')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the duration to reject unpaid winning bids.
+                      {t('autoRejectUnpaidHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -236,7 +238,7 @@ export default function AuctionsSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

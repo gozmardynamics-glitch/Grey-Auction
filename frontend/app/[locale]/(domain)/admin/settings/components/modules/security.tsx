@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -29,6 +30,7 @@ import {
 } from '../../../models/schema';
 
 export default function SecuritySettings() {
+  const t = useTranslations('admin.settings.security');
   // ─── Authentication Form ───────────────────────────────────────────
   const authForm = useForm<AuthenticationValues>({
     resolver: zodResolver(authenticationSchema),
@@ -50,10 +52,10 @@ export default function SecuritySettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'authentication', ...data }),
       });
-      toast.success('Authentication settings saved.');
+      toast.success(t('authSaved'));
     } catch (error) {
       console.error('Failed to save authentication:', error);
-      toast.error('Failed to save authentication settings.');
+      toast.error(t('authSaveFailed'));
     }
   };
 
@@ -75,10 +77,10 @@ export default function SecuritySettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'advanced', ...data }),
       });
-      toast.success('Advanced security settings saved.');
+      toast.success(t('advancedSaved'));
     } catch (error) {
       console.error('Failed to save advanced security:', error);
-      toast.error('Failed to save advanced security settings.');
+      toast.error(t('advancedSaveFailed'));
     }
   };
 
@@ -90,7 +92,7 @@ export default function SecuritySettings() {
           onSubmit={authForm.handleSubmit(onSaveAuth)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Authentication</h3>
+          <h3 className="text-base font-semibold">{t('authentication')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -100,10 +102,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Session Timeout
+                      {t('sessionTimeout')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify auto logout from all account session.
+                      {t('sessionTimeoutHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -117,10 +119,10 @@ export default function SecuritySettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="5 Minutes">5 Minutes</SelectItem>
-                        <SelectItem value="15 Minutes">15 Minutes</SelectItem>
-                        <SelectItem value="30 Minutes">30 Minutes</SelectItem>
-                        <SelectItem value="1 Hour">1 Hour</SelectItem>
+                        <SelectItem value="5 Minutes">{t('minutes5')}</SelectItem>
+                        <SelectItem value="15 Minutes">{t('minutes15')}</SelectItem>
+                        <SelectItem value="30 Minutes">{t('minutes30')}</SelectItem>
+                        <SelectItem value="1 Hour">{t('hour1')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -136,10 +138,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Login Attempts
+                      {t('loginAttempts')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify maximum failed login attempts.
+                      {t('loginAttemptsHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -159,10 +161,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Password Length
+                      {t('passwordLength')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the maximum password length.
+                      {t('passwordLengthHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -177,16 +179,16 @@ export default function SecuritySettings() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="6 Characters">
-                          6 Characters
+                          {t('chars6')}
                         </SelectItem>
                         <SelectItem value="8 Characters">
-                          8 Characters
+                          {t('chars8')}
                         </SelectItem>
                         <SelectItem value="12 Characters">
-                          12 Characters
+                          {t('chars12')}
                         </SelectItem>
                         <SelectItem value="16 Characters">
-                          16 Characters
+                          {t('chars16')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -203,10 +205,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Uppercase Letter & Number
+                      {t('uppercaseLetterNumber')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Require uppercase and number for password.
+                      {t('uppercaseLetterNumberHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -218,7 +220,7 @@ export default function SecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -234,10 +236,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Special Character
+                      {t('specialCharacter')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Require !@#$%^&*()_+= for password.
+                      {t('specialCharacterHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -249,7 +251,7 @@ export default function SecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -265,10 +267,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      2 Factor Auth
+                      {t('twoFactorAuth')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable 2FA security.
+                      {t('twoFactorAuthHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -280,7 +282,7 @@ export default function SecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -290,7 +292,7 @@ export default function SecuritySettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -302,7 +304,7 @@ export default function SecuritySettings() {
           onSubmit={advancedForm.handleSubmit(onSaveAdvanced)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Advanced</h3>
+          <h3 className="text-base font-semibold">{t('advanced')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -312,10 +314,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      IP Whitelist
+                      {t('ipWhitelist')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Restrict admin access by IP.
+                      {t('ipWhitelistHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -327,7 +329,7 @@ export default function SecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -343,10 +345,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Audit Logs
+                      {t('auditLogs')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Track all system activities.
+                      {t('auditLogsHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -358,7 +360,7 @@ export default function SecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -374,10 +376,10 @@ export default function SecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Data Encryption
+                      {t('dataEncryption')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Encrypt sensitive user data.
+                      {t('dataEncryptionHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -389,7 +391,7 @@ export default function SecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -399,7 +401,7 @@ export default function SecuritySettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

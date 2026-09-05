@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -32,13 +33,14 @@ import {
 
 type ThemeOption = 'light' | 'dark' | 'system';
 
-const themes: { value: ThemeOption; label: string; preview: string }[] = [
-  { value: 'light', label: 'Light', preview: 'bg-white border' },
-  { value: 'dark', label: 'Dark', preview: 'bg-slate-800 border-slate-700' },
-  { value: 'system', label: 'System', preview: 'bg-slate-200 border' },
+const themes: { value: ThemeOption; labelKey: string; preview: string }[] = [
+  { value: 'light', labelKey: 'themeLight', preview: 'bg-white border' },
+  { value: 'dark', labelKey: 'themeDark', preview: 'bg-slate-800 border-slate-700' },
+  { value: 'system', labelKey: 'themeSystem', preview: 'bg-slate-200 border' },
 ];
 
 export default function PreferencesSettings() {
+  const t = useTranslations('admin.settings.preferences');
   // ─── Website Form ──────────────────────────────────────────────────
   const websiteForm = useForm<WebsitePreferencesValues>({
     resolver: zodResolver(websitePreferencesSchema),
@@ -51,7 +53,7 @@ export default function PreferencesSettings() {
 
   const onSaveWebsite = () => {
     
-    toast.success('Website preferences saved.');
+    toast.success(t('websiteSaved'));
   };
 
   // ─── Appearance Form ───────────────────────────────────────────────
@@ -64,7 +66,7 @@ export default function PreferencesSettings() {
 
   const onSaveAppearance = () => {
     
-    toast.success('Appearance settings saved.');
+    toast.success(t('appearanceSaved'));
   };
 
   return (
@@ -75,7 +77,7 @@ export default function PreferencesSettings() {
           onSubmit={websiteForm.handleSubmit(onSaveWebsite)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Website</h3>
+          <h3 className="text-base font-semibold">{t('website')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -85,10 +87,10 @@ export default function PreferencesSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Logo Size
+                      {t('logoSize')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      The default logo size for the website.
+                      {t('logoSizeHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -103,13 +105,13 @@ export default function PreferencesSettings() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="32 px - Small">
-                          32 px - Small
+                          {t('logoSmall')}
                         </SelectItem>
                         <SelectItem value="40 px - Medium">
-                          40 px - Medium
+                          {t('logoMedium')}
                         </SelectItem>
                         <SelectItem value="48 px - Large">
-                          48 px - Large
+                          {t('logoLarge')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -126,10 +128,10 @@ export default function PreferencesSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Logo URL
+                      {t('logoUrl')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Set custom link for website logo in public end.
+                      {t('logoUrlHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -149,10 +151,10 @@ export default function PreferencesSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Favicon URL
+                      {t('faviconUrl')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Set custom link for website logo in browser tabs.
+                      {t('faviconUrlHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -166,7 +168,7 @@ export default function PreferencesSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -178,7 +180,7 @@ export default function PreferencesSettings() {
           onSubmit={appearanceForm.handleSubmit(onSaveAppearance)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Appearance</h3>
+          <h3 className="text-base font-semibold">{t('appearance')}</h3>
 
           <FormField
             control={appearanceForm.control}
@@ -191,12 +193,12 @@ export default function PreferencesSettings() {
                     onValueChange={field.onChange}
                     className="flex flex-wrap gap-4"
                   >
-                    {themes.map((t) => (
+                    {themes.map((item) => (
                       <label
-                        key={t.value}
+                        key={item.value}
                         className={cn(
                           'flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-3 transition-colors',
-                          field.value === t.value
+                          field.value === item.value
                             ? 'border-primary'
                             : 'border-transparent hover:border-muted'
                         )}
@@ -204,13 +206,13 @@ export default function PreferencesSettings() {
                         <div
                           className={cn(
                             'flex h-[100px] w-[160px] flex-col gap-2 rounded-md border p-3',
-                            t.preview
+                            item.preview
                           )}
                         >
                           <div
                             className={cn(
                               'h-2 w-3/4 rounded',
-                              t.value === 'dark'
+                              item.value === 'dark'
                                 ? 'bg-slate-600'
                                 : 'bg-slate-300'
                             )}
@@ -218,7 +220,7 @@ export default function PreferencesSettings() {
                           <div
                             className={cn(
                               'h-2 w-1/2 rounded',
-                              t.value === 'dark'
+                              item.value === 'dark'
                                 ? 'bg-slate-600'
                                 : 'bg-slate-300'
                             )}
@@ -226,7 +228,7 @@ export default function PreferencesSettings() {
                           <div
                             className={cn(
                               'mt-auto h-6 w-full rounded',
-                              t.value === 'dark'
+                              item.value === 'dark'
                                 ? 'bg-slate-700'
                                 : 'bg-slate-200'
                             )}
@@ -235,11 +237,11 @@ export default function PreferencesSettings() {
 
                         <div className="flex items-center gap-2">
                           <RadioGroupItem
-                            value={t.value}
-                            id={`theme-${t.value}`}
+                            value={item.value}
+                            id={`theme-${item.value}`}
                           />
                           <span className="text-sm font-medium">
-                            {t.label}
+                            {t(item.labelKey)}
                           </span>
                         </div>
                       </label>
@@ -251,7 +253,7 @@ export default function PreferencesSettings() {
             )}
           />
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

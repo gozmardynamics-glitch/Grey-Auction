@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -37,6 +38,7 @@ import {
 } from '../../../models/schema';
 
 export default function GeneralSettings() {
+  const t = useTranslations('admin.settings.general');
   // ─── Site Configuration Form ────────────────────────────────────────
   const siteForm = useForm<SiteConfigValues>({
     resolver: zodResolver(siteConfigSchema),
@@ -60,10 +62,10 @@ export default function GeneralSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'siteConfig', ...data }),
       });
-      toast.success('Site configuration saved.');
+      toast.success(t('siteConfigSaved'));
     } catch (error) {
       console.error('Failed to save site config:', error);
-      toast.error('Failed to save site configuration.');
+      toast.error(t('siteConfigSaveFailed'));
     }
   };
 
@@ -85,10 +87,10 @@ export default function GeneralSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'timezone', ...data }),
       });
-      toast.success('Timezone and format saved.');
+      toast.success(t('timezoneSaved'));
     } catch (error) {
       console.error('Failed to save timezone:', error);
-      toast.error('Failed to save timezone settings.');
+      toast.error(t('timezoneSaveFailed'));
     }
   };
 
@@ -109,10 +111,10 @@ export default function GeneralSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'language', ...data }),
       });
-      toast.success('Language settings saved.');
+      toast.success(t('languageSaved'));
     } catch (error) {
       console.error('Failed to save language:', error);
-      toast.error('Failed to save language settings.');
+      toast.error(t('languageSaveFailed'));
     }
   };
 
@@ -133,10 +135,10 @@ export default function GeneralSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ section: 'country', ...data }),
       });
-      toast.success('Country settings saved.');
+      toast.success(t('countrySaved'));
     } catch (error) {
       console.error('Failed to save country:', error);
-      toast.error('Failed to save country settings.');
+      toast.error(t('countrySaveFailed'));
     }
   };
 
@@ -148,7 +150,7 @@ export default function GeneralSettings() {
           onSubmit={siteForm.handleSubmit(onSaveSiteConfig)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Site Configuration</h3>
+          <h3 className="text-base font-semibold">{t('siteConfig')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -158,10 +160,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Site Name
+                      {t('siteName')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the name of your site.
+                      {t('siteNameHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -181,10 +183,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Site URL
+                      {t('siteUrl')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the key of your site url address.
+                      {t('siteUrlHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -204,10 +206,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Administration Email Address
+                      {t('adminEmail')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the administration email address.
+                      {t('adminEmailHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -227,10 +229,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Site Phone Number
+                      {t('sitePhone')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the phone number of your site.
+                      {t('sitePhoneHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -250,10 +252,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Copyright
+                      {t('copyright')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Copyright information of your site.
+                      {t('copyrightHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -273,10 +275,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Site Description
+                      {t('siteDescription')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Describe your site information.
+                      {t('siteDescriptionHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -299,10 +301,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Allow Registration
+                      {t('allowRegistration')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable or disable registration from site.
+                      {t('allowRegistrationHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -318,7 +320,7 @@ export default function GeneralSettings() {
                             htmlFor="reg-enable"
                             className="text-sm cursor-pointer"
                           >
-                            Enable
+                            {t('enable')}
                           </Label>
                         </div>
                         <div className="flex items-center gap-2">
@@ -327,7 +329,7 @@ export default function GeneralSettings() {
                             htmlFor="reg-invite"
                             className="text-sm cursor-pointer"
                           >
-                            Invite Only
+                            {t('inviteOnly')}
                           </Label>
                         </div>
                         <div className="flex items-center gap-2">
@@ -336,7 +338,7 @@ export default function GeneralSettings() {
                             htmlFor="reg-disable"
                             className="text-sm cursor-pointer"
                           >
-                            Disable
+                            {t('disable')}
                           </Label>
                         </div>
                       </RadioGroup>
@@ -354,10 +356,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Maintenance Mode
+                      {t('maintenanceMode')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enable to make website offline.
+                      {t('maintenanceModeHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -369,7 +371,7 @@ export default function GeneralSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Offline
+                        {t('offline')}
                       </span>
                     </div>
                     <FormMessage />
@@ -379,7 +381,7 @@ export default function GeneralSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -391,7 +393,7 @@ export default function GeneralSettings() {
           onSubmit={timezoneForm.handleSubmit(onSaveTimezone)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Timezone and Format</h3>
+          <h3 className="text-base font-semibold">{t('timezoneFormat')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -401,10 +403,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Time Zone
+                      {t('timeZone')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Set time zone on application.
+                      {t('timeZoneHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -442,10 +444,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Date Format
+                      {t('dateFormat')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Set date format to display date.
+                      {t('dateFormatHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -474,10 +476,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Time Format
+                      {t('timeFormat')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Set time format to display time.
+                      {t('timeFormatHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -489,9 +491,9 @@ export default function GeneralSettings() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="11:23 AM">
-                          12-hour (11:23 AM)
+                          {t('format12h')}
                         </SelectItem>
-                        <SelectItem value="23:23">24-hour (23:23)</SelectItem>
+                        <SelectItem value="23:23">{t('format24h')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -501,7 +503,7 @@ export default function GeneralSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -513,7 +515,7 @@ export default function GeneralSettings() {
           onSubmit={languageForm.handleSubmit(onSaveLanguage)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Language</h3>
+          <h3 className="text-base font-semibold">{t('language')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -523,10 +525,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Default Language
+                      {t('defaultLanguage')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Set default language on application.
+                      {t('defaultLanguageHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -537,10 +539,10 @@ export default function GeneralSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="English">English</SelectItem>
-                        <SelectItem value="French">French</SelectItem>
-                        <SelectItem value="Spanish">Spanish</SelectItem>
-                        <SelectItem value="Arabic">Arabic</SelectItem>
+                        <SelectItem value="English">{t('langEnglish')}</SelectItem>
+                        <SelectItem value="French">{t('langFrench')}</SelectItem>
+                        <SelectItem value="Spanish">{t('langSpanish')}</SelectItem>
+                        <SelectItem value="Arabic">{t('langArabic')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -556,10 +558,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Language Switcher
+                      {t('languageSwitcher')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Display a switcher to quick switch language.
+                      {t('languageSwitcherHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -571,7 +573,7 @@ export default function GeneralSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -581,7 +583,7 @@ export default function GeneralSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -593,7 +595,7 @@ export default function GeneralSettings() {
           onSubmit={countryForm.handleSubmit(onSaveCountry)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Country</h3>
+          <h3 className="text-base font-semibold">{t('country')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -603,10 +605,10 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Country Restriction
+                      {t('countryRestriction')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Allow or disallowed the countries into application.
+                      {t('countryRestrictionHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -618,10 +620,10 @@ export default function GeneralSettings() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="Allow All Countries">
-                          Allow All Countries
+                          {t('allowAllCountries')}
                         </SelectItem>
                         <SelectItem value="Restrict Selected Countries">
-                          Restrict Selected Countries
+                          {t('restrictSelectedCountries')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -638,15 +640,15 @@ export default function GeneralSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Choose Countries
+                      {t('chooseCountries')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Specify the countries you want to restrict from the list.
+                      {t('chooseCountriesHint')}
                     </FormDescription>
                   </div>
                   <FormItem>
                     <FormControl>
-                      <Input {...field} placeholder="Type country names..."  />
+                      <Input {...field} placeholder={t('countriesPlaceholder')}  />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -655,7 +657,7 @@ export default function GeneralSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

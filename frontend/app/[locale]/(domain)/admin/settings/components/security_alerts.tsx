@@ -1,5 +1,6 @@
 
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Badge, EmptyState } from '@/shared/components/common';
 import { cn } from '@/lib/utils';
 import { SecurityAlert } from './audit_logs_data';
@@ -10,12 +11,13 @@ interface SecurityAlertsProps {
 }
 
 export default function SecurityAlerts({ alerts }: SecurityAlertsProps) {
+  const t = useTranslations('admin.settings.securityAlerts');
   if (alerts.length === 0) {
     return (
       <EmptyState
         icon={<ShieldCheck className="h-10 w-10" />}
-        title="No Security Alerts"
-        description="Everything looks good. Security alerts will appear here if any issues are detected."
+        title={t('emptyTitle')}
+        description={t('emptyDescription')}
       />
     );
   }
@@ -24,7 +26,7 @@ export default function SecurityAlerts({ alerts }: SecurityAlertsProps) {
     <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-destructive">
         <AlertTriangle className="h-4 w-4" />
-        Security Alerts
+        {t('title')}
       </div>
       <div className="space-y-2">
         {alerts.map((alert) => (
