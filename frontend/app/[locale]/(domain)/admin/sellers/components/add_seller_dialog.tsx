@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import {
   Button,
@@ -27,6 +28,7 @@ export default function AddSellerDialog({
   onOpenChange,
   onSubmit,
 }: AddSellerDialogProps) {
+  const t = useTranslations('admin.sellers.dialogs.add');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -52,34 +54,34 @@ export default function AddSellerDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
-            Add Seller
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label className="text-sm">First Name</Label>
+            <Label className="text-sm">{t('firstName')}</Label>
             <Input
-              placeholder="First Name"
+              placeholder={t('firstName')}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm">Last Name</Label>
+            <Label className="text-sm">{t('lastName')}</Label>
             <Input
-              placeholder="Last Name"
+              placeholder={t('lastName')}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm">Email Address</Label>
+            <Label className="text-sm">{t('email')}</Label>
             <Input
               type="email"
-              placeholder="Email Address"
+              placeholder={t('email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -87,10 +89,10 @@ export default function AddSellerDialog({
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button disabled={!isValid} onClick={handleSubmit}>
-              Add Seller
+              {t('submit')}
             </Button>
           </div>
         </div>

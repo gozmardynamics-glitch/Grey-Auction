@@ -1,4 +1,5 @@
 
+import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
 
 import {
@@ -43,6 +44,7 @@ export default function InvoiceDetailsModal({
   onOpenChange,
   invoice,
 }: InvoiceDetailsModalProps) {
+  const t = useTranslations('admin.buyers.invoice');
   if (!invoice) return null;
 
   return (
@@ -83,27 +85,27 @@ export default function InvoiceDetailsModal({
         <div className="space-y-5 p-6 pt-4">
           {/* Invoice Details */}
           <Card className="space-y-1 p-2">
-            <h3 className="text-sm font-semibold mb-2">Invoice Details</h3>
-            <InfoRow label="Invoice Number" value={invoice.invoiceNumber} />
-            <InfoRow label="Issue Date" value={invoice.issueDate} />
-            <InfoRow label="Due Date" value={invoice.dueDate} />
+            <h3 className="text-sm font-semibold mb-2">{t('details')}</h3>
+            <InfoRow label={t('invoiceNumber')} value={invoice.invoiceNumber} />
+            <InfoRow label={t('issueDate')} value={invoice.issueDate} />
+            <InfoRow label={t('dueDate')} value={invoice.dueDate} />
             <Separator />
-            <InfoRow label="Billed To" value={invoice.billedTo} />
-            <InfoRow label="Billed Details" value={invoice.billedDetails} />
+            <InfoRow label={t('billedTo')} value={invoice.billedTo} />
+            <InfoRow label={t('billedDetails')} value={invoice.billedDetails} />
           </Card>
 
           {/* Item Details */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold">Item Details</h3>
+            <h3 className="text-sm font-semibold">{t('itemDetails')}</h3>
             <div className="rounded-md border">
               <Table>
                 <TableHeader className="bg-background">
                   <TableRow>
-                    <TableHead className="text-xs">Item</TableHead>
+                    <TableHead className="text-xs">{t('item')}</TableHead>
                     <TableHead className="text-xs text-center">
-                      Quantity
+                      {t('quantity')}
                     </TableHead>
-                    <TableHead className="text-xs text-right">Price</TableHead>
+                    <TableHead className="text-xs text-right">{t('price')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -128,27 +130,27 @@ export default function InvoiceDetailsModal({
           {/* Financial Breakdown */}
           <div className="space-y-0">
             <InfoRow
-              label="Subtotal"
+              label={t('subtotal')}
               value={formatCurrency(invoice.subtotal)}
             />
             <Separator />
             <InfoRow
-              label={`Auction Fee (${invoice.auctionFeePercent}%)`}
+              label={t('auctionFee', { percent: invoice.auctionFeePercent })}
               value={formatCurrency(invoice.auctionFee)}
             />
             <Separator />
             <InfoRow
-              label="VAT on bid value"
+              label={t('vat')}
               value={formatCurrency(invoice.vatOnBidValue)}
             />
             <Separator />
             <InfoRow
-              label="SAT on auction fee"
+              label={t('sat')}
               value={formatCurrency(invoice.satOnAuctionFee)}
             />
             <Separator />
             <div className="flex items-center justify-between py-2">
-              <p className="text-sm font-semibold">Total Bid Amount</p>
+              <p className="text-sm font-semibold">{t('totalBidAmount')}</p>
               <p className="text-sm font-semibold">
                 {formatCurrency(invoice.totalBidAmount)}
               </p>
@@ -158,7 +160,7 @@ export default function InvoiceDetailsModal({
           {/* Download Button */}
           <Button className="w-full gap-2">
             <Download className="h-4 w-4" />
-            Download Invoice
+            {t('download')}
           </Button>
         </div>
       </DialogContent>

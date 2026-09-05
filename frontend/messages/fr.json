@@ -876,17 +876,488 @@
       "status": "Statut"
     },
     "dashboard": "Tableau de bord admin",
-    "auctions": "Enchères",
-    "bids": "Offres",
-    "buyers": "Acheteurs",
-    "sellers": "Vendeurs",
+    "auctions": {
+      "table": {
+        "selectAll": "Tout sélectionner",
+        "selectRow": "Sélectionner la ligne",
+        "auctionId": "ID de l'enchère",
+        "item": "Article",
+        "seller": "Vendeur",
+        "category": "Catégorie",
+        "startingBid": "Enchère de départ",
+        "currentBid": "Enchère actuelle",
+        "bids": "Offres",
+        "endDate": "Date de fin",
+        "status": "Statut",
+        "openMenu": "Ouvrir le menu",
+        "viewDetails": "Voir les détails",
+        "deleteAuction": "Supprimer l'enchère"
+      },
+      "mobileCard": {
+        "auctionId": "ID de l'enchère",
+        "seller": "Vendeur",
+        "startingBid": "Enchère de départ",
+        "currentBid": "Enchère actuelle",
+        "bids": "Offres",
+        "endDate": "Date de fin",
+        "viewDetails": "Voir les détails"
+      },
+      "empty": {
+        "title": "Aucune enchère disponible",
+        "description": "De nouvelles enchères apparaîtront ici dès que des vendeurs créeront des annonces."
+      },
+      "page": {
+        "title": "Gestion des enchères"
+      },
+      "details": {
+        "title": "Détails de l'enchère",
+        "sellerReserveNotYetMet": "Réserve du vendeur pas encore atteinte",
+        "saleStatus": "Statut de la vente : {status}",
+        "approveAuction": "Approuver l'enchère",
+        "cancel": "Annuler",
+        "auctionInformation": "Informations sur l'enchère",
+        "bidInformation": "Informations sur les offres",
+        "inspectionInformation": "Informations sur l'inspection",
+        "category": "Catégorie :",
+        "duration": "Durée :",
+        "startDate": "Date de début :",
+        "endDate": "Date de fin :",
+        "startingPrice": "Prix de départ :",
+        "bidIncrement": "Incrément d'enchère :",
+        "reservePrice": "Prix de réserve :",
+        "reservePriceAt": "Prix de réserve @ :",
+        "allowBuyNow": "Achat immédiat autorisé :",
+        "buyNowAt": "Achat immédiat @ :",
+        "allowInspection": "Inspection autorisée :",
+        "inspectionAddress": "Adresse d'inspection :",
+        "approveConfirm": {
+          "title": "Êtes-vous sûr de vouloir approuver cette enchère ?",
+          "consequenceLabel": "Une fois approuvée :",
+          "consequence1": "L'enchère sera mise en ligne immédiatement",
+          "consequence2": "La période d'enchères commencera",
+          "consequence3": "Les acheteurs pourront participer",
+          "consequence4": "Les offres finales ne peuvent pas être annulées",
+          "checkboxLabel": "Veuillez confirmer que tous les détails de l'enchère et les spécifications de l'article ont été vérifiés et répondent aux exigences de la plateforme",
+          "confirm": "Approuver l'enchère"
+        },
+        "rejectConfirm": {
+          "title": "Êtes-vous sûr de vouloir rejeter cette enchère ?",
+          "consequenceLabel": "Cette action va :",
+          "consequence1": "Empêcher la mise en ligne de l'enchère",
+          "consequence2": "Notifier le vendeur avec le motif du rejet",
+          "consequence3": "Obliger le vendeur à soumettre à nouveau l'annonce s'il souhaite réessayer",
+          "consequence4": "Cette action ne peut pas être annulée",
+          "placeholder": "ex. : classification erronée/règlement, violation de la politique, prix incorrect...",
+          "confirm": "Rejeter l'enchère"
+        },
+        "success": {
+          "approvedTitle": "Enchère approuvée",
+          "approvedMessage": "L'enchère a été approuvée avec succès et est désormais active. Les enchères ont commencé et les utilisateurs peuvent enchérir immédiatement.",
+          "rejectedTitle": "Enchère rejetée",
+          "rejectedMessage": "L'enchère a été rejetée avec succès. Le vendeur a été notifié avec le motif du rejet."
+        },
+        "productImages": "Images du produit",
+        "productImageAlt": "Produit {index}",
+        "otherDetails": "Autres détails",
+        "specifications": "Spécifications",
+        "description": "Description",
+        "additionalInformation": "Informations supplémentaires",
+        "payment": "Paiement",
+        "inspection": "Inspection",
+        "delivery": "Livraison",
+        "completed": "Terminé",
+        "bidHistory": "Historique des offres",
+        "bidsCount": "Offres : {count}",
+        "bidder": "Enchérisseur",
+        "bidAmount": "Montant de l'offre",
+        "type": "Type",
+        "date": "Date",
+        "status": "Statut",
+        "noBids": "Aucune offre pour le moment.",
+        "rejectionWarning": "Cet article n'est pas autorisé aux enchères sur notre plateforme conformément à nos règles.",
+        "seller": {
+          "title": "Détails du vendeur",
+          "viewProfile": "Voir le profil"
+        }
+      },
+      "dialogs": {
+        "about": "À propos",
+        "mechanical": "Mécanique :",
+        "specifications": "Spécifications",
+        "specs": {
+          "body": "Carrosserie",
+          "airbags": "Airbags",
+          "climatisation": "Climatisation",
+          "drivetrain": "Transmission",
+          "displacement": "Cylindrée",
+          "antique": "Antiquité",
+          "color": "Couleur",
+          "doorCount": "Nombre de portes",
+          "cubicCapacity": "Cylindrée (cc)",
+          "emissionClass": "Classe d'émission",
+          "gearbox": "Boîte de vitesses",
+          "mileage": "Kilométrage",
+          "seatCount": "Nombre de places",
+          "parkingSensors": "Capteurs de stationnement",
+          "power": "Puissance"
+        }
+      }
+    },
+    "bids": {
+      "table": {
+        "selectAll": "Tout sélectionner",
+        "selectRow": "Sélectionner la ligne",
+        "bidId": "ID de l'offre",
+        "item": "Article",
+        "seller": "Vendeur",
+        "category": "Catégorie",
+        "startingBid": "Enchère de départ",
+        "currentBid": "Enchère actuelle",
+        "bids": "Offres",
+        "endDate": "Date de fin",
+        "status": "Statut",
+        "openMenu": "Ouvrir le menu",
+        "viewDetails": "Voir les détails",
+        "deleteBid": "Supprimer l'offre"
+      },
+      "page": {
+        "title": "Offres"
+      },
+      "empty": {
+        "title": "Aucune offre disponible",
+        "description": "De nouvelles offres apparaîtront ici dès que des vendeurs créeront des annonces."
+      },
+      "details": {
+        "title": "Détails de l'offre",
+        "sellerReserveNotYetMet": "Réserve du vendeur pas encore atteinte",
+        "saleStatus": "Statut de la vente : {status}",
+        "auctionInformation": "Informations sur l'enchère",
+        "bidInformation": "Informations sur les offres",
+        "category": "Catégorie :",
+        "duration": "Durée :",
+        "startDate": "Date de début :",
+        "endDate": "Date de fin :",
+        "startingPrice": "Prix de départ :",
+        "bidIncrement": "Incrément d'enchère :",
+        "reservePrice": "Prix de réserve :",
+        "reservePriceAt": "Prix de réserve @ :",
+        "allowBuyNow": "Achat immédiat autorisé :",
+        "buyNowAt": "Achat immédiat @ :",
+        "bidHistory": "Historique des offres",
+        "bidsCount": "Offres : {count}",
+        "bidder": "Enchérisseur",
+        "bidAmount": "Montant de l'offre",
+        "type": "Type",
+        "date": "Date",
+        "status": "Statut",
+        "noBids": "Aucune offre pour le moment."
+      }
+    },
+    "buyers": {
+      "page": {
+        "title": "Acheteurs",
+        "export": "Exporter"
+      },
+      "table": {
+        "buyerId": "ID acheteur",
+        "name": "Nom",
+        "email": "E-mail",
+        "location": "Localisation",
+        "totalBids": "Enchères totales",
+        "wins": "Victoires",
+        "totalSpent": "Total dépensé",
+        "joinDate": "Date d'inscription",
+        "status": "Statut",
+        "openMenu": "Ouvrir le menu",
+        "viewDetails": "Voir les détails",
+        "activateBuyer": "Activer l'acheteur",
+        "suspendBuyer": "Suspendre l'acheteur",
+        "emptyTitle": "Aucun acheteur disponible",
+        "emptyDescription": "Les nouveaux acheteurs apparaîtront ici dès leur inscription sur la plateforme."
+      },
+      "dialogs": {
+        "activate": {
+          "title": "Activer l'utilisateur",
+          "body": "Êtes-vous sûr de vouloir activer cet acheteur ? Il pourra enchérir et effectuer des achats.",
+          "cancel": "Annuler",
+          "confirm": "Oui, activer"
+        },
+        "suspend": {
+          "title": "Suspendre l'utilisateur",
+          "body": "Êtes-vous sûr de vouloir suspendre cet acheteur ? Il ne pourra plus enchérir ni effectuer d'achats.",
+          "cancel": "Annuler",
+          "confirm": "Oui, suspendre"
+        },
+        "add": {
+          "title": "Ajouter un utilisateur",
+          "firstName": "Prénom",
+          "lastName": "Nom",
+          "email": "Adresse e-mail",
+          "cancel": "Annuler",
+          "submit": "Ajouter"
+        }
+      },
+      "details": {
+        "title": "Détails de l'acheteur",
+        "totalSpent": "Total dépensé",
+        "aucBidWon": "Enchères gagnées",
+        "totalBids": "Enchères totales",
+        "purchases": "Achats",
+        "basicInfo": "Informations de base",
+        "buyerId": "ID acheteur",
+        "phone": "Téléphone",
+        "email": "E-mail",
+        "dateJoined": "Date d'inscription",
+        "contactAddress": "Adresse de contact",
+        "street": "Rue",
+        "city": "Ville",
+        "state": "État",
+        "country": "Pays",
+        "activity": "Activité",
+        "tabBids": "Enchères",
+        "tabPurchases": "Achats",
+        "tabTransactions": "Transactions"
+      },
+      "invoice": {
+        "details": "Détails de la facture",
+        "invoiceNumber": "Numéro de facture",
+        "issueDate": "Date d'émission",
+        "dueDate": "Date d'échéance",
+        "billedTo": "Facturé à",
+        "billedDetails": "Détails de facturation",
+        "itemDetails": "Détails des articles",
+        "item": "Article",
+        "quantity": "Quantité",
+        "price": "Prix",
+        "subtotal": "Sous-total",
+        "auctionFee": "Frais d'enchère ({percent}%)",
+        "vat": "TVA sur la valeur de l'enchère",
+        "sat": "SAT sur les frais d'enchère",
+        "totalBidAmount": "Montant total de l'enchère",
+        "download": "Télécharger la facture"
+      },
+      "bidsTab": {
+        "empty": "Aucune activité d'enchère pour le moment.",
+        "auctionId": "ID enchère",
+        "item": "Article",
+        "bidAmount": "Montant de l'enchère",
+        "type": "Type",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "purchasesTab": {
+        "empty": "Aucun achat pour le moment.",
+        "invoiceId": "ID facture",
+        "item": "Article",
+        "bidAmount": "Montant de l'enchère",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "txnsTab": {
+        "emptyTitle": "Aucune transaction pour le moment",
+        "emptyDescription": "Les transactions apparaîtront ici dès que cet acheteur commencera à transiger.",
+        "txnId": "ID transaction",
+        "type": "Type",
+        "amount": "Montant",
+        "method": "Méthode",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "txn": {
+        "title": "Détails de la transaction",
+        "amount": "Montant",
+        "timeline": "Chronologie",
+        "billing": "Facturation",
+        "to": "À",
+        "paymentGateway": "Passerelle de paiement",
+        "type": "Type",
+        "transactionId": "ID transaction",
+        "manage": "Gérer la transaction",
+        "refund": "Rembourser le paiement"
+      }
+    },
+    "sellers": {
+      "page": {
+        "title": "Vendeurs",
+        "export": "Exporter"
+      },
+      "table": {
+        "sellerId": "ID vendeur",
+        "name": "Nom",
+        "email": "E-mail",
+        "location": "Localisation",
+        "listings": "Annonces",
+        "sales": "Ventes",
+        "revenue": "Revenus",
+        "joinDate": "Date d'inscription",
+        "status": "Statut",
+        "openMenu": "Ouvrir le menu",
+        "viewDetails": "Voir les détails",
+        "activateSeller": "Activer le vendeur",
+        "suspendSeller": "Suspendre le vendeur",
+        "emptyTitle": "Aucun vendeur disponible",
+        "emptyDescription": "Les nouveaux vendeurs apparaîtront ici dès leur inscription sur la plateforme."
+      },
+      "dialogs": {
+        "activate": {
+          "title": "Activer le vendeur",
+          "body": "Êtes-vous sûr de vouloir activer ce vendeur ? Il pourra publier des articles et recevoir des paiements.",
+          "cancel": "Annuler",
+          "confirm": "Oui, activer"
+        },
+        "suspend": {
+          "title": "Suspendre le vendeur",
+          "body": "Êtes-vous sûr de vouloir suspendre ce vendeur ? Il ne pourra plus publier d'articles ni recevoir de paiements.",
+          "cancel": "Annuler",
+          "confirm": "Oui, suspendre"
+        },
+        "add": {
+          "title": "Ajouter un vendeur",
+          "firstName": "Prénom",
+          "lastName": "Nom",
+          "email": "Adresse e-mail",
+          "cancel": "Annuler",
+          "submit": "Ajouter"
+        }
+      },
+      "details": {
+        "title": "Détails du vendeur",
+        "totalRevenue": "Revenus totaux",
+        "auctions": "Enchères",
+        "totalBids": "Enchères totales",
+        "itemSold": "Articles vendus",
+        "basicInfo": "Informations de base",
+        "sellerId": "ID vendeur",
+        "phone": "Téléphone",
+        "email": "E-mail",
+        "dateJoined": "Date d'inscription",
+        "contactAddress": "Adresse de contact",
+        "street": "Rue",
+        "city": "Ville",
+        "state": "État",
+        "country": "Pays",
+        "tabs": {
+          "activity": "Activité",
+          "verification": "Vérification",
+          "auctions": "Enchères",
+          "sales": "Ventes",
+          "transactions": "Transactions"
+        }
+      },
+      "sale": {
+        "title": "Détails de la vente",
+        "buyerDetails": "Détails de l'acheteur",
+        "breakdown": "Décomposition",
+        "finalBid": "Enchère finale",
+        "vatOnBid": "TVA sur la valeur de l'enchère",
+        "vatOnFee": "TVA sur les frais d'enchère",
+        "totalBidAmount": "Montant total de l'enchère"
+      },
+      "txn": {
+        "title": "Détails de la transaction",
+        "amount": "Montant",
+        "timeline": "Chronologie",
+        "billing": "Facturation",
+        "to": "À",
+        "paymentMethod": "Moyen de paiement",
+        "type": "Type",
+        "transactionId": "ID transaction"
+      },
+      "auctionDetails": {
+        "title": "Détails de l'enchère",
+        "auctionInfo": "Informations sur l'enchère",
+        "auctionId": "ID enchère",
+        "item": "Article",
+        "category": "Catégorie",
+        "duration": "Durée",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "bidInfo": "Informations sur les enchères",
+        "startingPrice": "Prix de départ",
+        "bidIncrement": "Incrément d'enchère",
+        "reservePrice": "Prix de réserve",
+        "minBidPrice": "Prix d'enchère minimum",
+        "allowBuyNow": "Achat immédiat autorisé",
+        "buyNowPrice": "Prix d'achat immédiat",
+        "inspectionInfo": "Informations d'inspection",
+        "allowInspection": "Inspection autorisée",
+        "inspectionDuration": "Durée d'inspection",
+        "inspectionAddress": "Adresse d'inspection",
+        "sellerHeading": "Détails du vendeur",
+        "bidHistory": "Historique des enchères",
+        "noBidsTitle": "Aucune enchère pour le moment",
+        "noBidsDescription": "Les enchères placées sur cette vente apparaîtront ici.",
+        "name": "Nom",
+        "bidAmount": "Montant de l'enchère",
+        "timestamp": "Horodatage",
+        "status": "Statut",
+        "action": "Action"
+      },
+      "auctionsTab": {
+        "empty": "Aucune activité d'enchère pour le moment.",
+        "aucId": "ID enchère",
+        "item": "Article",
+        "duration": "Durée",
+        "startingBid": "Enchère de départ",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "salesTab": {
+        "empty": "Aucune vente pour le moment.",
+        "saleId": "ID vente",
+        "item": "Article",
+        "buyer": "Acheteur",
+        "amount": "Montant",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "txnsTab": {
+        "emptyTitle": "Aucune transaction pour le moment",
+        "emptyDescription": "Les transactions apparaîtront ici dès que ce vendeur commencera à transiger.",
+        "txnId": "ID transaction",
+        "type": "Type",
+        "amount": "Montant",
+        "method": "Méthode",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "verificationTab": {
+        "empty": "Aucun document téléversé.",
+        "uploadedDocuments": "Documents téléversés",
+        "file": "Fichier",
+        "date": "Date",
+        "status": "Statut"
+      }
+    },
     "admins": "Administrateurs",
     "categories": "Catégories",
     "banners": "Bannières",
     "faqs": "FAQ",
     "payments": "Paiements",
     "biddingRooms": "Salles d'enchères",
-    "tickets": "Tickets",
+    "tickets": {
+      "page": {
+        "title": "Tickets"
+      },
+      "list": {
+        "search": "Rechercher"
+      },
+      "chat": {
+        "sellerId": "ID vendeur : {id}",
+        "sharedImageAlt": "Image partagée",
+        "messagePlaceholder": "Saisissez un message..."
+      },
+      "contact": {
+        "sellerId": "ID vendeur : {id}",
+        "media": "Médias",
+        "viewAll": "Tout afficher",
+        "mediaAlt": "Média {index}"
+      },
+      "empty": {
+        "title": "Aucun ticket de support pour le moment",
+        "description": "Il n'y a actuellement aucun message du support client. Les nouveaux tickets des utilisateurs apparaîtront ici une fois soumis."
+      }
+    },
     "terms": "Conditions générales",
     "privacyPolicy": "Politique de confidentialité",
     "settings": {

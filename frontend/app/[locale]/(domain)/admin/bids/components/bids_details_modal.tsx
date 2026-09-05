@@ -1,4 +1,7 @@
+'use client';
+
 import { Hammer, Info } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Badge,
@@ -48,6 +51,7 @@ export default function BidDetailsModal({
   onOpenChange,
   bid,
 }: BidDetailsModalProps) {
+  const t = useTranslations('admin.bids.details');
   if (!bid) return null;
 
   return (
@@ -55,7 +59,7 @@ export default function BidDetailsModal({
       <DialogContent className="min-w-[50%] max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">
-            Bid Details
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -88,13 +92,13 @@ export default function BidDetailsModal({
                   {bid.sellerReserveNotYetMet && (
                     <span className="flex items-center gap-1">
                       <Info className="h-3 w-3" />
-                      Seller Reserve Not Yet Met
+                      {t('sellerReserveNotYetMet')}
                     </span>
                   )}
                   {bid.saleStatus && (
                     <span className="flex items-center gap-1">
                       <Info className="h-3 w-3" />
-                      Sale Status: {bid.saleStatus}
+                      {t('saleStatus', { status: bid.saleStatus })}
                     </span>
                   )}
                 </div>
@@ -102,41 +106,41 @@ export default function BidDetailsModal({
             </Card>
 
             {/* Auction Information */}
-            <SectionTitle>Auction Information</SectionTitle>
+            <SectionTitle>{t('auctionInformation')}</SectionTitle>
             <Card className="grid grid-cols-2 gap-4 bg-card p-2 shadow-xs">
-              <InfoRow label="Category:" value={bid.category} />
-              <InfoRow label="Duration:" value={bid.duration || '-'} />
-              <InfoRow label="Start Date:" value={bid.startDate || '-'} />
-              <InfoRow label="End Date:" value={bid.endDate} />
+              <InfoRow label={t('category')} value={bid.category} />
+              <InfoRow label={t('duration')} value={bid.duration || '-'} />
+              <InfoRow label={t('startDate')} value={bid.startDate || '-'} />
+              <InfoRow label={t('endDate')} value={bid.endDate} />
             </Card>
 
             {/* Bid Information */}
-            <SectionTitle>Bid Information</SectionTitle>
+            <SectionTitle>{t('bidInformation')}</SectionTitle>
             <Card className="grid grid-cols-2 gap-4 bg-card p-2 shadow-xs">
               <InfoRow
-                label="Starting Price:"
+                label={t('startingPrice')}
                 value={
                   bid.startingPrice ? formatCurrency(bid.startingPrice) : '-'
                 }
               />
               <InfoRow
-                label="Bid Increment:"
+                label={t('bidIncrement')}
                 value={
                   bid.bidIncrement ? formatCurrency(bid.bidIncrement) : '-'
                 }
               />
-              <InfoRow label="Reserve Price:" value={bid.reservePrice || '-'} />
+              <InfoRow label={t('reservePrice')} value={bid.reservePrice || '-'} />
               <InfoRow
-                label="Reserve Price @:"
+                label={t('reservePriceAt')}
                 value={
                   bid.reservePriceAmount
                     ? formatCurrency(bid.reservePriceAmount)
                     : '-'
                 }
               />
-              <InfoRow label="Allow Buy Now:" value={bid.allowBuyNow || '-'} />
+              <InfoRow label={t('allowBuyNow')} value={bid.allowBuyNow || '-'} />
               <InfoRow
-                label="Buy Now @:"
+                label={t('buyNowAt')}
                 value={bid.buyNowPrice ? formatCurrency(bid.buyNowPrice) : '-'}
               />
             </Card>
@@ -147,11 +151,11 @@ export default function BidDetailsModal({
             {/* Bid History */}
             <Card className="space-y-3 bg-card p-2 shadow-xs">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Bid History</h3>
+                <h3 className="text-sm font-semibold">{t('bidHistory')}</h3>
                 {bid.totalBids !== undefined && (
                   <Badge className="bg-background border border-border p-2 text-xs text-muted-foreground">
                     <Hammer />
-                    Bids: {String(bid.totalBids).padStart(2, '0')}
+                    {t('bidsCount', { count: String(bid.totalBids).padStart(2, '0') })}
                   </Badge>
                 )}
               </div>
@@ -160,11 +164,11 @@ export default function BidDetailsModal({
                   <Table>
                     <TableHeader className="bg-background">
                       <TableRow>
-                        <TableHead className="text-xs">Bidder</TableHead>
-                        <TableHead className="text-xs">Bid Amount</TableHead>
-                        <TableHead className="text-xs">Type</TableHead>
-                        <TableHead className="text-xs">Date</TableHead>
-                        <TableHead className="text-xs">Status</TableHead>
+                        <TableHead className="text-xs">{t('bidder')}</TableHead>
+                        <TableHead className="text-xs">{t('bidAmount')}</TableHead>
+                        <TableHead className="text-xs">{t('type')}</TableHead>
+                        <TableHead className="text-xs">{t('date')}</TableHead>
+                        <TableHead className="text-xs">{t('status')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -196,9 +200,7 @@ export default function BidDetailsModal({
                   </Table>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No bids placed yet.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('noBids')}</p>
               )}
             </Card>
           </div>

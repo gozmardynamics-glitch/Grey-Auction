@@ -1,4 +1,7 @@
+'use client';
+
 import { MapPin, Phone } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Avatar,
@@ -29,12 +32,14 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export function SellerDetailsCard({ auction }: { auction: AuctionDetail }) {
+  const t = useTranslations('admin.auctions.details.seller');
+
   return (
     <Card className="rounded-lg border space-y-4 bg-card p-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Seller Details</h3>
+        <h3 className="text-sm font-semibold">{t('title')}</h3>
         <Button variant="link" size="sm" className="h-auto p-0 text-xs">
-          View Profile
+          {t('viewProfile')}
         </Button>
       </div>
       <div className="flex items-center gap-3">

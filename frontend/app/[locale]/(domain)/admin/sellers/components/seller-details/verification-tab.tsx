@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { FileText } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export function VerificationTab({
 }) {
   const [selectedDoc, setSelectedDoc] = useState<UploadedDocument | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const t = useTranslations('admin.sellers.verificationTab');
 
   const handleOpenPreview = (doc: UploadedDocument) => {
     setSelectedDoc(doc);
@@ -33,7 +35,7 @@ export function VerificationTab({
   if (!documents || documents.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-4">
-        No uploaded documents.
+        {t('empty')}
       </p>
     );
   }
@@ -41,15 +43,15 @@ export function VerificationTab({
     <>
       <div className="space-y-3">
         <h3 className="text-sm font-black text-primary underline">
-          Uploaded Documents
+          {t('uploadedDocuments')}
         </h3>
         <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader className="bg-card">
               <TableRow>
-                <TableHead className="text-xs">File</TableHead>
-                <TableHead className="text-xs">Date</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">{t('file')}</TableHead>
+                <TableHead className="text-xs">{t('date')}</TableHead>
+                <TableHead className="text-xs">{t('status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

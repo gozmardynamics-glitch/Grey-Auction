@@ -876,17 +876,488 @@
       "status": "Status"
     },
     "dashboard": "Admin Dashboard",
-    "auctions": "Auctions",
-    "bids": "Bids",
-    "buyers": "Buyers",
-    "sellers": "Sellers",
+    "auctions": {
+      "table": {
+        "selectAll": "Select all",
+        "selectRow": "Select row",
+        "auctionId": "Auction ID",
+        "item": "Item",
+        "seller": "Seller",
+        "category": "Category",
+        "startingBid": "Starting Bid",
+        "currentBid": "Current Bid",
+        "bids": "Bids",
+        "endDate": "End Date",
+        "status": "Status",
+        "openMenu": "Open menu",
+        "viewDetails": "View details",
+        "deleteAuction": "Delete auction"
+      },
+      "mobileCard": {
+        "auctionId": "Auction ID",
+        "seller": "Seller",
+        "startingBid": "Starting Bid",
+        "currentBid": "Current Bid",
+        "bids": "Bids",
+        "endDate": "End Date",
+        "viewDetails": "View details"
+      },
+      "empty": {
+        "title": "No Auctions Available",
+        "description": "New auctions will appear here once sellers create listings."
+      },
+      "page": {
+        "title": "Auction Management"
+      },
+      "details": {
+        "title": "Auction Details",
+        "sellerReserveNotYetMet": "Seller Reserve Not Yet Met",
+        "saleStatus": "Sale Status: {status}",
+        "approveAuction": "Approve Auction",
+        "cancel": "Cancel",
+        "auctionInformation": "Auction Information",
+        "bidInformation": "Bid Information",
+        "inspectionInformation": "Inspection Information",
+        "category": "Category:",
+        "duration": "Duration:",
+        "startDate": "Start Date:",
+        "endDate": "End Date:",
+        "startingPrice": "Starting Price:",
+        "bidIncrement": "Bid Increment:",
+        "reservePrice": "Reserve Price:",
+        "reservePriceAt": "Reserve Price @:",
+        "allowBuyNow": "Allow Buy Now:",
+        "buyNowAt": "Buy Now @:",
+        "allowInspection": "Allow Inspection:",
+        "inspectionAddress": "Inspection Address:",
+        "approveConfirm": {
+          "title": "Are you sure you want to approve this auction?",
+          "consequenceLabel": "Once approved:",
+          "consequence1": "The auction will go live immediately",
+          "consequence2": "The bidding period will begin",
+          "consequence3": "Buyers will be able to participate",
+          "consequence4": "Final Bids cannot be undone",
+          "checkboxLabel": "Please confirm that all auction details and item specifications have been reviewed and meet platform requirements",
+          "confirm": "Approve Auction"
+        },
+        "rejectConfirm": {
+          "title": "Are you sure you want to reject this auction?",
+          "consequenceLabel": "This action will:",
+          "consequence1": "Prevent the auction from going live",
+          "consequence2": "Notify the seller with the rejection reason",
+          "consequence3": "Require the seller to resubmit the listing if they want to try again",
+          "consequence4": "This action cannot be undone",
+          "placeholder": "e.g., Misclassified/policy, policy violation, incorrect pricing...",
+          "confirm": "Reject Auction"
+        },
+        "success": {
+          "approvedTitle": "Auction Approved",
+          "approvedMessage": "The auction has been successfully approved and is now active. Bidding has started and users can place bids immediately.",
+          "rejectedTitle": "Auction Rejected",
+          "rejectedMessage": "The auction has been rejected successfully. The seller has been notified with the reason for rejection."
+        },
+        "productImages": "Product Images",
+        "productImageAlt": "Product {index}",
+        "otherDetails": "Other Details",
+        "specifications": "Specifications",
+        "description": "Description",
+        "additionalInformation": "Additional Information",
+        "payment": "Payment",
+        "inspection": "Inspection",
+        "delivery": "Delivery",
+        "completed": "Completed",
+        "bidHistory": "Bid History",
+        "bidsCount": "Bids: {count}",
+        "bidder": "Bidder",
+        "bidAmount": "Bid Amount",
+        "type": "Type",
+        "date": "Date",
+        "status": "Status",
+        "noBids": "No bids placed yet.",
+        "rejectionWarning": "This item is not permitted for auction on our platform based on our policies.",
+        "seller": {
+          "title": "Seller Details",
+          "viewProfile": "View Profile"
+        }
+      },
+      "dialogs": {
+        "about": "About",
+        "mechanical": "Mechanical:",
+        "specifications": "Specifications",
+        "specs": {
+          "body": "Body",
+          "airbags": "Airbags",
+          "climatisation": "Climatisation",
+          "drivetrain": "Drivetrain",
+          "displacement": "Displacement",
+          "antique": "Antique",
+          "color": "Color",
+          "doorCount": "Door Count",
+          "cubicCapacity": "Cubic Capacity",
+          "emissionClass": "Emission Class",
+          "gearbox": "Gearbox",
+          "mileage": "Mileage",
+          "seatCount": "Seat Count",
+          "parkingSensors": "Parking Sensors",
+          "power": "Power"
+        }
+      }
+    },
+    "bids": {
+      "table": {
+        "selectAll": "Select all",
+        "selectRow": "Select row",
+        "bidId": "Bid ID",
+        "item": "Item",
+        "seller": "Seller",
+        "category": "Category",
+        "startingBid": "Starting Bid",
+        "currentBid": "Current Bid",
+        "bids": "Bids",
+        "endDate": "End Date",
+        "status": "Status",
+        "openMenu": "Open menu",
+        "viewDetails": "View details",
+        "deleteBid": "Delete bid"
+      },
+      "page": {
+        "title": "Bids"
+      },
+      "empty": {
+        "title": "No Bids Available",
+        "description": "New bids will appear here once sellers create listings."
+      },
+      "details": {
+        "title": "Bid Details",
+        "sellerReserveNotYetMet": "Seller Reserve Not Yet Met",
+        "saleStatus": "Sale Status: {status}",
+        "auctionInformation": "Auction Information",
+        "bidInformation": "Bid Information",
+        "category": "Category:",
+        "duration": "Duration:",
+        "startDate": "Start Date:",
+        "endDate": "End Date:",
+        "startingPrice": "Starting Price:",
+        "bidIncrement": "Bid Increment:",
+        "reservePrice": "Reserve Price:",
+        "reservePriceAt": "Reserve Price @:",
+        "allowBuyNow": "Allow Buy Now:",
+        "buyNowAt": "Buy Now @:",
+        "bidHistory": "Bid History",
+        "bidsCount": "Bids: {count}",
+        "bidder": "Bidder",
+        "bidAmount": "Bid Amount",
+        "type": "Type",
+        "date": "Date",
+        "status": "Status",
+        "noBids": "No bids placed yet."
+      }
+    },
+    "buyers": {
+      "page": {
+        "title": "Buyers",
+        "export": "Export"
+      },
+      "table": {
+        "buyerId": "Buyer ID",
+        "name": "Name",
+        "email": "Email",
+        "location": "Location",
+        "totalBids": "Total Bids",
+        "wins": "Wins",
+        "totalSpent": "Total Spent",
+        "joinDate": "Join Date",
+        "status": "Status",
+        "openMenu": "Open menu",
+        "viewDetails": "View details",
+        "activateBuyer": "Activate buyer",
+        "suspendBuyer": "Suspend buyer",
+        "emptyTitle": "No Buyers Available",
+        "emptyDescription": "New buyers will appear here once they register on the platform."
+      },
+      "dialogs": {
+        "activate": {
+          "title": "Activate User",
+          "body": "Are you sure you want to activate this buyer? They will be able to place bids or make purchases.",
+          "cancel": "Cancel",
+          "confirm": "Yes, Activate"
+        },
+        "suspend": {
+          "title": "Suspend User",
+          "body": "Are you sure you want to suspend this buyer? They will no longer be able to place bids or make purchases.",
+          "cancel": "Cancel",
+          "confirm": "Yes, Suspend User"
+        },
+        "add": {
+          "title": "Add User",
+          "firstName": "First Name",
+          "lastName": "Last Name",
+          "email": "Email Address",
+          "cancel": "Cancel",
+          "submit": "Add User"
+        }
+      },
+      "details": {
+        "title": "Buyer Details",
+        "totalSpent": "Total Spent",
+        "aucBidWon": "Auc Bid Won",
+        "totalBids": "Total Bids",
+        "purchases": "Purchases",
+        "basicInfo": "Basic Information",
+        "buyerId": "Buyer ID",
+        "phone": "Phone Number",
+        "email": "Email",
+        "dateJoined": "Date Joined",
+        "contactAddress": "Contact Address",
+        "street": "Street",
+        "city": "City",
+        "state": "State",
+        "country": "Country",
+        "activity": "Activity",
+        "tabBids": "Bids",
+        "tabPurchases": "Purchases",
+        "tabTransactions": "Transactions"
+      },
+      "invoice": {
+        "details": "Invoice Details",
+        "invoiceNumber": "Invoice Number",
+        "issueDate": "Issue Date",
+        "dueDate": "Due Date",
+        "billedTo": "Billed To",
+        "billedDetails": "Billed Details",
+        "itemDetails": "Item Details",
+        "item": "Item",
+        "quantity": "Quantity",
+        "price": "Price",
+        "subtotal": "Subtotal",
+        "auctionFee": "Auction Fee ({percent}%)",
+        "vat": "VAT on bid value",
+        "sat": "SAT on auction fee",
+        "totalBidAmount": "Total Bid Amount",
+        "download": "Download Invoice"
+      },
+      "bidsTab": {
+        "empty": "No bid activity yet.",
+        "auctionId": "Auction ID",
+        "item": "Item",
+        "bidAmount": "Bid Amount",
+        "type": "Type",
+        "date": "Date",
+        "status": "Status"
+      },
+      "purchasesTab": {
+        "empty": "No purchases yet.",
+        "invoiceId": "Invoice ID",
+        "item": "Item",
+        "bidAmount": "Bid Amount",
+        "date": "Date",
+        "status": "Status"
+      },
+      "txnsTab": {
+        "emptyTitle": "No transactions yet",
+        "emptyDescription": "Transactions will appear here once this buyer starts transacting.",
+        "txnId": "Transaction ID",
+        "type": "Type",
+        "amount": "Amount",
+        "method": "Method",
+        "date": "Date",
+        "status": "Status"
+      },
+      "txn": {
+        "title": "Transaction Details",
+        "amount": "Amount",
+        "timeline": "Timeline",
+        "billing": "Billing",
+        "to": "To",
+        "paymentGateway": "Payment Gateway",
+        "type": "Type",
+        "transactionId": "Transaction ID",
+        "manage": "Manage Transaction",
+        "refund": "Refund Payment"
+      }
+    },
+    "sellers": {
+      "page": {
+        "title": "Sellers",
+        "export": "Export"
+      },
+      "table": {
+        "sellerId": "Seller ID",
+        "name": "Name",
+        "email": "Email",
+        "location": "Location",
+        "listings": "Listings",
+        "sales": "Sales",
+        "revenue": "Revenue",
+        "joinDate": "Join Date",
+        "status": "Status",
+        "openMenu": "Open menu",
+        "viewDetails": "View details",
+        "activateSeller": "Activate seller",
+        "suspendSeller": "Suspend seller",
+        "emptyTitle": "No Sellers Available",
+        "emptyDescription": "New sellers will appear here once they register on the platform."
+      },
+      "dialogs": {
+        "activate": {
+          "title": "Activate Seller",
+          "body": "Are you sure you want to activate this seller? They will be able to list items and receive payments.",
+          "cancel": "Cancel",
+          "confirm": "Yes, Activate"
+        },
+        "suspend": {
+          "title": "Suspend Seller",
+          "body": "Are you sure you want to suspend this seller? They will no longer be able to list items or receive payments.",
+          "cancel": "Cancel",
+          "confirm": "Yes, Suspend Seller"
+        },
+        "add": {
+          "title": "Add Seller",
+          "firstName": "First Name",
+          "lastName": "Last Name",
+          "email": "Email Address",
+          "cancel": "Cancel",
+          "submit": "Add Seller"
+        }
+      },
+      "details": {
+        "title": "Seller Details",
+        "totalRevenue": "Total Revenue",
+        "auctions": "Auctions",
+        "totalBids": "Total Bids",
+        "itemSold": "Item Sold",
+        "basicInfo": "Basic Information",
+        "sellerId": "Seller ID",
+        "phone": "Phone Number",
+        "email": "Email",
+        "dateJoined": "Date Joined",
+        "contactAddress": "Contact Address",
+        "street": "Street",
+        "city": "City",
+        "state": "State",
+        "country": "Country",
+        "tabs": {
+          "activity": "Activity",
+          "verification": "Verification",
+          "auctions": "Auctions",
+          "sales": "Sales",
+          "transactions": "Transactions"
+        }
+      },
+      "sale": {
+        "title": "Sale Details",
+        "buyerDetails": "Buyer Details",
+        "breakdown": "Breakdown",
+        "finalBid": "Final Bid",
+        "vatOnBid": "VAT on bid value",
+        "vatOnFee": "VAT on auction fee",
+        "totalBidAmount": "Total Bid Amount"
+      },
+      "txn": {
+        "title": "Transaction Details",
+        "amount": "Amount",
+        "timeline": "Timeline",
+        "billing": "Billing",
+        "to": "To",
+        "paymentMethod": "Payment Method",
+        "type": "Type",
+        "transactionId": "Transaction ID"
+      },
+      "auctionDetails": {
+        "title": "Auction Details",
+        "auctionInfo": "Auction Information",
+        "auctionId": "Auction ID",
+        "item": "Item",
+        "category": "Category",
+        "duration": "Duration",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "bidInfo": "Bid Information",
+        "startingPrice": "Starting Price",
+        "bidIncrement": "Bid Increment",
+        "reservePrice": "Reserve Price",
+        "minBidPrice": "Minimum Bid Price",
+        "allowBuyNow": "Allow Buy Now",
+        "buyNowPrice": "Buy Now Price",
+        "inspectionInfo": "Inspection Information",
+        "allowInspection": "Allow Inspection",
+        "inspectionDuration": "Inspection Duration",
+        "inspectionAddress": "Inspection Address",
+        "sellerHeading": "Seller Details",
+        "bidHistory": "Bid History",
+        "noBidsTitle": "No bids yet",
+        "noBidsDescription": "Bids placed on this auction will appear here.",
+        "name": "Name",
+        "bidAmount": "Bid Amount",
+        "timestamp": "Timestamp",
+        "status": "Status",
+        "action": "Action"
+      },
+      "auctionsTab": {
+        "empty": "No auction activity yet.",
+        "aucId": "AUC ID",
+        "item": "Item",
+        "duration": "Duration",
+        "startingBid": "Starting Bid",
+        "date": "Date",
+        "status": "Status"
+      },
+      "salesTab": {
+        "empty": "No sales yet.",
+        "saleId": "Sale ID",
+        "item": "Item",
+        "buyer": "Buyer",
+        "amount": "Amount",
+        "date": "Date",
+        "status": "Status"
+      },
+      "txnsTab": {
+        "emptyTitle": "No transactions yet",
+        "emptyDescription": "Transactions will appear here once this seller starts transacting.",
+        "txnId": "Transaction ID",
+        "type": "Type",
+        "amount": "Amount",
+        "method": "Method",
+        "date": "Date",
+        "status": "Status"
+      },
+      "verificationTab": {
+        "empty": "No uploaded documents.",
+        "uploadedDocuments": "Uploaded Documents",
+        "file": "File",
+        "date": "Date",
+        "status": "Status"
+      }
+    },
     "admins": "Admins",
     "categories": "Categories",
     "banners": "Banners",
     "faqs": "FAQs",
     "payments": "Payments",
     "biddingRooms": "Bidding Rooms",
-    "tickets": "Tickets",
+    "tickets": {
+      "page": {
+        "title": "Tickets"
+      },
+      "list": {
+        "search": "Search"
+      },
+      "chat": {
+        "sellerId": "Seller ID: {id}",
+        "sharedImageAlt": "Shared image",
+        "messagePlaceholder": "Type a message..."
+      },
+      "contact": {
+        "sellerId": "Seller ID: {id}",
+        "media": "Media",
+        "viewAll": "View All",
+        "mediaAlt": "Media {index}"
+      },
+      "empty": {
+        "title": "No Support Tickets Yet",
+        "description": "There are currently no customer support messages. New tickets from users will appear here once submitted."
+      }
+    },
     "terms": "Terms & Conditions",
     "privacyPolicy": "Privacy Policy",
     "settings": {

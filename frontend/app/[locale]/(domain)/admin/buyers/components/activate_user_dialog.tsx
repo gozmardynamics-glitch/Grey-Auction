@@ -1,5 +1,6 @@
+'use client';
 
-
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Dialog,
@@ -19,26 +20,26 @@ export default function ActivateUserDialog({
   onOpenChange,
   onConfirm,
 }: ActivateUserDialogProps) {
+  const t = useTranslations('admin.buyers.dialogs.activate');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
-            Activate User
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to activate this buyer? They will be able to
-            place bids or make purchases.
+            {t('body')}
           </p>
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
-            <Button onClick={onConfirm}>Yes, Activate</Button>
+            <Button onClick={onConfirm}>{t('confirm')}</Button>
           </div>
         </div>
       </DialogContent>

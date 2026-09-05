@@ -1,6 +1,8 @@
 
+import { useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Avatar,
@@ -24,11 +26,14 @@ const formatCurrency = (value: number) =>
     minimumFractionDigits: 0,
   }).format(value);
 
-export const Columns = (
+export function useBuyersColumns(
   onViewDetails: (buyer: Buyer) => void,
   onSuspend: (buyer: Buyer) => void,
   onActivate: (buyer: Buyer) => void
-): ColumnDef<Buyer>[] => [
+): ColumnDef<Buyer>[] {
+  const t = useTranslations('admin.buyers.table');
+  return useMemo(
+    () => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -53,7 +58,7 @@ export const Columns = (
   },
   {
     accessorKey: 'id',
-    header: 'Buyer ID',
+    header: t('buyerId'),
     cell: ({ row }) => (
       <span className="text-muted-foreground font-medium">
         {row.getValue('id')}
@@ -62,7 +67,7 @@ export const Columns = (
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: t('name'),
     meta:{sticky:true},
     cell: ({ row }) => {
       const buyer = row.original;
@@ -81,41 +86,41 @@ export const Columns = (
   },
   {
     accessorKey: 'email',
-    header: 'Email',
+    header: t('email'),
   },
   {
     accessorKey: 'location',
-    header: 'Location',
+    header: t('location'),
   },
   {
     accessorKey: 'totalBids',
-    header: 'Total Bids',
+    header: t('totalBids'),
     cell: ({ row }) => (
       <span className="text-center">{row.getValue('totalBids')}</span>
     ),
   },
   {
     accessorKey: 'totalWins',
-    header: 'Wins',
+    header: t('wins'),
     cell: ({ row }) => (
       <span className="text-center">{row.getValue('totalWins')}</span>
     ),
   },
   {
     accessorKey: 'totalSpent',
-    header: 'Total Spent',
+    header: t('totalSpent'),
     cell: ({ row }) => formatCurrency(row.getValue('totalSpent')),
   },
   {
     accessorKey: 'joinDate',
-    header: 'Join Date',
+    header: t('joinDate'),
     cell: ({ row }) => (
       <span className="whitespace-nowrap">{row.getValue('joinDate')}</span>
     ),
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: t('status'),
     cell: ({ row }) => {
       const status = row.getValue('status') as BuyerStatus;
       return (
@@ -139,23 +144,23 @@ export const Columns = (
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Open menu</span>
+              <span className="sr-only">{t('openMenu')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onViewDetails(buyer)}>
-              View details
+              {t('viewDetails')}
             </DropdownMenuItem>
             {isSuspended ? (
               <DropdownMenuItem onClick={() => onActivate(buyer)}>
-                Activate buyer
+                {t('activateBuyer')}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
                 className="text-destructive"
                 onClick={() => onSuspend(buyer)}
               >
-                Suspend buyer
+                {t('suspendBuyer')}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -163,4 +168,7 @@ export const Columns = (
       );
     },
   },
-];
+    ],
+    [t]
+  );
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import {
   Avatar,
@@ -36,6 +37,7 @@ export default function BuyerDetailsModal({
   onOpenChange,
   buyer,
 }: BuyerDetailsModalProps) {
+  const t = useTranslations('admin.buyers.details');
   const [activityTab, setActivityTab] = useState('bids');
 
   if (!buyer) return null;
@@ -45,7 +47,7 @@ export default function BuyerDetailsModal({
       <DialogContent className="min-w-[50%] max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">
-            Buyer Details
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -79,26 +81,26 @@ export default function BuyerDetailsModal({
           {/* Stats Row */}
           <div className="grid grid-cols-4 gap-4">
             <ModalStatCard
-              label="Total Spent"
+              label={t('totalSpent')}
               value={formatCurrency(buyer.totalSpent)}
             />
-            <ModalStatCard label="Auc Bid Won" value={buyer.totalWins} />
-            <ModalStatCard label="Total Bids" value={buyer.totalBids} />
-            <ModalStatCard label="Purchases" value={buyer.purchases ?? 0} />
+            <ModalStatCard label={t('aucBidWon')} value={buyer.totalWins} />
+            <ModalStatCard label={t('totalBids')} value={buyer.totalBids} />
+            <ModalStatCard label={t('purchases')} value={buyer.purchases ?? 0} />
           </div>
 
           {/* Basic Information */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Basic Information</h3>
+            <h3 className="text-sm font-semibold">{t('basicInfo')}</h3>
             <Card className="grid grid-cols-2 gap-4 p-4">
-              <InfoRow label="Buyer ID" value={buyer.id} />
+              <InfoRow label={t('buyerId')} value={buyer.id} />
               <InfoRow
-                label="Phone Number"
+                label={t('phone')}
                 value={buyer.phoneNumber || buyer.phone}
               />
-              <InfoRow label="Email" value={buyer.email} />
+              <InfoRow label={t('email')} value={buyer.email} />
               <InfoRow
-                label="Date Joined"
+                label={t('dateJoined')}
                 value={buyer.dateJoined || buyer.joinDate}
               />
             </Card>
@@ -106,18 +108,18 @@ export default function BuyerDetailsModal({
 
           {/* Contact Address */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Contact Address</h3>
+            <h3 className="text-sm font-semibold">{t('contactAddress')}</h3>
             <Card className="grid grid-cols-2 gap-4 p-4">
-              <InfoRow label="Street" value={buyer.street || '-'} />
-              <InfoRow label="City" value={buyer.city || '-'} />
-              <InfoRow label="State" value={buyer.state || '-'} />
-              <InfoRow label="Country" value={buyer.country || '-'} />
+              <InfoRow label={t('street')} value={buyer.street || '-'} />
+              <InfoRow label={t('city')} value={buyer.city || '-'} />
+              <InfoRow label={t('state')} value={buyer.state || '-'} />
+              <InfoRow label={t('country')} value={buyer.country || '-'} />
             </Card>
           </div>
 
           {/* Activity */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Activity</h3>
+            <h3 className="text-sm font-semibold">{t('activity')}</h3>
             <Tabs
               value={activityTab}
               onValueChange={setActivityTab}
@@ -128,19 +130,19 @@ export default function BuyerDetailsModal({
                   value="bids"
                   className="shrink-0 rounded-none border-b-2 border-transparent px-1 pb-2 pt-1 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm"
                 >
-                  Bids
+                  {t('tabBids')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="purchases"
                   className="shrink-0 rounded-none border-b-2 border-transparent px-1 pb-2 pt-1 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm"
                 >
-                  Purchases
+                  {t('tabPurchases')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="transactions"
                   className="shrink-0 rounded-none border-b-2 border-transparent px-1 pb-2 pt-1 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm"
                 >
-                  Transactions
+                  {t('tabTransactions')}
                 </TabsTrigger>
               </TabsList>
 

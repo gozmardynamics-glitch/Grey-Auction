@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Info } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   ActionSuccessDialog,
@@ -35,6 +36,8 @@ export default function AuctionDetailsModal({
   onOpenChange,
   auction,
 }: AuctionDetailsModalProps) {
+  const t = useTranslations('admin.auctions.details');
+  const tAdmin = useTranslations('admin');
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [successVariant, setSuccessVariant] = useState<
@@ -54,7 +57,7 @@ export default function AuctionDetailsModal({
           <DialogHeader className="p-6 pb-0">
             <div className="md:flex md:items-center md:justify-between">
               <DialogTitle className="text-lg font-semibold">
-                Auction Details
+                {t('title')}
               </DialogTitle>
               {isPending && (
                 <div className="flex items-center gap-2">
@@ -63,21 +66,21 @@ export default function AuctionDetailsModal({
                     size="sm"
                     onClick={() => setRejectOpen(true)}
                   >
-                    Reject
+                    {tAdmin('reject')}
                   </Button>
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700 text-primary-foreground"
                     onClick={() => setApproveOpen(true)}
                   >
-                    Approve Auction
+                    {t('approveAuction')}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onOpenChange(false)}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                 </div>
               )}
@@ -116,13 +119,13 @@ export default function AuctionDetailsModal({
                     {auction.sellerReserveNotYetMet && (
                       <span className="flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Seller Reserve Not Yet Met
+                        {t('sellerReserveNotYetMet')}
                       </span>
                     )}
                     {auction.saleStatus && (
                       <span className="flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Sale Status: {auction.saleStatus}
+                        {t('saleStatus', { status: auction.saleStatus })}
                       </span>
                     )}
                   </div>
@@ -130,19 +133,19 @@ export default function AuctionDetailsModal({
               </Card>
 
               {/* Auction Information */}
-              <SectionTitle>Auction Information</SectionTitle>
+              <SectionTitle>{t('auctionInformation')}</SectionTitle>
               <Card className="grid grid-cols-2 gap-4 bg-card p-2">
-                <InfoRow label="Category:" value={auction.category} />
-                <InfoRow label="Duration:" value={auction.duration || '-'} />
-                <InfoRow label="Start Date:" value={auction.startDate || '-'} />
-                <InfoRow label="End Date:" value={auction.endDate} />
+                <InfoRow label={t('category')} value={auction.category} />
+                <InfoRow label={t('duration')} value={auction.duration || '-'} />
+                <InfoRow label={t('startDate')} value={auction.startDate || '-'} />
+                <InfoRow label={t('endDate')} value={auction.endDate} />
               </Card>
 
               {/* Bid Information */}
-              <SectionTitle>Bid Information</SectionTitle>
+              <SectionTitle>{t('bidInformation')}</SectionTitle>
               <Card className="grid grid-cols-2 gap-4 bg-card p-2">
                 <InfoRow
-                  label="Starting Price:"
+                  label={t('startingPrice')}
                   value={
                     auction.startingPrice
                       ? formatCurrency(auction.startingPrice)
@@ -150,7 +153,7 @@ export default function AuctionDetailsModal({
                   }
                 />
                 <InfoRow
-                  label="Bid Increment:"
+                  label={t('bidIncrement')}
                   value={
                     auction.bidIncrement
                       ? formatCurrency(auction.bidIncrement)
@@ -158,11 +161,11 @@ export default function AuctionDetailsModal({
                   }
                 />
                 <InfoRow
-                  label="Reserve Price:"
+                  label={t('reservePrice')}
                   value={auction.reservePrice || '-'}
                 />
                 <InfoRow
-                  label="Reserve Price @:"
+                  label={t('reservePriceAt')}
                   value={
                     auction.reservePriceAmount
                       ? formatCurrency(auction.reservePriceAmount)
@@ -170,11 +173,11 @@ export default function AuctionDetailsModal({
                   }
                 />
                 <InfoRow
-                  label="Allow Buy Now:"
+                  label={t('allowBuyNow')}
                   value={auction.allowBuyNow || '-'}
                 />
                 <InfoRow
-                  label="Buy Now @:"
+                  label={t('buyNowAt')}
                   value={
                     auction.buyNowPrice
                       ? formatCurrency(auction.buyNowPrice)
@@ -184,21 +187,21 @@ export default function AuctionDetailsModal({
               </Card>
 
               {/* Inspection Information */}
-              <SectionTitle>Inspection Information</SectionTitle>
+              <SectionTitle>{t('inspectionInformation')}</SectionTitle>
               <Card className="grid grid-cols-2 gap-4 bg-card p-2">
                 <InfoRow
-                  label="Allow Inspection:"
+                  label={t('allowInspection')}
                   value={auction.allowInspection || '-'}
                 />
                 <InfoRow
-                  label="Duration:"
+                  label={t('duration')}
                   value={auction.inspectionDuration || '-'}
                 />
               </Card>
               {auction.inspectionAddress && (
                 <Card className="space-y-1 bg-card p-2">
                   <p className="text-sm text-muted-foreground">
-                    Inspection Address:
+                    {t('inspectionAddress')}
                   </p>
                   <p className="text-sm font-medium">
                     {auction.inspectionAddress}
@@ -224,16 +227,16 @@ export default function AuctionDetailsModal({
         variant="approve"
         open={approveOpen}
         onOpenChange={setApproveOpen}
-        title="Are you sure you want to approve this auction?"
-        consequenceLabel="Once approved:"
+        title={t('approveConfirm.title')}
+        consequenceLabel={t('approveConfirm.consequenceLabel')}
         consequences={[
-          'The auction will go live immediately',
-          'The bidding period will begin',
-          'Buyers will be able to participate',
-          'Final Bids cannot be undone',
+          t('approveConfirm.consequence1'),
+          t('approveConfirm.consequence2'),
+          t('approveConfirm.consequence3'),
+          t('approveConfirm.consequence4'),
         ]}
-        checkboxLabel="Please confirm that all auction details and item specifications have been reviewed and meet platform requirements"
-        confirmLabel="Approve Auction"
+        checkboxLabel={t('approveConfirm.checkboxLabel')}
+        confirmLabel={t('approveConfirm.confirm')}
         onConfirm={() => {
           setApproveOpen(false);
           onOpenChange(false);
@@ -245,16 +248,16 @@ export default function AuctionDetailsModal({
         variant="reject"
         open={rejectOpen}
         onOpenChange={setRejectOpen}
-        title="Are you sure you want to reject this auction?"
-        consequenceLabel="This action will:"
+        title={t('rejectConfirm.title')}
+        consequenceLabel={t('rejectConfirm.consequenceLabel')}
         consequences={[
-          'Prevent the auction from going live',
-          'Notify the seller with the rejection reason',
-          'Require the seller to resubmit the listing if they want to try again',
-          'This action cannot be undone',
+          t('rejectConfirm.consequence1'),
+          t('rejectConfirm.consequence2'),
+          t('rejectConfirm.consequence3'),
+          t('rejectConfirm.consequence4'),
         ]}
-        textareaPlaceholder="e.g., Misclassified/policy, policy violation, incorrect pricing..."
-        confirmLabel="Reject Auction"
+        textareaPlaceholder={t('rejectConfirm.placeholder')}
+        confirmLabel={t('rejectConfirm.confirm')}
         onConfirm={() => {
           setRejectOpen(false);
           onOpenChange(false);
@@ -269,13 +272,13 @@ export default function AuctionDetailsModal({
           variant={successVariant === 'approved' ? 'success' : 'error'}
           title={
             successVariant === 'approved'
-              ? 'Auction Approved'
-              : 'Auction Rejected'
+              ? t('success.approvedTitle')
+              : t('success.rejectedTitle')
           }
           message={
             successVariant === 'approved'
-              ? 'The auction has been successfully approved and is now active. Bidding has started and users can place bids immediately.'
-              : 'The auction has been rejected successfully. The seller has been notified with the reason for rejection.'
+              ? t('success.approvedMessage')
+              : t('success.rejectedMessage')
           }
         />
       )}

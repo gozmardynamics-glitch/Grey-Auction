@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Image from 'next/image';
 import { Paperclip } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Badge,
@@ -12,7 +13,7 @@ import {
 } from '@/shared/components/common';
 import { formatCurrency, statusStyles } from '@/shared/utils/helpers';
 import { Auction } from '../../models';
-import { Columns } from './auctions_column';
+import { useAuctionsColumns } from './auctions_column';
 import AuctionDetailsModal from './auction_details_modal';
 
 interface AuctionTableProps {
@@ -28,6 +29,8 @@ function AuctionMobileCard({
   auction: Auction;
   onViewDetails: (auction: Auction) => void;
 }) {
+  const t = useTranslations('admin.auctions.mobileCard');
+
   return (
     <div className="space-y-2 rounded-lg border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
@@ -50,27 +53,27 @@ function AuctionMobileCard({
 
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
         <div>
-          <dt className="text-xs text-muted-foreground">Auction ID</dt>
+          <dt className="text-xs text-muted-foreground">{t('auctionId')}</dt>
           <dd className="font-medium">{auction.id}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Seller</dt>
+          <dt className="text-xs text-muted-foreground">{t('seller')}</dt>
           <dd className="truncate font-medium">{auction.seller}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Starting Bid</dt>
+          <dt className="text-xs text-muted-foreground">{t('startingBid')}</dt>
           <dd className="font-medium">{formatCurrency(auction.startingBid)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Current Bid</dt>
+          <dt className="text-xs text-muted-foreground">{t('currentBid')}</dt>
           <dd className="font-medium">{formatCurrency(auction.currentBid)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Bids</dt>
+          <dt className="text-xs text-muted-foreground">{t('bids')}</dt>
           <dd className="font-medium">{auction.bids}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">End Date</dt>
+          <dt className="text-xs text-muted-foreground">{t('endDate')}</dt>
           <dd className="font-medium">{auction.endDate}</dd>
         </div>
       </dl>
@@ -82,7 +85,7 @@ function AuctionMobileCard({
           className="w-full"
           onClick={() => onViewDetails(auction)}
         >
-          View details
+          {t('viewDetails')}
         </Button>
       </div>
     </div>
@@ -94,6 +97,7 @@ export default function AuctionTable({
   tabFilters,
   title,
 }: AuctionTableProps) {
+  const t = useTranslations('admin.auctions.empty');
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -102,7 +106,7 @@ export default function AuctionTable({
     setDetailsOpen(true);
   }, []);
 
-  const columns = useMemo(() => Columns(handleViewDetails), [handleViewDetails]);
+  const columns = useAuctionsColumns(handleViewDetails);
 
   return (
     <>
@@ -118,8 +122,8 @@ export default function AuctionTable({
           />
         )}
         emptyIcon={<Paperclip className="h-10 w-10" />}
-        emptyTitle="No Auctions Available"
-        emptyDescription="New auctions will appear here once sellers create listings."
+        emptyTitle={t('title')}
+        emptyDescription={t('description')}
       />
 
       <AuctionDetailsModal

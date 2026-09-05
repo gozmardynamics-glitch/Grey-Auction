@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import Image from 'next/image';
 import { ChevronRight } from 'lucide-react';
@@ -23,6 +24,7 @@ import { DUMMY_SALE_DETAIL } from '../../../models/data';
 export function SalesTab({ sales }: { sales: SaleItem[] }) {
   const [selectedSale, setSelectedSale] = useState<SaleDetail | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const t = useTranslations('admin.sellers.salesTab');
 
   const handleViewSale = (sale: SaleItem) => {
     setSelectedSale({
@@ -35,7 +37,7 @@ export function SalesTab({ sales }: { sales: SaleItem[] }) {
   };
 
   if (!sales || sales.length === 0) {
-    return <p className="text-sm text-muted-foreground py-4">No sales yet.</p>;
+    return <p className="text-sm text-muted-foreground py-4">{t('empty')}</p>;
   }
   return (
     <>
@@ -43,12 +45,12 @@ export function SalesTab({ sales }: { sales: SaleItem[] }) {
         <Table>
           <TableHeader className="bg-background">
             <TableRow>
-              <TableHead className="text-xs">Sale ID</TableHead>
-              <TableHead className="text-xs">Item</TableHead>
-              <TableHead className="text-xs">Buyer</TableHead>
-              <TableHead className="text-xs">Amount</TableHead>
-              <TableHead className="text-xs">Date</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
+              <TableHead className="text-xs">{t('saleId')}</TableHead>
+              <TableHead className="text-xs">{t('item')}</TableHead>
+              <TableHead className="text-xs">{t('buyer')}</TableHead>
+              <TableHead className="text-xs">{t('amount')}</TableHead>
+              <TableHead className="text-xs">{t('date')}</TableHead>
+              <TableHead className="text-xs">{t('status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

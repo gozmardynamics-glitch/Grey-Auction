@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MoreVertical, Plus, Send } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button, Input, ScrollArea } from '@/shared/components/common';
 import { cn } from '@/lib/utils';
 import { Ticket } from '../../models';
@@ -19,11 +20,12 @@ export default function TicketChatView({
   onOpenContactInfo,
   onImageClick,
 }: TicketChatViewProps) {
+  const t = useTranslations('admin.tickets.chat');
   const [messageInput, setMessageInput] = useState('');
 
   const handleSend = () => {
     if (!messageInput.trim()) return;
-    
+
     setMessageInput('');
   };
 
@@ -50,7 +52,7 @@ export default function TicketChatView({
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{ticket.contact.name}</span>
             <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
-              Seller ID: {ticket.contact.sellerId}
+              {t('sellerId', { id: ticket.contact.sellerId })}
             </span>
           </div>
         </div>
@@ -114,7 +116,7 @@ export default function TicketChatView({
                     >
                       <Image
                         src={message.imageUrl}
-                        alt="Shared image"
+                        alt={t('sharedImageAlt')}
                         fill
                         className="max-h-[200px] w-[300px] rounded-2xl object-cover transition-opacity hover:opacity-90"
                       />
@@ -145,7 +147,7 @@ export default function TicketChatView({
           value={messageInput}
           onChange={(e) => setMessageInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder={t('messagePlaceholder')}
           className="flex-1 bg-background"
         />
         <Button

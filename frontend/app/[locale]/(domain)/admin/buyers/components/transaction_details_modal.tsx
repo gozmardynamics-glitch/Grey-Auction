@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Check, RotateCcw } from 'lucide-react';
 
 import {
@@ -71,6 +72,7 @@ export default function TransactionDetailsModal({
   onOpenChange,
   transaction,
 }: TransactionDetailsModalProps) {
+  const t = useTranslations('admin.buyers.txn');
   if (!transaction) return null;
 
   return (
@@ -78,7 +80,7 @@ export default function TransactionDetailsModal({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">
-            Transaction Details
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -86,7 +88,7 @@ export default function TransactionDetailsModal({
           {/* Amount & Status */}
           <Card className="space-y-2 p-3 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Amount</p>
+              <p className="text-xs text-muted-foreground">{t('amount')}</p>
               <p className="text-2xl font-bold">
                 {formatCurrency(transaction.amount)}
               </p>
@@ -101,7 +103,7 @@ export default function TransactionDetailsModal({
 
           {/* Timeline */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Timeline</h3>
+            <h3 className="text-sm font-semibold">{t('timeline')}</h3>
             <Card className="mt-2 p-3">
               {transaction.timeline.map((step, index) => (
                 <TimelineItem
@@ -115,16 +117,16 @@ export default function TransactionDetailsModal({
 
           {/* Billing */}
           <div className="space-y-3 p-2">
-            <h3 className="text-sm font-semibold">Billing</h3>
+            <h3 className="text-sm font-semibold">{t('billing')}</h3>
             <Card className="p-3 lg:grid-cols-2 grid">
-              <InfoRow label="To" value={transaction.billing.id} />
+              <InfoRow label={t('to')} value={transaction.billing.id} />
               <InfoRow
-                label="Payment Gateway"
+                label={t('paymentGateway')}
                 value={transaction.billing.paymentGateway}
               />
-              <InfoRow label="Type" value={transaction.billing.deposit} />
+              <InfoRow label={t('type')} value={transaction.billing.deposit} />
               <InfoRow
-                label="Transaction ID"
+                label={t('transactionId')}
                 value={transaction.billing.transactionId}
               />
             </Card>
@@ -133,11 +135,11 @@ export default function TransactionDetailsModal({
           {/* Manage Transaction */}
           {transaction.status === 'Completed' && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Manage Transaction</h3>
+              <h3 className="text-sm font-semibold">{t('manage')}</h3>
               <Card className="p-3">
                 <Button variant="outline" className="gap-2">
                   <RotateCcw className="h-4 w-4" />
-                  Refund Payment
+                  {t('refund')}
                 </Button>
               </Card>
             </div>

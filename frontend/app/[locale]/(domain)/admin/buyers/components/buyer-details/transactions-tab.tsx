@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 
 import {
@@ -27,6 +28,7 @@ export function TransactionsTab({
 }) {
   const [selectedTxn, setSelectedTxn] = useState<BuyerTransactionDetail | null>(null);
   const [txnModalOpen, setTxnModalOpen] = useState(false);
+  const t = useTranslations('admin.buyers.txnsTab');
 
   const handleViewTransaction = (txn: BuyerTransactionItem) => {
     setSelectedTxn({
@@ -45,8 +47,8 @@ export function TransactionsTab({
   if (!transactions || transactions.length === 0) {
     return (
       <EmptyState
-        title="No transactions yet"
-        description="Transactions will appear here once this buyer starts transacting."
+        title={t('emptyTitle')}
+        description={t('emptyDescription')}
         className="py-10"
       />
     );
@@ -57,12 +59,12 @@ export function TransactionsTab({
         <Table>
           <TableHeader className="bg-background">
             <TableRow>
-              <TableHead className="text-xs">Transaction ID</TableHead>
-              <TableHead className="text-xs">Type</TableHead>
-              <TableHead className="text-xs">Amount</TableHead>
-              <TableHead className="text-xs">Method</TableHead>
-              <TableHead className="text-xs">Date</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
+              <TableHead className="text-xs">{t('txnId')}</TableHead>
+              <TableHead className="text-xs">{t('type')}</TableHead>
+              <TableHead className="text-xs">{t('amount')}</TableHead>
+              <TableHead className="text-xs">{t('method')}</TableHead>
+              <TableHead className="text-xs">{t('date')}</TableHead>
+              <TableHead className="text-xs">{t('status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

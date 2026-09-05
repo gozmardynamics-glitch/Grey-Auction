@@ -876,17 +876,488 @@
       "status": "Status"
     },
     "dashboard": "Admin-dashboard",
-    "auctions": "Veilingen",
-    "bids": "Biedingen",
-    "buyers": "Kopers",
-    "sellers": "Verkopers",
+    "auctions": {
+      "table": {
+        "selectAll": "Alles selecteren",
+        "selectRow": "Rij selecteren",
+        "auctionId": "Veiling-ID",
+        "item": "Item",
+        "seller": "Verkoper",
+        "category": "Categorie",
+        "startingBid": "Startbod",
+        "currentBid": "Huidig bod",
+        "bids": "Biedingen",
+        "endDate": "Einddatum",
+        "status": "Status",
+        "openMenu": "Menu openen",
+        "viewDetails": "Details bekijken",
+        "deleteAuction": "Veiling verwijderen"
+      },
+      "mobileCard": {
+        "auctionId": "Veiling-ID",
+        "seller": "Verkoper",
+        "startingBid": "Startbod",
+        "currentBid": "Huidig bod",
+        "bids": "Biedingen",
+        "endDate": "Einddatum",
+        "viewDetails": "Details bekijken"
+      },
+      "empty": {
+        "title": "Geen veilingen beschikbaar",
+        "description": "Nieuwe veilingen verschijnen hier zodra verkopers advertenties aanmaken."
+      },
+      "page": {
+        "title": "Veilingbeheer"
+      },
+      "details": {
+        "title": "Veilingdetails",
+        "sellerReserveNotYetMet": "Reserve van verkoper nog niet bereikt",
+        "saleStatus": "Verkoopstatus: {status}",
+        "approveAuction": "Veiling goedkeuren",
+        "cancel": "Annuleren",
+        "auctionInformation": "Veilinginformatie",
+        "bidInformation": "Biedingsinformatie",
+        "inspectionInformation": "Keuringsinformatie",
+        "category": "Categorie:",
+        "duration": "Duur:",
+        "startDate": "Startdatum:",
+        "endDate": "Einddatum:",
+        "startingPrice": "Startprijs:",
+        "bidIncrement": "Bodstap:",
+        "reservePrice": "Reserveprijs:",
+        "reservePriceAt": "Reserveprijs @:",
+        "allowBuyNow": "Nu kopen toegestaan:",
+        "buyNowAt": "Nu kopen @:",
+        "allowInspection": "Keuring toegestaan:",
+        "inspectionAddress": "Keuringsadres:",
+        "approveConfirm": {
+          "title": "Weet u zeker dat u deze veiling wilt goedkeuren?",
+          "consequenceLabel": "Na goedkeuring:",
+          "consequence1": "De veiling gaat onmiddellijk live",
+          "consequence2": "De biedingsperiode begint",
+          "consequence3": "Kopers kunnen deelnemen",
+          "consequence4": "Definitieve biedingen kunnen niet ongedaan worden gemaakt",
+          "checkboxLabel": "Bevestig dat alle veilingdetails en itemspecificaties zijn gecontroleerd en voldoen aan de eisen van het platform",
+          "confirm": "Veiling goedkeuren"
+        },
+        "rejectConfirm": {
+          "title": "Weet u zeker dat u deze veiling wilt afwijzen?",
+          "consequenceLabel": "Deze actie zal:",
+          "consequence1": "Voorkomen dat de veiling live gaat",
+          "consequence2": "De verkoper op de hoogte stellen met de afwijzingsreden",
+          "consequence3": "De verkoper verplichten de advertentie opnieuw in te dienen als hij het opnieuw wil proberen",
+          "consequence4": "Deze actie kan niet ongedaan worden gemaakt",
+          "placeholder": "bijv. verkeerd geclassificeerd/beleid, beleidsschending, onjuiste prijs...",
+          "confirm": "Veiling afwijzen"
+        },
+        "success": {
+          "approvedTitle": "Veiling goedgekeurd",
+          "approvedMessage": "De veiling is goedgekeurd en is nu actief. De bieding is gestart en gebruikers kunnen onmiddellijk bieden.",
+          "rejectedTitle": "Veiling afgewezen",
+          "rejectedMessage": "De veiling is succesvol afgewezen. De verkoper is op de hoogte gesteld met de reden van afwijzing."
+        },
+        "productImages": "Productafbeeldingen",
+        "productImageAlt": "Product {index}",
+        "otherDetails": "Overige details",
+        "specifications": "Specificaties",
+        "description": "Omschrijving",
+        "additionalInformation": "Aanvullende informatie",
+        "payment": "Betaling",
+        "inspection": "Keuring",
+        "delivery": "Levering",
+        "completed": "Voltooid",
+        "bidHistory": "Biedingsgeschiedenis",
+        "bidsCount": "Biedingen: {count}",
+        "bidder": "Bieder",
+        "bidAmount": "Bodbedrag",
+        "type": "Type",
+        "date": "Datum",
+        "status": "Status",
+        "noBids": "Nog geen biedingen geplaatst.",
+        "rejectionWarning": "Dit item mag op basis van ons beleid niet worden geveild op ons platform.",
+        "seller": {
+          "title": "Verkopersdetails",
+          "viewProfile": "Profiel bekijken"
+        }
+      },
+      "dialogs": {
+        "about": "Over",
+        "mechanical": "Mechanisch:",
+        "specifications": "Specificaties",
+        "specs": {
+          "body": "Carrosserie",
+          "airbags": "Airbags",
+          "climatisation": "Airconditioning",
+          "drivetrain": "Aandrijving",
+          "displacement": "Cilinderinhoud",
+          "antique": "Antiek",
+          "color": "Kleur",
+          "doorCount": "Aantal deuren",
+          "cubicCapacity": "Cilindercapaciteit",
+          "emissionClass": "Emissieklasse",
+          "gearbox": "Versnellingsbak",
+          "mileage": "Kilometerstand",
+          "seatCount": "Aantal zitplaatsen",
+          "parkingSensors": "Parkeersensoren",
+          "power": "Vermogen"
+        }
+      }
+    },
+    "bids": {
+      "table": {
+        "selectAll": "Alles selecteren",
+        "selectRow": "Rij selecteren",
+        "bidId": "Bieding-ID",
+        "item": "Item",
+        "seller": "Verkoper",
+        "category": "Categorie",
+        "startingBid": "Startbod",
+        "currentBid": "Huidig bod",
+        "bids": "Biedingen",
+        "endDate": "Einddatum",
+        "status": "Status",
+        "openMenu": "Menu openen",
+        "viewDetails": "Details bekijken",
+        "deleteBid": "Bieding verwijderen"
+      },
+      "page": {
+        "title": "Biedingen"
+      },
+      "empty": {
+        "title": "Geen biedingen beschikbaar",
+        "description": "Nieuwe biedingen verschijnen hier zodra verkopers advertenties aanmaken."
+      },
+      "details": {
+        "title": "Biedingdetails",
+        "sellerReserveNotYetMet": "Reserve van verkoper nog niet bereikt",
+        "saleStatus": "Verkoopstatus: {status}",
+        "auctionInformation": "Veilinginformatie",
+        "bidInformation": "Biedingsinformatie",
+        "category": "Categorie:",
+        "duration": "Duur:",
+        "startDate": "Startdatum:",
+        "endDate": "Einddatum:",
+        "startingPrice": "Startprijs:",
+        "bidIncrement": "Bodstap:",
+        "reservePrice": "Reserveprijs:",
+        "reservePriceAt": "Reserveprijs @:",
+        "allowBuyNow": "Nu kopen toegestaan:",
+        "buyNowAt": "Nu kopen @:",
+        "bidHistory": "Biedingsgeschiedenis",
+        "bidsCount": "Biedingen: {count}",
+        "bidder": "Bieder",
+        "bidAmount": "Bodbedrag",
+        "type": "Type",
+        "date": "Datum",
+        "status": "Status",
+        "noBids": "Nog geen biedingen geplaatst."
+      }
+    },
+    "buyers": {
+      "page": {
+        "title": "Kopers",
+        "export": "Exporteren"
+      },
+      "table": {
+        "buyerId": "Koper-ID",
+        "name": "Naam",
+        "email": "E-mail",
+        "location": "Locatie",
+        "totalBids": "Totaal biedingen",
+        "wins": "Gewonnen",
+        "totalSpent": "Totaal besteed",
+        "joinDate": "Inschrijfdatum",
+        "status": "Status",
+        "openMenu": "Menu openen",
+        "viewDetails": "Details bekijken",
+        "activateBuyer": "Koper activeren",
+        "suspendBuyer": "Koper opschorten",
+        "emptyTitle": "Geen kopers beschikbaar",
+        "emptyDescription": "Nieuwe kopers verschijnen hier zodra ze zich op het platform registreren."
+      },
+      "dialogs": {
+        "activate": {
+          "title": "Gebruiker activeren",
+          "body": "Weet u zeker dat u deze koper wilt activeren? Deze kan dan bieden en aankopen doen.",
+          "cancel": "Annuleren",
+          "confirm": "Ja, activeren"
+        },
+        "suspend": {
+          "title": "Gebruiker opschorten",
+          "body": "Weet u zeker dat u deze koper wilt opschorten? Deze kan dan niet meer bieden of aankopen doen.",
+          "cancel": "Annuleren",
+          "confirm": "Ja, opschorten"
+        },
+        "add": {
+          "title": "Gebruiker toevoegen",
+          "firstName": "Voornaam",
+          "lastName": "Achternaam",
+          "email": "E-mailadres",
+          "cancel": "Annuleren",
+          "submit": "Toevoegen"
+        }
+      },
+      "details": {
+        "title": "Kopersdetails",
+        "totalSpent": "Totaal besteed",
+        "aucBidWon": "Gewonnen biedingen",
+        "totalBids": "Totaal biedingen",
+        "purchases": "Aankopen",
+        "basicInfo": "Basisinformatie",
+        "buyerId": "Koper-ID",
+        "phone": "Telefoonnummer",
+        "email": "E-mail",
+        "dateJoined": "Inschrijfdatum",
+        "contactAddress": "Contactadres",
+        "street": "Straat",
+        "city": "Stad",
+        "state": "Staat",
+        "country": "Land",
+        "activity": "Activiteit",
+        "tabBids": "Biedingen",
+        "tabPurchases": "Aankopen",
+        "tabTransactions": "Transacties"
+      },
+      "invoice": {
+        "details": "Factuurgegevens",
+        "invoiceNumber": "Factuurnummer",
+        "issueDate": "Uitgiftedatum",
+        "dueDate": "Vervaldatum",
+        "billedTo": "Gefactureerd aan",
+        "billedDetails": "Factuurdetails",
+        "itemDetails": "Artikeldetails",
+        "item": "Artikel",
+        "quantity": "Hoeveelheid",
+        "price": "Prijs",
+        "subtotal": "Subtotaal",
+        "auctionFee": "Veilingkosten ({percent}%)",
+        "vat": "BTW over biedwaarde",
+        "sat": "SAT over veilingkosten",
+        "totalBidAmount": "Totaal biedbedrag",
+        "download": "Factuur downloaden"
+      },
+      "bidsTab": {
+        "empty": "Nog geen biedactiviteit.",
+        "auctionId": "Veiling-ID",
+        "item": "Artikel",
+        "bidAmount": "Biedbedrag",
+        "type": "Type",
+        "date": "Datum",
+        "status": "Status"
+      },
+      "purchasesTab": {
+        "empty": "Nog geen aankopen.",
+        "invoiceId": "Factuur-ID",
+        "item": "Artikel",
+        "bidAmount": "Biedbedrag",
+        "date": "Datum",
+        "status": "Status"
+      },
+      "txnsTab": {
+        "emptyTitle": "Nog geen transacties",
+        "emptyDescription": "Transacties verschijnen hier zodra deze koper gaat transacteren.",
+        "txnId": "Transactie-ID",
+        "type": "Type",
+        "amount": "Bedrag",
+        "method": "Methode",
+        "date": "Datum",
+        "status": "Status"
+      },
+      "txn": {
+        "title": "Transactiedetails",
+        "amount": "Bedrag",
+        "timeline": "Tijdlijn",
+        "billing": "Facturering",
+        "to": "Aan",
+        "paymentGateway": "Betalingsgateway",
+        "type": "Type",
+        "transactionId": "Transactie-ID",
+        "manage": "Transactie beheren",
+        "refund": "Betaling terugbetalen"
+      }
+    },
+    "sellers": {
+      "page": {
+        "title": "Verkopers",
+        "export": "Exporteren"
+      },
+      "table": {
+        "sellerId": "Verkoper-ID",
+        "name": "Naam",
+        "email": "E-mail",
+        "location": "Locatie",
+        "listings": "Aanbiedingen",
+        "sales": "Verkopen",
+        "revenue": "Omzet",
+        "joinDate": "Inschrijfdatum",
+        "status": "Status",
+        "openMenu": "Menu openen",
+        "viewDetails": "Details bekijken",
+        "activateSeller": "Verkoper activeren",
+        "suspendSeller": "Verkoper opschorten",
+        "emptyTitle": "Geen verkopers beschikbaar",
+        "emptyDescription": "Nieuwe verkopers verschijnen hier zodra ze zich op het platform registreren."
+      },
+      "dialogs": {
+        "activate": {
+          "title": "Verkoper activeren",
+          "body": "Weet u zeker dat u deze verkoper wilt activeren? Deze kan dan artikelen aanbieden en betalingen ontvangen.",
+          "cancel": "Annuleren",
+          "confirm": "Ja, activeren"
+        },
+        "suspend": {
+          "title": "Verkoper opschorten",
+          "body": "Weet u zeker dat u deze verkoper wilt opschorten? Deze kan dan geen artikelen meer aanbieden en geen betalingen meer ontvangen.",
+          "cancel": "Annuleren",
+          "confirm": "Ja, opschorten"
+        },
+        "add": {
+          "title": "Verkoper toevoegen",
+          "firstName": "Voornaam",
+          "lastName": "Achternaam",
+          "email": "E-mailadres",
+          "cancel": "Annuleren",
+          "submit": "Toevoegen"
+        }
+      },
+      "details": {
+        "title": "Verkopersdetails",
+        "totalRevenue": "Totale omzet",
+        "auctions": "Veilingen",
+        "totalBids": "Totaal biedingen",
+        "itemSold": "Verkochte artikelen",
+        "basicInfo": "Basisinformatie",
+        "sellerId": "Verkoper-ID",
+        "phone": "Telefoonnummer",
+        "email": "E-mail",
+        "dateJoined": "Inschrijfdatum",
+        "contactAddress": "Contactadres",
+        "street": "Straat",
+        "city": "Stad",
+        "state": "Staat",
+        "country": "Land",
+        "tabs": {
+          "activity": "Activiteit",
+          "verification": "Verificatie",
+          "auctions": "Veilingen",
+          "sales": "Verkopen",
+          "transactions": "Transacties"
+        }
+      },
+      "sale": {
+        "title": "Verkoopdetails",
+        "buyerDetails": "Kopersdetails",
+        "breakdown": "Uitsplitsing",
+        "finalBid": "Laatste bod",
+        "vatOnBid": "BTW over biedwaarde",
+        "vatOnFee": "BTW over veilingkosten",
+        "totalBidAmount": "Totaal biedbedrag"
+      },
+      "txn": {
+        "title": "Transactiedetails",
+        "amount": "Bedrag",
+        "timeline": "Tijdlijn",
+        "billing": "Facturering",
+        "to": "Aan",
+        "paymentMethod": "Betaalmethode",
+        "type": "Type",
+        "transactionId": "Transactie-ID"
+      },
+      "auctionDetails": {
+        "title": "Veilingdetails",
+        "auctionInfo": "Veilinginformatie",
+        "auctionId": "Veiling-ID",
+        "item": "Artikel",
+        "category": "Categorie",
+        "duration": "Duur",
+        "startDate": "Startdatum",
+        "endDate": "Einddatum",
+        "bidInfo": "Biedinformatie",
+        "startingPrice": "Startprijs",
+        "bidIncrement": "Biedstap",
+        "reservePrice": "Reserveprijs",
+        "minBidPrice": "Minimale biedprijs",
+        "allowBuyNow": "Direct kopen toegestaan",
+        "buyNowPrice": "Direct-kopen prijs",
+        "inspectionInfo": "Inspectie-informatie",
+        "allowInspection": "Inspectie toegestaan",
+        "inspectionDuration": "Inspectieduur",
+        "inspectionAddress": "Inspectieadres",
+        "sellerHeading": "Verkopersdetails",
+        "bidHistory": "Biedhistorie",
+        "noBidsTitle": "Nog geen biedingen",
+        "noBidsDescription": "Biedingen op deze veiling verschijnen hier.",
+        "name": "Naam",
+        "bidAmount": "Biedbedrag",
+        "timestamp": "Tijdstempel",
+        "status": "Status",
+        "action": "Actie"
+      },
+      "auctionsTab": {
+        "empty": "Nog geen biedactiviteit.",
+        "aucId": "Veiling-ID",
+        "item": "Artikel",
+        "duration": "Duur",
+        "startingBid": "Startbod",
+        "date": "Datum",
+        "status": "Status"
+      },
+      "salesTab": {
+        "empty": "Nog geen verkopen.",
+        "saleId": "Verkoop-ID",
+        "item": "Artikel",
+        "buyer": "Koper",
+        "amount": "Bedrag",
+        "date": "Datum",
+        "status": "Status"
+      },
+      "txnsTab": {
+        "emptyTitle": "Nog geen transacties",
+        "emptyDescription": "Transacties verschijnen hier zodra deze verkoper gaat transacteren.",
+        "txnId": "Transactie-ID",
+        "type": "Type",
+        "amount": "Bedrag",
+        "method": "Methode",
+        "date": "Datum",
+        "status": "Status"
+      },
+      "verificationTab": {
+        "empty": "Geen geüploade documenten.",
+        "uploadedDocuments": "Geüploade documenten",
+        "file": "Bestand",
+        "date": "Datum",
+        "status": "Status"
+      }
+    },
     "admins": "Beheerders",
     "categories": "Categorieën",
     "banners": "Banners",
     "faqs": "FAQ's",
     "payments": "Betalingen",
     "biddingRooms": "Biedingsruimtes",
-    "tickets": "Tickets",
+    "tickets": {
+      "page": {
+        "title": "Tickets"
+      },
+      "list": {
+        "search": "Zoeken"
+      },
+      "chat": {
+        "sellerId": "Verkoper-ID: {id}",
+        "sharedImageAlt": "Gedeelde afbeelding",
+        "messagePlaceholder": "Typ een bericht..."
+      },
+      "contact": {
+        "sellerId": "Verkoper-ID: {id}",
+        "media": "Media",
+        "viewAll": "Alles bekijken",
+        "mediaAlt": "Media {index}"
+      },
+      "empty": {
+        "title": "Nog geen supporttickets",
+        "description": "Er zijn momenteel geen klantenserviceberichten. Nieuwe tickets van gebruikers verschijnen hier zodra ze zijn ingediend."
+      }
+    },
     "terms": "Algemene voorwaarden",
     "privacyPolicy": "Privacybeleid",
     "settings": {

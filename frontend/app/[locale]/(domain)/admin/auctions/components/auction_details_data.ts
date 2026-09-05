@@ -2,6 +2,9 @@ import { type Auction } from '../../models';
 
 // ---------- Types ----------
 
+// Specification labels carry catalog keys (model-as-keys) resolved via
+// admin.auctions.dialogs.specs.* at the render site; unknown labels
+// (e.g. real auction data) fall back to their raw value.
 export interface SpecificationItem {
   label: string;
   value: string;
@@ -60,20 +63,20 @@ export const formatCurrency = (value: number) =>
 // ---------- Dummy data ----------
 
 export const DUMMY_SPECS: SpecificationItem[] = [
-  { label: 'Body', value: 'SUV' },
-  { label: 'Drivetrain', value: 'AWD' },
-  { label: 'Gearbox', value: 'Gearbox Pumped Drive' },
-  { label: 'Displacement', value: 'Multi Video Climate/Heated' },
-  { label: 'Antique', value: 'Gold' },
-  { label: 'Color', value: 'Black' },
-  { label: 'Door Count', value: '4 drs' },
-  { label: 'Cubic Capacity', value: '4.8' },
-  { label: 'Emission Class', value: '3' },
-  { label: 'Gearbox', value: 'Automatic' },
-  { label: 'Mileage', value: '120000mi' },
-  { label: 'Seat Count', value: '5' },
-  { label: 'Parking Sensors', value: 'Front, Rear also Options' },
-  { label: 'Power', value: '5.0l kc' },
+  { label: 'body', value: 'SUV' },
+  { label: 'drivetrain', value: 'AWD' },
+  { label: 'gearbox', value: 'Gearbox Pumped Drive' },
+  { label: 'displacement', value: 'Multi Video Climate/Heated' },
+  { label: 'antique', value: 'Gold' },
+  { label: 'color', value: 'Black' },
+  { label: 'doorCount', value: '4 drs' },
+  { label: 'cubicCapacity', value: '4.8' },
+  { label: 'emissionClass', value: '3' },
+  { label: 'gearbox', value: 'Automatic' },
+  { label: 'mileage', value: '120000mi' },
+  { label: 'seatCount', value: '5' },
+  { label: 'parkingSensors', value: 'Front, Rear also Options' },
+  { label: 'power', value: '5.0l kc' },
 ];
 
 export const DUMMY_DESCRIPTION =

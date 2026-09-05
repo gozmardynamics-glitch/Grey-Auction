@@ -1,3 +1,5 @@
+'use client';
+
 import {
   CircleCheck,
   Car,
@@ -14,6 +16,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Dialog,
@@ -24,20 +27,21 @@ import {
 } from '@/shared/components/common';
 import { type SpecificationItem } from '../auction_details_data';
 
+// Keys map to admin.auctions.dialogs.specs.* catalog entries; DUMMY_SPECS
+// labels carry the same catalog keys (model-as-keys).
 const specIconMap: Record<string, LucideIcon> = {
-  Body: Car,
-  Airbags: Shield,
-  Climatisation: Thermometer,
-  Color: Palette,
-  'Door Count': DoorOpen,
-  'Cubic Capacity': Box,
-  'Emission Class': AlertTriangle,
-  Gearbox: Cog,
-  Mileage: Gauge,
-  'Seat Count': Armchair,
-  'Parking Sensors': ParkingCircle,
-  'Parking sensors': ParkingCircle,
-  Power: Zap,
+  body: Car,
+  airbags: Shield,
+  climatisation: Thermometer,
+  color: Palette,
+  doorCount: DoorOpen,
+  cubicCapacity: Box,
+  emissionClass: AlertTriangle,
+  gearbox: Cog,
+  mileage: Gauge,
+  seatCount: Armchair,
+  parkingSensors: ParkingCircle,
+  power: Zap,
 };
 
 interface SpecificationsDialogProps {
@@ -51,18 +55,23 @@ export function SpecificationsDialog({
   onOpenChange,
   specs,
 }: SpecificationsDialogProps) {
+  const t = useTranslations('admin.auctions.dialogs');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
-            Specifications
+            {t('specifications')}
           </DialogTitle>
         </DialogHeader>
         <Separator />
         <div className="grid grid-cols-2 gap-x-8 gap-y-0">
           {specs.map((spec, index) => {
             const Icon = specIconMap[spec.label] ?? CircleCheck;
+            const label = t.has(`specs.${spec.label}`)
+              ? t(`specs.${spec.label}` as 'specs.body')
+              : spec.label;
             return (
               <div
                 key={index}
@@ -72,9 +81,7 @@ export function SpecificationsDialog({
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex flex-1 items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {spec.label}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{label}</span>
                   <span className="text-sm font-medium">{spec.value}</span>
                 </div>
               </div>

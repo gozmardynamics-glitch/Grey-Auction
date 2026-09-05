@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import {
   Badge,
@@ -12,9 +13,10 @@ import { BidActivityItem } from '../../../models';
 import { formatCurrency, statusStyles } from '@/shared/utils/helpers';
 
 export function BidsTab({ bids }: { bids: BidActivityItem[] }) {
+  const t = useTranslations('admin.buyers.bidsTab');
   if (!bids || bids.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-4">No bid activity yet.</p>
+      <p className="text-sm text-muted-foreground py-4">{t('empty')}</p>
     );
   }
 
@@ -32,12 +34,12 @@ export function BidsTab({ bids }: { bids: BidActivityItem[] }) {
       <Table>
         <TableHeader className="bg-background">
           <TableRow>
-            <TableHead className="text-xs">Auction ID</TableHead>
-            <TableHead className="text-xs">Item</TableHead>
-            <TableHead className="text-xs">Bid Amount</TableHead>
-            <TableHead className="text-xs">Type</TableHead>
-            <TableHead className="text-xs">Date</TableHead>
-            <TableHead className="text-xs">Status</TableHead>
+            <TableHead className="text-xs">{t('auctionId')}</TableHead>
+            <TableHead className="text-xs">{t('item')}</TableHead>
+            <TableHead className="text-xs">{t('bidAmount')}</TableHead>
+            <TableHead className="text-xs">{t('type')}</TableHead>
+            <TableHead className="text-xs">{t('date')}</TableHead>
+            <TableHead className="text-xs">{t('status')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

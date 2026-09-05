@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import Image from 'next/image';
 import { ChevronRight } from 'lucide-react';
@@ -25,6 +26,7 @@ export function AuctionsTab({ auctions }: { auctions: AuctionActivityItem[] }) {
     null
   );
   const [modalOpen, setModalOpen] = useState(false);
+  const t = useTranslations('admin.sellers.auctionsTab');
 
   const handleViewAuction = (auction: AuctionActivityItem) => {
     setSelectedAuction({
@@ -40,7 +42,7 @@ export function AuctionsTab({ auctions }: { auctions: AuctionActivityItem[] }) {
   if (!auctions || auctions.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-4">
-        No auction activity yet.
+        {t('empty')}
       </p>
     );
   }
@@ -50,12 +52,12 @@ export function AuctionsTab({ auctions }: { auctions: AuctionActivityItem[] }) {
         <Table>
           <TableHeader className="bg-background">
             <TableRow>
-              <TableHead className="text-xs">AUC ID</TableHead>
-              <TableHead className="text-xs">Item</TableHead>
-              <TableHead className="text-xs">Duration</TableHead>
-              <TableHead className="text-xs">Starting Bid</TableHead>
-              <TableHead className="text-xs">Date</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
+              <TableHead className="text-xs">{t('aucId')}</TableHead>
+              <TableHead className="text-xs">{t('item')}</TableHead>
+              <TableHead className="text-xs">{t('duration')}</TableHead>
+              <TableHead className="text-xs">{t('startingBid')}</TableHead>
+              <TableHead className="text-xs">{t('date')}</TableHead>
+              <TableHead className="text-xs">{t('status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

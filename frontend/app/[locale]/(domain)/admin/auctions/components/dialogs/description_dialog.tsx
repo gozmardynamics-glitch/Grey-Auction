@@ -1,4 +1,7 @@
+'use client';
+
 import { CircleCheck } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Dialog,
@@ -22,6 +25,8 @@ export function DescriptionDialog({
   description,
   mechanical,
 }: DescriptionDialogProps) {
+  const t = useTranslations('admin.auctions.dialogs');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
@@ -37,13 +42,13 @@ export function DescriptionDialog({
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
-            <h4 className="text-sm font-semibold mb-2">About</h4>
+            <h4 className="text-sm font-semibold mb-2">{t('about')}</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {description}
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-2">Mechanical:</h4>
+            <h4 className="text-sm font-semibold mb-2">{t('mechanical')}</h4>
             <ul className="list-disc pl-5 space-y-1">
               {mechanical.map((item, index) => (
                 <li key={index} className="text-sm text-muted-foreground">

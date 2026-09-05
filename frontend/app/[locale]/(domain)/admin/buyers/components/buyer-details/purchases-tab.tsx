@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 
 import Image from 'next/image';
@@ -22,6 +23,7 @@ import { DUMMY_INVOICE_DETAIL } from '../../../models/data';
 
 
 export function PurchasesTab({ purchases }: { purchases: PurchaseItem[] }) {
+  const t = useTranslations('admin.buyers.purchasesTab');
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
@@ -36,7 +38,7 @@ export function PurchasesTab({ purchases }: { purchases: PurchaseItem[] }) {
 
   if (!purchases || purchases.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-4">No purchases yet.</p>
+      <p className="text-sm text-muted-foreground py-4">{t('empty')}</p>
     );
   }
   return (
@@ -45,11 +47,11 @@ export function PurchasesTab({ purchases }: { purchases: PurchaseItem[] }) {
         <Table>
           <TableHeader className="bg-background">
             <TableRow>
-              <TableHead className="text-xs">Invoice ID</TableHead>
-              <TableHead className="text-xs">Item</TableHead>
-              <TableHead className="text-xs">Bid Amount</TableHead>
-              <TableHead className="text-xs">Date</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
+              <TableHead className="text-xs">{t('invoiceId')}</TableHead>
+              <TableHead className="text-xs">{t('item')}</TableHead>
+              <TableHead className="text-xs">{t('bidAmount')}</TableHead>
+              <TableHead className="text-xs">{t('date')}</TableHead>
+              <TableHead className="text-xs">{t('status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

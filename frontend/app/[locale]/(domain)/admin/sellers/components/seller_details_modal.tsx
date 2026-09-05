@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Avatar,
   AvatarFallback,
@@ -43,6 +44,7 @@ export default function SellerDetailsModal({
   onOpenChange,
   seller,
 }: SellerDetailsModalProps) {
+  const t = useTranslations('admin.sellers.details');
   const [mainTab, setMainTab] = useState('activity');
   const [activityTab, setActivityTab] = useState('auctions');
 
@@ -53,7 +55,7 @@ export default function SellerDetailsModal({
       <DialogContent className="min-w-[calc(100vw-80rem)] max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">
-            Seller Details
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -117,32 +119,32 @@ export default function SellerDetailsModal({
           {/* Stats Row */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <ModalStatCard
-              label="Total Revenue"
+              label={t('totalRevenue')}
               value={formatCurrency(seller.totalRevenue)}
             />
             <ModalStatCard
-              label="Auctions"
+              label={t('auctions')}
               value={seller.totalAuctions ?? seller.totalListings}
             />
-            <ModalStatCard label="Total Bids" value={seller.totalBids ?? 0} />
+            <ModalStatCard label={t('totalBids')} value={seller.totalBids ?? 0} />
             <ModalStatCard
-              label="Item Sold"
+              label={t('itemSold')}
               value={seller.itemSold ?? seller.totalSales}
             />
           </div>
 
           {/* Basic Information */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Basic Information</h3>
+            <h3 className="text-sm font-semibold">{t('basicInfo')}</h3>
             <Card className="grid grid-cols-2 gap-4 border rounded-lg p-4">
-              <InfoRow label="Seller ID" value={seller.id} />
+              <InfoRow label={t('sellerId')} value={seller.id} />
               <InfoRow
-                label="Phone Number"
+                label={t('phone')}
                 value={seller.phoneNumber || seller.phone}
               />
-              <InfoRow label="Email" value={seller.email} />
+              <InfoRow label={t('email')} value={seller.email} />
               <InfoRow
-                label="Date Joined"
+                label={t('dateJoined')}
                 value={seller.dateJoined || seller.joinDate}
               />
             </Card>
@@ -150,12 +152,12 @@ export default function SellerDetailsModal({
 
           {/* Contact Address */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Contact Address</h3>
+            <h3 className="text-sm font-semibold">{t('contactAddress')}</h3>
             <Card className="grid grid-cols-2 gap-4 border rounded-lg p-4">
-              <InfoRow label="Street" value={seller.street || '-'} />
-              <InfoRow label="City" value={seller.city || '-'} />
-              <InfoRow label="State" value={seller.state || '-'} />
-              <InfoRow label="Country" value={seller.country || '-'} />
+              <InfoRow label={t('street')} value={seller.street || '-'} />
+              <InfoRow label={t('city')} value={seller.city || '-'} />
+              <InfoRow label={t('state')} value={seller.state || '-'} />
+              <InfoRow label={t('country')} value={seller.country || '-'} />
             </Card>
           </div>
 
@@ -170,13 +172,13 @@ export default function SellerDetailsModal({
                 value="activity"
                 className="shrink-0 rounded-none  px-1 pt-1 data-[state=active]:bg-background data-[state=active]:shadow-none text-sm"
               >
-                Activity
+                {t('tabs.activity')}
               </TabsTrigger>
               <TabsTrigger
                 value="verification"
                 className="shrink-0 rounded-none  px-1 pt-1 data-[state=active]:bg-background data-[state=active]:shadow-none text-sm"
               >
-                Verification
+                {t('tabs.verification')}
               </TabsTrigger>
             </TabsList>
 
@@ -191,19 +193,19 @@ export default function SellerDetailsModal({
                     value="auctions"
                     className="shrink-0 rounded-none border-b border-transparent px-1 pb-2 pt-1 data-[state=active]:rounded-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs"
                   >
-                    Auctions
+                    {t('tabs.auctions')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="sales"
                     className="shrink-0 rounded-none border-b border-transparent px-1 pb-2 pt-1 data-[state=active]:rounded-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs"
                   >
-                    Sales
+                    {t('tabs.sales')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="transactions"
                     className="shrink-0 rounded-none border-b-2 border-transparent px-1 pb-2 pt-1 data-[state=active]:rounded-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-xs"
                   >
-                    Transactions
+                    {t('tabs.transactions')}
                   </TabsTrigger>
                 </TabsList>
 

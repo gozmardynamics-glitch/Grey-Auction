@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 
 import { DataTable, type TabFilter } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 import { Seller } from '../../models';
-import { Columns } from './sellers_column';
+import { useSellersColumns } from './sellers_column';
 import SellerDetailsModal from './seller_details_modal';
 import { type SellerDetail } from '../../models';
 import SuspendSellerDialog from './suspend_seller_dialog';
@@ -22,6 +23,7 @@ export default function SellersTable({
   tabFilters,
   title,
 }: SellersTableProps) {
+  const t = useTranslations('admin.sellers.table');
   const [selectedSeller, setSelectedSeller] = useState<SellerDetail | null>(
     null
   );
@@ -31,9 +33,7 @@ export default function SellersTable({
   const [activateOpen, setActivateOpen] = useState(false);
   const [actionSeller, setActionSeller] = useState<Seller | null>(null);
 
-  const columns = useMemo(
-    () =>
-      Columns(
+  const columns = useSellersColumns(
         (seller) => {
           const sellerDetail: SellerDetail = {
             ...seller,
@@ -49,8 +49,6 @@ export default function SellersTable({
           setActionSeller(seller);
           setActivateOpen(true);
         }
-      ),
-    []
   );
 
   return (
@@ -61,8 +59,8 @@ export default function SellersTable({
         tabFilters={tabFilters}
         title={title}
         emptyIcon={<UserPlus className="h-10 w-10" />}
-        emptyTitle="No Sellers Available"
-        emptyDescription="New sellers will appear here once they register on the platform."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
       />
 
       <SellerDetailsModal

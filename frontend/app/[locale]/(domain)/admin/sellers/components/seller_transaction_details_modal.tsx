@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Check, X } from 'lucide-react';
 
 import {
@@ -75,6 +76,7 @@ export default function SellerTransactionDetailsModal({
   onApprove,
   onReject,
 }: SellerTransactionDetailsModalProps) {
+  const t = useTranslations('admin.sellers.txn');
   if (!transaction) return null;
 
   const isPending = transaction.status === 'Pending';
@@ -85,7 +87,7 @@ export default function SellerTransactionDetailsModal({
         <DialogHeader className="p-6 pb-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold">
-              Transaction Details
+              {t('title')}
             </DialogTitle>
             {isPending && (
               <div className="flex items-center gap-2">
@@ -110,7 +112,7 @@ export default function SellerTransactionDetailsModal({
         <div className="space-y-5 p-6 pt-4">
           {/* Amount & Status */}
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Amount</p>
+            <p className="text-xs text-muted-foreground">{t('amount')}</p>
             <p className="text-2xl font-bold">
               {formatCurrency(transaction.amount)}
             </p>
@@ -126,7 +128,7 @@ export default function SellerTransactionDetailsModal({
 
           {/* Timeline */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Timeline</h3>
+            <h3 className="text-sm font-semibold">{t('timeline')}</h3>
             <div className="mt-2">
               {transaction.timeline.map((step, index) => (
                 <TimelineItem
@@ -142,16 +144,16 @@ export default function SellerTransactionDetailsModal({
 
           {/* Billing */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Billing</h3>
+            <h3 className="text-sm font-semibold">{t('billing')}</h3>
             <div>
-              <InfoRow label="To" value={transaction.billing.to} />
+              <InfoRow label={t('to')} value={transaction.billing.to} />
               <InfoRow
-                label="Payment Method"
+                label={t('paymentMethod')}
                 value={transaction.billing.paymentMethod}
               />
-              <InfoRow label="Type" value={transaction.billing.type} />
+              <InfoRow label={t('type')} value={transaction.billing.type} />
               <InfoRow
-                label="Transaction ID"
+                label={t('transactionId')}
                 value={transaction.billing.transactionId}
               />
             </div>

@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { BookCopy, Download, Hammer, MapPin, Phone } from 'lucide-react';
 
 import {
@@ -40,6 +41,7 @@ export default function SaleDetailsModal({
   onOpenChange,
   sale,
 }: SaleDetailsModalProps) {
+  const t = useTranslations('admin.sellers.sale');
   if (!sale) return null;
 
   return (
@@ -47,7 +49,7 @@ export default function SaleDetailsModal({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">
-            Sale Details
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -95,7 +97,7 @@ export default function SaleDetailsModal({
           <div className="space-y-3">
             <Card className="p-3 space-y-4 bg-card">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Buyer Details</h3>
+                <h3 className="text-sm font-semibold">{t('buyerDetails')}</h3>
                 <Button variant="outline" size="sm" className="bg-card">
                   View Profile
                 </Button>
@@ -129,10 +131,10 @@ export default function SaleDetailsModal({
 
           {/* Breakdown */}
           <div className="space-y-0">
-            <h3 className="text-sm font-semibold mb-2">Breakdown</h3>
+            <h3 className="text-sm font-semibold mb-2">{t('breakdown')}</h3>
             <Card className="py-3">
               <InfoRow
-                label="Final Bid"
+                label={t('finalBid')}
                 value={formatCurrency(sale.totalBid)}
               />
               <Separator />
@@ -142,17 +144,17 @@ export default function SaleDetailsModal({
               />
               <Separator />
               <InfoRow
-                label="VAT on bid value"
+                label={t('vatOnBid')}
                 value={formatCurrency(sale.vatOnBidValue)}
               />
               <Separator />
               <InfoRow
-                label="VAT on auction fee"
+                label={t('vatOnFee')}
                 value={formatCurrency(sale.vatOnAuctionFee)}
               />
               <Separator />
               <InfoRow
-                label="Total Bid Amount"
+                label={t('totalBidAmount')}
                 value={formatCurrency(sale.totalBidAmount)}
               />
             </Card>

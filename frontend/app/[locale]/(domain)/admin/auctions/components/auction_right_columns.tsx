@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import {
   Badge,
@@ -28,6 +29,7 @@ import { SellerDetailsCard } from './auction_sub_components';
 import { SpecificationsDialog, DescriptionDialog } from './dialogs';
 
 export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
+  const t = useTranslations('admin.auctions.details');
   const [specsOpen, setSpecsOpen] = useState(false);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [additionalOpen, setAdditionalOpen] = useState(false);
@@ -40,9 +42,9 @@ export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
     Array(8).fill(auction.itemImage || '/images/audi-rsq8.png');
 
   const detailItems = [
-    { label: 'Specifications', onClick: () => setSpecsOpen(true) },
-    { label: 'Description', onClick: () => setDescriptionOpen(true) },
-    { label: 'Additional Information', onClick: () => setAdditionalOpen(true) },
+    { id: 'specifications', label: t('specifications'), onClick: () => setSpecsOpen(true) },
+    { id: 'description', label: t('description'), onClick: () => setDescriptionOpen(true) },
+    { id: 'additionalInformation', label: t('additionalInformation'), onClick: () => setAdditionalOpen(true) },
   ];
 
   return (
@@ -51,13 +53,13 @@ export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
 
       {/* Product Images */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Product Images</h3>
+        <h3 className="text-sm font-semibold">{t('productImages')}</h3>
         <div className="grid grid-cols-4 gap-2 relative">
           {images.map((img, index) => (
             <Image
               key={index}
               src={img}
-              alt={`Product ${index + 1}`}
+              alt={t('productImageAlt', { index: index + 1 })}
               fill
               className="h-20 w-full rounded-lg object-cover"
             />
@@ -67,11 +69,11 @@ export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
 
       {/* Other Details - Clickable rows */}
       <Card className="space-y-3 bg-card p-2">
-        <h3 className="text-sm font-semibold">Other Details</h3>
+        <h3 className="text-sm font-semibold">{t('otherDetails')}</h3>
         <div className="space-y-2">
-          {detailItems.map(({ label, onClick }) => (
+          {detailItems.map(({ id, label, onClick }) => (
             <Button
-              key={label}
+              key={id}
               type="button"
               variant="ghost"
               onClick={onClick}
@@ -93,14 +95,14 @@ export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
       <DescriptionDialog
         open={descriptionOpen}
         onOpenChange={setDescriptionOpen}
-        title="Description"
+        title={t('description')}
         description={description}
         mechanical={mechanical}
       />
       <DescriptionDialog
         open={additionalOpen}
         onOpenChange={setAdditionalOpen}
-        title="Additional Information"
+        title={t('additionalInformation')}
         description={auction.additionalInfo ?? description}
         mechanical={auction.additionalInfoMechanical ?? mechanical}
       />
@@ -109,6 +111,7 @@ export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
 }
 
 export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
+  const t = useTranslations('admin.auctions.details');
   const bidHistory = auction.bidHistory ?? DUMMY_BID_HISTORY;
   const totalBids = auction.totalBids ?? bidHistory.length;
 
@@ -118,9 +121,9 @@ export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
 
       {/* Other Details status bars */}
       <Card className="space-y-3 bg-card p-2">
-        <h3 className="text-sm font-semibold">Other Details</h3>
+        <h3 className="text-sm font-semibold">{t('otherDetails')}</h3>
         <div className="space-y-2">
-          {['Payment', 'Inspection', 'Delivery'].map((label) => (
+          {[t('payment'), t('inspection'), t('delivery')].map((label) => (
             <div
               key={label}
               className="flex items-center justify-between rounded-lg border p-3"
@@ -130,7 +133,7 @@ export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
                 variant="outline"
                 className="bg-green-100 text-green-700 border-green-200"
               >
-                Completed
+                {t('completed')}
               </Badge>
             </div>
           ))}
@@ -140,9 +143,9 @@ export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
       {/* Bid History */}
       <Card className="space-y-3 bg-card p-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Bid History</h3>
+          <h3 className="text-sm font-semibold">{t('bidHistory')}</h3>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            Bids: {String(totalBids).padStart(2, '0')}
+            {t('bidsCount', { count: String(totalBids).padStart(2, '0') })}
           </span>
         </div>
         {bidHistory.length > 0 ? (
@@ -150,11 +153,11 @@ export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Bidder</TableHead>
-                  <TableHead className="text-xs">Bid Amount</TableHead>
-                  <TableHead className="text-xs">Type</TableHead>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs">{t('bidder')}</TableHead>
+                  <TableHead className="text-xs">{t('bidAmount')}</TableHead>
+                  <TableHead className="text-xs">{t('type')}</TableHead>
+                  <TableHead className="text-xs">{t('date')}</TableHead>
+                  <TableHead className="text-xs">{t('status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -184,7 +187,7 @@ export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
             </Table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No bids placed yet.</p>
+          <p className="text-sm text-muted-foreground">{t('noBids')}</p>
         )}
       </Card>
     </>
@@ -192,6 +195,8 @@ export function CompletedRightColumn({ auction }: { auction: AuctionDetail }) {
 }
 
 export function RejectedRightColumn({ auction }: { auction: AuctionDetail }) {
+  const t = useTranslations('admin.auctions.details');
+
   return (
     <>
       <SellerDetailsCard auction={auction} />
@@ -199,10 +204,7 @@ export function RejectedRightColumn({ auction }: { auction: AuctionDetail }) {
       {/* Rejection Warning */}
       <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
         <AlertTriangle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
-        <p className="text-sm text-red-700">
-          This item is not permitted for auction on our platform based on our
-          policies.
-        </p>
+        <p className="text-sm text-red-700">{t('rejectionWarning')}</p>
       </div>
     </>
   );

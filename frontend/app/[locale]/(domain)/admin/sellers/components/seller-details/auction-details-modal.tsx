@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { Check, MapPin, Phone, X } from 'lucide-react';
 
 import {
@@ -44,6 +45,7 @@ export default function AuctionDetailsModal({
   onOpenChange,
   auction,
 }: AuctionDetailsModalProps) {
+  const t = useTranslations('admin.sellers.auctionDetails');
   if (!auction) return null;
 
   return (
@@ -51,7 +53,7 @@ export default function AuctionDetailsModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">
-            Auction Details
+            {t('title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -60,11 +62,11 @@ export default function AuctionDetailsModal({
           <div className="space-y-5">
             {/* Auction Information */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Auction Information</h3>
-              <InfoRow label="Auction ID" value={auction.auctionId} />
+              <h3 className="text-sm font-semibold">{t('auctionInfo')}</h3>
+              <InfoRow label={t('auctionId')} value={auction.auctionId} />
               <Separator />
               <div className="flex items-center justify-between py-2">
-                <p className="text-sm text-muted-foreground">Item</p>
+                <p className="text-sm text-muted-foreground">{t('item')}</p>
                 <div className="flex items-center gap-2">
                   {auction.itemImage && (
                     <Image
@@ -77,47 +79,47 @@ export default function AuctionDetailsModal({
                 </div>
               </div>
               <Separator />
-              <InfoRow label="Category" value={auction.category} />
+              <InfoRow label={t('category')} value={auction.category} />
               <Separator />
-              <InfoRow label="Duration" value={auction.duration} />
+              <InfoRow label={t('duration')} value={auction.duration} />
               <Separator />
-              <InfoRow label="Start Date" value={auction.startDate} />
+              <InfoRow label={t('startDate')} value={auction.startDate} />
               <Separator />
-              <InfoRow label="End Date" value={auction.endDate} />
+              <InfoRow label={t('endDate')} value={auction.endDate} />
             </div>
 
             <Separator />
 
             {/* Bid Information */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Bid Information</h3>
+              <h3 className="text-sm font-semibold">{t('bidInfo')}</h3>
               <InfoRow
-                label="Starting Price"
+                label={t('startingPrice')}
                 value={formatCurrency(auction.startingPrice)}
               />
               <Separator />
               <InfoRow
-                label="Bid Increment"
+                label={t('bidIncrement')}
                 value={formatCurrency(auction.bidIncrement)}
               />
               <Separator />
               <InfoRow
-                label="Reserve Price"
+                label={t('reservePrice')}
                 value={formatCurrency(auction.reservePrice)}
               />
               <Separator />
               <InfoRow
-                label="Minimum Bid Price"
+                label={t('minBidPrice')}
                 value={formatCurrency(auction.minimumBidPrice)}
               />
               <Separator />
               <InfoRow
-                label="Allow Buy Now"
+                label={t('allowBuyNow')}
                 value={auction.allowBuyNow ? 'Yes' : 'No'}
               />
               <Separator />
               <InfoRow
-                label="Buy Now Price"
+                label={t('buyNowPrice')}
                 value={formatCurrency(auction.buyNowPrice)}
               />
             </div>
@@ -126,19 +128,19 @@ export default function AuctionDetailsModal({
 
             {/* Inspection Information */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Inspection Information</h3>
+              <h3 className="text-sm font-semibold">{t('inspectionInfo')}</h3>
               <InfoRow
-                label="Allow Inspection"
+                label={t('allowInspection')}
                 value={auction.allowInspection ? 'Yes' : 'No'}
               />
               <Separator />
               <InfoRow
-                label="Inspection Duration"
+                label={t('inspectionDuration')}
                 value={auction.inspectionDuration}
               />
               <Separator />
               <InfoRow
-                label="Inspection Address"
+                label={t('inspectionAddress')}
                 value={auction.inspectionAddress}
               />
             </div>
@@ -148,7 +150,7 @@ export default function AuctionDetailsModal({
           <div className="space-y-5">
             {/* Seller Details */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Seller Details</h3>
+              <h3 className="text-sm font-semibold">{t('sellerHeading')}</h3>
               <div className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <Avatar>
@@ -195,11 +197,11 @@ export default function AuctionDetailsModal({
 
             {/* Bid History */}
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Bid History</h3>
+              <h3 className="text-sm font-semibold">{t('bidHistory')}</h3>
               {auction.bidHistory.length === 0 ? (
                 <EmptyState
-                  title="No bids yet"
-                  description="Bids placed on this auction will appear here."
+                  title={t('noBidsTitle')}
+                  description={t('noBidsDescription')}
                   className="py-8"
                 />
               ) : (
@@ -207,11 +209,11 @@ export default function AuctionDetailsModal({
                   <Table>
                     <TableHeader className="bg-background">
                       <TableRow>
-                        <TableHead className="text-xs">Name</TableHead>
-                        <TableHead className="text-xs">Bid Amount</TableHead>
-                        <TableHead className="text-xs">Timestamp</TableHead>
-                        <TableHead className="text-xs">Status</TableHead>
-                        <TableHead className="text-xs">Action</TableHead>
+                        <TableHead className="text-xs">{t('name')}</TableHead>
+                        <TableHead className="text-xs">{t('bidAmount')}</TableHead>
+                        <TableHead className="text-xs">{t('timestamp')}</TableHead>
+                        <TableHead className="text-xs">{t('status')}</TableHead>
+                        <TableHead className="text-xs">{t('action')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { Users } from 'lucide-react';
 
 import { DataTable, type TabFilter } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 import { Buyer, BuyerDetail } from '../../models';
-import { Columns } from './buyers_column';
+import { useBuyersColumns } from './buyers_column';
 import BuyerDetailsModal from './buyer_details_modal';
 import SuspendUserDialog from './suspend_user_dialog';
 import ActivateUserDialog from './activate_user_dialog';
@@ -21,6 +22,7 @@ export default function BuyersTable({
   tabFilters,
   title,
 }: BuyersTableProps) {
+  const t = useTranslations('admin.buyers.table');
   const [selectedBuyer, setSelectedBuyer] = useState<BuyerDetail | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -28,9 +30,7 @@ export default function BuyersTable({
   const [activateOpen, setActivateOpen] = useState(false);
   const [actionBuyer, setActionBuyer] = useState<Buyer | null>(null);
 
-  const columns = useMemo(
-    () =>
-      Columns(
+  const columns = useBuyersColumns(
         (buyer) => {
           const buyerDetail: BuyerDetail = {
             ...buyer,
@@ -46,8 +46,6 @@ export default function BuyersTable({
           setActionBuyer(buyer);
           setActivateOpen(true);
         }
-      ),
-    []
   );
 
   return (
@@ -58,8 +56,8 @@ export default function BuyersTable({
         tabFilters={tabFilters}
         title={title}
         emptyIcon={<Users className="h-10 w-10" />}
-        emptyTitle="No Buyers Available"
-        emptyDescription="New buyers will appear here once they register on the platform."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
       />
 
       <BuyerDetailsModal
