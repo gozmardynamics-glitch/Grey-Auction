@@ -33,6 +33,7 @@ describe('ProductService', () => {
       save: jest.fn(),
       remove: jest.fn(),
       update: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -47,6 +48,52 @@ describe('ProductService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('getArmCounts', () => {
+    const qbChain = (rows: Array<{ subCategory: string | null; count: string }>) => {
+      const builder: Record<string, jest.Mock> = {};
+      builder.select = jest.fn().mockReturnValue(builder);
+      builder.addSelect = jest.fn().mockReturnValue(builder);
+      builder.where = jest.fn().mockReturnValue(builder);
+      builder.andWhere = jest.fn().mockReturnValue(builder);
+      builder.groupBy = jest.fn().mockReturnValue(builder);
+      builder.getRawMany = jest.fn().mockResolvedValue(rows);
+      return builder;
+    };
+
+    it('aggregates ACTIVE lot counts per subcategory server-side', async () => {
+      const builder = qbChain([
+        { subCategory: 'Federal', count: '7' },
+        { subCategory: 'State', count: '3' },
+        { subCategory: null, count: '2' },
+      ]);
+      (productRepository.createQueryBuilder as jest.Mock).mockReturnValue(builder);
+
+      const result = await service.getArmCounts('Government');
+
+      expect(productRepository.createQueryBuilder).toHaveBeenCalledWith('product');
+      expect(builder.where).toHaveBeenCalledWith(
+        'product.status = :status',
+        expect.objectContaining({ status: ProductStatus.ACTIVE }),
+      );
+      expect(builder.andWhere).toHaveBeenCalledWith(
+        'product.category = :category',
+        expect.objectContaining({ category: 'Government' }),
+      );
+      expect(builder.groupBy).toHaveBeenCalledWith('product.subCategory');
+      expect(result).toEqual({
+        category: 'Government',
+        counts: { Federal: 7, State: 3, '': 2 },
+      });
+    });
+
+    it('returns empty counts when the category has no active lots', async () => {
+      (productRepository.createQueryBuilder as jest.Mock).mockReturnValue(qbChain([]));
+
+      const result = await service.getArmCounts('Empty');
+      expect(result.counts).toEqual({});
+    });
   });
 
   describe('findAll', () => {

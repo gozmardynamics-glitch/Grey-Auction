@@ -82,6 +82,18 @@ export class ProductController {
     return data;
   }
 
+  @Get('arm-counts')
+  @ApiOperation({
+    summary: 'Per-arm (subcategory) counts of ACTIVE lots for one category',
+  })
+  async getArmCounts(@Query('category') category: string) {
+    if (!category) {
+      throw new BadRequestException('category query parameter is required');
+    }
+    const data = await this.productService.getArmCounts(category);
+    return { success: true, data };
+  }
+
   @Get('related')
   @ApiOperation({ summary: 'Get related auctions by category' })
   async getRelated(

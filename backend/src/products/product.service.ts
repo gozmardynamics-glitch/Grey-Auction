@@ -109,6 +109,32 @@ export class ProductService {
     return this.findByIdOrSlug(id);
   }
 
+  /**
+   * Server-served per-arm (subcategory) counts for the institutional-arm tabs
+   * (Government / Embassy / Corporate). One GROUP BY query over ACTIVE lots in
+   * the category — replaces the client-side bounded aggregate so tab counts
+   * stay accurate no matter how large the inventory grows. The '' key counts
+   * lots without a subcategory (the "All" tab remainder).
+   */
+  async getArmCounts(
+    category: string,
+  ): Promise<{ category: string; counts: Record<string, number> }> {
+    const rows: Array<{ subCategory: string | null; count: string | number }> =
+      await this.repo
+        .createQueryBuilder('product')
+        .select('product.subCategory', 'subCategory')
+        .addSelect('COUNT(*)', 'count')
+        .where('product.status = :status', { status: ProductStatus.ACTIVE })
+        .andWhere('product.category = :category', { category })
+        .groupBy('product.subCategory')
+        .getRawMany();
+    const counts: Record<string, number> = {};
+    for (const row of rows) {
+      counts[row.subCategory ?? ''] = Number(row.count) || 0;
+    }
+    return { category, counts };
+  }
+
   async getRelated(category: string, excludeId?: string, take = 4): Promise<Product[]> {
     const where: any = { status: ProductStatus.ACTIVE };
     if (category) where.category = category;
