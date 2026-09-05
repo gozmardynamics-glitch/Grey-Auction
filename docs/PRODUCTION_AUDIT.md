@@ -97,7 +97,7 @@ helmet + compression + graceful shutdown + 5 MB JSON body limit with rawBody for
 - **[RESOLVED — wave 2] Webhook amount comparison:** both `handleWebhook` and reconciliation now refuse to settle when the provider-confirmed amount (adapters already normalize to naira) differs from `payment.amount` (±0.01); mismatches leave the payment PENDING for manual review. Covered by a dedicated jest case.
 - **[RESOLVED — wave 2] invoice_number collision:** allocation is serialized with a transaction-scoped Postgres advisory lock (`pg_advisory_xact_lock`), so concurrent webhook/cron creators can no longer compute the same count+1.
 - **[RESOLVED — wave 2] Serialization discipline:** room participants hydrate only `id/name/createdAt` (same posture as the public bid feed); admin surfaces keep full fields legitimately.
-- **[FUTURE · P2]** a full response-DTO pass across every user-bearing payload remains nice-to-have.
+- **[RESOLVED — wave 3, 2026-09-05] Response-DTO pass:** the ad-hoc per-query projections are consolidated into one shared constant — `backend/src/common/projections/user-projection.ts` (`USER_PUBLIC_SELECT` = `id/name/createdAt`) — now used by the public bid feed, both room-creator projections and the participants query. The room bid feed (`findByRoom`), which still hydrated the full User row, is closed with a regression test. Convention going forward: any new user-bearing relation crossing a trust boundary selects `USER_PUBLIC_SELECT`.
 
 ---
 
@@ -187,10 +187,10 @@ Public routes pass axe (12/12) including landmarks, labels and contrast rules; a
 | 14 | P1 | Confirmation | Page shows client-side state only | RESOLVED (this wave) |
 | 15 | P1 | Webhooks | Provider-amount vs payment.amount check | RESOLVED (this wave) |
 | 16 | P1 | Settings | In-memory settings store | RESOLVED (this wave) |
-| 17 | P2 | Users | PII beyond credentials in payloads | PARTIAL (participants + room creator projected; full DTO pass future) |
+| 17 | P2 | Users | PII beyond credentials in payloads | RESOLVED (wave 3: shared `USER_PUBLIC_SELECT` projection across bids/rooms incl. the room bid feed; convention fixed in code) |
 | 18 | P2 | Tickets | List/detail owner-or-admin scoping | RESOLVED (this wave) |
 | 19 | P2 | Legacy | Delete legacy payments trio, idempotent replays | RESOLVED (this wave) |
-| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; dialog verified native; header/footer i18n + EmptyState adoption done; dashboard nav sidebars + buyer/seller/admin dashboard home surfaces wired to catalogs (home namespaces, column-hook pattern); module detail surfaces remain) |
+| 20 | P2 | UX | i18n sweep, empty states, theme FOUC, dialog focus | PARTIAL (FOUC fixed; header/footer + dashboard navs + all three dashboard homes done; wave 3 2026-09-05: buyer wallet flows, buyer settings tabs and seller settings modules translated; admin settings + list-table chrome in progress; EmptyState sweep remaining) |
 | 21 | P2 | Config | CSP hardening, images remotePatterns | RESOLVED (this wave) |
 | 22 | P2 | Ops | invoice_number collision retry, cron overlap guard, admin password policy | RESOLVED (this wave) |
 | 23 | — | Vendors | OPay/Interswitch sandbox verification (TODO(vendor)) | FUTURE — code paths 100% unit-covered (mocked HTTP, real HMAC/hash), sandbox pass is verification-only |
