@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { Landmark, Plus, ChevronRight } from 'lucide-react';
 
@@ -40,6 +41,7 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
 ];
 
 export default function SettingsPayment() {
+  const t = useTranslations('buyer.settings.payment');
   const [accounts, setAccounts] = useState<BankAccount[]>(INITIAL_ACCOUNTS);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(
@@ -87,12 +89,12 @@ export default function SettingsPayment() {
       <>
         <EmptyState
           icon={<Landmark className="h-12 w-12" />}
-          title="No Payment Method Added"
-          description="Add a bank account to start receiving payouts."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
           action={
             <Button onClick={() => setAddAccountOpen(true)}>
               <Plus className="size-4 mr-1" />
-              Add Bank Account
+              {t('addBankAccount')}
             </Button>
           }
         />
@@ -129,7 +131,7 @@ export default function SettingsPayment() {
             </div>
             {account.isDefault && (
               <Badge variant="outline" className="shrink-0 text-primary border-primary">
-                Default
+                {t('default')}
               </Badge>
             )}
             <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
@@ -142,7 +144,7 @@ export default function SettingsPayment() {
           className="flex items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
         >
           <Plus className="size-4" />
-          Add Bank Account
+          {t('addBankAccount')}
         </button>
       </div>
 
@@ -150,7 +152,7 @@ export default function SettingsPayment() {
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Account Details</DialogTitle>
+            <DialogTitle>{t('accountDetails')}</DialogTitle>
           </DialogHeader>
 
           {selectedAccount && (
@@ -158,7 +160,7 @@ export default function SettingsPayment() {
               <div className="rounded-lg border">
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">
-                    Account Name
+                    {t('accountName')}
                   </span>
                   <span className="text-sm font-medium">
                     {selectedAccount.accountName.split(' ').map(
@@ -169,7 +171,7 @@ export default function SettingsPayment() {
                 <Separator />
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">
-                    Account Number
+                    {t('accountNumber')}
                   </span>
                   <span className="text-sm font-medium">
                     {selectedAccount.accountNumber}
@@ -178,7 +180,7 @@ export default function SettingsPayment() {
                 <Separator />
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm text-muted-foreground">
-                    Added On
+                    {t('addedOn')}
                   </span>
                   <span className="text-sm font-medium">
                     {selectedAccount.addedOn}
@@ -186,14 +188,14 @@ export default function SettingsPayment() {
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-muted-foreground">Status</span>
+                  <span className="text-sm text-muted-foreground">{t('status')}</span>
                   <span className="text-sm">
                     {selectedAccount.isDefault ? (
                       <Badge
                         variant="outline"
                         className="text-primary border-primary"
                       >
-                        Default
+                        {t('default')}
                       </Badge>
                     ) : (
                       '-'
@@ -208,7 +210,7 @@ export default function SettingsPayment() {
                     variant="outline"
                     onClick={() => handleSetDefault(selectedAccount.id)}
                   >
-                    Set as Default
+                    {t('setAsDefault')}
                   </Button>
                 )}
                 <Button
@@ -216,7 +218,7 @@ export default function SettingsPayment() {
                   className="text-destructive border-destructive hover:bg-destructive/10"
                   onClick={() => handleRemoveAccount(selectedAccount.id)}
                 >
-                  Remove Bank Account
+                  {t('removeAccount')}
                 </Button>
               </div>
             </div>

@@ -461,6 +461,114 @@
         }
       }
     },
+    "settings": {
+      "title": "Paramètres",
+      "search": "Rechercher",
+      "tabs": {
+        "profile": "Profil",
+        "security": "Sécurité",
+        "notifications": "Notifications",
+        "payment": "Paiement"
+      },
+      "profile": {
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "emailAddress": "Adresse e-mail",
+        "phoneNumber": "Numéro de téléphone",
+        "country": "Pays",
+        "streetAddress": "Adresse postale",
+        "state": "État",
+        "city": "Ville",
+        "saveChanges": "Enregistrer les modifications",
+        "profileSaved": "Informations de profil enregistrées.",
+        "profileSaveFailed": "Échec de l'enregistrement des informations de profil.",
+        "addressSaved": "Informations d'adresse enregistrées.",
+        "addressSaveFailed": "Échec de l'enregistrement de l'adresse."
+      },
+      "security": {
+        "changePassword": "Changer de mot de passe",
+        "changePasswordDesc": "Mettez à jour votre mot de passe pour sécuriser votre compte",
+        "oldPassword": "Ancien mot de passe",
+        "newPassword": "Nouveau mot de passe",
+        "changePin": "Modifier le code PIN",
+        "changeWithdrawalPin": "Modifier le code PIN de retrait",
+        "changeWithdrawalPinDesc": "Mettez à jour votre code PIN de retrait pour autoriser les paiements",
+        "deleteAccount": "Supprimer le compte",
+        "deleteAccountDesc": "Supprimez définitivement votre compte et toutes les données associées",
+        "req": {
+          "eightChars": "8 caractères",
+          "lowerCase": "Minuscule",
+          "upperCase": "Majuscule",
+          "specialChar": "Caractère spécial .→+@"
+        },
+        "passwordChangedTitle": "Mot de passe modifié avec succès",
+        "passwordChangedBody": "Votre mot de passe a été mis à jour avec succès.",
+        "pin": {
+          "verifyPrompt": "Saisissez le code à 6 chiffres envoyé à {email}",
+          "newPinPrompt": "Saisissez un nouveau code PIN de retrait à 4 chiffres pour continuer.",
+          "code": "Code",
+          "noCode": "Code non reçu ?",
+          "resend": "Renvoyer",
+          "verify": "Vérifier",
+          "invalidCode": "Code invalide",
+          "enterNew": "Saisir le nouveau code PIN",
+          "confirmPin": "Confirmer le code PIN",
+          "fourDigits": "Veuillez saisir un code PIN à 4 chiffres",
+          "mismatch": "Les codes PIN ne correspondent pas",
+          "updated": "Le code PIN de retrait a été mis à jour avec succès.",
+          "verified": "Vérification réussie"
+        },
+        "delete": {
+          "whatHappens": "Ce qui se passe lorsque vous supprimez votre compte :",
+          "bullet1": "Toutes les annonces actives seront clôturées",
+          "bullet2": "Les transactions en cours doivent être finalisées",
+          "bullet3": "Votre compte ne pourra pas être récupéré une fois supprimé",
+          "bullet4": "Les enregistrements de transactions peuvent être conservés pour des raisons légales et de conformité",
+          "permanentWarning": "Cette action est définitive et irréversible.",
+          "whyDeleting": "Pourquoi supprimez-vous votre compte ?",
+          "reasonPlaceholder": "Sélectionner une raison",
+          "reason": {
+            "no_longer_needed": "Plus nécessaire",
+            "found_alternative": "Une meilleure alternative trouvée",
+            "privacy_concerns": "Préoccupations de confidentialité",
+            "difficult_to_use": "Trop difficile à utiliser",
+            "other": "Autre"
+          },
+          "verification": "Vérification",
+          "enterPassword": "Saisissez le mot de passe pour supprimer le compte",
+          "password": "Mot de passe",
+          "continue": "Continuer"
+        }
+      },
+      "notifications": {
+        "saveChanges": "Enregistrer les modifications",
+        "saved": "Préférences de notification enregistrées.",
+        "saveFailed": "Échec de l'enregistrement des préférences de notification.",
+        "prefs": {
+          "auctionAlerts": "Alertes d'enchères",
+          "bidStatus": "Mises à jour du statut des enchères",
+          "paymentInvoice": "Mises à jour des paiements et factures",
+          "watchlist": "Mises à jour de la liste de souhaits",
+          "system": "Notifications système"
+        }
+      },
+      "payment": {
+        "title": "Paramètres de paiement",
+        "description": "Gérez vos comptes de paiement et vos préférences de paiement.",
+        "addAccount": "Ajouter un compte",
+        "emptyTitle": "Aucun moyen de paiement ajouté",
+        "emptyDescription": "Ajoutez un compte bancaire pour commencer à recevoir des paiements.",
+        "addBankAccount": "Ajouter un compte bancaire",
+        "default": "Par défaut",
+        "accountDetails": "Détails du compte",
+        "accountName": "Nom du compte",
+        "accountNumber": "Numéro de compte",
+        "addedOn": "Ajouté le",
+        "status": "Statut",
+        "setAsDefault": "Définir par défaut",
+        "removeAccount": "Retirer le compte bancaire"
+      }
+    },
     "nav": {
       "dashboard": "Tableau de bord",
       "myBids": "Mes offres",

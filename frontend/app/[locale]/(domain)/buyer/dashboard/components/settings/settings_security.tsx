@@ -5,6 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, CheckCircle2, Circle, AlertTriangle, UserX } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 
 import {
@@ -37,20 +38,22 @@ import {
   type BuyerChangePasswordValues,
 } from '../../../models/schema';
 
+// Model-as-keys (Pattern 1): labels resolve per locale at render time.
 const passwordRequirements = [
-  { label: '8 characters', test: (v: string) => v.length >= 8 },
-  { label: 'Lower case', test: (v: string) => /[a-z]/.test(v) },
-  { label: 'Upper case', test: (v: string) => /[A-Z]/.test(v) },
+  { labelKey: 'req.eightChars', test: (v: string) => v.length >= 8 },
+  { labelKey: 'req.lowerCase', test: (v: string) => /[a-z]/.test(v) },
+  { labelKey: 'req.upperCase', test: (v: string) => /[A-Z]/.test(v) },
   {
-    label: 'Special character .→+@',
+    labelKey: 'req.specialChar',
     test: (v: string) => /[^A-Za-z0-9]/.test(v),
   },
-];
+] as const;
 
 type PinStep = 'verify' | 'new-pin';
 type DeleteStep = 'info' | 'reason' | 'verify';
 
 export default function SettingsSecurity() {
+  const t = useTranslations('buyer.settings.security');
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -111,8 +114,8 @@ export default function SettingsSecurity() {
       form.reset();
       setShowNewPassword(false);
       setSuccessConfig({
-        title: 'Password Changed Successfully',
-        message: 'Your password has been updated successfully.',
+        title: t('passwordChangedTitle'),
+        message: t('passwordChangedBody'),
       });
       setSuccessOpen(true);
     } catch (error) {
@@ -131,24 +134,24 @@ export default function SettingsSecurity() {
 
   const handleVerifyCode = () => {
     if (verifyCode.length !== 6) {
-      setVerifyError('Invalid code');
+      setVerifyError(t('pin.invalidCode'));
       return;
     }
-    toast.success('Verification successful');
+    toast.success(t('pin.verified'));
     setVerifyError('');
     setPinStep('new-pin');
   };
 
   const handleChangePin = () => {
     if (newPin.length !== 4) {
-      setPinError('Please enter a 4-digit PIN');
+      setPinError(t('pin.fourDigits'));
       return;
     }
     if (newPin !== confirmPin) {
-      setPinError('PINs do not match');
+      setPinError(t('pin.mismatch'));
       return;
     }
-    toast.success('Withdrawal PIN has been updated successfully.');
+    toast.success(t('pin.updated'));
     setPinModalOpen(false);
     resetPinModal();
   };
@@ -181,29 +184,29 @@ export default function SettingsSecurity() {
         {/* Change Password Row */}
         <div className="flex items-center justify-between py-5 first:pt-0">
           <div>
-            <h3 className="text-sm font-medium">Change Password</h3>
+            <h3 className="text-sm font-medium">{t('changePassword')}</h3>
             <p className="text-sm text-muted-foreground">
-              Update your account password to keep your account secure
+              {t('changePasswordDesc')}
             </p>
           </div>
           <Button
             variant="outline"
             onClick={() => setPasswordModalOpen(true)}
           >
-            Change Password
+            {t('changePassword')}
           </Button>
         </div>
 
         {/* Change Withdrawal PIN Row */}
         <div className="flex items-center justify-between py-5">
           <div>
-            <h3 className="text-sm font-medium">Change Withdrawal PIN</h3>
+            <h3 className="text-sm font-medium">{t('changeWithdrawalPin')}</h3>
             <p className="text-sm text-muted-foreground">
-              Update your withdrawal PIN to authorize payouts
+              {t('changeWithdrawalPinDesc')}
             </p>
           </div>
           <Button variant="outline" onClick={() => setPinModalOpen(true)}>
-            Change PIN
+            {t('changePin')}
           </Button>
         </div>
 
@@ -211,17 +214,17 @@ export default function SettingsSecurity() {
         <div className="flex items-center justify-between py-5">
           <div>
             <h3 className="text-sm font-medium text-destructive">
-              Delete Account
+              {t('deleteAccount')}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Permanently delete your account and all associated data
+              {t('deleteAccountDesc')}
             </p>
           </div>
           <Button
             variant="destructive"
             onClick={() => setDeleteModalOpen(true)}
           >
-            Delete Account
+            {t('deleteAccount')}
           </Button>
         </div>
       </div>
@@ -239,7 +242,7 @@ export default function SettingsSecurity() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
+            <DialogTitle>{t('changePassword')}</DialogTitle>
           </DialogHeader>
 
           <Form {...form}>
@@ -252,7 +255,7 @@ export default function SettingsSecurity() {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Old Password</FormLabel>
+                    <FormLabel>{t('oldPassword')}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -266,7 +269,7 @@ export default function SettingsSecurity() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New Password</FormLabel>
+                    <FormLabel>{t('newPassword')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -295,7 +298,7 @@ export default function SettingsSecurity() {
               <ul className="space-y-1.5">
                 {requirements.map((req) => (
                   <li
-                    key={req.label}
+                    key={req.labelKey}
                     className="flex items-center gap-2 text-sm"
                   >
                     {req.met ? (
@@ -308,14 +311,14 @@ export default function SettingsSecurity() {
                         req.met ? 'text-green-600' : 'text-muted-foreground'
                       }
                     >
-                      {req.label}
+                      {t(req.labelKey)}
                     </span>
                   </li>
                 ))}
               </ul>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit">Change Password</Button>
+                <Button type="submit">{t('changePassword')}</Button>
               </div>
             </form>
           </Form>
@@ -332,18 +335,18 @@ export default function SettingsSecurity() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change PIN</DialogTitle>
+            <DialogTitle>{t('changePin')}</DialogTitle>
             <DialogDescription>
               {pinStep === 'verify'
-                ? 'Enter the 6-digit code sent to jaydennicholas@gmail.com'
-                : 'Enter a new 4-digit withdrawal PIN to continue.'}
+                ? t('pin.verifyPrompt', { email: 'jaydennicholas@gmail.com' })
+                : t('pin.newPinPrompt')}
             </DialogDescription>
           </DialogHeader>
 
           {pinStep === 'verify' && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Code</label>
+                <label className="text-sm font-medium">{t('pin.code')}</label>
                 <InputOTP
                   maxLength={6}
                   pattern={REGEXP_ONLY_DIGITS}
@@ -369,17 +372,17 @@ export default function SettingsSecurity() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                Didn&apos;t get code?{' '}
+                {t('pin.noCode')}{' '}
                 <button
                   type="button"
                   className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
                 >
-                  Resend
+                  {t('pin.resend')}
                 </button>
               </p>
 
               <div className="flex justify-end">
-                <Button onClick={handleVerifyCode}>Verify</Button>
+                <Button onClick={handleVerifyCode}>{t('pin.verify')}</Button>
               </div>
             </div>
           )}
@@ -387,7 +390,7 @@ export default function SettingsSecurity() {
           {pinStep === 'new-pin' && (
             <div className="space-y-6">
               <div className="flex flex-col items-center gap-2">
-                <label className="text-sm font-medium">Enter New PIN</label>
+                <label className="text-sm font-medium">{t('pin.enterNew')}</label>
                 <InputOTP
                   maxLength={4}
                   pattern={REGEXP_ONLY_DIGITS}
@@ -406,7 +409,7 @@ export default function SettingsSecurity() {
               </div>
 
               <div className="flex flex-col items-center gap-2">
-                <label className="text-sm font-medium">Confirm PIN</label>
+                <label className="text-sm font-medium">{t('pin.confirmPin')}</label>
                 <InputOTP
                   maxLength={4}
                   pattern={REGEXP_ONLY_DIGITS}
@@ -432,7 +435,7 @@ export default function SettingsSecurity() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleChangePin}>Change PIN</Button>
+                <Button onClick={handleChangePin}>{t('changePin')}</Button>
               </div>
             </div>
           )}
@@ -459,27 +462,24 @@ export default function SettingsSecurity() {
 
               <div className="space-y-4">
                 <h3 className="text-base font-semibold">
-                  What happens when you delete your account:
+                  {t('delete.whatHappens')}
                 </h3>
                 <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                  <li>All active listings will be closed</li>
-                  <li>Pending transactions must be completed</li>
-                  <li>Your account cannot be recovered once deleted</li>
-                  <li>
-                    Transaction records may be retained for legal and compliance
-                    purposes
-                  </li>
+                  <li>{t('delete.bullet1')}</li>
+                  <li>{t('delete.bullet2')}</li>
+                  <li>{t('delete.bullet3')}</li>
+                  <li>{t('delete.bullet4')}</li>
                 </ul>
 
                 <div className="flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
                   <AlertTriangle className="size-4 shrink-0" />
-                  <span>This action is permanent and cannot be undone.</span>
+                  <span>{t('delete.permanentWarning')}</span>
                 </div>
               </div>
 
               <div className="flex justify-end">
                 <Button onClick={() => setDeleteStep('reason')}>
-                  Continue
+                  {t('delete.continue')}
                 </Button>
               </div>
             </>
@@ -489,45 +489,45 @@ export default function SettingsSecurity() {
           {deleteStep === 'reason' && (
             <>
               <DialogHeader>
-                <DialogTitle>Delete Account</DialogTitle>
+                <DialogTitle>{t('deleteAccount')}</DialogTitle>
               </DialogHeader>
 
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    Why are you deleting your account?
+                    {t('delete.whyDeleting')}
                   </label>
                   <Select value={deleteReason} onValueChange={setDeleteReason}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a reason" />
+                      <SelectValue placeholder={t('delete.reasonPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="no_longer_needed">
-                        No longer needed
+                        {t('delete.reason.no_longer_needed')}
                       </SelectItem>
                       <SelectItem value="found_alternative">
-                        Found a better alternative
+                        {t('delete.reason.found_alternative')}
                       </SelectItem>
                       <SelectItem value="privacy_concerns">
-                        Privacy concerns
+                        {t('delete.reason.privacy_concerns')}
                       </SelectItem>
                       <SelectItem value="difficult_to_use">
-                        Too difficult to use
+                        {t('delete.reason.difficult_to_use')}
                       </SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="other">{t('delete.reason.other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
                   <AlertTriangle className="size-4 shrink-0" />
-                  <span>This action is permanent and cannot be undone.</span>
+                  <span>{t('delete.permanentWarning')}</span>
                 </div>
               </div>
 
               <div className="flex justify-end">
                 <Button onClick={() => setDeleteStep('verify')}>
-                  Continue
+                  {t('delete.continue')}
                 </Button>
               </div>
             </>
@@ -537,15 +537,15 @@ export default function SettingsSecurity() {
           {deleteStep === 'verify' && (
             <>
               <DialogHeader>
-                <DialogTitle>Verification</DialogTitle>
+                <DialogTitle>{t('delete.verification')}</DialogTitle>
                 <DialogDescription>
-                  Enter password to delete account
+                  {t('delete.enterPassword')}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Password</label>
+                  <label className="text-sm font-medium">{t('delete.password')}</label>
                   <div className="relative">
                     <Input
                       type={showDeletePassword ? 'text' : 'password'}
@@ -573,7 +573,7 @@ export default function SettingsSecurity() {
                   onClick={handleDeleteAccount}
                   disabled={!deletePassword}
                 >
-                  Delete Account
+                  {t('deleteAccount')}
                 </Button>
               </div>
             </>

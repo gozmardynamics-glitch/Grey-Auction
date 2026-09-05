@@ -461,6 +461,114 @@
         }
       }
     },
+    "settings": {
+      "title": "Settings",
+      "search": "Search",
+      "tabs": {
+        "profile": "Profile",
+        "security": "Security",
+        "notifications": "Notifications",
+        "payment": "Payment"
+      },
+      "profile": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "emailAddress": "Email Address",
+        "phoneNumber": "Phone Number",
+        "country": "Country",
+        "streetAddress": "Street Address",
+        "state": "State",
+        "city": "City",
+        "saveChanges": "Save Changes",
+        "profileSaved": "Profile information saved.",
+        "profileSaveFailed": "Failed to save profile information.",
+        "addressSaved": "Address information saved.",
+        "addressSaveFailed": "Failed to save address information."
+      },
+      "security": {
+        "changePassword": "Change Password",
+        "changePasswordDesc": "Update your account password to keep your account secure",
+        "oldPassword": "Old Password",
+        "newPassword": "New Password",
+        "changePin": "Change PIN",
+        "changeWithdrawalPin": "Change Withdrawal PIN",
+        "changeWithdrawalPinDesc": "Update your withdrawal PIN to authorize payouts",
+        "deleteAccount": "Delete Account",
+        "deleteAccountDesc": "Permanently delete your account and all associated data",
+        "req": {
+          "eightChars": "8 characters",
+          "lowerCase": "Lower case",
+          "upperCase": "Upper case",
+          "specialChar": "Special character .→+@"
+        },
+        "passwordChangedTitle": "Password Changed Successfully",
+        "passwordChangedBody": "Your password has been updated successfully.",
+        "pin": {
+          "verifyPrompt": "Enter the 6-digit code sent to {email}",
+          "newPinPrompt": "Enter a new 4-digit withdrawal PIN to continue.",
+          "code": "Code",
+          "noCode": "Didn't get code?",
+          "resend": "Resend",
+          "verify": "Verify",
+          "invalidCode": "Invalid code",
+          "enterNew": "Enter New PIN",
+          "confirmPin": "Confirm PIN",
+          "fourDigits": "Please enter a 4-digit PIN",
+          "mismatch": "PINs do not match",
+          "updated": "Withdrawal PIN has been updated successfully.",
+          "verified": "Verification successful"
+        },
+        "delete": {
+          "whatHappens": "What happens when you delete your account:",
+          "bullet1": "All active listings will be closed",
+          "bullet2": "Pending transactions must be completed",
+          "bullet3": "Your account cannot be recovered once deleted",
+          "bullet4": "Transaction records may be retained for legal and compliance purposes",
+          "permanentWarning": "This action is permanent and cannot be undone.",
+          "whyDeleting": "Why are you deleting your account?",
+          "reasonPlaceholder": "Select a reason",
+          "reason": {
+            "no_longer_needed": "No longer needed",
+            "found_alternative": "Found a better alternative",
+            "privacy_concerns": "Privacy concerns",
+            "difficult_to_use": "Too difficult to use",
+            "other": "Other"
+          },
+          "verification": "Verification",
+          "enterPassword": "Enter password to delete account",
+          "password": "Password",
+          "continue": "Continue"
+        }
+      },
+      "notifications": {
+        "saveChanges": "Save Changes",
+        "saved": "Notification preferences saved.",
+        "saveFailed": "Failed to save notification preferences.",
+        "prefs": {
+          "auctionAlerts": "Auction alerts",
+          "bidStatus": "Bid status updates",
+          "paymentInvoice": "Payment & invoice updates",
+          "watchlist": "Wishlist updates",
+          "system": "System notifications"
+        }
+      },
+      "payment": {
+        "title": "Payment Settings",
+        "description": "Manage your payout accounts and payment preferences.",
+        "addAccount": "Add Account",
+        "emptyTitle": "No Payment Method Added",
+        "emptyDescription": "Add a bank account to start receiving payouts.",
+        "addBankAccount": "Add Bank Account",
+        "default": "Default",
+        "accountDetails": "Account Details",
+        "accountName": "Account Name",
+        "accountNumber": "Account Number",
+        "addedOn": "Added On",
+        "status": "Status",
+        "setAsDefault": "Set as Default",
+        "removeAccount": "Remove Bank Account"
+      }
+    },
     "nav": {
       "dashboard": "Dashboard",
       "myBids": "My Bids",

@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import {
   Button,
@@ -32,6 +33,8 @@ import {
 } from '../../../models/schema';
 
 export default function SettingsProfile() {
+  const t = useTranslations('buyer.settings.profile');
+
   const profileForm = useForm<BuyerProfileValues>({
     resolver: zodResolver(buyerProfileSchema),
     defaultValues: {
@@ -61,10 +64,10 @@ export default function SettingsProfile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      toast.success('Profile information saved.');
+      toast.success(t('profileSaved'));
     } catch (error) {
       console.error('Failed to save profile:', error);
-      toast.error('Failed to save profile information.');
+      toast.error(t('profileSaveFailed'));
     }
   };
 
@@ -76,10 +79,10 @@ export default function SettingsProfile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: data }),
       });
-      toast.success('Address information saved.');
+      toast.success(t('addressSaved'));
     } catch (error) {
       console.error('Failed to save address:', error);
-      toast.error('Failed to save address information.');
+      toast.error(t('addressSaveFailed'));
     }
   };
 
@@ -97,7 +100,7 @@ export default function SettingsProfile() {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel>{t('firstName')}</FormLabel>
                   <FormControl>
                     <Input className="bg-card" {...field} />
                   </FormControl>
@@ -110,7 +113,7 @@ export default function SettingsProfile() {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel>{t('lastName')}</FormLabel>
                   <FormControl>
                     <Input className="bg-card" {...field} />
                   </FormControl>
@@ -126,7 +129,7 @@ export default function SettingsProfile() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address</FormLabel>
+                  <FormLabel>{t('emailAddress')}</FormLabel>
                   <FormControl>
                     <Input className="bg-card" {...field} />
                   </FormControl>
@@ -139,7 +142,7 @@ export default function SettingsProfile() {
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel>{t('phoneNumber')}</FormLabel>
                   <div className="flex gap-2">
                     <FormField
                       control={profileForm.control}
@@ -186,7 +189,7 @@ export default function SettingsProfile() {
             name="country"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Country</FormLabel>
+                <FormLabel>{t('country')}</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger className="bg-card">
@@ -213,7 +216,7 @@ export default function SettingsProfile() {
             name="streetAddress"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Street Address</FormLabel>
+                <FormLabel>{t('streetAddress')}</FormLabel>
                 <FormControl>
                   <Input className="bg-card" {...field} />
                 </FormControl>
@@ -228,7 +231,7 @@ export default function SettingsProfile() {
               name="state"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>State</FormLabel>
+                  <FormLabel>{t('state')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="bg-card">
@@ -251,7 +254,7 @@ export default function SettingsProfile() {
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>City</FormLabel>
+                  <FormLabel>{t('city')}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger className="bg-card">
@@ -273,7 +276,7 @@ export default function SettingsProfile() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
       {/* <Card className="flex items-center justify-between p-3">

@@ -461,6 +461,114 @@
         }
       }
     },
+    "settings": {
+      "title": "Instellingen",
+      "search": "Zoeken",
+      "tabs": {
+        "profile": "Profiel",
+        "security": "Beveiliging",
+        "notifications": "Meldingen",
+        "payment": "Betaling"
+      },
+      "profile": {
+        "firstName": "Voornaam",
+        "lastName": "Achternaam",
+        "emailAddress": "E-mailadres",
+        "phoneNumber": "Telefoonnummer",
+        "country": "Land",
+        "streetAddress": "Straat en huisnummer",
+        "state": "Staat",
+        "city": "Stad",
+        "saveChanges": "Wijzigingen opslaan",
+        "profileSaved": "Profielgegevens opgeslagen.",
+        "profileSaveFailed": "Opslaan van profielgegevens is mislukt.",
+        "addressSaved": "Adresgegevens opgeslagen.",
+        "addressSaveFailed": "Opslaan van adresgegevens is mislukt."
+      },
+      "security": {
+        "changePassword": "Wachtwoord wijzigen",
+        "changePasswordDesc": "Werk uw wachtwoord bij om uw account veilig te houden",
+        "oldPassword": "Oud wachtwoord",
+        "newPassword": "Nieuw wachtwoord",
+        "changePin": "PINcode wijzigen",
+        "changeWithdrawalPin": "Opname-PIN wijzigen",
+        "changeWithdrawalPinDesc": "Werk uw opname-PIN bij om uitbetalingen te autoriseren",
+        "deleteAccount": "Account verwijderen",
+        "deleteAccountDesc": "Verwijder uw account en alle bijbehorende gegevens definitief",
+        "req": {
+          "eightChars": "8 tekens",
+          "lowerCase": "Kleine letter",
+          "upperCase": "Hoofdletter",
+          "specialChar": "Speciaal teken .→+@"
+        },
+        "passwordChangedTitle": "Wachtwoord gewijzigd",
+        "passwordChangedBody": "Uw wachtwoord is succesvol bijgewerkt.",
+        "pin": {
+          "verifyPrompt": "Voer de 6-cijferige code in die naar {email} is verzonden",
+          "newPinPrompt": "Voer een nieuwe 4-cijferige opname-PIN in om door te gaan.",
+          "code": "Code",
+          "noCode": "Geen code ontvangen?",
+          "resend": "Opnieuw verzenden",
+          "verify": "Verifiëren",
+          "invalidCode": "Ongeldige code",
+          "enterNew": "Nieuwe PIN invoeren",
+          "confirmPin": "PIN bevestigen",
+          "fourDigits": "Voer een 4-cijferige PIN in",
+          "mismatch": "PIN-codes komen niet overeen",
+          "updated": "De opname-PIN is succesvol bijgewerkt.",
+          "verified": "Verificatie geslaagd"
+        },
+        "delete": {
+          "whatHappens": "Wat er gebeurt als u uw account verwijdert:",
+          "bullet1": "Alle actieve advertenties worden gesloten",
+          "bullet2": "Lopende transacties moeten worden afgerond",
+          "bullet3": "Uw account kan na verwijdering niet worden hersteld",
+          "bullet4": "Transactiegegevens kunnen worden bewaard voor juridische en compliance-doeleinden",
+          "permanentWarning": "Deze actie is definitief en kan niet ongedaan worden gemaakt.",
+          "whyDeleting": "Waarom verwijdert u uw account?",
+          "reasonPlaceholder": "Selecteer een reden",
+          "reason": {
+            "no_longer_needed": "Niet langer nodig",
+            "found_alternative": "Een beter alternatief gevonden",
+            "privacy_concerns": "Privacybezwaren",
+            "difficult_to_use": "Te lastig in gebruik",
+            "other": "Overig"
+          },
+          "verification": "Verificatie",
+          "enterPassword": "Voer het wachtwoord in om het account te verwijderen",
+          "password": "Wachtwoord",
+          "continue": "Doorgaan"
+        }
+      },
+      "notifications": {
+        "saveChanges": "Wijzigingen opslaan",
+        "saved": "Meldingsvoorkeuren opgeslagen.",
+        "saveFailed": "Opslaan van meldingsvoorkeuren is mislukt.",
+        "prefs": {
+          "auctionAlerts": "Veilingmeldingen",
+          "bidStatus": "Statusupdates van biedingen",
+          "paymentInvoice": "Betaal- en factuurupdates",
+          "watchlist": "Verlanglijst-updates",
+          "system": "Systeemmeldingen"
+        }
+      },
+      "payment": {
+        "title": "Betaalinstellingen",
+        "description": "Beheer uw uitbetalingsrekeningen en betaalvoorkeuren.",
+        "addAccount": "Account toevoegen",
+        "emptyTitle": "Geen betaalmethode toegevoegd",
+        "emptyDescription": "Voeg een bankrekening toe om uitbetalingen te ontvangen.",
+        "addBankAccount": "Bankrekening toevoegen",
+        "default": "Standaard",
+        "accountDetails": "Accountgegevens",
+        "accountName": "Accountnaam",
+        "accountNumber": "Rekeningnummer",
+        "addedOn": "Toegevoegd op",
+        "status": "Status",
+        "setAsDefault": "Als standaard instellen",
+        "removeAccount": "Bankrekening verwijderen"
+      }
+    },
     "nav": {
       "dashboard": "Dashboard",
       "myBids": "Mijn biedingen",
