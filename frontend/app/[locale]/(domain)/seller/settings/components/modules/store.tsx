@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button, Input, Label } from '@/shared/components/common';
 import Image from 'next/image';
 
 export default function StoreSettings() {
+  const t = useTranslations('seller.settings.store');
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [shopName, setShopName] = useState('Jayden Auto');
   const [facebook, setFacebook] = useState('');
@@ -26,26 +28,26 @@ export default function StoreSettings() {
 
   const handleSave = () => {
     
-    toast.success('Store settings saved.');
+    toast.success(t('saved'));
   };
 
   return (
     <div className="space-y-6 p-6">
       {/* Shop Banner */}
       <div className="space-y-2">
-        <Label>Shop Banner</Label>
+        <Label>{t('shopBanner')}</Label>
         <label className="relative block h-48 w-full max-w-lg cursor-pointer overflow-hidden rounded-lg border bg-muted">
           {bannerPreview ? (
             <Image
               src={bannerPreview}
-              alt="Shop banner"
+              alt={t('shopBannerAlt')}
               fill
               className="object-cover"
             />
           ) : (
             <Image
               src="/brushes.svg"
-              alt="Default banner"
+              alt={t('defaultBannerAlt')}
               fill
               className="object-cover"
             />
@@ -66,7 +68,7 @@ export default function StoreSettings() {
 
       {/* Shop Name */}
       <div className="space-y-2">
-        <Label>Shop Name</Label>
+        <Label>{t('shopName')}</Label>
         <Input
           value={shopName}
           onChange={(e) => setShopName(e.target.value)}
@@ -77,7 +79,7 @@ export default function StoreSettings() {
 
       {/* Social Media Links */}
       <div className="space-y-4">
-        <p className="text-sm font-semibold">Social Media Links</p>
+        <p className="text-sm font-semibold">{t('socialMediaLinks')}</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-w-lg">
           <div className="space-y-2">
             <Label>Facebook</Label>
@@ -109,7 +111,7 @@ export default function StoreSettings() {
         </div>
       </div>
 
-      <Button onClick={handleSave}>Save Changes</Button>
+      <Button onClick={handleSave}>{t('save')}</Button>
     </div>
   );
 }

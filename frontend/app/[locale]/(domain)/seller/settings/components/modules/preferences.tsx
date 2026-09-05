@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -31,13 +32,15 @@ import {
 
 type ThemeOption = 'light' | 'dark' | 'system';
 
-const themes: { value: ThemeOption; label: string; preview: string }[] = [
-  { value: 'light', label: 'Light', preview: 'bg-white border' },
-  { value: 'dark', label: 'Dark', preview: 'bg-slate-800 border-slate-700' },
-  { value: 'system', label: 'System', preview: 'bg-slate-200 border' },
+const themes: { value: ThemeOption; labelKey: string; preview: string }[] = [
+  { value: 'light', labelKey: 'themeLight', preview: 'bg-white border' },
+  { value: 'dark', labelKey: 'themeDark', preview: 'bg-slate-800 border-slate-700' },
+  { value: 'system', labelKey: 'themeSystem', preview: 'bg-slate-200 border' },
 ];
 
 export default function SellerPreferencesSettings() {
+  const t = useTranslations('seller.settings.preferences');
+
   // ─── Language Form ────────────────────────────────────────────────
   const languageForm = useForm<LanguagePreferenceValues>({
     resolver: zodResolver(languagePreferenceSchema),
@@ -48,7 +51,7 @@ export default function SellerPreferencesSettings() {
 
   const onSaveLanguage = () => {
     
-    toast.success('Language preference saved.');
+    toast.success(t('languageSaved'));
   };
 
   // ─── Appearance Form ──────────────────────────────────────────────
@@ -61,7 +64,7 @@ export default function SellerPreferencesSettings() {
 
   const onSaveAppearance = () => {
     
-    toast.success('Appearance settings saved.');
+    toast.success(t('appearanceSaved'));
   };
 
   return (
@@ -72,7 +75,7 @@ export default function SellerPreferencesSettings() {
           onSubmit={languageForm.handleSubmit(onSaveLanguage)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Language</h3>
+          <h3 className="text-base font-semibold">{t('language')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -82,10 +85,10 @@ export default function SellerPreferencesSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Preferred Language
+                      {t('preferredLanguage')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Choose your preferred language for the platform.
+                      {t('preferredLanguageDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -109,7 +112,7 @@ export default function SellerPreferencesSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -121,7 +124,7 @@ export default function SellerPreferencesSettings() {
           onSubmit={appearanceForm.handleSubmit(onSaveAppearance)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Appearance</h3>
+          <h3 className="text-base font-semibold">{t('appearance')}</h3>
 
           <FormField
             control={appearanceForm.control}
@@ -134,12 +137,12 @@ export default function SellerPreferencesSettings() {
                     onValueChange={field.onChange}
                     className="flex gap-4"
                   >
-                    {themes.map((t) => (
+                    {themes.map((theme) => (
                       <label
-                        key={t.value}
+                        key={theme.value}
                         className={cn(
                           'flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-3 transition-colors',
-                          field.value === t.value
+                          field.value === theme.value
                             ? 'border-primary'
                             : 'border-transparent hover:border-muted'
                         )}
@@ -147,13 +150,13 @@ export default function SellerPreferencesSettings() {
                         <div
                           className={cn(
                             'flex h-[100px] w-[160px] flex-col gap-2 rounded-md border p-3',
-                            t.preview
+                            theme.preview
                           )}
                         >
                           <div
                             className={cn(
                               'h-2 w-3/4 rounded',
-                              t.value === 'dark'
+                              theme.value === 'dark'
                                 ? 'bg-slate-600'
                                 : 'bg-slate-300'
                             )}
@@ -161,7 +164,7 @@ export default function SellerPreferencesSettings() {
                           <div
                             className={cn(
                               'h-2 w-1/2 rounded',
-                              t.value === 'dark'
+                              theme.value === 'dark'
                                 ? 'bg-slate-600'
                                 : 'bg-slate-300'
                             )}
@@ -169,7 +172,7 @@ export default function SellerPreferencesSettings() {
                           <div
                             className={cn(
                               'mt-auto h-6 w-full rounded',
-                              t.value === 'dark'
+                              theme.value === 'dark'
                                 ? 'bg-slate-700'
                                 : 'bg-slate-200'
                             )}
@@ -178,10 +181,10 @@ export default function SellerPreferencesSettings() {
 
                         <div className="flex items-center gap-2">
                           <RadioGroupItem
-                            value={t.value}
-                            id={`seller-theme-${t.value}`}
+                            value={theme.value}
+                            id={`seller-theme-${theme.value}`}
                           />
-                          <span className="text-sm font-medium">{t.label}</span>
+                          <span className="text-sm font-medium">{t(theme.labelKey)}</span>
                         </div>
                       </label>
                     ))}
@@ -192,7 +195,7 @@ export default function SellerPreferencesSettings() {
             )}
           />
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

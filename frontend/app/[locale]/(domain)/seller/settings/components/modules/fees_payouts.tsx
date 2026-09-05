@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { useAppSelector } from '@/redux/store';
 import {
   Badge,
@@ -38,6 +39,7 @@ interface FeeOverride {
 const PAYOUT_FREQUENCIES = ['instant', 'daily', 'weekly', 'monthly'] as const;
 
 export default function FeesPayoutsSettings() {
+  const t = useTranslations('seller.settings.feesPayouts');
   const token = useAppSelector((state) => state.auth.token);
   const authed = useCallback(
     (init: RequestInit = {}): RequestInit => ({
@@ -91,7 +93,7 @@ export default function FeesPayoutsSettings() {
         const seller = meJson?.data;
         if (seller?.payout_frequency) setFrequency(seller.payout_frequency);
       } catch {
-        if (!cancelled) toast.error('Failed to load fee settings.');
+        if (!cancelled) toast.error(t('loadFailed'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -117,9 +119,9 @@ export default function FeesPayoutsSettings() {
       }));
       const json = await res.json();
       if (!res.ok || json?.success === false) throw new Error('save failed');
-      toast.success('Fee preferences saved.');
+      toast.success(t('feesSaved'));
     } catch {
-      toast.error('Failed to save fee preferences.');
+      toast.error(t('feesSaveFailed'));
     } finally {
       setSavingFees(false);
     }
@@ -134,9 +136,9 @@ export default function FeesPayoutsSettings() {
       );
       const json = await res.json();
       if (!res.ok || json?.success === false) throw new Error('save failed');
-      toast.success('Payout schedule saved.');
+      toast.success(t('payoutSaved'));
     } catch {
-      toast.error('Failed to save payout schedule.');
+      toast.error(t('payoutSaveFailed'));
     } finally {
       setSavingPayout(false);
     }
@@ -155,25 +157,24 @@ export default function FeesPayoutsSettings() {
   return (
     <div className="space-y-8 p-6">
       <div className="space-y-1">
-        <h3 className="text-base font-semibold">Fees &amp; Payouts (U5)</h3>
+        <h3 className="text-base font-semibold">{t('title')}</h3>
         <p className="text-sm text-muted-foreground">
-          Your fee preferences apply to your listings unless a specific product
-          overrides them. Leave a field empty to inherit the platform default.
+          {t('description')}
         </p>
       </div>
 
       {/* ─── U5 #1: per-seller fee overrides ─────────────────── */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Your fee rates</CardTitle>
+          <CardTitle className="text-base">{t('feeRatesTitle')}</CardTitle>
           <CardDescription>
-            Buyer fee and seller commission, each adjustable and toggleable.
+            {t('feeRatesDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-sm">Buyer fee (%)</Label>
+              <Label className="text-sm">{t('buyerFee')}</Label>
               <div className="flex items-center gap-3">
                 <Input
                   type="number"
@@ -181,7 +182,7 @@ export default function FeesPayoutsSettings() {
                   step="0.01"
                   value={buyerFeePct}
                   onChange={(e) => setBuyerFeePct(e.target.value)}
-                  placeholder="inherit"
+                  placeholder={t('inherit')}
                   className="max-w-[140px]"
                 />
                 <div className="flex items-center gap-2">
@@ -190,13 +191,13 @@ export default function FeesPayoutsSettings() {
                     onCheckedChange={setBuyerFeeEnabled}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {buyerFeeEnabled ? 'On' : 'Off'}
+                    {buyerFeeEnabled ? t('on') : t('off')}
                   </span>
                 </div>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">Seller commission (%)</Label>
+              <Label className="text-sm">{t('sellerCommission')}</Label>
               <div className="flex items-center gap-3">
                 <Input
                   type="number"
@@ -204,7 +205,7 @@ export default function FeesPayoutsSettings() {
                   step="0.01"
                   value={sellerFeePct}
                   onChange={(e) => setSellerFeePct(e.target.value)}
-                  placeholder="inherit"
+                  placeholder={t('inherit')}
                   className="max-w-[140px]"
                 />
                 <div className="flex items-center gap-2">
@@ -213,38 +214,38 @@ export default function FeesPayoutsSettings() {
                     onCheckedChange={setSellerFeeEnabled}
                   />
                   <span className="text-sm text-muted-foreground">
-                    {sellerFeeEnabled ? 'On' : 'Off'}
+                    {sellerFeeEnabled ? t('on') : t('off')}
                   </span>
                 </div>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">VAT rate (%)</Label>
+              <Label className="text-sm">{t('vatRate')}</Label>
               <Input
                 type="number"
                 min={0}
                 step="0.01"
                 value={vatPct}
                 onChange={(e) => setVatPct(e.target.value)}
-                placeholder="inherit"
+                placeholder={t('inherit')}
                 className="max-w-[140px]"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">VAT base</Label>
+              <Label className="text-sm">{t('vatBase')}</Label>
               <Select value={vatBase} onValueChange={(v) => setVatBase(v as 'fees_only' | 'hammer_and_fees')}>
                 <SelectTrigger className="max-w-[260px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fees_only">Fees only</SelectItem>
-                  <SelectItem value="hammer_and_fees">Hammer + fees</SelectItem>
+                  <SelectItem value="fees_only">{t('vatBaseFeesOnly')}</SelectItem>
+                  <SelectItem value="hammer_and_fees">{t('vatBaseHammerAndFees')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <Button onClick={saveFees} disabled={savingFees}>
-            {savingFees ? 'Saving…' : 'Save fee preferences'}
+            {savingFees ? t('saving') : t('saveFeePreferences')}
           </Button>
         </CardContent>
       </Card>
@@ -252,9 +253,9 @@ export default function FeesPayoutsSettings() {
       {/* ─── U5 #3: payout schedule ──────────────────────────── */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Payout schedule</CardTitle>
+          <CardTitle className="text-base">{t('payoutTitle')}</CardTitle>
           <CardDescription>
-            How often your settled funds are paid out. No fixed holding period.
+            {t('payoutDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -271,12 +272,12 @@ export default function FeesPayoutsSettings() {
                 ))}
               </SelectContent>
             </Select>
-            <Badge variant="outline" className="capitalize">
-              current: {frequency}
+            <Badge variant="outline">
+              {t('currentFrequency', { frequency })}
             </Badge>
           </div>
           <Button onClick={savePayout} disabled={savingPayout}>
-            {savingPayout ? 'Saving…' : 'Save payout schedule'}
+            {savingPayout ? t('saving') : t('savePayoutSchedule')}
           </Button>
         </CardContent>
       </Card>

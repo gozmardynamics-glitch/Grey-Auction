@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -20,6 +21,7 @@ import {
 } from '../../../models/schema';
 
 export default function SellerNotificationsSettings() {
+  const t = useTranslations('seller.settings.notifications');
   const notificationsForm = useForm<NotificationsValues>({
     resolver: zodResolver(notificationsSchema),
     defaultValues: {
@@ -32,7 +34,7 @@ export default function SellerNotificationsSettings() {
 
   const onSaveNotifications = () => {
     
-    toast.success('Notification preferences saved.');
+    toast.success(t('saved'));
   };
 
   return (
@@ -42,7 +44,7 @@ export default function SellerNotificationsSettings() {
           onSubmit={notificationsForm.handleSubmit(onSaveNotifications)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Notification Preferences</h3>
+          <h3 className="text-base font-semibold">{t('title')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -52,10 +54,10 @@ export default function SellerNotificationsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Auction
+                      {t('auction')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Get updates about your listings and bidding activity.
+                      {t('auctionDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -67,7 +69,7 @@ export default function SellerNotificationsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -83,10 +85,10 @@ export default function SellerNotificationsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Payment & Payout
+                      {t('paymentPayout')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Stay informed about payments and withdrawals.
+                      {t('paymentPayoutDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -98,7 +100,7 @@ export default function SellerNotificationsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -114,10 +116,10 @@ export default function SellerNotificationsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Messages
+                      {t('messages')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Get notified when buyers or support contact you.
+                      {t('messagesDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -129,7 +131,7 @@ export default function SellerNotificationsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -145,10 +147,10 @@ export default function SellerNotificationsSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      System & Security Alerts
+                      {t('systemSecurity')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Important alerts related to account security.
+                      {t('systemSecurityDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -160,7 +162,7 @@ export default function SellerNotificationsSettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -170,7 +172,7 @@ export default function SellerNotificationsSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

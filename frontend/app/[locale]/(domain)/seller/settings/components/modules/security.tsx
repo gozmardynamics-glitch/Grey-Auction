@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Form,
@@ -26,6 +27,8 @@ import {
 } from '../../../models/schema';
 
 export default function SellerSecuritySettings() {
+  const t = useTranslations('seller.settings.security');
+
   // ─── Change Password Form ────────────────────────────────────────
   const passwordForm = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -49,12 +52,12 @@ export default function SellerSecuritySettings() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Password change failed');
+        throw new Error(err.message || t('passwordChangeFailedShort'));
       }
-      toast.success('Password changed successfully.');
+      toast.success(t('passwordChanged'));
       passwordForm.reset();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Password change failed. Check your current password.');
+      toast.error(err instanceof Error ? err.message : t('passwordChangeFailed'));
     }
   };
 
@@ -70,7 +73,7 @@ export default function SellerSecuritySettings() {
 
   const onSavePin = () => {
     
-    toast.success('Withdrawal PIN changed successfully.');
+    toast.success(t('pinChanged'));
     pinForm.reset();
   };
 
@@ -84,7 +87,7 @@ export default function SellerSecuritySettings() {
 
   const onSaveSecurity = () => {
     
-    toast.success('Security options saved.');
+    toast.success(t('securitySaved'));
   };
 
   return (
@@ -95,7 +98,7 @@ export default function SellerSecuritySettings() {
           onSubmit={passwordForm.handleSubmit(onSavePassword)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Change Password</h3>
+          <h3 className="text-base font-semibold">{t('changePassword')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -105,10 +108,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Current Password
+                      {t('currentPassword')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enter your current account password.
+                      {t('currentPasswordDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -133,10 +136,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      New Password
+                      {t('newPassword')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Must be at least 8 characters long.
+                      {t('newPasswordDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -161,10 +164,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Confirm Password
+                      {t('confirmPassword')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Re-enter your new password to confirm.
+                      {t('confirmPasswordDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -183,7 +186,7 @@ export default function SellerSecuritySettings() {
             />
           </div>
 
-          <Button type="submit">Change Password</Button>
+          <Button type="submit">{t('changePasswordSubmit')}</Button>
         </form>
       </Form>
 
@@ -195,7 +198,7 @@ export default function SellerSecuritySettings() {
           onSubmit={pinForm.handleSubmit(onSavePin)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Change Withdrawal PIN</h3>
+          <h3 className="text-base font-semibold">{t('changePin')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -205,10 +208,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Current PIN
+                      {t('currentPin')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enter your current 4-digit withdrawal PIN.
+                      {t('currentPinDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -234,10 +237,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      New PIN
+                      {t('newPin')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Enter a new 4-digit withdrawal PIN.
+                      {t('newPinDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -263,10 +266,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Confirm PIN
+                      {t('confirmPin')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Re-enter your new PIN to confirm.
+                      {t('confirmPinDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -286,7 +289,7 @@ export default function SellerSecuritySettings() {
             />
           </div>
 
-          <Button type="submit">Change PIN</Button>
+          <Button type="submit">{t('changePinSubmit')}</Button>
         </form>
       </Form>
 
@@ -298,7 +301,7 @@ export default function SellerSecuritySettings() {
           onSubmit={securityForm.handleSubmit(onSaveSecurity)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Security Options</h3>
+          <h3 className="text-base font-semibold">{t('securityOptions')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -308,10 +311,10 @@ export default function SellerSecuritySettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Two-Factor Authentication
+                      {t('twoFactor')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Add an extra layer of security to your account.
+                      {t('twoFactorDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -323,7 +326,7 @@ export default function SellerSecuritySettings() {
                         />
                       </FormControl>
                       <span className="text-sm text-muted-foreground">
-                        Enable
+                        {t('enable')}
                       </span>
                     </div>
                     <FormMessage />
@@ -333,7 +336,7 @@ export default function SellerSecuritySettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -341,25 +344,23 @@ export default function SellerSecuritySettings() {
 
       {/* ─── Account Actions ─────────────────────────────────────── */}
       <div className="space-y-0">
-        <h3 className="text-base font-semibold mb-2">Account Actions</h3>
+        <h3 className="text-base font-semibold mb-2">{t('accountActions')}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
           <div>
-            <p className="text-sm font-medium">Disable Account</p>
+            <p className="text-sm font-medium">{t('disableAccount')}</p>
             <p className="text-xs text-muted-foreground">
-              Temporarily restrict access to your profile, listings, and
-              transactions.
+              {t('disableAccountDesc')}
             </p>
           </div>
           <div>
-            <Button variant="outline">Disable Account</Button>
+            <Button variant="outline">{t('disableAccount')}</Button>
           </div>
 
           <div>
-            <p className="text-sm font-medium">Delete Account</p>
+            <p className="text-sm font-medium">{t('deleteAccount')}</p>
             <p className="text-xs text-muted-foreground">
-              Permanently remove your profile and associated data from Grey
-              Auctions.
+              {t('deleteAccountDesc')}
             </p>
           </div>
           <div>
@@ -367,7 +368,7 @@ export default function SellerSecuritySettings() {
               variant="outline"
               className="border-destructive text-destructive hover:bg-destructive/10"
             >
-              Delete Account
+              {t('deleteAccount')}
             </Button>
           </div>
         </div>

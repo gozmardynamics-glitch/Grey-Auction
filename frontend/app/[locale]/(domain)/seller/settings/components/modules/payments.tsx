@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronRight, Plus} from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   Card,
   CardContent,
@@ -46,6 +47,7 @@ const DUMMY_ACCOUNTS: BankAccount[] = [
 ];
 
 export default function SellerPaymentSettings() {
+  const t = useTranslations('seller.settings.payments');
   const [accounts, setAccounts] = useState<BankAccount[]>(DUMMY_ACCOUNTS);
   const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -119,7 +121,7 @@ export default function SellerPaymentSettings() {
                         variant="secondary"
                         className="bg-primary/10 text-primary text-[10px]"
                       >
-                        Default
+                        {t('default')}
                       </Badge>
                     )}
                   </div>
@@ -141,7 +143,7 @@ export default function SellerPaymentSettings() {
           <CardContent className="flex h-full items-center justify-center gap-2 p-4">
             <Plus className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">
-              Add Bank Account
+              {t('addBankAccount')}
             </span>
           </CardContent>
         </Card>
@@ -152,35 +154,35 @@ export default function SellerPaymentSettings() {
         <DialogContent className="max-w-md p-0">
           <div className="p-6 space-y-5">
             <DialogHeader>
-              <DialogTitle>Account Details</DialogTitle>
+              <DialogTitle>{t('accountDetails')}</DialogTitle>
             </DialogHeader>
 
             {selectedAccount && (
               <>
                 <div className="rounded-lg border">
                   <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <span className="text-sm text-muted-foreground">Account Name</span>
+                    <span className="text-sm text-muted-foreground">{t('accountName')}</span>
                     <span className="text-sm font-medium">{selectedAccount.accountHolder}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <span className="text-sm text-muted-foreground">Account Number</span>
+                    <span className="text-sm text-muted-foreground">{t('accountNumber')}</span>
                     <span className="text-sm font-medium">{selectedAccount.accountNumber}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <span className="text-sm text-muted-foreground">Added On</span>
+                    <span className="text-sm text-muted-foreground">{t('addedOn')}</span>
                     <span className="text-sm font-medium">{selectedAccount.addedOn}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className="text-sm text-muted-foreground">{t('status')}</span>
                     {selectedAccount.isDefault ? (
                       <Badge
                         variant="secondary"
                         className="bg-primary/10 text-primary text-xs"
                       >
-                        Default
+                        {t('default')}
                       </Badge>
                     ) : (
-                      <span className="text-sm font-medium">Active</span>
+                      <span className="text-sm font-medium">{t('active')}</span>
                     )}
                   </div>
                 </div>
@@ -191,7 +193,7 @@ export default function SellerPaymentSettings() {
                     className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive"
                     onClick={handleRemoveClick}
                   >
-                    Remove Bank Account
+                    {t('removeBankAccount')}
                   </Button>
                 </div>
               </>
@@ -205,12 +207,11 @@ export default function SellerPaymentSettings() {
         <DialogContent className="max-w-md p-0">
           <div className="p-6 space-y-5">
             <DialogHeader>
-              <DialogTitle>Remove Bank Account</DialogTitle>
+              <DialogTitle>{t('removeBankAccount')}</DialogTitle>
             </DialogHeader>
 
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to remove this bank account? Once removed,
-              payouts will be paused until a new bank account is added.
+              {t('removeConfirm')}
             </p>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -218,13 +219,13 @@ export default function SellerPaymentSettings() {
                 variant="outline"
                 onClick={() => setShowRemoveConfirm(false)}
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleConfirmRemove}
               >
-                Yes, Remove Bank Account
+                {t('yesRemove')}
               </Button>
             </div>
           </div>

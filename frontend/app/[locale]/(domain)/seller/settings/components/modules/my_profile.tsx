@@ -3,6 +3,7 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   Badge,
   Button,
@@ -29,6 +30,8 @@ import {
 } from '../../../models/schema';
 
 export default function MyProfileSettings() {
+  const t = useTranslations('seller.settings.myProfile');
+
   // ─── Profile Info Form ────────────────────────────────────────────
   const profileForm = useForm<ProfileInfoValues>({
     resolver: zodResolver(profileInfoSchema),
@@ -56,7 +59,7 @@ export default function MyProfileSettings() {
       });
       if (!res.ok) throw new Error('Failed');
     } catch {}
-    toast.success('Profile information saved.');
+    toast.success(t('profileSaved'));
   };
 
   // ─── Address Form ────────────────────────────────────────────────
@@ -84,7 +87,7 @@ export default function MyProfileSettings() {
         }),
       });
     } catch {}
-    toast.success('Address information saved.');
+    toast.success(t('addressSaved'));
   };
 
   const firstName = useWatch({ control: profileForm.control, name: 'firstName' }) || '';
@@ -106,7 +109,7 @@ export default function MyProfileSettings() {
           </h3>
           <p className="text-sm text-muted-foreground">{email}</p>
           <Badge variant="outline" className="mt-1">
-            Account Type: Individual
+            {t('accountTypeBadge')}
           </Badge>
         </div>
       </div>
@@ -117,7 +120,7 @@ export default function MyProfileSettings() {
           onSubmit={profileForm.handleSubmit(onSaveProfile)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Profile Information</h3>
+          <h3 className="text-base font-semibold">{t('profileInformation')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -127,10 +130,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Shop Name
+                      {t('shopName')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      The name displayed on your seller profile.
+                      {t('shopNameDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -150,10 +153,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      First Name
+                      {t('firstName')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Your legal first name.
+                      {t('firstNameDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -173,10 +176,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Last Name
+                      {t('lastName')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Your legal last name.
+                      {t('lastNameDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -196,10 +199,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Email Address
+                      {t('email')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Your account email address.
+                      {t('emailDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -219,10 +222,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Phone Number
+                      {t('phone')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Your contact phone number.
+                      {t('phoneDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -258,7 +261,7 @@ export default function MyProfileSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
 
@@ -270,7 +273,7 @@ export default function MyProfileSettings() {
           onSubmit={addressForm.handleSubmit(onSaveAddress)}
           className="space-y-6"
         >
-          <h3 className="text-base font-semibold">Address</h3>
+          <h3 className="text-base font-semibold">{t('address')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
             <FormField
@@ -280,10 +283,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Country
+                      {t('country')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Your country of residence.
+                      {t('countryDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -321,10 +324,10 @@ export default function MyProfileSettings() {
                 <>
                   <div>
                     <FormLabel className="text-sm font-medium">
-                      Street Address
+                      {t('streetAddress')}
                     </FormLabel>
                     <FormDescription className="text-xs">
-                      Your street address for shipping.
+                      {t('streetAddressDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -343,9 +346,9 @@ export default function MyProfileSettings() {
               render={({ field }) => (
                 <>
                   <div>
-                    <FormLabel className="text-sm font-medium">State</FormLabel>
+                    <FormLabel className="text-sm font-medium">{t('state')}</FormLabel>
                     <FormDescription className="text-xs">
-                      Your state or province.
+                      {t('stateDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -377,9 +380,9 @@ export default function MyProfileSettings() {
               render={({ field }) => (
                 <>
                   <div>
-                    <FormLabel className="text-sm font-medium">City</FormLabel>
+                    <FormLabel className="text-sm font-medium">{t('city')}</FormLabel>
                     <FormDescription className="text-xs">
-                      Your city or locality.
+                      {t('cityDesc')}
                     </FormDescription>
                   </div>
                   <FormItem>
@@ -408,7 +411,7 @@ export default function MyProfileSettings() {
             />
           </div>
 
-          <Button type="submit">Save Changes</Button>
+          <Button type="submit">{t('saveChanges')}</Button>
         </form>
       </Form>
     </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   Button,
   Card,
@@ -13,65 +14,58 @@ import {
 import { cn } from '@/lib/utils';
 
 interface PlanFeature {
-  label: string;
+  labelKey: string;
 }
 
 interface Plan {
-  name: string;
-  subtitle: string;
+  key: 'free' | 'premium' | 'pro';
   highlight: string;
-  highlightUnit: string;
   isCurrent: boolean;
   features: PlanFeature[];
 }
 
 const PLANS: Plan[] = [
   {
-    name: 'Free Plan',
-    subtitle: 'Basic Auction Access',
+    key: 'free',
     highlight: '25',
-    highlightUnit: 'Trials',
     isCurrent: true,
     features: [
-      { label: 'Limited active auction uploads' },
-      { label: 'Standard bidding room access' },
-      { label: 'Standard marketplace visibility' },
-      { label: 'Advanced analytical dashboard' },
-      { label: '8% commission on successful sales' },
+      { labelKey: 'f1' },
+      { labelKey: 'f2' },
+      { labelKey: 'f3' },
+      { labelKey: 'f4' },
+      { labelKey: 'f5' },
     ],
   },
   {
-    name: 'Premium Plan',
-    subtitle: 'Pay per Auction',
+    key: 'premium',
     highlight: '2%',
-    highlightUnit: '/Auction Upload',
     isCurrent: false,
     features: [
-      { label: 'Unlimited active auction uploads' },
-      { label: 'Standard bidding room access' },
-      { label: 'Standard marketplace visibility' },
-      { label: 'Advanced analytical dashboard' },
-      { label: '2% per auction upload' },
-      { label: '1% commission on successful sales' },
+      { labelKey: 'f1' },
+      { labelKey: 'f2' },
+      { labelKey: 'f3' },
+      { labelKey: 'f4' },
+      { labelKey: 'f5' },
+      { labelKey: 'f6' },
     ],
   },
   {
-    name: 'Pro Plan',
-    subtitle: 'Unlimited Auction',
+    key: 'pro',
     highlight: '3%',
-    highlightUnit: 'Commission',
     isCurrent: false,
     features: [
-      { label: 'Unlimited active auction uploads' },
-      { label: 'Standard bidding room access' },
-      { label: 'Standard marketplace visibility' },
-      { label: 'Advanced analytical dashboard' },
-      { label: '3% commission on successful sales' },
+      { labelKey: 'f1' },
+      { labelKey: 'f2' },
+      { labelKey: 'f3' },
+      { labelKey: 'f4' },
+      { labelKey: 'f5' },
     ],
   },
 ];
 
 export default function PlanPackages() {
+  const t = useTranslations('seller.settings.planPackages');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -96,7 +90,7 @@ export default function PlanPackages() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {PLANS.map((plan) => (
           <Card
-            key={plan.name}
+            key={plan.key}
             className={cn(
               'flex flex-col justify-between rounded-xl border p-5 space-y-5',
               plan.isCurrent && 'border-primary/30'
@@ -105,29 +99,29 @@ export default function PlanPackages() {
             <div className="space-y-4">
               {/* Plan header */}
               <div>
-                <h3 className="text-base font-semibold">{plan.name}</h3>
-                <p className="text-xs text-muted-foreground">{plan.subtitle}</p>
+                <h3 className="text-base font-semibold">{t(`plans.${plan.key}.name`)}</h3>
+                <p className="text-xs text-muted-foreground">{t(`plans.${plan.key}.subtitle`)}</p>
               </div>
 
               {/* Highlight */}
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-bold">{plan.highlight}</span>
                 <span className="text-sm text-muted-foreground">
-                  {plan.highlightUnit}
+                  {t(`plans.${plan.key}.highlightUnit`)}
                 </span>
               </div>
 
               {/* CTA */}
               {plan.isCurrent ? (
                 <Button variant="outline" className="w-full" disabled>
-                  Current Plan
+                  {t('currentPlan')}
                 </Button>
               ) : (
                 <Button
                   className="w-full"
                   onClick={() => handleUpgradeClick(plan)}
                 >
-                  Upgrade
+                  {t('upgrade')}
                 </Button>
               )}
 
@@ -135,12 +129,12 @@ export default function PlanPackages() {
               <ul className="space-y-2.5">
                 {plan.features.map((feature) => (
                   <li
-                    key={feature.label}
+                    key={feature.labelKey}
                     className="flex items-start gap-2 text-sm"
                   >
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span className="text-muted-foreground">
-                      {feature.label}
+                      {t(`plans.${plan.key}.features.${feature.labelKey}`)}
                     </span>
                   </li>
                 ))}
@@ -155,11 +149,13 @@ export default function PlanPackages() {
         <DialogContent className="max-w-md p-0">
           <div className="p-6 space-y-5">
             <DialogHeader>
-              <DialogTitle>Upgrade to {selectedPlan?.name}</DialogTitle>
+              <DialogTitle>
+                {t('upgradeTo', { plan: selectedPlan ? t(`plans.${selectedPlan.key}.name`) : '' })}
+              </DialogTitle>
             </DialogHeader>
 
             <p className="text-sm text-muted-foreground">
-              This plan include:
+              {t('planIncludes')}
             </p>
 
             {selectedPlan && (
@@ -167,11 +163,13 @@ export default function PlanPackages() {
                 <ul className="space-y-3">
                   {selectedPlan.features.map((feature) => (
                     <li
-                      key={feature.label}
+                      key={feature.labelKey}
                       className="flex items-start gap-2 text-sm"
                     >
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{feature.label}</span>
+                      <span>
+                        {t(`plans.${selectedPlan.key}.features.${feature.labelKey}`)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -179,7 +177,7 @@ export default function PlanPackages() {
             )}
 
             <div className="flex justify-end pt-2">
-              <Button onClick={handleContinue}>Continue</Button>
+              <Button onClick={handleContinue}>{t('continue')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -226,17 +224,17 @@ export default function PlanPackages() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Upgrade Successful</h3>
+              <h3 className="text-lg font-semibold">{t('upgradeSuccessful')}</h3>
               <p className="text-sm text-muted-foreground">
-                You are now on the {selectedPlan?.name}.
+                {t('nowOnPlan', { plan: selectedPlan ? t(`plans.${selectedPlan.key}.name`) : '' })}
               </p>
               <p className="text-sm text-muted-foreground">
-                Your new commission rate will apply to future sales.
+                {t('commissionNote')}
               </p>
             </div>
 
             <div className="flex justify-end w-full pt-2">
-              <Button onClick={handleDone}>Done</Button>
+              <Button onClick={handleDone}>{t('done')}</Button>
             </div>
           </div>
         </DialogContent>
