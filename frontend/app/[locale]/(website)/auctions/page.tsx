@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@/shared/components/common';
-import { getAuctions } from '@/lib/server/data';
+import { getAuctions, getArmCounts } from '@/lib/server/data';
 import AuctionListingClient from './auction_listing_client';
 
 function ListingFallback() {
@@ -16,11 +16,36 @@ function ListingFallback() {
   );
 }
 
-export default async function AuctionListingPage() {
-  const auctions = await getAuctions();
+export default async function AuctionListingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const category = typeof params.category === 'string' ? params.category : '';
+  const subcategory =
+    typeof params.subcategory === 'string' ? params.subcategory : '';
+
+  // Structural step: when a URL deep link scopes the listing, the backend
+  // filters server-side and serves the per-arm tab counts (one GROUP BY) —
+  // the client no longer depends on the bounded fetch-everything aggregate
+  // for the scoped render. The unfiltered view still loads the full active
+  // set so sidebar browsing stays instant.
+  const [auctions, armCounts] = await Promise.all([
+    getAuctions({
+      category: category || undefined,
+      subCategory: subcategory || undefined,
+    }),
+    category ? getArmCounts(category) : Promise.resolve(null),
+  ]);
+
   return (
     <Suspense fallback={<ListingFallback />}>
-      <AuctionListingClient initialAuctions={auctions} />
+      <AuctionListingClient
+        initialAuctions={auctions}
+        initialCategory={category}
+        initialArmCounts={armCounts}
+      />
     </Suspense>
   );
 }

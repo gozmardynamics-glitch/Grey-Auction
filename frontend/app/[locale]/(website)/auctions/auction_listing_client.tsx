@@ -40,10 +40,16 @@ const ITEMS_PER_PAGE = 12;
 
 interface AuctionListingClientProps {
   initialAuctions: Auction[];
+  /** URL-scoped category the server data was filtered by ('' = unfiltered). */
+  initialCategory?: string;
+  /** Backend-served per-arm counts for initialCategory (null = unavailable). */
+  initialArmCounts?: Record<string, number> | null;
 }
 
 export default function AuctionListingClient({
   initialAuctions,
+  initialCategory = '',
+  initialArmCounts = null,
 }: AuctionListingClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -108,12 +114,12 @@ export default function AuctionListingClient({
     return items;
   }, [filters.categories, mounted]);
 
-  // Initialize auctions data in Redux
+  // Initialize auctions data in Redux. The server page filters by the URL
+  // deep-link scope, so every RSC render carries authoritative data for the
+  // current URL — re-sync on each navigation instead of only seeding once.
   useEffect(() => {
-    if (auctions.length === 0) {
-      dispatch(setAuctions(initialAuctions));
-    }
-  }, [dispatch, auctions.length, initialAuctions]);
+    dispatch(setAuctions(initialAuctions));
+  }, [dispatch, initialAuctions]);
 
   // Sync URL category + subcategory query params to Redux filters
   useEffect(() => {
@@ -151,10 +157,18 @@ export default function AuctionListingClient({
   const clearFiltersHandler = useCallback(() => {
     dispatch(clearFilters());
     dispatch(setCurrentPage(1));
-  }, [dispatch]);
+    // Drop the URL scope too so the next render loads the unfiltered set.
+    router.replace('/auctions', { scroll: false });
+  }, [dispatch, router]);
 
-  // Per-arm counts for the subcategory tabs (scoped to the active category)
+  // Per-arm counts for the subcategory tabs (scoped to the active category).
+  // Prefer the backend-served GROUP BY counts for the URL-scoped category —
+  // they are exact regardless of inventory size — and fall back to the
+  // client-side aggregate over the loaded slice otherwise (sidebar browsing).
   const subCounts = useMemo(() => {
+    if (activeCategory && initialCategory === activeCategory && initialArmCounts) {
+      return initialArmCounts;
+    }
     const counts: Record<string, number> = {};
     if (!activeCategory) return counts;
     for (const a of auctions) {
@@ -164,7 +178,7 @@ export default function AuctionListingClient({
       }
     }
     return counts;
-  }, [auctions, activeCategory]);
+  }, [auctions, activeCategory, initialCategory, initialArmCounts]);
 
   const handleSubCategorySelect = useCallback(
     (sub: string) => {

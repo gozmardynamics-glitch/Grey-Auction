@@ -870,20 +870,29 @@ const USE_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
 
 // ─── Website ─────────────────────────────────────────────────────────────
 
-export async function getAuctions() {
+interface AuctionFetchFilters {
+  category?: string;
+  subCategory?: string;
+}
+
+export async function getAuctions(filters?: AuctionFetchFilters) {
   // Aggregate every active lot via the API's paginated contract
-  // (GET /products?page=N&limit=M -> { data, total, page, limit }) so the
-  // client-side category / arm (subcategory) filters and live tab counts see
-  // the complete set. The previous hard `limit=200` silently hid lots once
-  // inventory passed 200. Loop stops on the first short page, so current
-  // inventory sizes still cost a single fetch; the 1000-lot ceiling keeps
-  // payloads sane. The structural next step — server-side filtering/paging
-  // with tab counts served by the backend — is tracked in the handoff backlog.
+  // (GET /products?page=N&limit=M -> { data, total, page, limit }). When
+  // category/subCategory filters are given (URL-driven deep links), the
+  // backend filters server-side and only the matching page set is fetched —
+  // the structural step that replaces the old fetch-everything aggregate.
+  // Loop stops on the first short page; the 1000-lot ceiling keeps payloads
+  // sane for the unfiltered sidebar-browsing path.
   const PAGE_SIZE = 100;
   const MAX_PAGES = 10; // ceiling: 1000 lots
+  const params = new URLSearchParams();
+  if (filters?.category) params.set('category', filters.category);
+  if (filters?.subCategory) params.set('subCategory', filters.subCategory);
+  const baseQuery = params.toString();
   const collected: unknown[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const data = await apiFetch(`/products?page=${page}&limit=${PAGE_SIZE}`);
+    const qs = baseQuery ? '&' + baseQuery : '';
+    const data = await apiFetch(`/products?page=${page}&limit=${PAGE_SIZE}${qs}`);
     const list = unwrapList(data);
     if (!list || list.length === 0) break;
     collected.push(...list);
@@ -891,6 +900,26 @@ export async function getAuctions() {
   }
   if (collected.length > 0) return collected.map(normalizeAuction);
   return USE_MOCK_FALLBACK ? mockAuctions : [];
+}
+
+/**
+ * Server-served per-arm (subcategory) counts for the institutional-arm tabs.
+ * Returns null when the backend is unreachable — callers fall back to a
+ * client-side aggregate over the loaded slice.
+ */
+export async function getArmCounts(
+  category: string,
+): Promise<Record<string, number> | null> {
+  const data = await apiFetch(
+    `/products/arm-counts?category=${encodeURIComponent(category)}`,
+  );
+  if (data && typeof data === 'object' && 'counts' in (data as Record<string, unknown>)) {
+    const counts = (data as { counts?: unknown }).counts;
+    if (counts && typeof counts === 'object') {
+      return counts as Record<string, number>;
+    }
+  }
+  return null;
 }
 
 export async function getAuctionBySlug(slug: string) {
