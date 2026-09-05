@@ -482,7 +482,12 @@
     "dashboard": "Buyer Dashboard",
     "myBids": "My Bids",
     "purchases": "My Purchases",
-    "wishlist": "Wishlist",
+    "wishlist": {
+      "title": "Wishlist",
+      "search": "Search",
+      "emptyTitle": "Your Wishlist is Empty",
+      "emptyDescription": "Browse auctions and save items you're interested in."
+    },
     "invoices": "Invoices",
     "wallet": {
       "title": "Wallet",

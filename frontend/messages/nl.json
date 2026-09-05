@@ -482,7 +482,12 @@
     "dashboard": "Koperdashboard",
     "myBids": "Mijn biedingen",
     "purchases": "Mijn aankopen",
-    "wishlist": "Verlanglijst",
+    "wishlist": {
+      "title": "Verlanglijst",
+      "search": "Zoeken",
+      "emptyTitle": "Je verlanglijst is leeg",
+      "emptyDescription": "Blader door de veilingen en bewaar items die je interesseren."
+    },
     "invoices": "Facturen",
     "wallet": {
       "title": "Portemonnee",

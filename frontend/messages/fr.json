@@ -482,7 +482,12 @@
     "dashboard": "Tableau de bord acheteur",
     "myBids": "Mes offres",
     "purchases": "Mes achats",
-    "wishlist": "Liste de souhaits",
+    "wishlist": {
+      "title": "Liste d'envies",
+      "search": "Rechercher",
+      "emptyTitle": "Votre liste d'envies est vide",
+      "emptyDescription": "Parcourez les enchères et enregistrez les articles qui vous intéressent."
+    },
     "invoices": "Factures",
     "wallet": {
       "title": "Portefeuille",
