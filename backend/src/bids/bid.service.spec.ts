@@ -259,6 +259,24 @@ describe('BidService', () => {
     });
   });
 
+  describe('findByRoom', () => {
+    it('should project only display-safe bidder fields (response-DTO pass)', async () => {
+      (bidRepository.find as jest.Mock).mockResolvedValue([]);
+
+      await service.findByRoom('room-1');
+
+      expect(bidRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { roomId: 'room-1' },
+          relations: ['bidder', 'product'],
+          select: { bidder: { id: true, name: true, createdAt: true } },
+          order: { createdAt: 'DESC' },
+          take: 100,
+        }),
+      );
+    });
+  });
+
   describe('bidStep', () => {
     it('returns the correct minimum increment per price level', () => {
       expect(bidStep(500)).toBe(500);

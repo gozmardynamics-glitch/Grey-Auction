@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room, RoomStatus, RoomParticipant, RoomType } from './entities/room.entity';
 import { CreateRoomDto, JoinRoomDto } from './dto/room.dto';
+import { USER_PUBLIC_SELECT } from '../common/projections/user-projection';
 
 @Injectable()
 export class RoomService {
@@ -31,7 +32,7 @@ export class RoomService {
       // User row would leak email/phone/address to anonymous visitors).
       relations: ['createdBy'],
       select: {
-        createdBy: { id: true, name: true, createdAt: true },
+        createdBy: USER_PUBLIC_SELECT,
       },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
@@ -54,7 +55,7 @@ export class RoomService {
       // Same public-endpoint posture as findAll: creator gets a safe projection.
       relations: ['createdBy'],
       select: {
-        createdBy: { id: true, name: true, createdAt: true },
+        createdBy: USER_PUBLIC_SELECT,
       },
     });
     if (!room) throw new NotFoundException('Room not found');
@@ -97,7 +98,7 @@ export class RoomService {
       where: { roomId },
       relations: ['user'],
       select: {
-        user: { id: true, name: true, createdAt: true },
+        user: USER_PUBLIC_SELECT,
       },
     });
   }

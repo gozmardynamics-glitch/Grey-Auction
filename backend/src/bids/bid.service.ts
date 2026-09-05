@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Optional, Inject } 
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Bid } from './entities/bid.entity';
+import { USER_PUBLIC_SELECT } from '../common/projections/user-projection';
 import { PlaceBidDto } from './dto/bid.dto';
 import { Product, ProductStatus } from '../products/entities/product.entity';
 import { ProductService } from '../products/product.service';
@@ -291,13 +292,13 @@ export class BidService {
   }
 
   async getAuctionBids(productId: string): Promise<Bid[]> {
-    // Public endpoint: hydrate ONLY display-safe bidder fields. Selecting the
-    // full User relation would serialize passwordHash/OTP state to anyone.
+    // Public endpoint: hydrate ONLY display-safe bidder fields via the shared
+    // projection (response-DTO pass) — never the full User row.
     return this.repo.find({
       where: { productId },
       relations: ['bidder'],
       select: {
-        bidder: { id: true, name: true, createdAt: true },
+        bidder: USER_PUBLIC_SELECT,
       },
       order: { createdAt: 'DESC' },
     });
@@ -313,9 +314,14 @@ export class BidService {
   }
 
   async findByRoom(roomId: string): Promise<Bid[]> {
+    // Member-facing feed: same bidder projection as the public auction feed
+    // (response-DTO pass — the full User row must never cross the wire).
     return this.repo.find({
       where: { roomId },
       relations: ['bidder', 'product'],
+      select: {
+        bidder: USER_PUBLIC_SELECT,
+      },
       order: { createdAt: 'DESC' },
       take: 100,
     });
