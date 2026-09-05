@@ -29,6 +29,11 @@ Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest 296/296 (43 suites) �
   JWT-guarded SSR fetches (e.g. the admin AI console) render their empty state ("No Providers")
   instead of erroring, so specs asserting data visibility fail mysteriously. Re-mint
   (`node scripts/_make-auth.js`) before blaming the code. (Hit 2026-09-05 on `ai-admin.spec.ts`.)
+- **This network poisons GitHub DNS** — `github.com` resolves to a bogus IP (20.26.156.215) even
+  via 1.1.1.1/8.8.8.8 (interception), so `git push` fails with "Could not resolve/connect". Real
+  GitHub IPs ARE reachable with valid TLS. Workaround (no admin needed, git ≥2.44): pin the IP —
+  `git -c http.curloptResolve="github.com:443:140.82.112.3" push origin master`
+  (also works: 20.205.243.166). This is why commits piled up unpushed across sessions.
 
 ## Test accounts
 
