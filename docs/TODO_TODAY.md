@@ -11,7 +11,7 @@
   Playwright probe with storageState asserting localized strings, no raw `ns.key` leaks, all 3 locales.
 - [x] **Buyer settings tabs** — profile / security / notifications / payment (`buyer.settings.*`, 86 keys).
 - [x] **Seller settings modules** — my-profile, store, fees-payouts, plan-packages, payments… (`seller.settings.*`, 173 keys, committed d8072e3).
-- [ ] **Admin settings modules** — `fees.tsx` (heaviest file in the domain), general, preferences, roles… (`admin.settings.*`).
+- [x] **Admin settings modules** — all twelve modules incl. the 922-line fees editor, settings island + page chrome, activity-logs/security-alerts columns (`admin.settings.*`, 353 keys, committed e8920a4).
 - [ ] **Admin list-table chrome** — auctions/bids/buyers/sellers/tickets headers + filter buttons
   (`admin.auctions`, `admin.bids`, … column-hook factories per Pattern 2).
 
