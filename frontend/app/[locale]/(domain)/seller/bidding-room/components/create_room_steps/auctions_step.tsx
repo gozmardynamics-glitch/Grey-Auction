@@ -58,6 +58,8 @@ export default function AuctionsStep({
         rowSelection={rowSelection}
         onRowSelectionChange={handleRowSelectionChange}
         getRowId={(row) => row.lotId}
+        emptyTitle="No active auctions"
+        emptyDescription="Listings you put up for auction will appear here for the room."
       />
 
       <div className="flex justify-end">

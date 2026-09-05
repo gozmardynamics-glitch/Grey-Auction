@@ -16,9 +16,9 @@
   (`admin.auctions`, `admin.bids`, … column-hook factories per Pattern 2).
 
 ## 2. EmptyState sweep
-- [ ] Buyer my-bids / purchases / wishlist tables.
-- [ ] Seller listings / sales tables.
-- [ ] Remaining admin tables → `DataTable` `emptyTitle`/`emptyDescription`/`emptyIcon` or shared `EmptyState`.
+- [x] Buyer my-bids / purchases / wishlist tables — verified: `my_bids_table`, `purchases_table` pass contextual `emptyTitle`/`emptyDescription`; wishlist already renders the shared `EmptyState` (its literal strings join the buyer.wishlist i18n pass).
+- [x] Seller listings / sales tables — verified: `listings_table`, `sales_view`, `seller_payments_table`, `bidding_room_view` all pass empty props.
+- [x] Remaining admin tables → `DataTable` defaults to the shared `EmptyState` (`emptyTitle: 'No results found'` fallback); explicit contextual copy exists on the 26 audited tables except `audit_logs.tsx` (in the admin settings i18n pass) — contextual empty copy added to `seller/bidding-room` `auctions_step.tsx`.
 
 ## 3. Push authorization — ⏸ PENDING USER
 - 38+ local commits ahead of `origin/master`; `git push` only on the user's explicit go-ahead.
