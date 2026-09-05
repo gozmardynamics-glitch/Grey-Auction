@@ -1,12 +1,15 @@
 'use client';
 
 import { Button } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 interface ResetPinSuccessStepProps {
   onGoToWithdraw: () => void;
 }
 
 export default function ResetPinSuccessStep({ onGoToWithdraw }: ResetPinSuccessStepProps) {
+  const t = useTranslations('buyer.wallet.withdraw.resetSuccess');
+
   return (
     <div className="p-6 flex flex-col items-center text-center space-y-4">
       {/* Green checkmark with confetti */}
@@ -46,14 +49,14 @@ export default function ResetPinSuccessStep({ onGoToWithdraw }: ResetPinSuccessS
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">PIN Reset Successful</h3>
+        <h3 className="text-lg font-semibold">{t('title')}</h3>
         <p className="text-sm text-muted-foreground">
-          You have successfully reset your withdrawal PIN.
+          {t('body')}
         </p>
       </div>
 
       <div className="flex justify-end w-full pt-2">
-        <Button onClick={onGoToWithdraw}>Go to Withdraw</Button>
+        <Button onClick={onGoToWithdraw}>{t('goToWithdraw')}</Button>
       </div>
     </div>
   );

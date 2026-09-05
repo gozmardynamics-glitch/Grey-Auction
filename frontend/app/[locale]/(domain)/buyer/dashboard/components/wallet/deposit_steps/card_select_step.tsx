@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button, DialogHeader, DialogTitle } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface SavedCard {
@@ -31,6 +32,7 @@ export default function CardSelectStep({
   onBack,
   onCancel,
 }: CardSelectStepProps) {
+  const t = useTranslations('buyer.wallet.deposit.cardSelect');
   const [selectedCard, setSelectedCard] = useState(SAVED_CARDS[0]?.id ?? '');
 
   return (
@@ -44,19 +46,19 @@ export default function CardSelectStep({
           >
             <ArrowLeft className="size-5" />
           </button>
-          <DialogTitle>Payment Method</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </div>
       </DialogHeader>
 
       {/* Amount display */}
       <div className="text-center space-y-1">
         <p className="text-2xl font-bold">{formatCurrency(amount)}</p>
-        <p className="text-sm text-muted-foreground">Enter Amount</p>
+        <p className="text-sm text-muted-foreground">{t('enterAmount')}</p>
       </div>
 
       {/* Card list */}
       <div className="space-y-3">
-        <p className="text-sm font-medium">Cards</p>
+        <p className="text-sm font-medium">{t('cards')}</p>
         <div className="space-y-2">
           {SAVED_CARDS.map((card) => (
             <button
@@ -109,10 +111,10 @@ export default function CardSelectStep({
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button disabled={!selectedCard} onClick={onNext}>
-          Continue
+          {t('continue')}
         </Button>
       </div>
     </div>

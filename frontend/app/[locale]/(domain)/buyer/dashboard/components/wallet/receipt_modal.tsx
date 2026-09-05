@@ -6,6 +6,7 @@ import {
 } from '@/shared/components/common';
 
 import ReceiptContent from './receipt_content';
+import { useTranslations } from 'next-intl';
 import { ReceiptData, type WalletPayment } from '../../../models';
 
 function toReceiptData(payment: WalletPayment): ReceiptData {
@@ -47,6 +48,7 @@ export default function ReceiptModal({
   onOpenChange,
   payment,
 }: ReceiptModalProps) {
+  const t = useTranslations('buyer.wallet.receipt');
   if (!payment) return null;
 
   const receiptData = toReceiptData(payment);
@@ -56,7 +58,7 @@ export default function ReceiptModal({
       <DialogContent className="max-w-md p-0">
         <div className="p-6 space-y-5">
           <DialogHeader>
-            <DialogTitle>Receipt</DialogTitle>
+            <DialogTitle>{t('title')}</DialogTitle>
           </DialogHeader>
           <ReceiptContent data={receiptData} />
         </div>

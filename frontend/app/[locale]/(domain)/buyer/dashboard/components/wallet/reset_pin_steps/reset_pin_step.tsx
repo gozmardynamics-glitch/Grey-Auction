@@ -10,6 +10,7 @@ import {
   InputOTPSlot,
   Label,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 interface ResetPinStepProps {
   onNext: () => void;
@@ -17,6 +18,7 @@ interface ResetPinStepProps {
 }
 
 export default function ResetPinStep({ onNext, onCancel }: ResetPinStepProps) {
+  const t = useTranslations('buyer.wallet.withdraw.resetPin');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function ResetPinStep({ onNext, onCancel }: ResetPinStepProps) {
 
   const handleReset = () => {
     if (newPin !== confirmPin) {
-      setError('PINs do not match');
+      setError(t('mismatch'));
       return;
     }
     onNext();
@@ -35,15 +37,15 @@ export default function ResetPinStep({ onNext, onCancel }: ResetPinStepProps) {
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Reset PIN</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <p className="text-sm text-muted-foreground">
-        Enter a new 4-digit withdrawal PIN to continue.
+        {t('prompt')}
       </p>
 
       <div className="space-y-2">
-        <Label className="text-primary">Enter New PIN</Label>
+        <Label className="text-primary">{t('enterNew')}</Label>
         <div className="flex justify-center">
           <InputOTP
             maxLength={4}
@@ -62,7 +64,7 @@ export default function ResetPinStep({ onNext, onCancel }: ResetPinStepProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Confirm PIN</Label>
+        <Label>{t('confirmPin')}</Label>
         <div className="flex justify-center">
           <InputOTP
             maxLength={4}
@@ -88,10 +90,10 @@ export default function ResetPinStep({ onNext, onCancel }: ResetPinStepProps) {
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button disabled={!canSubmit} onClick={handleReset}>
-          Reset PIN
+          {t('submit')}
         </Button>
       </div>
     </div>

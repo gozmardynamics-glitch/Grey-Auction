@@ -10,6 +10,7 @@ import {
   InputOTPSlot,
   Label,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 import { MOCK_EMAIL } from '../../../../models/data';
 
 
@@ -18,21 +19,22 @@ interface ForgotPinStepProps {
 }
 
 export default function ForgotPinStep({ onNext }: ForgotPinStepProps) {
+  const t = useTranslations('buyer.wallet.withdraw.forgotPin');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
 
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Forgot PIN</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <p className="text-sm text-muted-foreground">
-        Enter the 6-digit code sent to {MOCK_EMAIL}
+        {t('prompt', { email: MOCK_EMAIL })}
       </p>
 
       <div className="space-y-2">
-        <Label>Code</Label>
+        <Label>{t('code')}</Label>
         <div className="flex justify-center">
           <InputOTP
             maxLength={6}
@@ -59,19 +61,19 @@ export default function ForgotPinStep({ onNext }: ForgotPinStepProps) {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Didn&apos;t get code?{' '}
+        {t('noCode')}{' '}
         <Button
           type="button"
           variant="link"
           className="p-0 h-auto font-medium text-primary hover:underline"
         >
-          Resend
+          {t('resend')}
         </Button>
       </p>
 
       <div className="flex justify-end pt-2">
         <Button disabled={code.length !== 6} onClick={onNext}>
-          Verify
+          {t('verify')}
         </Button>
       </div>
     </div>

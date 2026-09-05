@@ -1,6 +1,7 @@
 import { BanknoteArrowDown, BanknoteArrowUp, Wallet, Wallet2 } from 'lucide-react';
 import { Badge, Button, Card } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 import { BankAccountInfo } from '../../../models';
 
 
@@ -19,6 +20,8 @@ export default function WalletBalanceCard({
   onDeposit,
   onAddAccount,
 }: WalletBalanceCardProps) {
+  const t = useTranslations('buyer.wallet');
+
   return (
     <Card className="overflow-hidden bg-card p-6 space-y-4">
       {/* Top Row: Wallet icon + label | Bank info badge or Add Account */}
@@ -28,7 +31,7 @@ export default function WalletBalanceCard({
             <Wallet className="h-5 w-5 text-primary" />
           </div>
           <span className="text-sm font-medium text-muted-foreground">
-            Available Balance
+            {t('balance.available')}
           </span>
         </div>
         {bankAccount ? (
@@ -37,7 +40,7 @@ export default function WalletBalanceCard({
           </Badge>
         ) : (
           <Button variant="outline" size="sm" onClick={onAddAccount}>
-            <Wallet2/>Add Account
+            <Wallet2/>{t('balance.addAccount')}
           </Button>
         )}
       </div>
@@ -47,10 +50,10 @@ export default function WalletBalanceCard({
         <p className="text-3xl font-semibold">{formatCurrency(balance)}</p>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2" onClick={onWithdraw}>
-            <BanknoteArrowDown />Withdraw
+            <BanknoteArrowDown />{t('balance.withdraw')}
           </Button>
           <Button className="gap-2" onClick={onDeposit}>
-            <BanknoteArrowUp />Deposit
+            <BanknoteArrowUp />{t('balance.deposit')}
           </Button>
         </div>
       </div>

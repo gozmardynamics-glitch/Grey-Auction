@@ -276,7 +276,191 @@
     "purchases": "Mes achats",
     "wishlist": "Liste de souhaits",
     "invoices": "Factures",
-    "wallet": "Portefeuille",
+    "wallet": {
+      "title": "Portefeuille",
+      "search": "Rechercher",
+      "paymentHistory": "Historique des paiements",
+      "filter": "Filtrer",
+      "balance": {
+        "available": "Solde disponible",
+        "addAccount": "Ajouter un compte",
+        "withdraw": "Retirer",
+        "deposit": "Déposer"
+      },
+      "table": {
+        "referenceId": "ID de référence",
+        "paymentName": "Nom du paiement",
+        "type": "Type",
+        "method": "Méthode",
+        "amount": "Montant",
+        "date": "Date",
+        "status": "Statut",
+        "selectAll": "Tout sélectionner",
+        "selectRow": "Sélectionner la ligne",
+        "openMenu": "Ouvrir le menu",
+        "viewDetails": "Voir les détails",
+        "downloadReceipt": "Télécharger le reçu",
+        "emptyTitle": "Aucune activité dans le portefeuille",
+        "emptyDescription": "Effectuez un dépôt pour commencer — vos transactions apparaîtront ici dès que vous ferez un dépôt ou un retrait."
+      },
+      "receipt": {
+        "title": "Reçu",
+        "amount": "Montant",
+        "breakdown": "Répartition",
+        "winningAmount": "Montant gagné",
+        "processingFee": "Frais de traitement",
+        "totalDeposit": "Total déposé",
+        "total": "Total",
+        "totalDebit": "Total débité",
+        "others": "Autres",
+        "name": "Nom",
+        "method": "Méthode",
+        "paymentId": "ID de paiement",
+        "withdrawalId": "ID de retrait",
+        "date": "Date",
+        "reference": "Référence",
+        "share": "Partager",
+        "download": "Télécharger le reçu"
+      },
+      "deposit": {
+        "title": "Déposer des fonds",
+        "amount": "Montant",
+        "minimumInfo": "Dépôt minimum : {amount}",
+        "minimumError": "Le dépôt minimum est de {amount}",
+        "method": "Méthode de paiement",
+        "bankTransfer": "Virement bancaire",
+        "card": "Carte",
+        "directDebit": {
+          "title": "Prélèvement automatique",
+          "description": "Vous devez lier votre compte bancaire pour approvisionner facilement votre portefeuille par prélèvement automatique. Ajoutez uniquement un compte bancaire lié à votre BVN.",
+          "accountNumber": "Numéro de compte",
+          "accountNumberPlaceholder": "Saisir le numéro de compte",
+          "bankName": "Nom de la banque",
+          "bankPlaceholder": "Sélectionner une banque",
+          "continue": "Continuer",
+          "cancel": "Annuler"
+        },
+        "continue": "Continuer",
+        "cancel": "Annuler",
+        "confirm": {
+          "title": "Confirmer le dépôt",
+          "choosePlatform": "Choisissez votre plateforme de paiement",
+          "amount": "Montant",
+          "paymentMethod": "Méthode de paiement",
+          "processingFee": "Frais de traitement",
+          "totalAmount": "Montant total",
+          "confirm": "Confirmer le dépôt",
+          "cancel": "Annuler"
+        },
+        "success": {
+          "title": "Dépôt réussi !",
+          "body": "Votre portefeuille a été approvisionné avec succès. Vous pouvez désormais utiliser votre solde pour vos enchères et achats.",
+          "done": "Terminé"
+        },
+        "failure": {
+          "title": "Échec du dépôt",
+          "body": "Nous n'avons pas pu finaliser votre dépôt. Veuillez réessayer ou utiliser un autre moyen de paiement.",
+          "tryAgain": "Réessayer"
+        },
+        "bankSelect": {
+          "title": "Méthode de paiement",
+          "enterAmount": "Saisir le montant",
+          "bankAccount": "Compte bancaire",
+          "continue": "Continuer",
+          "cancel": "Annuler"
+        },
+        "cardSelect": {
+          "title": "Méthode de paiement",
+          "enterAmount": "Saisir le montant",
+          "cards": "Cartes",
+          "continue": "Continuer",
+          "cancel": "Annuler"
+        },
+        "address": {
+          "title": "Saisir l'adresse",
+          "description": "Votre compte a été ajouté pour les dépôts. Veuillez saisir votre adresse de résidence pour finaliser la configuration.",
+          "address": "Adresse de résidence",
+          "addressPlaceholder": "Saisir votre adresse",
+          "state": "État",
+          "statePlaceholder": "Sélectionner un État",
+          "city": "Ville",
+          "cityPlaceholder": "Sélectionner une ville",
+          "continue": "Continuer",
+          "cancel": "Annuler"
+        },
+        "mandate": {
+          "title": "Confirmer le processus",
+          "description": "Envoyez seulement 50 ₦ depuis votre {bank} - {account} pour confirmer la liaison de votre compte.",
+          "amount": "Montant",
+          "accountNumber": "Numéro de compte",
+          "accountName": "Nom du compte",
+          "copied": "Copié dans le presse-papiers",
+          "paid": "J'ai payé",
+          "cancel": "Annuler"
+        },
+        "ddSuccess": {
+          "title": "Excellent choix !",
+          "body": "Nous confirmerons votre paiement et lierons votre compte sous peu.",
+          "done": "Terminé"
+        },
+        "error": {
+          "title": "Une erreur est survenue",
+          "bvnMismatch": "Le nom de ce compte bancaire ne correspond pas à votre BVN.",
+          "gotIt": "Compris !"
+        }
+      },
+      "withdraw": {
+        "title": "Retirer",
+        "availableBalance": "Solde disponible :",
+        "enterAmount": "Saisir le montant",
+        "insufficient": "Solde insuffisant",
+        "belowMinimum": "Un montant minimum de ₦{amount} est autorisé",
+        "bankAccount": "Compte bancaire",
+        "addBankAccount": "Ajouter un compte bancaire",
+        "breakdown": "Répartition",
+        "amount": "Montant",
+        "processingFee": "Frais de traitement",
+        "totalAmount": "Montant total",
+        "confirm": "Confirmer le retrait",
+        "cancel": "Annuler",
+        "pin": {
+          "title": "Code PIN",
+          "prompt": "Saisissez votre code PIN de retrait à 4 chiffres pour continuer",
+          "invalid": "Code PIN invalide. Veuillez réessayer.",
+          "forgot": "Code PIN oublié ?",
+          "reset": "Réinitialiser",
+          "confirm": "Confirmer",
+          "cancel": "Annuler"
+        },
+        "review": {
+          "title": "Demande de retrait en cours d'examen",
+          "body": "Votre demande de retrait a bien été reçue et est en cours de traitement.",
+          "done": "Terminé"
+        },
+        "forgotPin": {
+          "title": "Code PIN oublié",
+          "prompt": "Saisissez le code à 6 chiffres envoyé à {email}",
+          "code": "Code",
+          "noCode": "Code non reçu ?",
+          "resend": "Renvoyer",
+          "verify": "Vérifier"
+        },
+        "resetPin": {
+          "title": "Réinitialiser le code PIN",
+          "prompt": "Saisissez un nouveau code PIN de retrait à 4 chiffres pour continuer.",
+          "enterNew": "Saisir le nouveau code PIN",
+          "confirmPin": "Confirmer le code PIN",
+          "mismatch": "Les codes PIN ne correspondent pas",
+          "submit": "Réinitialiser le code PIN",
+          "cancel": "Annuler"
+        },
+        "resetSuccess": {
+          "title": "Code PIN réinitialisé avec succès",
+          "body": "Vous avez réinitialisé votre code PIN de retrait avec succès.",
+          "goToWithdraw": "Aller au retrait"
+        }
+      }
+    },
     "nav": {
       "dashboard": "Tableau de bord",
       "myBids": "Mes offres",
@@ -290,6 +474,48 @@
       "notifications": "Notifications",
       "settings": "Paramètres",
       "logOut": "Déconnexion"
+    }
+  },
+  "wallet": {
+    "addAccount": {
+      "title": "Ajouter un compte",
+      "selectBank": "Sélectionner un compte bancaire",
+      "bankPlaceholder": "Sélectionner une banque",
+      "accountNumber": "Numéro de compte",
+      "accountNumberPlaceholder": "Saisir le numéro de compte",
+      "invalidAccount": "Compte bancaire ou numéro de compte invalide",
+      "submit": "Ajouter le compte",
+      "cancel": "Annuler",
+      "verifyBank": {
+        "title": "Vérifier le compte bancaire",
+        "prompt": "Saisissez le code à 6 chiffres envoyé à {email}",
+        "code": "Code",
+        "noCode": "Code non reçu ?",
+        "resend": "Renvoyer",
+        "verify": "Vérifier"
+      },
+      "setupPin": {
+        "title": "Code PIN",
+        "prompt": "Vous devez définir un code PIN de retrait avant d'effectuer des retraits.",
+        "enterNew": "Saisir le nouveau code PIN",
+        "confirmPin": "Confirmer le code PIN",
+        "mismatch": "Les codes PIN ne correspondent pas",
+        "confirm": "Confirmer",
+        "cancel": "Annuler"
+      },
+      "verifyPin": {
+        "title": "Vérifier le code PIN",
+        "prompt": "Saisissez le code à 6 chiffres envoyé à {email}",
+        "code": "Code",
+        "noCode": "Code non reçu ?",
+        "resend": "Renvoyer",
+        "verify": "Vérifier"
+      },
+      "success": {
+        "title": "Compte bancaire ajouté avec succès",
+        "body": "Votre compte bancaire a été ajouté et vérifié avec succès. Vous pouvez désormais recevoir vos paiements directement sur ce compte.",
+        "done": "Terminé"
+      }
     }
   },
   "admin": {

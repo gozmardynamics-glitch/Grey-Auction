@@ -12,6 +12,7 @@ import {
 } from '@/shared/components/common';
 
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 
 interface DirectDebitConfirmStepProps {
   bankName: string;
@@ -30,18 +31,18 @@ export default function DirectDebitConfirmStep({
   onConfirm,
   onCancel,
 }: DirectDebitConfirmStepProps) {
+  const t = useTranslations('buyer.wallet.deposit.mandate');
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
+    toast.success(t('copied'));
   };
 
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Confirm Process</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
         <DialogDescription>
-          Send ₦50 only from your {bankName} - {accountNumber} to confirm your
-          account linking.
+          {t('description', { bank: bankName, account: accountNumber })}
         </DialogDescription>
       </DialogHeader>
 
@@ -61,7 +62,7 @@ export default function DirectDebitConfirmStep({
         {/* Amount */}
         <div className="flex items-center justify-between px-4 py-3">
           <div>
-            <p className="text-xs text-muted-foreground">Amount</p>
+            <p className="text-xs text-muted-foreground">{t('amount')}</p>
             <p className="text-sm font-medium">
               {formatCurrency(MANDATE_AMOUNT)}
             </p>
@@ -80,7 +81,7 @@ export default function DirectDebitConfirmStep({
         {/* Account Number */}
         <div className="flex items-center justify-between px-4 py-3">
           <div>
-            <p className="text-xs text-muted-foreground">Account Number</p>
+            <p className="text-xs text-muted-foreground">{t('accountNumber')}</p>
             <p className="text-sm font-medium">{MANDATE_ACCOUNT}</p>
           </div>
           <button
@@ -96,16 +97,16 @@ export default function DirectDebitConfirmStep({
 
         {/* Account Name */}
         <div className="px-4 py-3">
-          <p className="text-xs text-muted-foreground">Account Name</p>
+          <p className="text-xs text-muted-foreground">{t('accountName')}</p>
           <p className="text-sm font-medium">{MANDATE_NAME}</p>
         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
-        <Button onClick={onConfirm}>I Have Paid</Button>
+        <Button onClick={onConfirm}>{t('paid')}</Button>
       </div>
     </div>
   );

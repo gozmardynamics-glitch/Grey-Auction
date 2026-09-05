@@ -1,12 +1,15 @@
 'use client';
 
 import { Button } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 interface ReviewStepProps {
   onDone: () => void;
 }
 
 export default function ReviewStep({ onDone }: ReviewStepProps) {
+  const t = useTranslations('buyer.wallet.withdraw.review');
+
   return (
     <div className="p-6 flex flex-col items-center text-center space-y-4">
       {/* Hourglass illustration */}
@@ -37,16 +40,15 @@ export default function ReviewStep({ onDone }: ReviewStepProps) {
 
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">
-          Withdrawal Request is in Review
+          {t('title')}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Your withdrawal request has been received and is currently being
-          processed.
+          {t('body')}
         </p>
       </div>
 
       <div className="flex justify-end w-full pt-2">
-        <Button onClick={onDone}>Done</Button>
+        <Button onClick={onDone}>{t('done')}</Button>
       </div>
     </div>
   );

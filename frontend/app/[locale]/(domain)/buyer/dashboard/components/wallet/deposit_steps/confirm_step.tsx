@@ -8,6 +8,7 @@ import {
 } from '@/shared/components/common';
 
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 import { PaymentProviderSelector, type PaymentProviderId } from '@/shared/components/common/payment_provider_selector';
 
 const PROCESSING_FEE_RATE = 0.015;
@@ -29,37 +30,38 @@ export default function DepositConfirmStep({
   onConfirm,
   onBack,
 }: ConfirmStepProps) {
+  const t = useTranslations('buyer.wallet.deposit.confirm');
   const processingFee = amount * PROCESSING_FEE_RATE;
   const totalAmount = amount + processingFee;
 
   return (
     <div className="p-6 space-y-6">
       <DialogHeader>
-        <DialogTitle>Confirm Deposit</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <div>
-        <p className="mb-2 text-sm font-medium">Choose your payment platform</p>
+        <p className="mb-2 text-sm font-medium">{t('choosePlatform')}</p>
         <PaymentProviderSelector value={provider} onChange={onProviderChange} columns={2} />
       </div>
 
       <div className="space-y-4">
         <div className="rounded-lg border p-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Amount</span>
+            <span className="text-muted-foreground">{t('amount')}</span>
             <span className="font-medium">{formatCurrency(amount)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Payment Method</span>
+            <span className="text-muted-foreground">{t('paymentMethod')}</span>
             <span className="font-medium">{paymentMethodLabel}</span>
           </div>
           <Separator />
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Processing Fee</span>
+            <span className="text-muted-foreground">{t('processingFee')}</span>
             <span className="font-medium">{formatCurrency(processingFee)}</span>
           </div>
           <div className="flex items-center justify-between text-sm font-semibold">
-            <span>Total Amount</span>
+            <span>{t('totalAmount')}</span>
             <span>{formatCurrency(totalAmount)}</span>
           </div>
         </div>
@@ -68,9 +70,9 @@ export default function DepositConfirmStep({
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onBack}>
-          Cancel
+          {t('cancel')}
         </Button>
-        <Button onClick={onConfirm}>Confirm Deposit</Button>
+        <Button onClick={onConfirm}>{t('confirm')}</Button>
       </div>
     </div>
   );

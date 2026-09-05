@@ -12,6 +12,7 @@ import {
 } from '@/shared/components/common';
 
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { PaymentMethodOption } from '../../../../models';
 
@@ -27,6 +28,7 @@ export default function DepositAmountStep({
   onNext,
   onCancel,
 }: AmountStepProps) {
+  const t = useTranslations('buyer.wallet.deposit');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethodOption>('bank-transfer');
@@ -35,18 +37,18 @@ export default function DepositAmountStep({
   const isValidAmount = numericAmount >= MIN_AMOUNT;
   const amountError =
     amount.length > 0 && numericAmount > 0 && numericAmount < MIN_AMOUNT
-      ? `Minimum deposit is ${formatCurrency(MIN_AMOUNT)}`
+      ? t('minimumError', { amount: formatCurrency(MIN_AMOUNT) })
       : '';
 
   return (
     <div className="p-6 space-y-6">
       <DialogHeader>
-        <DialogTitle>Deposit Funds</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       {/* Amount Input */}
       <div className="space-y-2">
-        <Label>Amount</Label>
+        <Label>{t('amount')}</Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
             &#8358;
@@ -64,13 +66,13 @@ export default function DepositAmountStep({
           <p className="text-sm text-destructive">{amountError}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          Minimum deposit: {formatCurrency(MIN_AMOUNT)}
+          {t('minimumInfo', { amount: formatCurrency(MIN_AMOUNT) })}
         </p>
       </div>
 
       {/* Payment Method */}
       <div className="space-y-3">
-        <Label>Payment Method</Label>
+        <Label>{t('method')}</Label>
         <div className="grid grid-cols-2 gap-3">
           <Button
             type="button"
@@ -91,7 +93,7 @@ export default function DepositAmountStep({
             >
               <Building2 className="h-4 w-4" />
             </div>
-            <span className="text-sm font-medium">Bank Transfer</span>
+            <span className="text-sm font-medium">{t('bankTransfer')}</span>
           </Button>
 
           <Button
@@ -113,7 +115,7 @@ export default function DepositAmountStep({
             >
               <CreditCard className="h-4 w-4" />
             </div>
-            <span className="text-sm font-medium">Card</span>
+            <span className="text-sm font-medium">{t('card')}</span>
           </Button>
 
           <Button
@@ -135,7 +137,7 @@ export default function DepositAmountStep({
             >
               <CreditCard className="h-4 w-4" />
             </div>
-            <span className="text-sm font-medium">Direct Debit</span>
+            <span className="text-sm font-medium">{t('directDebit')}</span>
           </Button>
         </div>
       </div>
@@ -143,13 +145,13 @@ export default function DepositAmountStep({
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button
           disabled={!isValidAmount}
           onClick={() => onNext(numericAmount, paymentMethod)}
         >
-          Continue
+          {t('continue')}
         </Button>
       </div>
     </div>

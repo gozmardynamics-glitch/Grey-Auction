@@ -10,6 +10,7 @@ import {
   InputOTPSlot,
   Label,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 interface SetupPinStepProps {
   onNext: () => void;
@@ -17,6 +18,7 @@ interface SetupPinStepProps {
 }
 
 export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
+  const t = useTranslations('wallet.addAccount.setupPin');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
@@ -26,7 +28,7 @@ export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
 
   const handleConfirm = () => {
     if (newPin !== confirmPin) {
-      setError('PINs do not match');
+      setError(t('mismatch'));
       return;
     }
     onNext();
@@ -35,15 +37,15 @@ export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>PIN</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <p className="text-sm text-muted-foreground">
-        You need to set a withdrawal PIN before making withdrawals.
+        {t('prompt')}
       </p>
 
       <div className="space-y-2">
-        <Label className="text-primary">Enter New PIN</Label>
+        <Label className="text-primary">{t('enterNew')}</Label>
         <div className="flex justify-center">
           <InputOTP
             maxLength={4}
@@ -62,7 +64,7 @@ export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Confirm PIN</Label>
+        <Label>{t('confirmPin')}</Label>
         <div className="flex justify-center">
           <InputOTP
             maxLength={4}
@@ -88,10 +90,10 @@ export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button disabled={!canSubmit} onClick={handleConfirm}>
-          Confirm
+          {t('confirm')}
         </Button>
       </div>
     </div>

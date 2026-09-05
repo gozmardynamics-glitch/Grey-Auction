@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 const BANK_OPTIONS = [
   'Access Bank Plc',
@@ -35,6 +36,7 @@ export default function DirectDebitStep({
   onNext,
   onCancel,
 }: DirectDebitStepProps) {
+  const t = useTranslations('buyer.wallet.deposit.directDebit');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankName, setBankName] = useState('');
 
@@ -45,20 +47,19 @@ export default function DirectDebitStep({
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Direct Debit</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
         <DialogDescription>
-          You need to link your bank account to fund your wallet through a direct
-          debit easily. Only add a bank account that is linked to your BVN.
+          {t('description')}
         </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Account Number</Label>
+          <Label>{t('accountNumber')}</Label>
           <Input
             type="text"
             inputMode="numeric"
-            placeholder="Enter account number"
+            placeholder={t('accountNumberPlaceholder')}
             maxLength={10}
             value={accountNumber}
             onChange={(e) => {
@@ -69,10 +70,10 @@ export default function DirectDebitStep({
         </div>
 
         <div className="space-y-2">
-          <Label>Bank Name</Label>
+          <Label>{t('bankName')}</Label>
           <Select value={bankName} onValueChange={setBankName}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a bank" />
+              <SelectValue placeholder={t('bankPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {BANK_OPTIONS.map((bank) => (
@@ -91,13 +92,13 @@ export default function DirectDebitStep({
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button
           disabled={!canContinue}
           onClick={() => onNext(accountNumber, bankName)}
         >
-          Continue
+          {t('continue')}
         </Button>
       </div>
     </div>

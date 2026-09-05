@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 
 import {
   ActionSuccessDialog,
@@ -36,6 +37,7 @@ export default function DepositModal({
     useState<PaymentMethodOption>('bank-transfer');
   const [provider, setProvider] = useState<PaymentProviderId>('paystack');
   const { data: session } = useSession();
+  const t = useTranslations('buyer.wallet.deposit');
 
   // Direct debit state
   const [ddAccountNumber, setDdAccountNumber] = useState('');
@@ -115,10 +117,10 @@ export default function DepositModal({
 
   const paymentMethodLabel =
     paymentMethod === 'bank-transfer'
-      ? 'Bank Transfer'
+      ? t('bankTransfer')
       : paymentMethod === 'direct-debit'
-        ? 'Direct Debit'
-        : 'Card';
+        ? t('directDebit')
+        : t('card');
 
   const isCompactStep =
     step === 'success' ||
@@ -197,9 +199,9 @@ export default function DepositModal({
         open={errorOpen}
         onOpenChange={setErrorOpen}
         variant="error"
-        title="Error Occurred"
-        message="This bank account name does not match your BVN."
-        buttonLabel="Got It!"
+        title={t('error.title')}
+        message={t('error.bvnMismatch')}
+        buttonLabel={t('error.gotIt')}
       />
     </>
   );

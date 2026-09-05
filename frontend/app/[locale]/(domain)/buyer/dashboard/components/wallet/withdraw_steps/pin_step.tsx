@@ -9,6 +9,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 const MOCK_PIN = '1234';
 
@@ -19,12 +20,13 @@ interface PinStepProps {
 }
 
 export default function PinStep({ onNext, onBack, onForgotPin }: PinStepProps) {
+  const t = useTranslations('buyer.wallet.withdraw.pin');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
 
   const handleConfirm = () => {
     if (pin !== MOCK_PIN) {
-      setError('Invalid PIN. Please try again.');
+      setError(t('invalid'));
       return;
     }
     onNext();
@@ -33,11 +35,11 @@ export default function PinStep({ onNext, onBack, onForgotPin }: PinStepProps) {
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>PIN</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <p className="text-sm text-muted-foreground">
-        Enter your 4-digit withdrawal PIN to continue
+        {t('prompt')}
       </p>
 
       <div className="space-y-2">
@@ -65,24 +67,24 @@ export default function PinStep({ onNext, onBack, onForgotPin }: PinStepProps) {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Forgot PIN?{' '}
+        {t('forgot')}{' '}
         <Button
           type="button"
           variant="link"
           className="p-0 h-auto font-medium text-primary hover:underline"
           onClick={onForgotPin}
         >
-          Reset
+          {t('reset')}
         </Button>
         .
       </p>
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onBack}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button disabled={pin.length !== 4} onClick={handleConfirm}>
-          Confirm
+          {t('confirm')}
         </Button>
       </div>
     </div>

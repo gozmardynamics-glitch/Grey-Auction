@@ -1,6 +1,7 @@
 import { Share2, Download } from 'lucide-react';
 import { Badge, Button, Separator } from '@/shared/components/common';
 import { formatCurrency, statusConfig } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 import { ReceiptData } from '../../../models';
 
 const PROCESSING_FEE_RATE = 0.01;
@@ -16,6 +17,7 @@ export default function ReceiptContent({
   onShare,
   onDownload,
 }: ReceiptContentProps) {
+  const t = useTranslations('buyer.wallet.receipt');
   const { label: statusLabel, className: statusClass } =
     statusConfig[data.status];
   const processingFee = data.amount * PROCESSING_FEE_RATE;
@@ -28,7 +30,7 @@ export default function ReceiptContent({
       {/* Amount + Status */}
       <div className="flex items-start justify-between border-b border-dashed pb-4">
         <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Amount</p>
+          <p className="text-sm text-muted-foreground">{t('amount')}</p>
           <p className="text-xl font-semibold">
             {formatCurrency(data.amount + processingFee)}
           </p>
@@ -71,21 +73,21 @@ export default function ReceiptContent({
 
       {/* Breakdown */}
       <div className="space-y-3 rounded-lg border p-4">
-        <p className="text-sm font-semibold">Breakdown</p>
+        <p className="text-sm font-semibold">{t('breakdown')}</p>
         {isDeposit && data.winningAmount !== undefined && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Winning Amount</span>
+            <span className="text-muted-foreground">{t('winningAmount')}</span>
             <span>{formatCurrency(data.winningAmount)}</span>
           </div>
         )}
         {!isDeposit && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Amount</span>
+            <span className="text-muted-foreground">{t('amount')}</span>
             <span>{formatCurrency(data.amount)}</span>
           </div>
         )}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Processing Fee</span>
+          <span className="text-muted-foreground">{t('processingFee')}</span>
           <span>
             {isDeposit && data.winningAmount !== undefined
               ? `-${formatCurrency(processingFee)}`
@@ -96,10 +98,10 @@ export default function ReceiptContent({
         <div className="flex items-center justify-between text-sm font-semibold">
           <span>
             {isDeposit
-              ? 'Total Deposit'
+              ? t('totalDeposit')
               : data.status === 'Failed'
-                ? 'Total'
-                : 'Total Debit'}
+                ? t('total')
+                : t('totalDebit')}
           </span>
           <span>{formatCurrency(total)}</span>
         </div>
@@ -107,22 +109,22 @@ export default function ReceiptContent({
 
       {/* Others */}
       <div className="space-y-3 rounded-lg border p-4">
-        <p className="text-sm font-semibold">Others</p>
+        <p className="text-sm font-semibold">{t('others')}</p>
         {isDeposit && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Name</span>
+            <span className="text-muted-foreground">{t('name')}</span>
             <span>{data.accountHolder ?? 'Jayden Nicholas'}</span>
           </div>
         )}
         {isDeposit && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Method</span>
+            <span className="text-muted-foreground">{t('method')}</span>
             <span>{data.method}</span>
           </div>
         )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {isDeposit ? 'Payment ID' : 'Withdrawal ID'}
+            {isDeposit ? t('paymentId') : t('withdrawalId')}
           </span>
           <span>
             {isDeposit
@@ -131,11 +133,11 @@ export default function ReceiptContent({
           </span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Date</span>
+          <span className="text-muted-foreground">{t('date')}</span>
           <span>{data.date}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Reference</span>
+          <span className="text-muted-foreground">{t('reference')}</span>
           <span>{data.referenceId}</span>
         </div>
       </div>
@@ -144,11 +146,11 @@ export default function ReceiptContent({
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onShare}>
           <Share2 className="h-4 w-4" />
-          Share
+          {t('share')}
         </Button>
         <Button onClick={onDownload}>
           <Download className="h-4 w-4" />
-          Download Receipt
+          {t('download')}
         </Button>
       </div>
     </div>

@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 const BANK_OPTIONS = [
   'Access Bank Plc',
@@ -29,6 +30,7 @@ interface AddAccountStepProps {
 }
 
 export default function AddAccountStep({ onNext, onCancel }: AddAccountStepProps) {
+  const t = useTranslations('wallet.addAccount');
   const [selectedBank, setSelectedBank] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
 
@@ -37,7 +39,7 @@ export default function AddAccountStep({ onNext, onCancel }: AddAccountStepProps
     accountNumber.length > 0 &&
     accountNumber.length !== 10 &&
     accountNumber.length > 5
-      ? 'Invalid bank account or account number'
+      ? t('invalidAccount')
       : '';
   const canAddAccount =
     selectedBank !== '' && accountNumber.length === 10 && resolvedName !== '';
@@ -45,15 +47,15 @@ export default function AddAccountStep({ onNext, onCancel }: AddAccountStepProps
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Add an Account</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Select Bank Account</Label>
+          <Label>{t('selectBank')}</Label>
           <Select value={selectedBank} onValueChange={setSelectedBank}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a bank" />
+              <SelectValue placeholder={t('bankPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {BANK_OPTIONS.map((bank) => (
@@ -66,11 +68,11 @@ export default function AddAccountStep({ onNext, onCancel }: AddAccountStepProps
         </div>
 
         <div className="space-y-2">
-          <Label>Account Number</Label>
+          <Label>{t('accountNumber')}</Label>
           <Input
             type="text"
             inputMode="numeric"
-            placeholder="Enter account number"
+            placeholder={t('accountNumberPlaceholder')}
             maxLength={10}
             value={accountNumber}
             onChange={(e) => {
@@ -91,10 +93,10 @@ export default function AddAccountStep({ onNext, onCancel }: AddAccountStepProps
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button disabled={!canAddAccount} onClick={onNext}>
-          Add Account
+          {t('submit')}
         </Button>
       </div>
     </div>

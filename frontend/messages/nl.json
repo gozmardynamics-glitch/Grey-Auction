@@ -276,7 +276,191 @@
     "purchases": "Mijn aankopen",
     "wishlist": "Verlanglijst",
     "invoices": "Facturen",
-    "wallet": "Portemonnee",
+    "wallet": {
+      "title": "Portemonnee",
+      "search": "Zoeken",
+      "paymentHistory": "Betalingsgeschiedenis",
+      "filter": "Filteren",
+      "balance": {
+        "available": "Beschikbaar saldo",
+        "addAccount": "Account toevoegen",
+        "withdraw": "Opnemen",
+        "deposit": "Storten"
+      },
+      "table": {
+        "referenceId": "Referentie-ID",
+        "paymentName": "Betalingsnaam",
+        "type": "Type",
+        "method": "Methode",
+        "amount": "Bedrag",
+        "date": "Datum",
+        "status": "Status",
+        "selectAll": "Alles selecteren",
+        "selectRow": "Rij selecteren",
+        "openMenu": "Menu openen",
+        "viewDetails": "Details bekijken",
+        "downloadReceipt": "Ontvangstbewijs downloaden",
+        "emptyTitle": "Nog geen portemonnee-activiteit",
+        "emptyDescription": "Doe een storting om te beginnen — uw transacties verschijnen hier zodra u een storting of opname heeft gedaan."
+      },
+      "receipt": {
+        "title": "Ontvangst",
+        "amount": "Bedrag",
+        "breakdown": "Specificatie",
+        "winningAmount": "Gewonnen bedrag",
+        "processingFee": "Verwerkingskosten",
+        "totalDeposit": "Totaal gestort",
+        "total": "Totaal",
+        "totalDebit": "Totaal afgeschreven",
+        "others": "Overig",
+        "name": "Naam",
+        "method": "Methode",
+        "paymentId": "Betalings-ID",
+        "withdrawalId": "Opname-ID",
+        "date": "Datum",
+        "reference": "Referentie",
+        "share": "Delen",
+        "download": "Ontvangstbewijs downloaden"
+      },
+      "deposit": {
+        "title": "Geld storten",
+        "amount": "Bedrag",
+        "minimumInfo": "Minimale storting: {amount}",
+        "minimumError": "De minimale storting is {amount}",
+        "method": "Betaalmethode",
+        "bankTransfer": "Bankoverschrijving",
+        "card": "Kaart",
+        "directDebit": {
+          "title": "Automatische incasso",
+          "description": "U moet uw bankrekening koppelen om uw portemonnee eenvoudig via automatische incasso te kunnen opladen. Voeg alleen een bankrekening toe die aan uw BVN is gekoppeld.",
+          "accountNumber": "Rekeningnummer",
+          "accountNumberPlaceholder": "Rekeningnummer invoeren",
+          "bankName": "Banknaam",
+          "bankPlaceholder": "Selecteer een bank",
+          "continue": "Doorgaan",
+          "cancel": "Annuleren"
+        },
+        "continue": "Doorgaan",
+        "cancel": "Annuleren",
+        "confirm": {
+          "title": "Storting bevestigen",
+          "choosePlatform": "Kies uw betaalplatform",
+          "amount": "Bedrag",
+          "paymentMethod": "Betaalmethode",
+          "processingFee": "Verwerkingskosten",
+          "totalAmount": "Totaalbedrag",
+          "confirm": "Storting bevestigen",
+          "cancel": "Annuleren"
+        },
+        "success": {
+          "title": "Storting geslaagd!",
+          "body": "Uw portemonnee is succesvol opgeladen. U kunt uw saldo nu gebruiken voor biedingen en aankopen.",
+          "done": "Klaar"
+        },
+        "failure": {
+          "title": "Storting mislukt",
+          "body": "We konden uw storting niet voltooien. Probeer het opnieuw of gebruik een andere betaalmethode.",
+          "tryAgain": "Opnieuw proberen"
+        },
+        "bankSelect": {
+          "title": "Betaalmethode",
+          "enterAmount": "Bedrag invoeren",
+          "bankAccount": "Bankrekening",
+          "continue": "Doorgaan",
+          "cancel": "Annuleren"
+        },
+        "cardSelect": {
+          "title": "Betaalmethode",
+          "enterAmount": "Bedrag invoeren",
+          "cards": "Kaarten",
+          "continue": "Doorgaan",
+          "cancel": "Annuleren"
+        },
+        "address": {
+          "title": "Adres invoeren",
+          "description": "Uw account is toegevoegd voor stortingen. Voer uw thuisadres in om de installatie te voltooien.",
+          "address": "Woonadres",
+          "addressPlaceholder": "Uw adres invoeren",
+          "state": "Staat",
+          "statePlaceholder": "Selecteer een staat",
+          "city": "Stad",
+          "cityPlaceholder": "Selecteer een stad",
+          "continue": "Doorgaan",
+          "cancel": "Annuleren"
+        },
+        "mandate": {
+          "title": "Proces bevestigen",
+          "description": "Stuur slechts ₦50 vanaf uw {bank} - {account} om de koppeling van uw rekening te bevestigen.",
+          "amount": "Bedrag",
+          "accountNumber": "Rekeningnummer",
+          "accountName": "Accountnaam",
+          "copied": "Gekopieerd naar het klembord",
+          "paid": "Ik heb betaald",
+          "cancel": "Annuleren"
+        },
+        "ddSuccess": {
+          "title": "Goede keuze!",
+          "body": "We bevestigen uw betaling en koppelen uw rekening binnenkort.",
+          "done": "Klaar"
+        },
+        "error": {
+          "title": "Er is een fout opgetreden",
+          "bvnMismatch": "De naam van deze bankrekening komt niet overeen met uw BVN.",
+          "gotIt": "Begrepen!"
+        }
+      },
+      "withdraw": {
+        "title": "Opnemen",
+        "availableBalance": "Beschikbaar saldo:",
+        "enterAmount": "Bedrag invoeren",
+        "insufficient": "Onvoldoende saldo",
+        "belowMinimum": "Er is een minimumbedrag van ₦{amount} toegestaan",
+        "bankAccount": "Bankrekening",
+        "addBankAccount": "Bankrekening toevoegen",
+        "breakdown": "Specificatie",
+        "amount": "Bedrag",
+        "processingFee": "Verwerkingskosten",
+        "totalAmount": "Totaalbedrag",
+        "confirm": "Opname bevestigen",
+        "cancel": "Annuleren",
+        "pin": {
+          "title": "PIN",
+          "prompt": "Voer uw 4-cijferige opname-PIN in om door te gaan",
+          "invalid": "Ongeldige PIN. Probeer het opnieuw.",
+          "forgot": "PIN vergeten?",
+          "reset": "Resetten",
+          "confirm": "Bevestigen",
+          "cancel": "Annuleren"
+        },
+        "review": {
+          "title": "Opnameverzoek wordt beoordeeld",
+          "body": "Uw opnameverzoek is ontvangen en wordt momenteel verwerkt.",
+          "done": "Klaar"
+        },
+        "forgotPin": {
+          "title": "PIN vergeten",
+          "prompt": "Voer de 6-cijferige code in die naar {email} is verzonden",
+          "code": "Code",
+          "noCode": "Geen code ontvangen?",
+          "resend": "Opnieuw verzenden",
+          "verify": "Verifiëren"
+        },
+        "resetPin": {
+          "title": "PIN opnieuw instellen",
+          "prompt": "Voer een nieuwe 4-cijferige opname-PIN in om door te gaan.",
+          "enterNew": "Nieuwe PIN invoeren",
+          "confirmPin": "PIN bevestigen",
+          "mismatch": "PIN-codes komen niet overeen",
+          "submit": "PIN opnieuw instellen",
+          "cancel": "Annuleren"
+        },
+        "resetSuccess": {
+          "title": "PIN opnieuw ingesteld",
+          "body": "Uw opname-PIN is succesvol opnieuw ingesteld.",
+          "goToWithdraw": "Naar opnemen"
+        }
+      }
+    },
     "nav": {
       "dashboard": "Dashboard",
       "myBids": "Mijn biedingen",
@@ -290,6 +474,48 @@
       "notifications": "Meldingen",
       "settings": "Instellingen",
       "logOut": "Uitloggen"
+    }
+  },
+  "wallet": {
+    "addAccount": {
+      "title": "Account toevoegen",
+      "selectBank": "Bankrekening selecteren",
+      "bankPlaceholder": "Selecteer een bank",
+      "accountNumber": "Rekeningnummer",
+      "accountNumberPlaceholder": "Rekeningnummer invoeren",
+      "invalidAccount": "Ongeldige bankrekening of rekeningnummer",
+      "submit": "Account toevoegen",
+      "cancel": "Annuleren",
+      "verifyBank": {
+        "title": "Bankrekening verifiëren",
+        "prompt": "Voer de 6-cijferige code in die naar {email} is verzonden",
+        "code": "Code",
+        "noCode": "Geen code ontvangen?",
+        "resend": "Opnieuw verzenden",
+        "verify": "Verifiëren"
+      },
+      "setupPin": {
+        "title": "PIN",
+        "prompt": "U moet een opname-PIN instellen voordat u kunt opnemen.",
+        "enterNew": "Nieuwe PIN invoeren",
+        "confirmPin": "PIN bevestigen",
+        "mismatch": "PIN-codes komen niet overeen",
+        "confirm": "Bevestigen",
+        "cancel": "Annuleren"
+      },
+      "verifyPin": {
+        "title": "PIN verifiëren",
+        "prompt": "Voer de 6-cijferige code in die naar {email} is verzonden",
+        "code": "Code",
+        "noCode": "Geen code ontvangen?",
+        "resend": "Opnieuw verzenden",
+        "verify": "Verifiëren"
+      },
+      "success": {
+        "title": "Bankrekening succesvol toegevoegd",
+        "body": "Uw bankrekening is succesvol toegevoegd en geverifieerd. U kunt nu uitbetalingen rechtstreeks op deze rekening ontvangen.",
+        "done": "Klaar"
+      }
     }
   },
   "admin": {

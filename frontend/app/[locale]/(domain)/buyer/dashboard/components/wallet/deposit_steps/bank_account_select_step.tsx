@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button, DialogHeader, DialogTitle } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface SavedBankAccount {
@@ -37,6 +38,7 @@ export default function BankAccountSelectStep({
   onBack,
   onCancel,
 }: BankAccountSelectStepProps) {
+  const t = useTranslations('buyer.wallet.deposit.bankSelect');
   const [selectedAccount, setSelectedAccount] = useState(
     SAVED_BANK_ACCOUNTS[0]?.id ?? ''
   );
@@ -52,19 +54,19 @@ export default function BankAccountSelectStep({
           >
             <ArrowLeft className="size-5" />
           </button>
-          <DialogTitle>Payment Method</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </div>
       </DialogHeader>
 
       {/* Amount display */}
       <div className="text-center space-y-1">
         <p className="text-2xl font-bold">{formatCurrency(amount)}</p>
-        <p className="text-sm text-muted-foreground">Enter Amount</p>
+        <p className="text-sm text-muted-foreground">{t('enterAmount')}</p>
       </div>
 
       {/* Bank account list */}
       <div className="space-y-3">
-        <p className="text-sm font-medium">Bank Account</p>
+        <p className="text-sm font-medium">{t('bankAccount')}</p>
         <div className="space-y-2">
           {SAVED_BANK_ACCOUNTS.map((account) => (
             <button
@@ -115,10 +117,10 @@ export default function BankAccountSelectStep({
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button disabled={!selectedAccount} onClick={onNext}>
-          Continue
+          {t('continue')}
         </Button>
       </div>
     </div>

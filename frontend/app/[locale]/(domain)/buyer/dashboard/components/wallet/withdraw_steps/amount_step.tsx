@@ -9,6 +9,7 @@ import {
   Separator,
 } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { useTranslations } from 'next-intl';
 
 interface BankAccountInfo {
   name: string;
@@ -34,6 +35,7 @@ export default function AmountStep({
   onCancel,
   onAddAccount,
 }: AmountStepProps) {
+  const t = useTranslations('buyer.wallet.withdraw');
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
 
   const amountNum = parseFloat(withdrawalAmount) || 0;
@@ -48,13 +50,13 @@ export default function AmountStep({
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Withdraw</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       {/* Available Balance Bar */}
       <div className="flex items-center justify-between rounded-lg border px-4 py-3">
         <span className="text-sm text-muted-foreground">
-          Available Balance:
+          {t('availableBalance')}
         </span>
         <span className="text-sm font-medium">
           {formatCurrency(balance)}
@@ -78,23 +80,23 @@ export default function AmountStep({
           />
         </div>
         {!isInsufficientBalance && !isBelowMinimum && (
-          <p className="text-sm text-muted-foreground">Enter Amount</p>
+          <p className="text-sm text-muted-foreground">{t('enterAmount')}</p>
         )}
         {isInsufficientBalance && (
           <p className="text-sm text-destructive font-medium">
-            Insufficient Balance
+            {t('insufficient')}
           </p>
         )}
         {isBelowMinimum && (
           <p className="text-sm text-destructive font-medium">
-            A minimum amount of &#8358;{MINIMUM_WITHDRAWAL} is allowed
+            {t('belowMinimum', { amount: MINIMUM_WITHDRAWAL })}
           </p>
         )}
       </div>
 
       {/* Bank Account */}
       <div className="space-y-3">
-        <p className="text-sm font-medium">Bank Account</p>
+        <p className="text-sm font-medium">{t('bankAccount')}</p>
         <div className="flex items-center justify-between rounded-lg border px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -124,25 +126,25 @@ export default function AmountStep({
           className="p-0 h-auto text-sm font-medium"
           onClick={onAddAccount}
         >
-          Add Bank Account
+          {t('addBankAccount')}
         </Button>
       </div>
 
       {/* Breakdown */}
       {showBreakdown && (
         <div className="space-y-3 rounded-lg border p-4">
-          <p className="text-sm font-semibold">Breakdown</p>
+          <p className="text-sm font-semibold">{t('breakdown')}</p>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Amount</span>
+            <span className="text-muted-foreground">{t('amount')}</span>
             <span>{formatCurrency(amountNum)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Processing Fee</span>
+            <span className="text-muted-foreground">{t('processingFee')}</span>
             <span>{formatCurrency(processingFee)}</span>
           </div>
           <Separator />
           <div className="flex items-center justify-between text-sm font-semibold">
-            <span>Total Amount</span>
+            <span>{t('totalAmount')}</span>
             <span>{formatCurrency(totalAmount)}</span>
           </div>
         </div>
@@ -151,13 +153,13 @@ export default function AmountStep({
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </Button>
         <Button
           disabled={!isAmountValid}
           onClick={() => onNext(amountNum)}
         >
-          Confirm Withdraw
+          {t('confirm')}
         </Button>
       </div>
     </div>

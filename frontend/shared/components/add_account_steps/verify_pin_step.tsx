@@ -10,6 +10,7 @@ import {
   InputOTPSlot,
   Label,
 } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 const MOCK_EMAIL = 'jaydennicholas@gmail.com';
 
@@ -18,20 +19,21 @@ interface VerifyPinStepProps {
 }
 
 export default function VerifyPinStep({ onNext }: VerifyPinStepProps) {
+  const t = useTranslations('wallet.addAccount.verifyPin');
   const [code, setCode] = useState('');
 
   return (
     <div className="p-6 space-y-5">
       <DialogHeader>
-        <DialogTitle>Verify PIN</DialogTitle>
+        <DialogTitle>{t('title')}</DialogTitle>
       </DialogHeader>
 
       <p className="text-sm text-muted-foreground">
-        Enter the 6-digit code sent to {MOCK_EMAIL}
+        {t('prompt', { email: MOCK_EMAIL })}
       </p>
 
       <div className="space-y-2">
-        <Label>Code</Label>
+        <Label>{t('code')}</Label>
         <div className="flex justify-center">
           <InputOTP
             maxLength={6}
@@ -52,19 +54,19 @@ export default function VerifyPinStep({ onNext }: VerifyPinStepProps) {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Didn&apos;t get code?{' '}
+        {t('noCode')}{' '}
         <Button
           type="button"
           variant="link"
           className="p-0 h-auto font-medium text-primary hover:underline"
         >
-          Resend
+          {t('resend')}
         </Button>
       </p>
 
       <div className="flex justify-end pt-2">
         <Button disabled={code.length !== 6} onClick={onNext}>
-          Verify
+          {t('verify')}
         </Button>
       </div>
     </div>

@@ -276,7 +276,191 @@
     "purchases": "My Purchases",
     "wishlist": "Wishlist",
     "invoices": "Invoices",
-    "wallet": "Wallet",
+    "wallet": {
+      "title": "Wallet",
+      "search": "Search",
+      "paymentHistory": "Payment History",
+      "filter": "Filter",
+      "balance": {
+        "available": "Available Balance",
+        "addAccount": "Add Account",
+        "withdraw": "Withdraw",
+        "deposit": "Deposit"
+      },
+      "table": {
+        "referenceId": "Reference ID",
+        "paymentName": "Payment Name",
+        "type": "Type",
+        "method": "Method",
+        "amount": "Amount",
+        "date": "Date",
+        "status": "Status",
+        "selectAll": "Select all",
+        "selectRow": "Select row",
+        "openMenu": "Open menu",
+        "viewDetails": "View details",
+        "downloadReceipt": "Download receipt",
+        "emptyTitle": "No wallet activity yet",
+        "emptyDescription": "Deposit to get started — your wallet transactions will appear here once you make a deposit or withdrawal."
+      },
+      "receipt": {
+        "title": "Receipt",
+        "amount": "Amount",
+        "breakdown": "Breakdown",
+        "winningAmount": "Winning Amount",
+        "processingFee": "Processing Fee",
+        "totalDeposit": "Total Deposit",
+        "total": "Total",
+        "totalDebit": "Total Debit",
+        "others": "Others",
+        "name": "Name",
+        "method": "Method",
+        "paymentId": "Payment ID",
+        "withdrawalId": "Withdrawal ID",
+        "date": "Date",
+        "reference": "Reference",
+        "share": "Share",
+        "download": "Download Receipt"
+      },
+      "deposit": {
+        "title": "Deposit Funds",
+        "amount": "Amount",
+        "minimumInfo": "Minimum deposit: {amount}",
+        "minimumError": "Minimum deposit is {amount}",
+        "method": "Payment Method",
+        "bankTransfer": "Bank Transfer",
+        "card": "Card",
+        "directDebit": {
+          "title": "Direct Debit",
+          "description": "You need to link your bank account to fund your wallet through a direct debit easily. Only add a bank account that is linked to your BVN.",
+          "accountNumber": "Account Number",
+          "accountNumberPlaceholder": "Enter account number",
+          "bankName": "Bank Name",
+          "bankPlaceholder": "Select a bank",
+          "continue": "Continue",
+          "cancel": "Cancel"
+        },
+        "continue": "Continue",
+        "cancel": "Cancel",
+        "confirm": {
+          "title": "Confirm Deposit",
+          "choosePlatform": "Choose your payment platform",
+          "amount": "Amount",
+          "paymentMethod": "Payment Method",
+          "processingFee": "Processing Fee",
+          "totalAmount": "Total Amount",
+          "confirm": "Confirm Deposit",
+          "cancel": "Cancel"
+        },
+        "success": {
+          "title": "Deposit Successful!",
+          "body": "Your wallet has been successfully funded. You can now use your balance for bids and purchases.",
+          "done": "Done"
+        },
+        "failure": {
+          "title": "Deposit Failed",
+          "body": "We couldn't complete your deposit. Please try again or use a different payment method.",
+          "tryAgain": "Try Again"
+        },
+        "bankSelect": {
+          "title": "Payment Method",
+          "enterAmount": "Enter Amount",
+          "bankAccount": "Bank Account",
+          "continue": "Continue",
+          "cancel": "Cancel"
+        },
+        "cardSelect": {
+          "title": "Payment Method",
+          "enterAmount": "Enter Amount",
+          "cards": "Cards",
+          "continue": "Continue",
+          "cancel": "Cancel"
+        },
+        "address": {
+          "title": "Enter Address",
+          "description": "Your account has been added for deposits. Kindly enter your home address to complete setup.",
+          "address": "Residential Address",
+          "addressPlaceholder": "Enter your address",
+          "state": "State",
+          "statePlaceholder": "Select state",
+          "city": "City",
+          "cityPlaceholder": "Select city",
+          "continue": "Continue",
+          "cancel": "Cancel"
+        },
+        "mandate": {
+          "title": "Confirm Process",
+          "description": "Send ₦50 only from your {bank} - {account} to confirm your account linking.",
+          "amount": "Amount",
+          "accountNumber": "Account Number",
+          "accountName": "Account Name",
+          "copied": "Copied to clipboard",
+          "paid": "I Have Paid",
+          "cancel": "Cancel"
+        },
+        "ddSuccess": {
+          "title": "Great Choice!",
+          "body": "We'll confirm your payment and link your account soon.",
+          "done": "Done"
+        },
+        "error": {
+          "title": "Error Occurred",
+          "bvnMismatch": "This bank account name does not match your BVN.",
+          "gotIt": "Got It!"
+        }
+      },
+      "withdraw": {
+        "title": "Withdraw",
+        "availableBalance": "Available Balance:",
+        "enterAmount": "Enter Amount",
+        "insufficient": "Insufficient Balance",
+        "belowMinimum": "A minimum amount of ₦{amount} is allowed",
+        "bankAccount": "Bank Account",
+        "addBankAccount": "Add Bank Account",
+        "breakdown": "Breakdown",
+        "amount": "Amount",
+        "processingFee": "Processing Fee",
+        "totalAmount": "Total Amount",
+        "confirm": "Confirm Withdraw",
+        "cancel": "Cancel",
+        "pin": {
+          "title": "PIN",
+          "prompt": "Enter your 4-digit withdrawal PIN to continue",
+          "invalid": "Invalid PIN. Please try again.",
+          "forgot": "Forgot PIN?",
+          "reset": "Reset",
+          "confirm": "Confirm",
+          "cancel": "Cancel"
+        },
+        "review": {
+          "title": "Withdrawal Request is in Review",
+          "body": "Your withdrawal request has been received and is currently being processed.",
+          "done": "Done"
+        },
+        "forgotPin": {
+          "title": "Forgot PIN",
+          "prompt": "Enter the 6-digit code sent to {email}",
+          "code": "Code",
+          "noCode": "Didn't get code?",
+          "resend": "Resend",
+          "verify": "Verify"
+        },
+        "resetPin": {
+          "title": "Reset PIN",
+          "prompt": "Enter a new 4-digit withdrawal PIN to continue.",
+          "enterNew": "Enter New PIN",
+          "confirmPin": "Confirm PIN",
+          "mismatch": "PINs do not match",
+          "submit": "Reset PIN",
+          "cancel": "Cancel"
+        },
+        "resetSuccess": {
+          "title": "PIN Reset Successful",
+          "body": "You have successfully reset your withdrawal PIN.",
+          "goToWithdraw": "Go to Withdraw"
+        }
+      }
+    },
     "nav": {
       "dashboard": "Dashboard",
       "myBids": "My Bids",
@@ -290,6 +474,48 @@
       "notifications": "Notifications",
       "settings": "Settings",
       "logOut": "Log Out"
+    }
+  },
+  "wallet": {
+    "addAccount": {
+      "title": "Add an Account",
+      "selectBank": "Select Bank Account",
+      "bankPlaceholder": "Select a bank",
+      "accountNumber": "Account Number",
+      "accountNumberPlaceholder": "Enter account number",
+      "invalidAccount": "Invalid bank account or account number",
+      "submit": "Add Account",
+      "cancel": "Cancel",
+      "verifyBank": {
+        "title": "Verify Bank Account",
+        "prompt": "Enter the 6-digit code sent to {email}",
+        "code": "Code",
+        "noCode": "Didn't get code?",
+        "resend": "Resend",
+        "verify": "Verify"
+      },
+      "setupPin": {
+        "title": "PIN",
+        "prompt": "You need to set a withdrawal PIN before making withdrawals.",
+        "enterNew": "Enter New PIN",
+        "confirmPin": "Confirm PIN",
+        "mismatch": "PINs do not match",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      },
+      "verifyPin": {
+        "title": "Verify PIN",
+        "prompt": "Enter the 6-digit code sent to {email}",
+        "code": "Code",
+        "noCode": "Didn't get code?",
+        "resend": "Resend",
+        "verify": "Verify"
+      },
+      "success": {
+        "title": "Bank Account Added Successfully",
+        "body": "Your bank account has been successfully added and verified. You can now receive payouts directly to this account.",
+        "done": "Done"
+      }
     }
   },
   "admin": {

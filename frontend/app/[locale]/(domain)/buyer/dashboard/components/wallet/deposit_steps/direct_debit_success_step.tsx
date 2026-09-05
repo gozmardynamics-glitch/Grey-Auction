@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/shared/components/common';
+import { useTranslations } from 'next-intl';
 
 interface DirectDebitSuccessStepProps {
   onDone: () => void;
@@ -9,6 +10,8 @@ interface DirectDebitSuccessStepProps {
 export default function DirectDebitSuccessStep({
   onDone,
 }: DirectDebitSuccessStepProps) {
+  const t = useTranslations('buyer.wallet.deposit.ddSuccess');
+
   return (
     <div className="p-6 flex flex-col items-center text-center space-y-4">
       {/* Green checkmark with confetti */}
@@ -68,14 +71,14 @@ export default function DirectDebitSuccessStep({
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Great Choice!</h3>
+        <h3 className="text-lg font-semibold">{t('title')}</h3>
         <p className="text-sm text-muted-foreground">
-          We&apos;ll confirm your payment and link your account soon.
+          {t('body')}
         </p>
       </div>
 
       <div className="flex justify-end w-full pt-2">
-        <Button onClick={onDone}>Done</Button>
+        <Button onClick={onDone}>{t('done')}</Button>
       </div>
     </div>
   );
