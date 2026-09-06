@@ -12,6 +12,8 @@ import { CurrentUser } from './decorators/current-user.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // G49: per-IP throttle slows mass account creation.
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered', type: AuthApiResponseDto })
@@ -20,6 +22,8 @@ export class AuthController {
     return { success: true, message: 'Registration successful', data: result };
   }
 
+  // G49: per-IP throttle slows credential stuffing.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email and password' })
@@ -29,6 +33,8 @@ export class AuthController {
     return { success: true, message: 'Login successful', data: result };
   }
 
+  // G49: per-IP throttle on token-exchange endpoint.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('oauth/google')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with Google OAuth (server-verified ID token)' })
@@ -38,6 +44,8 @@ export class AuthController {
     return { success: true, message: 'Google login successful', data: result };
   }
 
+  // G49: tight throttle — this endpoint sends email (flooding vector), mirrors send-otp (C2).
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request password reset' })
@@ -46,6 +54,8 @@ export class AuthController {
     return { success: true, message: 'If email exists, reset link sent', data: result };
   }
 
+  // G49: throttle token-guessing on password reset.
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password with token' })
