@@ -80,7 +80,20 @@
     "close": "Fermer",
     "yes": "Oui",
     "no": "Non",
-    "viewAll": "Tout voir"
+    "viewAll": "Tout voir",
+    "dataTable": {
+      "all": "Tout",
+      "active": "Actif",
+      "pending": "En attente",
+      "completed": "Terminé",
+      "rejected": "Rejeté",
+      "flagged": "Signalé",
+      "inactive": "Inactif",
+      "suspended": "Suspendu",
+      "endingSoon": "Bientôt clôturé",
+      "successful": "Réussi",
+      "failed": "Échoué"
+    }
   },
   "auth": {
     "welcomeBack": "Content de vous revoir !",

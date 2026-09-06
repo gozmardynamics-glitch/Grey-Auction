@@ -80,7 +80,20 @@
     "close": "Close",
     "yes": "Yes",
     "no": "No",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "dataTable": {
+      "all": "All",
+      "active": "Active",
+      "pending": "Pending",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "flagged": "Flagged",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "endingSoon": "Ending Soon",
+      "successful": "Successful",
+      "failed": "Failed"
+    }
   },
   "auth": {
     "welcomeBack": "Welcome Back!",

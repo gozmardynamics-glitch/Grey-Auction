@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useMemo, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   flexRender,
   getCoreRowModel,
@@ -154,6 +155,13 @@ function DataTable<TData, TValue>({
   className,
   mobileCards,
 }: DataTableProps<TData, TValue>) {
+  const t = useTranslations('common.dataTable');
+  // Tab labels come from catalog via model-as-keys; fall back to the literal label
+  // when a consumer passes a value the catalog doesn't cover.
+  const tabLabel = (label: string) => {
+    const key = label.replace(/\s+/g, '');
+    return t.has(key) ? t(key) : label;
+  };
   const isServerSide = !!onPaginationChange;
   const showToolbar = showToolbarProp ?? !!(tabFilters || title);
 
@@ -375,7 +383,7 @@ function DataTable<TData, TValue>({
                     variant="line"
                     className="cursor-pointer"
                   >
-                    {tab.label}
+                    {tabLabel(tab.label)}
                   </TabsTrigger>
                 ))}
               </TabsList>

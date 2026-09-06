@@ -80,7 +80,20 @@
     "close": "Sluiten",
     "yes": "Ja",
     "no": "Nee",
-    "viewAll": "Alles bekijken"
+    "viewAll": "Alles bekijken",
+    "dataTable": {
+      "all": "Alles",
+      "active": "Actief",
+      "pending": "In behandeling",
+      "completed": "Voltooid",
+      "rejected": "Afgewezen",
+      "flagged": "Gemarkeerd",
+      "inactive": "Inactief",
+      "suspended": "Opgeschort",
+      "endingSoon": "Binnenkort aflopend",
+      "successful": "Geslaagd",
+      "failed": "Mislukt"
+    }
   },
   "auth": {
     "welcomeBack": "Welkom terug!",
