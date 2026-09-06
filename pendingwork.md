@@ -135,8 +135,8 @@
 | # | Feature | Troostwijk | GreyAuction | Gap | Priority |
 |---|---------|-----------|-------------|-----|----------|
 | G47 | Production DB migrations on live server | ✅ | ⚠️ | `synchronize: true` on deployed backend; migrations not yet run on prod DB | 🔴 HIGH |
-| G48 | Full CI/CD pipeline (GitHub Actions: lint → test → build → deploy) | ✅ | ❌ | No CI/CD; manual pushes and Coolify redeploys | 🔴 HIGH |
-| G49 | Rate limiting on auth endpoints | ✅ | ❌ | No throttler; brute-force protection missing | 🟡 MEDIUM |
+| G48 | Full CI/CD pipeline (GitHub Actions: lint → test → build → deploy) | ✅ | 🔵 | Workflow exists (.github/workflows/ci.yml: BE tsc/lint/build/jest+coverage w/ Postgres svc, FE tsc/lint/build/vitest, LHCI); FE prod build validated backend-less 2026-09-05 (data pages are dynamic, only fonts need network). Enable Actions in repo settings to activate redeploys | 🔴 HIGH |
+| G49 | Rate limiting on auth endpoints | ✅ | 🔵 | Global 100/min + per-IP overrides: login 10/min, register 5/min, oauth 10/min, forgot-password 3/min, reset 5/min, send-otp 3/min, verify-otp 5/min; contract spec enforces tighter-than-global (jest 300/300)
 | G50 | Logging & monitoring (Winston/Pino, Sentry, uptime) | ✅ | ❌ | No structured logging; no error tracking; no uptime monitoring | 🟡 MEDIUM |
 | G51 | Automated database backups (S3-compatible) | ✅ | ❌ | Coolify supports this but not configured for greyauction DB | 🟡 MEDIUM |
 | G52 | End-to-end tests (Playwright smoke tests on all pages) | ❌ | ❌ | Only unit/component tests exist; no E2E or API integration tests | 🟡 MEDIUM |
@@ -1072,12 +1072,12 @@ frontend/
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| D1 | Remove `synchronize: true` from prod database config | 🔴 | Must run migrations first; then switch to `false` |
+| D1 | Remove `synchronize: true` from prod database config | 🔵 | PREP DONE: validated 5-migration chain + `docs/DB_MIGRATIONS_RUNBOOK.md` (Path B stamp procedure for the bootstrap-created prod DB, backup/verify/rollback). Remaining: operator executes the runbook on prod (needs Coolify/SSH access, item 3 of the needs list)
 | D2 | Auth.js 500 error on production frontend | 🔴 | Env vars not baked into cached Docker build; need new commit + rebuild |
 | D3 | Coolify nixpacks build cache skips env var changes | 🔴 | Workaround: always push a code change to force rebuild |
 | D4 | No git hooks (pre-commit lint, pre-push test) | 🟡 | Add Husky + lint-staged |
 | D5 | Empty `Auction insight/` directory at project root | ⚪ | Remove or populate |
-| D6 | `.env` files committed (not in .gitignore) | 🟡 | Add `.env` to .gitignore, create `.env.example` templates |
+| D6 | `.env` files committed (not in .gitignore) | ✅ | Verified 2026-09-05: no .env tracked, `.env` in .gitignore, `backend/.env.example` present |
 | D7 | No input validation on several forms | 🟡 | Add Zod schemas to remaining forms |
 | D8 | No API versioning strategy | ⚪ | Prefix endpoints with `/api/v1/` |
 | D9 | No rate limiting on API endpoints | 🟡 | `@nestjs/throttler` |
