@@ -139,7 +139,7 @@
 | G49 | Rate limiting on auth endpoints | ✅ | 🔵 | Global 100/min + per-IP overrides: login 10/min, register 5/min, oauth 10/min, forgot-password 3/min, reset 5/min, send-otp 3/min, verify-otp 5/min; contract spec enforces tighter-than-global (jest 300/300)
 | G50 | Logging & monitoring (Winston/Pino, Sentry, uptime) | ✅ | ❌ | No structured logging; no error tracking; no uptime monitoring | 🟡 MEDIUM |
 | G51 | Automated database backups (S3-compatible) | ✅ | ❌ | Coolify supports this but not configured for greyauction DB | 🟡 MEDIUM |
-| G52 | End-to-end tests (Playwright smoke tests on all pages) | ❌ | ❌ | Only unit/component tests exist; no E2E or API integration tests | 🟡 MEDIUM |
+| G52 | End-to-end tests (Playwright smoke tests on all pages) | ✅ | 🔵 | 55/55 effective e2e suite in `frontend/e2e/` (buyer flows, admin tables, a11y, AI console); expand to full API/supertest coverage later | 🟡 MEDIUM |
 | G53 | Production Docker build working (nixpacks cache issue resolved) | ✅ | ⚠️ | Coolify Docker build succeeds but env vars not baked; Auth.js 500 on prod | 🔴 HIGH |
 | G54 | PWA / mobile app readiness | ❌ | ❌ | No service worker; no offline support; no PWA manifest | ⚪ LOW |
 

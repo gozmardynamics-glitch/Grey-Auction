@@ -1,8 +1,8 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: end of wave-3 session (2026-09-05). Head `6ce225c` —
-**45 commits ahead of `origin/master`, NOT pushed** (push needs explicit user go-ahead).
-Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest 296/296 (43 suites) · Playwright 55/55 effective (2 ai-admin failures from a stale admin storageState, re-verified 5/5 after re-mint). Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
+_Checkpoint: end of session day 2 (2026-09-05, evening). Head `7c6cb75` —
+**everything PUSHED**: `origin/master` = `origin/main` = `7c6cb75` (main is a manual mirror — re-sync with `git push origin master:main` after future pushes).
+Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest **300/300 (44 suites)** · Playwright 55/55 effective. Catalogs **1545 keys ×3 locales**, strict parity. Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
 
 ## Repo & environment
 
@@ -33,7 +33,17 @@ Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest 296/296 (43 suites) �
   via 1.1.1.1/8.8.8.8 (interception), so `git push` fails with "Could not resolve/connect". Real
   GitHub IPs ARE reachable with valid TLS. Workaround (no admin needed, git ≥2.44): pin the IP —
   `git -c http.curloptResolve="github.com:443:140.82.112.3" push origin master`
-  (also works: 20.205.243.166). This is why commits piled up unpushed across sessions.
+  (also works: 20.205.243.166; connections are ~50% flaky — retry the loop, rotate IPs). This is
+  why commits piled up unpushed across sessions.
+- **TypeORM phantom drift on numeric defaults** — a `migration:generate` probe after a clean run
+  can emit `ALTER ... SET DEFAULT '7.5'` (quoted) forever, because Postgres stores quoted vs
+  unquoted numeric defaults differently than TypeORM normalizes. Fix: hand-edit the migration to
+  unquoted literals (`SET DEFAULT 7.5`) — done in `SyncEntities1789200000000`.
+- **Migration timestamps are an ordering contract** — hand-authored chain migrations carry future
+  timestamps (`1789050000000`, `1789150000000`); new work must sort ABOVE `1789200000000` or
+  re-stamp, else a generated migration slots mid-chain and fails (42P07 already-exists).
+- **Migrations exist (pendingwork said otherwise)** — chain: Baseline → AddOrders → U5FeeRules →
+  CreateSettings → SyncEntities. Full details: `docs/DB_MIGRATIONS_RUNBOOK.md`.
 
 ## Test accounts
 
@@ -50,7 +60,7 @@ cd frontend
 npx tsc --noEmit        # clean
 npx vitest run          # 80/80 (17 files)
 npx playwright test     # 55/55 effective (see stale-auth gotcha above)
-cd ../backend && npx jest   # 296/296 (43 suites)
+cd ../backend && npx jest   # 300/300 (44 suites)
 ```
 
 Playwright notes:
@@ -61,6 +71,12 @@ Playwright notes:
 
 ## What was delivered (this session, newest first)
 
+- `7c6cb75` docs: trackers updated (G48 validation, G49 rollout, D1 prep, D6 closure)
+- `3ecaef1` feat(db): SyncEntities migration + `docs/DB_MIGRATIONS_RUNBOOK.md` (D1 prep)
+- `c045a6d` feat(security): tight rate limits on anonymous auth endpoints (G49)
+- `4fa1ff7` i18n(common): DataTable tab-filter labels (row-20 residue)
+- `b337bf2` docs: GitHub DNS-poisoning push workaround (see gotchas)
+- `93af2b6` docs: wave-3 session close-out (checkpoint, audit row 20, checklist)
 - `6ce225c` i18n(admin): admin list-table chrome across all five domains (auctions/bids/buyers/sellers/tickets;
   column-hook factories, detail modals incl. approve/reject confirmations, spec dialogs model-as-keys;
   catalogs 1534 keys ×3 locales)
@@ -103,25 +119,24 @@ Playwright notes:
 
 ## Continue tomorrow — backlog in priority order
 
-1. **Deep dashboard detail i18n** (the layer below the dashboards' home surfaces). Targets, biggest
-   first: buyer wallet flows (deposit/withdraw modals + their step components, PIN flows, receipt),
-   buyer settings tabs (profile/security/notifications/payment), seller settings modules
-   (my-profile, store, fees-payouts, plan-packages…), admin settings modules (fees.tsx is the
-   heaviest file in the domain, general, preferences, roles…), admin list-table chrome
-   (auctions/bids/buyers/sellers/tickets headers + filter buttons). Reuse patterns 1–4 above;
-   add new namespaces per area (e.g. `buyer.wallet`, `admin.fees`) rather than growing flat ones.
-2. **EmptyState sweep** — shared `EmptyState` is adopted in admin transaction tabs + seller auction
-   modal; remaining list surfaces (buyer my-bids/purchases/wishlist tables, seller listings/sales,
-   admin tables) still use ad-hoc or DataTable-default empty notes. Standardize onto the shared
-   component; DataTable already accepts `emptyTitle`/`emptyDescription`/`emptyIcon`.
-3. **Push authorization** — 28 local commits awaiting the user's explicit go-ahead (`git push`).
-4. **OPay/Interswitch sandbox verification** — code-complete + 100% unit-covered; blocked on real
-   `OPAY_*` / `INTERSWITCH_*` vendor keys (user action). Webhooks fail closed until then.
-5. **Full response-DTO pass** (nice-to-have) — known PII leaks fixed (participants, room creator);
-   a systematic DTO layer would prevent the next one.
-6. **Listing fetch structural step** — server-side filtering + backend-served arm-tab counts
-   (replaces the client-side bounded aggregate from item 4 of the old backlog).
-7. **Physical U5 test runbook** (`docs/PHYSICAL_TEST_U5.md`) — on-device pass when the team is ready.
+1. **⏸ OPay/Interswitch sandbox verification** — code-complete + unit-covered; blocked ONLY on the
+   user providing sandbox keys (`OPAY_*`, `INTERSWITCH_*`, webhook secrets). On arrival: execute
+   Phase 8 of `docs/PHYSICAL_TEST_U5.md`, closes audit row 23.
+2. **D1 prod cutover — migrations** — PREP DONE: validated 5-migration chain committed,
+   zero-drift verified; follow `docs/DB_MIGRATIONS_RUNBOOK.md` **Path B** (stamp 4 historical
+   migrations on the bootstrap-created prod DB, then deploy so `SyncEntities` applies on boot).
+   Needs: user confirms the auto-deploy picked up `7c6cb75`, ideally a Coolify token/SSH so the
+   agent can execute + verify. Backup → stamp → deploy → verify per runbook.
+3. **Verify prod redeploy health** — Auth.js 500 (D2) should be gone after the `7c6cb75` deploy
+   (D3's force-rebuild). Ask the user; fix-forward if it persists (env vars in Coolify + rebuild).
+4. **Enable GitHub Actions** (user click) — workflow `.github/workflows/ci.yml` is committed and
+   FE-build-validated backend-less; first push after enabling proves the pipeline.
+5. **Physical U5 test runbook** (`docs/PHYSICAL_TEST_U5.md`) — Phases 1–7 on-device pass with the
+   user (~1–2 h, agent guides + logs results); Phase 8 needs item 1.
+6. **i18n leftovers** (low priority): status-badge enum values are deliberately raw (DB data);
+   mock-data values remain. Only revisit if the user wants enum values localized too.
+7. **Bigger roadmap gaps** (from `pendingwork.md`, pick per user priority): G51 automated DB
+   backups, G50 logging/Sentry, G33 newsletter, G34 SEO sitemap, G42 fraud detection.
 
 ## Feature state (what works today)
 
@@ -134,8 +149,9 @@ Playwright notes:
 - **Payments (U5 flow)**: Paystack live; escrow auto-hold; server-authoritative amount checks
   (webhook + reconciliation, fail-closed); fee chain product→seller→buyer→category→default.
   Don't touch the two U5 test lots (category `'art'`, direct_sale) or the two draft lots.
-- **i18n**: en/fr/nl with website chrome, all three dashboard navs, and all three dashboard home
-  surfaces fully translated (see patterns above).
+- **i18n**: en/fr/nl, 1545 keys ×3 locales — website chrome, all three dashboard navs + home
+  surfaces, buyer wallet + settings, seller settings, admin settings, admin list-table chrome
+  (auctions/bids/bids/buyers/sellers/tickets), shared tab-filter labels (see patterns above).
 - **Wallet, bidding rooms (invites), tickets, chat, exchange rates, subscription plans, admin
   console**: built.
 - **AI**: fully built but disabled by design — no provider keys, features `isEnabled=false`.
@@ -150,3 +166,8 @@ Playwright notes:
 - U5 invariants: don't break fee field-claiming, escrow auto-hold, or `POST /orders/buy-now/:productId`.
 - Locale catalogs: edit via file tools or node only (never PS5.1 re-save); keep en/fr/nl in lockstep;
   restart the dev server after catalog edits.
+- After pushing `master`, re-sync the `main` mirror: `git push origin master:main`
+  (created 2026-09-05 at user request; both at `7c6cb75`).
+- Schema changes: edit entity → `npm run migration:generate -- src/database/migrations/<Name>` →
+  review SQL → commit. **Never** set `DB_SYNCHRONIZE=true` in production (bootstrap flag retired
+  at D1 cutover); prod applies pending migrations on every boot (`migrationsRun: true`).
