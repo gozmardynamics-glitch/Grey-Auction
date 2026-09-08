@@ -138,6 +138,49 @@ describe('AuthService', () => {
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
       expect(bcrypt.compare).not.toHaveBeenCalled();
     });
+
+    // Regression (2026-09-08): sanitizeUser used entity-spread + the entity's
+    // @Exclude metadata does not survive the conversion to a plain object, so
+    // pending OTPs were serialized on the wire in every /auth/* response.
+    describe('secret fields never reach the wire (OTP leak regression)', () => {
+      const withOtp = () => ({
+        ...mockUser,
+        otpCode: '482913',
+        otpExpiry: new Date(Date.now() + 600_000),
+      });
+
+      it('login response contains no otpCode/otpExpiry/passwordHash', async () => {
+        (userRepository.findOne as jest.Mock).mockResolvedValue(withOtp());
+        jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+
+        const result = await service.login(loginDto);
+
+        expect((result.user as any).otpCode).toBeUndefined();
+        expect((result.user as any).otpExpiry).toBeUndefined();
+        expect((result.user as any).passwordHash).toBeUndefined();
+        expect(JSON.stringify(result.user)).not.toContain('482913');
+        // Public fields must survive
+        expect(result.user.id).toBe('user-1');
+        expect(result.user.email).toBe('test@example.com');
+      });
+
+      it('register response contains no otpCode/passwordHash', async () => {
+        (userRepository.findOne as jest.Mock).mockResolvedValue(null);
+        (userRepository.create as jest.Mock).mockImplementation((x) => ({ ...mockUser, ...x, otpCode: '112233' }));
+        (userRepository.save as jest.Mock).mockImplementation(async (x) => x);
+
+        const result = await service.register({
+          email: 'new@example.com',
+          password: 'password123',
+          name: 'New User',
+        });
+
+        expect((result.user as any).otpCode).toBeUndefined();
+        expect((result.user as any).otpExpiry).toBeUndefined();
+        expect((result.user as any).passwordHash).toBeUndefined();
+        expect(JSON.stringify(result.user)).not.toContain('112233');
+      });
+    });
   });
 
   describe('loginWithGoogle', () => {

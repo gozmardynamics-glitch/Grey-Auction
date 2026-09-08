@@ -219,8 +219,27 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
+  /**
+   * Explicit public projection for auth responses. Destructuring-with-rest
+   * ({ passwordHash, ...rest }) was replaced here: spreading an entity loses
+   * its class prototype, so the @Exclude({ toPlainOnly }) metadata on
+   * passwordHash/otpCode/otpExpiry no longer applied and PENDING OTP CODES
+   * were serialized on the wire in every /auth/* response (2026-09-08
+   * regression found during the G-wave verification).
+   */
   private sanitizeUser(user: User) {
-    const { passwordHash, ...result } = user;
-    return result;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      isActive: user.isActive,
+      phone: user.phone ?? null,
+      address: user.address ?? null,
+      clerkId: user.clerkId ?? null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }
