@@ -51,6 +51,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         err?.stack,
       );
       message = 'Internal server error';
+      // G50 — forward unhandled 5xx to an ops webhook (Slack/Discord-style)
+      // when ERROR_WEBHOOK_URL is configured. Best-effort, never blocking.
+      void this.reportError(requestId, req, err, exception);
     }
 
     res.setHeader('x-request-id', requestId);
@@ -61,5 +64,41 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       path: req.url,
     });
+  }
+
+  private async reportError(
+    requestId: string,
+    req: Request,
+    err: Error | undefined,
+    exception: unknown,
+  ): Promise<void> {
+    try {
+      const webhook = process.env.ERROR_WEBHOOK_URL;
+      if (!webhook) return;
+      await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text:
+            '[GreyAuction] ' +
+            (err?.message ?? String(exception)) +
+            ' — ' +
+            req.method +
+            ' ' +
+            req.url +
+            ' (request ' +
+            requestId +
+            ')',
+          requestId,
+          method: req.method,
+          url: req.url,
+          error: err?.message ?? String(exception),
+          stack: err?.stack,
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      /* alerting must never mask the original error */
+    }
   }
 }

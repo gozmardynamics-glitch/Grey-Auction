@@ -9,11 +9,17 @@ import { json } from 'express';
 import { resolve } from 'path';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { StructuredLoggerService } from './common/logger/structured-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true, // Required for webhook signature verification (payment gateways)
+    // G50 — silence the default console logger; the app-wide structured
+    // logger below owns all output (JSON when LOG_FORMAT=json / prod).
+    bufferLogs: true,
   });
+  app.useLogger(app.get(StructuredLoggerService));
+  app.flushLogs();
 
   app.use(helmet());
   app.use(compression());
