@@ -1,41 +1,28 @@
 import type { MetadataRoute } from 'next';
 import { getAuctions } from '@/lib/server/data';
-import type { Auction } from '@/app/[locale]/(website)/models';
+import {
+  buildAuctionSitemapEntries,
+  buildStaticSitemapEntries,
+} from '@/lib/sitemap-routes';
+
+/**
+ * G34 — dynamic sitemap.xml.
+ *
+ * Every public page is emitted once per locale (next-intl localePrefix
+ * "always" serves pages under /{en,fr,nl}/...) with hreflang alternates
+ * declared on each entry, plus live auction detail pages from the API.
+ * getAuctions() degrades to an empty list on API failure, so this route
+ * always returns valid XML.
+ */
+export const revalidate = 3600;
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://greyauction.com';
-
-const staticPages: { path: string; priority: number; changefreq: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
-  { path: '/en', priority: 1, changefreq: 'daily' },
-  { path: '/en/auctions', priority: 0.9, changefreq: 'hourly' },
-  { path: '/en/blog', priority: 0.7, changefreq: 'weekly' },
-  { path: '/en/career', priority: 0.5, changefreq: 'monthly' },
-  { path: '/en/about-us', priority: 0.6, changefreq: 'monthly' },
-  { path: '/en/contact', priority: 0.6, changefreq: 'monthly' },
-  { path: '/en/faq', priority: 0.6, changefreq: 'monthly' },
-];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const auctions = await getAuctions();
 
-  const staticEntries: MetadataRoute.Sitemap = staticPages.map((page) => ({
-    url: `${BASE_URL}${page.path}`,
-    lastModified: new Date(),
-    changeFrequency: page.changefreq,
-    priority: page.priority,
-  }));
-
-  const auctionEntries: MetadataRoute.Sitemap = (auctions || [])
-    .filter((auction: Auction) => auction?.slug)
-    .map((auction: Auction) => ({
-    url: `${BASE_URL}/en/auctions/${auction.slug}`,
-    lastModified: auction.endTimeIso
-      ? new Date(auction.endTimeIso)
-      : auction.endTime
-        ? new Date(auction.endTime)
-        : new Date(),
-    changeFrequency: 'hourly' as const,
-    priority: 0.8,
-  }));
-
-  return [...staticEntries, ...auctionEntries];
+  return [
+    ...buildStaticSitemapEntries(BASE_URL),
+    ...buildAuctionSitemapEntries(BASE_URL, auctions),
+  ];
 }

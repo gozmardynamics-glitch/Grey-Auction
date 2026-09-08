@@ -129,8 +129,10 @@ export default auth(async (req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skip Next.js internals and static files. G34: xml/txt must be here —
+    // without them /sitemap.xml and /robots.txt are treated as locale-less
+    // page routes, redirected to /en/sitemap.xml, and 404.
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|xml|txt)).*)',
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
