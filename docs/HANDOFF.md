@@ -1,8 +1,8 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: end of session day 2 (2026-09-05, evening). Head `7c6cb75` —
-**everything PUSHED**: `origin/master` = `origin/main` = `7c6cb75` (main is a manual mirror — re-sync with `git push origin master:main` after future pushes).
-Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest **300/300 (44 suites)** · Playwright 55/55 effective. Catalogs **1545 keys ×3 locales**, strict parity. Full audit ledger: `docs/PRODUCTION_AUDIT.md`._
+_Checkpoint: end of session day 3 (2026-09-08, G-roadmap wave: G33 newsletter wired · G34 SEO fixed+extended · G50 structured logging · G51 DB backups · +P1 OTP-leak security fix). Head see git log —
+**everything PUSHED**: `origin/master` = `origin/main` (main is a manual mirror — re-sync with `git push origin master:main` after future pushes).
+Suites: FE/BE tsc clean · vitest **84/84 (18 files)** · jest **310/310 (46 suites)** · Playwright **55/55 (0 flakes)**. Catalogs **1552 keys ×3 locales**, strict parity. Full audit ledger: `docs` trackers._
 
 ## Repo & environment
 
@@ -58,10 +58,14 @@ Suites: FE/BE tsc clean · vitest 80/80 (17 files) · jest **300/300 (44 suites)
 ```bash
 cd frontend
 npx tsc --noEmit        # clean
-npx vitest run          # 80/80 (17 files)
-npx playwright test     # 55/55 effective (see stale-auth gotcha above)
-cd ../backend && npx jest   # 300/300 (44 suites)
+npx vitest run          # 84/84 (18 files)
+npx playwright test     # 55/55 (see stale-auth gotcha above)
+cd ../backend && npx jest   # 310/310 (46 suites)
 ```
+
+(2026-09-08: also verified live — /robots.txt + /sitemap.xml serve with all-locale
+URLs; subscribe→confirm round-trip OK; admin backup endpoints guarded; login wire
+body free of otpCode.)
 
 Playwright notes:
 - Cookie-consent banner is pre-accepted via `frontend/playwright/.auth/public.json`.
@@ -70,6 +74,59 @@ Playwright notes:
 - `docs/QA_STATUS.md` has the full suite map.
 
 ## What was delivered (this session, newest first)
+
+### Day 3 (2026-09-08) — G-roadmap wave + security fix (see git log for hashes)
+
+- **SECURITY (P1, found & fixed during verification):** `AuthService.sanitizeUser`
+  spread the entity into a PLAIN object — the `@Exclude` metadata on
+  `otpCode/otpExpiry` does not survive that, so **live pending OTP codes were on
+  the wire in every `/auth/*` response** (login/register/oauth/reset/… — 8 call
+  sites). Rewritten as an explicit whitelist projection + 2 regression specs
+  (auth suite 27→29). Wire-verified: `otpCode` gone from raw login body.
+  `passwordHash` was always safe (rest-destructured).
+- **G34 SEO:** `app/sitemap.ts` + `app/robots.ts` EXISTED but were unreachable —
+  the proxy matcher's static-file exclusion missed `xml`/`txt`, so the intl
+  middleware treated `/sitemap.xml` as a locale-less page → redirect → 404.
+  Matcher fixed. Sitemap rewritten: all 3 locales + hreflang alternates +
+  live auction slugs (21 slugs locally; was EN-only), pure logic in
+  `lib/sitemap-routes.ts` + 4 vitest specs. Robots now disallows dashboards/
+  auth/api (bare + `/*/` locale-prefixed) and declares the sitemap.
+- **G33 Newsletter:** footer `NewsletterForm` was a localStorage MOCK — now
+  POSTs `/api/subscriptions` (backend double opt-in was already built), all
+  strings via `footer.newsletter.*` ×3 locales (catalogs 1545→1552, parity
+  re-validated via node key-walk). E2E-verified round-trip: subscribe→pending→
+  emailed token→`/subscriptions/confirm`→confirmed→probe row cleaned.
+- **G50 Logging:** `StructuredLoggerService` (Nest LoggerService) registered via
+  `app.useLogger` + `bufferLogs`. `LOG_FORMAT=json` or prod → single-line JSON
+  `{ts,level,ctx,msg,requestId}`; dev stays human. requestId correlation via new
+  `AsyncLocalStorage` store opened in the existing `RequestIdMiddleware` — zero
+  call-site plumbing. AllExceptionsFilter 5xx now also POSTs to
+  `ERROR_WEBHOOK_URL` (Slack/Discord-shaped, 5s timeout, never-throws). Sentry
+  SDK intentionally NOT installed (needs DSN — env-gated webhook covers
+  alerting; SDK is a small follow-up). 4 new specs.
+- **G51 Backups:** `DatabaseBackupService` — daily 02:00 UTC
+  `pg_dump → gzip → S3 (PutObject, AES256)` via the existing S3_* storage-driver
+  config, `db-backups/<ISO>.sql.gz`, tmp retention `DB_BACKUP_KEEP_DAYS=14`,
+  failure alert `DB_BACKUP_ALERT_WEBHOOK_URL`, boot warning on half-config.
+  HARD-GATED: inert unless `DB_BACKUP_ENABLED=true` AND S3 creds (4 gating
+  specs). SUPER_ADMIN endpoints: `POST /api/admin/backups/run`,
+  `GET /api/admin/backups/config` (verified: anon 401, disabled-skip 200).
+  Dockerfile runtime stage adds `postgresql16-client`. Runbook:
+  `docs/DB_BACKUPS_RUNBOOK.md` — arm by setting env in Coolify (see Pending).
+
+### Day 3 new gotchas
+- **Metadata routes vs proxy matcher:** any new `/x.xml`/`/x.txt`-style route is
+  invisible while the intl middleware claims it — if you add such a route, it
+  must be in `frontend/proxy.ts` config.matcher exclusions (now includes xml/txt).
+- **Entity `@Exclude` lies for plain objects:** ClassSerializerInterceptor only
+  acts on real class instances. Any `{...entity}` / destructure-spread in a
+  service return bypasses EVERY `@Exclude`. Auth responses now use explicit
+  whitelists — copy that pattern for new user projections.
+- `vitest` and `playwright` running concurrently produce TIMEOUT flakes in
+  jsdom-heavy suites (exchange-rates panel failed at 11s under load, green
+  alone) — run suites sequentially when both are due.
+
+### Day 2 (2026-09-05) — carried from previous checkpoint
 
 - `7c6cb75` docs: trackers updated (G48 validation, G49 rollout, D1 prep, D6 closure)
 - `3ecaef1` feat(db): SyncEntities migration + `docs/DB_MIGRATIONS_RUNBOOK.md` (D1 prep)
@@ -135,8 +192,19 @@ Playwright notes:
    user (~1–2 h, agent guides + logs results); Phase 8 needs item 1.
 6. **i18n leftovers** (low priority): status-badge enum values are deliberately raw (DB data);
    mock-data values remain. Only revisit if the user wants enum values localized too.
-7. **Bigger roadmap gaps** (from `pendingwork.md`, pick per user priority): G51 automated DB
-   backups, G50 logging/Sentry, G33 newsletter, G34 SEO sitemap, G42 fraud detection.
+7. **Day-3 follow-ups** (G-wave leftovers):
+   - **Arm G51 backups in prod** (⏸ user, 5 min): set `DB_BACKUP_ENABLED=true` +
+     `S3_ACCESS_KEY/SECRET/BUCKET` (and optional alert webhook) in Coolify per
+     `docs/DB_BACKUPS_RUNBOOK.md`; then `POST /api/admin/backups/run` to prove the path.
+   - **G50 Sentry SDK** — structured JSON logging shipped; @sentry/node is a small add
+     once the user chooses a project/DSN (or accepts webhook-only alerting).
+   - **G33 Brevo sync** — set `BREVO_CONTACT_LIST_ID` alongside `BREVO_API_KEY` to
+     mirror confirmed subscribers into the marketing list.
+   - **G42 fraud detection** — the only day-3 gap still un-started (rules-based
+     velocity/pattern checks; quick design consult advised before building).
+   - **G34 optional polish** — Organization/WebSite JSON-LD on home, dynamic OG images.
+   - Day-3 delivered: G33 (footer wired), G34 (fixed + all-locale), G50 (logging),
+     G51 (backups) + the sanitizeUser OTP-leak P1 security fix.
 
 ## Feature state (what works today)
 
@@ -149,11 +217,18 @@ Playwright notes:
 - **Payments (U5 flow)**: Paystack live; escrow auto-hold; server-authoritative amount checks
   (webhook + reconciliation, fail-closed); fee chain product→seller→buyer→category→default.
   Don't touch the two U5 test lots (category `'art'`, direct_sale) or the two draft lots.
-- **i18n**: en/fr/nl, 1545 keys ×3 locales — website chrome, all three dashboard navs + home
+- **i18n**: en/fr/nl, 1552 keys ×3 locales — website chrome (incl. footer newsletter), all three dashboard navs + home
   surfaces, buyer wallet + settings, seller settings, admin settings, admin list-table chrome
   (auctions/bids/bids/buyers/sellers/tickets), shared tab-filter labels (see patterns above).
 - **Wallet, bidding rooms (invites), tickets, chat, exchange rates, subscription plans, admin
   console**: built.
+- **Newsletter (G33)**: footer + `/subscribe` → real double opt-in (`/api/subscriptions`,
+  `/subscribe/confirm?token=`), `email_subscriptions` table, Brevo sync env-gated.
+- **SEO (G34)**: `/robots.txt` + `/sitemap.xml` (3 locales, hreflang, live lot URLs),
+  AuctionSchema JSON-LD + per-page metadata on detail pages.
+- **Ops**: `LOG_FORMAT=json` structured logs with requestId correlation,
+  `ERROR_WEBHOOK_URL` 5xx alerts, `/api/health`; DB backups env-gated — arm via
+  `docs/DB_BACKUPS_RUNBOOK.md`.
 - **AI**: fully built but disabled by design — no provider keys, features `isEnabled=false`.
   Enabling = add a key in Admin → AI and toggle features. No code needed.
 

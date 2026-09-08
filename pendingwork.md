@@ -1,7 +1,7 @@
 # GreyAuction Platform — Pending Work & Implementation Roadmap
 
 > **Living document — single source of truth for project tracking.**  
-> Last updated: 2026-09-05 EOD (wave-3 i18n complete: buyer wallet/settings, seller settings, admin settings, admin list-table chrome; response-DTO pass; arm-counts endpoint; 45 commits ahead, push pending user go-ahead) | Status: **DEPLOYED** (Coolify + VPS)  
+> Last updated: 2026-09-08 (ops/marketing wave: G33 newsletter wired to real double opt-in, G34 all-locale sitemap + robots hardened, G50 structured logging, G51 automated DB backups — see rows below) | Status: **DEPLOYED** (Coolify + VPS)  
 > GitHub: `github.com/gozmardynamics-glitch/Grey-Auction` | Env: `https://coolify.gozmar.com`
 
 ---
@@ -110,8 +110,8 @@
 | # | Feature | Troostwijk | GreyAuction | Gap | Priority |
 |---|---------|-----------|-------------|-----|----------|
 | G32 | Social media links + share buttons (FB, IG, LinkedIn, WhatsApp) | ✅ | ❌ | No social media integration; no share buttons on listings | 🔴 HIGH |
-| G33 | Newsletter signup + email marketing integration | ✅ | ❌ | No email capture; no Mailchimp/SendGrid integration | 🔴 HIGH |
-| G34 | SEO optimization (dynamic sitemap.xml, meta tags, Schema.org) | ✅ | Basic only | No sitemap; basic meta tags only; no structured data for auctions | 🔴 HIGH |
+| G33 | Newsletter signup + email marketing integration | ✅ | ✅ | Backend double opt-in (email + Brevo list sync when BREVO_API_KEY+BREVO_CONTACT_LIST_ID set) + /subscribe flow + footer form now POSTs /subscriptions (was a localStorage mock); i18n ×3 locales (footer.newsletter.*, 1552 keys parity) | ✅ DONE 2026-09-08 |
+| G34 | SEO optimization (dynamic sitemap.xml, meta tags, Schema.org) | ✅ | ✅ | app/sitemap.ts + robots.ts existed but were UNREACHABLE (proxy matcher missed xml/txt → intl redirect → 404). Fixed matcher; sitemap now emits all 3 locales + hreflang alternates + live auction slugs; robots disallows dashboards/auth/api; AuctionSchema JSON-LD + per-page generateMetadata in place | ✅ DONE 2026-09-08 |
 | G35 | Multi-language support (7 languages vs current 3) | ✅ | en, fr, nl | 3 locales exist; missing major languages (de, es, ar, zh) | 🟡 MEDIUM |
 | G36 | Release notes / changelog page | ✅ | ❌ | No changelog or release notes | ⚪ LOW |
 
@@ -137,8 +137,8 @@
 | G47 | Production DB migrations on live server | ✅ | ⚠️ | `synchronize: true` on deployed backend; migrations not yet run on prod DB | 🔴 HIGH |
 | G48 | Full CI/CD pipeline (GitHub Actions: lint → test → build → deploy) | ✅ | 🔵 | Workflow exists (.github/workflows/ci.yml: BE tsc/lint/build/jest+coverage w/ Postgres svc, FE tsc/lint/build/vitest, LHCI); FE prod build validated backend-less 2026-09-05 (data pages are dynamic, only fonts need network). Enable Actions in repo settings to activate redeploys | 🔴 HIGH |
 | G49 | Rate limiting on auth endpoints | ✅ | 🔵 | Global 100/min + per-IP overrides: login 10/min, register 5/min, oauth 10/min, forgot-password 3/min, reset 5/min, send-otp 3/min, verify-otp 5/min; contract spec enforces tighter-than-global (jest 300/300)
-| G50 | Logging & monitoring (Winston/Pino, Sentry, uptime) | ✅ | ❌ | No structured logging; no error tracking; no uptime monitoring | 🟡 MEDIUM |
-| G51 | Automated database backups (S3-compatible) | ✅ | ❌ | Coolify supports this but not configured for greyauction DB | 🟡 MEDIUM |
+| G50 | Logging & monitoring (Winston/Pino, Sentry, uptime) | ✅ | 🔵 | StructuredLoggerService (LOG_FORMAT=json → one JSON line per event w/ ts/level/ctx/requestId; AsyncLocalStorage request correlation via RequestIdMiddleware). Unhandled 5xx forwarded to ERROR_WEBHOOK_URL (Slack/Discord-shaped, env-gated, never blocking). /api/health uptime endpoint exists. Sentry SDK deliberately not installed — no DSN yet; webhook covers alerting, SDK is a 15-min add once a project exists | 🔵 PARTIAL 2026-09-08 |
+| G51 | Automated database backups (S3-compatible) | ✅ | 🔵 | App-level: DatabaseBackupService @ 02:00 UTC daily — pg_dump → gzip → S3 (reuses S3_* storage-driver config; MinIO/R2 path-style aware) → local tmp retention. Env-gated (DB_BACKUP_ENABLED + S3 creds; no-op in dev/CI), boot-logs misconfig, failure alert via DB_BACKUP_ALERT_WEBHOOK_URL. Dockerfile installs postgresql16-client. Runbook: docs/DB_BACKUPS_RUNBOOK.md. Needs: prod env vars set (S3 bucket/creds) to arm | 🔵 CODE-COMPLETE 2026-09-08 |
 | G52 | End-to-end tests (Playwright smoke tests on all pages) | ✅ | 🔵 | 55/55 effective e2e suite in `frontend/e2e/` (buyer flows, admin tables, a11y, AI console); expand to full API/supertest coverage later | 🟡 MEDIUM |
 | G53 | Production Docker build working (nixpacks cache issue resolved) | ✅ | ⚠️ | Coolify Docker build succeeds but env vars not baked; Auth.js 500 on prod | 🔴 HIGH |
 | G54 | PWA / mobile app readiness | ❌ | ❌ | No service worker; no offline support; no PWA manifest | ⚪ LOW |
