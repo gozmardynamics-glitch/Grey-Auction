@@ -36,6 +36,7 @@ import { EscrowModule } from './escrow/escrow.module';
 import { ExchangeRateModule } from './exchange-rates/exchange-rate.module';
 import { OrderModule } from './orders/order.module';
 import { HealthModule } from './health/health.module';
+import { BackupModule } from './database/backup.module';
 
 @Module({
   imports: [
@@ -76,6 +77,8 @@ import { HealthModule } from './health/health.module';
     ExchangeRateModule,
     OrderModule,
     HealthModule,
+    // G51 — scheduled pg_dump → S3 backups (no-op unless DB_BACKUP_ENABLED=true).
+    BackupModule,
   ],
   providers: [
     {
