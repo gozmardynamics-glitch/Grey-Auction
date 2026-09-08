@@ -1,8 +1,9 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: end of session day 3 (2026-09-08, G-roadmap wave: G33 newsletter wired · G34 SEO fixed+extended · G50 structured logging · G51 DB backups · +P1 OTP-leak security fix). Head see git log —
-**everything PUSHED**: `origin/master` = `origin/main` (main is a manual mirror — re-sync with `git push origin master:main` after future pushes).
-Suites: FE/BE tsc clean · vitest **84/84 (18 files)** · jest **310/310 (46 suites)** · Playwright **55/55 (0 flakes)**. Catalogs **1552 keys ×3 locales**, strict parity. Full audit ledger: `docs` trackers._
+_Checkpoint: end of session day 3 (2026-09-08 evening — G-roadmap wave: G33 newsletter wired · G34 SEO fixed+extended · G50 structured logging · G51 DB backups · +P1 OTP-leak security fix). Head `a3abf9f` —
+**everything PUSHED**: `origin/master` = `origin/main` = `a3abf9f` (main is a manual mirror — re-sync with `git push origin master:main` after future pushes).
+Suites: FE/BE tsc clean · vitest **84/84 (18 files)** · jest **310/310 (46 suites)** · Playwright **55/55 (0 flakes)** · Catalogs **1552 keys ×3 locales**, strict parity. Audit ledger (row 24 = OTP-leak fix): `docs/PRODUCTION_AUDIT.md`; gap tracker: `pendingwork.md`.
+Day-3 commits: `1afce98` security · `13be172` G34 · `421c606` G33 · `c33e561` G51 · `57fcd4b` G50 · `a3abf9f` docs._
 
 ## Repo & environment
 
@@ -52,6 +53,17 @@ Suites: FE/BE tsc clean · vitest **84/84 (18 files)** · jest **310/310 (46 sui
 | Admin | admin@greyauction.com | Admin@12345 |
 | Seller | demo@seller.com | Seller@12345 |
 | Buyer | demo@buyer.com | Buyer@12345 |
+
+## Start here — Day 4 boot checklist (≈5 min)
+
+1. Docker Desktop → `docker start greyauction-postgres` (container exists; port 5433).
+2. Backend first: `cd backend && npm run start:dev` (detached) → prove `GET http://localhost:3001/api/health`.
+   Backend started BEFORE Postgres stays wedged — restart it, don't debug the frontend.
+3. Frontend: `cd frontend && npm run dev` → `http://localhost:3000/en` renders.
+4. Re-mint e2e auth (day-3 state is <24h old but JWTs expire): `cd frontend && node scripts/_make-auth.js`.
+5. Sanity: `cd backend && npx jest --ci --silent` → expect **310/310 (46 suites)**.
+6. Then open the backlog below — items 1–5 need a human input; the day-3 follow-ups
+   (item 7) are the code-ready queue if those gates haven't opened.
 
 ## Current suite state (verified end of session)
 
@@ -242,7 +254,7 @@ Playwright notes:
 - Locale catalogs: edit via file tools or node only (never PS5.1 re-save); keep en/fr/nl in lockstep;
   restart the dev server after catalog edits.
 - After pushing `master`, re-sync the `main` mirror: `git push origin master:main`
-  (created 2026-09-05 at user request; both at `7c6cb75`).
+  (created 2026-09-05 at user request; both at `a3abf9f` as of 2026-09-08 close).
 - Schema changes: edit entity → `npm run migration:generate -- src/database/migrations/<Name>` →
   review SQL → commit. **Never** set `DB_SYNCHRONIZE=true` in production (bootstrap flag retired
   at D1 cutover); prod applies pending migrations on every boot (`migrationsRun: true`).
