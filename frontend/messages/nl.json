@@ -48,7 +48,16 @@
     "madeWith": "Gemaakt met",
     "inLagos": "in Lagos",
     "email": "E-mail",
-    "tagline": "Nigeria's toonaangevende veilingplatform. Ontdek unieke items, bied met vertrouwen en win buitengewone deals."
+    "tagline": "Nigeria's toonaangevende veilingplatform. Ontdek unieke items, bied met vertrouwen en win buitengewone deals.",
+    "newsletter": {
+      "title": "Nieuwsbrief",
+      "blurb": "Abonneer om updates over nieuwe veilingen en exclusieve deals te ontvangen.",
+      "placeholder": "jouw@email.com",
+      "subscribe": "Abonneren",
+      "invalidEmail": "Voer een geldig e-mailadres in",
+      "checkInbox": "Bedankt voor je abonnement! Controleer je inbox om je e-mailadres te bevestigen.",
+      "genericError": "Er is iets misgegaan. Probeer het opnieuw."
+    }
   },
   "cookieConsent": {
     "title": "Wij waarderen uw privacy",

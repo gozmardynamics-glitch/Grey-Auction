@@ -48,7 +48,16 @@
     "madeWith": "Made with",
     "inLagos": "in Lagos",
     "email": "Email",
-    "tagline": "Nigeria's premier auction platform. Discover unique items, bid with confidence, and win extraordinary deals."
+    "tagline": "Nigeria's premier auction platform. Discover unique items, bid with confidence, and win extraordinary deals.",
+    "newsletter": {
+      "title": "Newsletter",
+      "blurb": "Subscribe to get updates on new auctions and exclusive deals.",
+      "placeholder": "your@email.com",
+      "subscribe": "Subscribe",
+      "invalidEmail": "Please enter a valid email",
+      "checkInbox": "Thanks for subscribing! Please check your inbox to confirm your email.",
+      "genericError": "Something went wrong. Please try again."
+    }
   },
   "cookieConsent": {
     "title": "We value your privacy",

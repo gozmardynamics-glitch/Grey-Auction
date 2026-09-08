@@ -48,7 +48,16 @@
     "madeWith": "Conçu avec",
     "inLagos": "à Lagos",
     "email": "E-mail",
-    "tagline": "La première plateforme d'enchères du Nigeria. Découvrez des objets uniques, enchérissez en toute confiance et remportez des offres exceptionnelles."
+    "tagline": "La première plateforme d'enchères du Nigeria. Découvrez des objets uniques, enchérissez en toute confiance et remportez des offres exceptionnelles.",
+    "newsletter": {
+      "title": "Newsletter",
+      "blurb": "Abonnez-vous pour recevoir les nouvelles enchères et offres exclusives.",
+      "placeholder": "votre@email.com",
+      "subscribe": "S'abonner",
+      "invalidEmail": "Veuillez saisir une adresse e-mail valide",
+      "checkInbox": "Merci pour votre abonnement ! Veuillez consulter votre boîte de réception pour confirmer votre adresse e-mail.",
+      "genericError": "Une erreur est survenue. Veuillez réessayer."
+    }
   },
   "cookieConsent": {
     "title": "Nous respectons votre vie privée",
