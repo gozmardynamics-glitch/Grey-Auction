@@ -59,7 +59,14 @@ if (-not (docker ps --format '{{.Names}}' | Select-String '^greyauction-postgres
 }
 $pgUp = docker ps --format '{{.Names}}' | Select-String '^greyauction-postgres$'
 if ($pgUp) { Write-Host 'PostgreSQL up on port 5433' -ForegroundColor Green }
-else { Write-Host 'PostgreSQL container is NOT running.' -ForegroundColor Red }
+else {
+  Write-Host 'PostgreSQL container is NOT running.' -ForegroundColor Red
+  Write-Host 'Refusing to launch the backend: a backend started before Postgres stays wedged and must be restarted (see docs/HANDOFF.md).' -ForegroundColor Red
+  Write-Host 'Fix Docker first, then re-run this script:' -ForegroundColor Yellow
+  Write-Host '  - Docker Desktop tray -> Troubleshoot -> Restart' -ForegroundColor Yellow
+  Write-Host '  - if the WSL VM is wedged, reboot (an elevated "wsl --shutdown" also clears it)' -ForegroundColor Yellow
+  exit 1
+}
 
 # --- Backend (before frontend) --------------------------------------------
 # cmd.exe /k keeps the window open so logs stay visible; npm.cmd resolves there.
