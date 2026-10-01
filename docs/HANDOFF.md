@@ -1,9 +1,31 @@
 # GreyAuction — Engineering Handoff
 
-_Checkpoint: end of session day 3 (2026-09-08 evening — G-roadmap wave: G33 newsletter wired · G34 SEO fixed+extended · G50 structured logging · G51 DB backups · +P1 OTP-leak security fix). Head `a3abf9f` —
-**everything PUSHED**: `origin/master` = `origin/main` = `a3abf9f` (main is a manual mirror — re-sync with `git push origin master:main` after future pushes).
+_Checkpoint: 2026-10-01 housekeeping + end of the 2026-09-08 G-roadmap wave (G33 newsletter wired · G34 SEO fixed+extended · G50 structured logging · G51 DB backups · +P1 OTP-leak security fix).
+Head `90ea5e9` · **everything PUSHED**: `origin/master` = `origin/main` = `90ea5e9` (main is a manual mirror — re-sync with `git push origin master:main` after pushes). Release tag **`v1.1.0`** (annotated, at `90ea5e9`); previous `v1.0.0` = `1dcded3`.
 Suites: FE/BE tsc clean · vitest **84/84 (18 files)** · jest **310/310 (46 suites)** · Playwright **55/55 (0 flakes)** · Catalogs **1552 keys ×3 locales**, strict parity. Audit ledger (row 24 = OTP-leak fix): `docs/PRODUCTION_AUDIT.md`; gap tracker: `pendingwork.md`.
-Day-3 commits: `1afce98` security · `13be172` G34 · `421c606` G33 · `c33e561` G51 · `57fcd4b` G50 · `a3abf9f` docs._
+`1afce98` security · `13be172` G34 · `421c606` G33 · `c33e561` G51 · `57fcd4b` G50 · `a3abf9f` docs · `25db4c1` day-4 checkpoint · `90ea5e9` recovered plan doc + tag v1.1.0._
+
+## 2026-10-01 housekeeping (cross-session audit — done)
+
+- **Stray repo removed:** `C:\Users\Ebele John\.git` (empty repo, branch `codex/m0-foundation`, 0 commits)
+  was shadowing the whole home tree — any `git` run from `Greay-Auction-A!` resolved to it and reported 102
+  phantom dirty files. Removed; the app-folder root is correctly *not* a repository. **Always run git from
+  `extracted\Grey-Auction-master`.**
+- **Duplicate clone removed:** `Documents\AUction` (a July clone on `beta-readiness` with 7 local branches —
+  audited: **0 unique commits vs master**, so nothing was lost). One clone only now.
+- **Recovered the one orphan file:** `.kilo/plans/1785339128811-performance-security-overhaul.md` (19 KB,
+  Jul 31) existed nowhere in git history; rescued verbatim into the repo (SHA256-verified) in `90ea5e9`.
+- **Remote branches pruned:** `beta-readiness` (414e67d) and `feature/authjs-migration` (170dae5) were both
+  fully merged (0 unique commits) and are deleted from GitHub. Remote now holds **master + main only**.
+- **Local `main` repaired:** was stale at `cc523d5`; fast-forwarded to master. Fetch refspec extended so
+  `origin/main` is tracked too (it previously was not, which is why `origin/main` looked "missing").
+- **Local-only leftovers archived** to `Greay-Auction-A!\_local-archive-20261001\` (outside git):
+  `DEV_START.ps1` (dev launcher — candidate to promote into the repo), `AUDIT_REPORT.html`,
+  `AUDIT_REPORT_v2.html`, `august payment.jsp` (actually a PDF receipt), `Hero section.jfif` (3 MB asset),
+  `tttttttttt` (scratch notes). Byte-identical `AUDIT_REPORT*.md` root duplicates + a 0-byte `$null` junk
+  file were deleted. Note: **GitHub Desktop does not have this repo added** — add it via
+  File → Add local repository if you want the GUI.
+
 
 ## Repo & environment
 
