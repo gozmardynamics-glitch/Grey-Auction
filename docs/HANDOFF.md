@@ -76,16 +76,31 @@ Suites: FE/BE tsc clean · vitest **84/84 (18 files)** · jest **310/310 (46 sui
 | Seller | demo@seller.com | Seller@12345 |
 | Buyer | demo@buyer.com | Buyer@12345 |
 
-## Start here — Day 4 boot checklist (≈5 min)
+## Start here — boot checklist (≈5 min)
 
-1. Docker Desktop → `docker start greyauction-postgres` (container exists; port 5433).
-2. Backend first: `cd backend && npm run start:dev` (detached) → prove `GET http://localhost:3001/api/health`.
-   Backend started BEFORE Postgres stays wedged — restart it, don't debug the frontend.
-3. Frontend: `cd frontend && npm run dev` → `http://localhost:3000/en` renders.
-4. Re-mint e2e auth (day-3 state is <24h old but JWTs expire): `cd frontend && node scripts/_make-auth.js`.
+**One command does steps 1–3:** `powershell -ExecutionPolicy Bypass -File tools\DEV_START.ps1`
+(starts the Docker engine if needed, the Postgres container, then backend → frontend, and health-checks both.
+It refuses to launch the backend if Postgres is down, to avoid the wedged-backend trap.)
+
+1. ⚠️ **Docker engine was WEDGED at the 2026-10-01 close and could not be repaired without admin.**
+   Symptom: `docker info`/`wsl --shutdown` hang indefinitely, `docker-desktop` WSL distro "Running" but
+   `vmmemWSL` stuck, Docker Desktop's own D-Bus/pipe present but unresponsive. Killing `vmmemWSL` and
+   restarting `com.docker.service` both need elevation. **Fix: reboot** (most reliable), or from an
+   *elevated* prompt run `wsl --shutdown` then start Docker Desktop (tray → Troubleshoot → Restart).
+   A reboot has NOT happened as of the last session, so expect Docker to still be stuck on wake.
+2. Verify: `docker ps` shows `greyauction-postgres` Up, port **5433**.
+3. Backend → `GET http://localhost:3001/api/health` returns `{"status":"ok"}`; frontend → `http://localhost:3000/en` = 200.
+4. Re-mint e2e auth (JWTs from 2026-09-08 are long expired): `cd frontend && node scripts/_make-auth.js`.
 5. Sanity: `cd backend && npx jest --ci --silent` → expect **310/310 (46 suites)**.
-6. Then open the backlog below — items 1–5 need a human input; the day-3 follow-ups
-   (item 7) are the code-ready queue if those gates haven't opened.
+6. Backlog below: items 1–5 need a human input; the follow-ups are the code-ready queue.
+
+**Environment notes learned 2026-10-01:**
+- This box has **Windows PowerShell 5.1 only — there is no `pwsh`/PS7**. Anything spawning `pwsh` fails with
+  CommandNotFoundException; the launcher uses `cmd.exe /k` for the server windows instead. Keep new scripts 5.1-safe.
+- GitHub Desktop (installed at `C:\Users\Ebele John\GitHubDesktop\app-3.6.6`, running) has **never had this
+  repo added**; its CLI/deep-link routes cannot register a *local* repo (`--protocol-launcher` expects a GitHub
+  URL). Use File → Add local repository (or Ctrl+O) and pick
+  `...\Greay-Auction-A!\extracted\Grey-Auction-master` — it will show clean and up to date.
 
 ## Current suite state (verified end of session)
 
