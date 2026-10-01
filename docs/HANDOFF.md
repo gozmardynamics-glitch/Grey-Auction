@@ -101,6 +101,14 @@ It refuses to launch the backend if Postgres is down, to avoid the wedged-backen
   repo added**; its CLI/deep-link routes cannot register a *local* repo (`--protocol-launcher` expects a GitHub
   URL). Use File → Add local repository (or Ctrl+O) and pick
   `...\Greay-Auction-A!\extracted\Grey-Auction-master` — it will show clean and up to date.
+- ⚠️ **PORT 3000 IS TAKEN BY THE DSH HARNESS.** Chain observed 2026-10-01:
+  `Desktop\Start-DeepSeek-Harness.bat` → `dsh-launch.ps1` → `dsh web` (`apps/cli/src/bin.ts web`) →
+  `npm run dev:collab` → `node server.mjs` listening on **3000** (it answers `/en` with 404, which is *not*
+  our frontend). Consequence: while the harness is running, `npm run dev` for the frontend fails to bind 3000 —
+  a "frontend is up" probe that returns 404 on `/en` is the harness, not us. Either stop DSH's collab dev
+  server before starting the GreyAuction frontend, or run the frontend on another port
+  (`npm run dev -- -p 3002` + adjust `CORS_ORIGIN`/`FRONTEND_URL`). Never kill `apps/cli/src/bin.ts web` —
+  that is the GUI you are talking through.
 
 ## Current suite state (verified end of session)
 
