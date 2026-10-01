@@ -3,7 +3,11 @@
 # Starts: Postgres container, backend API, frontend dev server
 #
 # Lives at <repo>/tools/DEV_START.ps1 - run it from anywhere:
-#   pwsh -File tools/DEV_START.ps1
+#   powershell -ExecutionPolicy Bypass -File tools\DEV_START.ps1
+#
+# Note: this machine ships Windows PowerShell 5.1 only (no pwsh/PS7),
+# so the server windows are launched through cmd.exe rather than a
+# nested PowerShell host. Keep the script 5.1-compatible.
 # ============================================================
 $ErrorActionPreference = 'Stop'
 
@@ -26,16 +30,24 @@ foreach ($p in @($backend, $frontend)) {
 $engine = $null
 try { $engine = (docker info --format '{{.ServerVersion}}' 2>$null) } catch { $engine = $null }
 if (-not $engine) {
-  Write-Host 'Docker engine not responding - starting Docker Desktop...' -ForegroundColor Yellow
-  $dd = Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'
-  if (Test-Path -LiteralPath $dd) { Start-Process -FilePath $dd | Out-Null }
-  else { Write-Host "Docker Desktop not found at: $dd - start it manually." -ForegroundColor Red }
-  for ($i = 0; $i -lt 60 -and -not $engine; $i++) {
-    Start-Sleep -Seconds 3
-    try { $engine = (docker info --format '{{.ServerVersion}}' 2>$null) } catch { $engine = $null }
+  Write-Host 'Docker engine not responding - looking for Docker Desktop...' -ForegroundColor Yellow
+  $candidates = @(
+    (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe')
+  )
+  $dd = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+  if ($dd) {
+    Write-Host "Starting Docker Desktop: $dd" -ForegroundColor Yellow
+    Start-Process -FilePath $dd | Out-Null
+    for ($i = 0; $i -lt 60 -and -not $engine; $i++) {
+      Start-Sleep -Seconds 3
+      try { $engine = (docker info --format '{{.ServerVersion}}' 2>$null) } catch { $engine = $null }
+    }
+  } else {
+    Write-Host 'Docker Desktop executable not found - start it manually, then re-run this script.' -ForegroundColor Red
   }
 }
-if ($engine) { Write-Host "Docker engine ready ($engine)" -ForegroundColor Green }
+if ($engine) { Write-Host "Docker engine ready (server $engine)" -ForegroundColor Green }
 else { Write-Host 'Docker engine still unavailable - Postgres cannot start.' -ForegroundColor Red }
 
 # --- PostgreSQL ------------------------------------------------------------
@@ -45,17 +57,23 @@ if (-not (docker ps --format '{{.Names}}' | Select-String '^greyauction-postgres
   Write-Host 'Container not running - creating it...' -ForegroundColor Yellow
   docker run -d --name greyauction-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=greyauction -p 5433:5432 pgvector/pgvector:pg16 | Out-Null
 }
-Write-Host 'PostgreSQL up on port 5433' -ForegroundColor Green
+$pgUp = docker ps --format '{{.Names}}' | Select-String '^greyauction-postgres$'
+if ($pgUp) { Write-Host 'PostgreSQL up on port 5433' -ForegroundColor Green }
+else { Write-Host 'PostgreSQL container is NOT running.' -ForegroundColor Red }
 
 # --- Backend (before frontend) --------------------------------------------
+# cmd.exe /k keeps the window open so logs stay visible; npm.cmd resolves there.
+$backendCmd = 'cd /d "' + $backend + '" && npm run start:dev'
+$frontendCmd = 'cd /d "' + $frontend + '" && npm run dev'
+
 Write-Host 'Starting backend API (port 3001)...' -ForegroundColor Cyan
-Start-Process pwsh -ArgumentList "-NoExit","-NoProfile","-Command","cd '$backend'; npm run start:dev"
+Start-Process -FilePath 'cmd.exe' -ArgumentList '/k', $backendCmd
 
 Write-Host 'Starting frontend (port 3000)...' -ForegroundColor Cyan
-Start-Process pwsh -ArgumentList "-NoExit","-NoProfile","-Command","cd '$frontend'; npm run dev"
+Start-Process -FilePath 'cmd.exe' -ArgumentList '/k', $frontendCmd
 
 # --- Warm-up verification --------------------------------------------------
-Write-Host 'Waiting for backend health...' -ForegroundColor Cyan
+Write-Host 'Waiting for backend health (up to ~2 min)...' -ForegroundColor Cyan
 $healthy = $false
 for ($i = 0; $i -lt 40 -and -not $healthy; $i++) {
   Start-Sleep -Seconds 3
