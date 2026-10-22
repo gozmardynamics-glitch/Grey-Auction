@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Heart, Share2, MapPin, Clock, Gavel, Eye } from 'lucide-react';
+import { Heart, Share2, MapPin, Clock, Gavel, Eye, BadgeCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -18,6 +18,8 @@ import { formatCurrency } from '@/shared/utils/helpers';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { toggleWishlist } from '@/redux/slices/wishlist.slice';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface AuctionCardProps {
   auction: Auction;
@@ -34,6 +36,25 @@ function getCountryFlag(countryCode: string): string {
     .split('')
     .map((char) => 127397 + char.charCodeAt(0));
   return String.fromCodePoint(...codePoints);
+}
+
+/**
+ * Compact KYC trust signal for listing grids. Derived from the seller relation
+ * already present on the product payload, so it costs no extra request — the
+ * per-seller /kyc-badge call stays reserved for the detail page.
+ */
+function VerifiedSellerBadge({ badge }: { badge?: Auction['sellerBadge'] }) {
+  if (badge !== 'verified' && badge !== 'trusted') return null;
+  return (
+    <span
+      data-testid="verified-seller-badge"
+      className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800"
+      title="This seller passed Grey Auction identity verification"
+    >
+      <BadgeCheck className="h-3 w-3" />
+      Verified
+    </span>
+  );
 }
 
 function StatusBadge({ status }: { status: Auction['status'] }) {
@@ -63,6 +84,7 @@ export function AuctionCard({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const wishlistItems = useAppSelector((state) => state.wishlist.items);
+  const authToken = useAppSelector((state) => state.auth.token);
   const isWishlisted = wishlistItems.includes(auction.id);
   const [isAnimating, setIsAnimating] = useState(false);
   const timeRemaining = useCountdown(auction.endTime);
@@ -78,6 +100,23 @@ export function AuctionCard({
     onWishlistClick?.(auction.id);
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 350);
+
+    // Mirror the optimistic Redux change to the server. Guests keep the local
+    // behaviour; a signed-in failure rolls the toggle back.
+    if (authToken) {
+      fetch(`${API_BASE}/watchlist/${encodeURIComponent(auction.id)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('watchlist sync failed');
+        })
+        .catch(() => {
+          dispatch(toggleWishlist(auction.id));
+          toast.error('Could not update your watchlist. Please try again.');
+        });
+    }
+
     toast(wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist', {
       icon: <Heart className={`h-4 w-4 ${wasWishlisted ? 'text-muted-foreground' : 'fill-red-500 text-red-500'}`} />,
     });
@@ -107,7 +146,10 @@ export function AuctionCard({
 
         <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
           <div className="min-w-0 flex-1 space-y-1.5">
-            <h3 className="text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200">{auction.title}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="min-w-0 text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200">{auction.title}</h3>
+              <VerifiedSellerBadge badge={auction.sellerBadge} />
+            </div>
             {auction.specs && (
               <p className="text-xs text-muted-foreground line-clamp-1">{auction.specs}</p>
             )}
@@ -210,9 +252,12 @@ export function AuctionCard({
 
       {/* Content */}
       <CardContent className="flex-1 space-y-1.5 p-3.5">
-        <h3 className="text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200">
-          {auction.title}
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="min-w-0 text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200">
+            {auction.title}
+          </h3>
+          <VerifiedSellerBadge badge={auction.sellerBadge} />
+        </div>
         {auction.specs && (
           <p className="text-xs text-muted-foreground line-clamp-1">{auction.specs}</p>
         )}

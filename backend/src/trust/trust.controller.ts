@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query, UseGuards,
+  Controller, Get, Post, Patch, Body, Param, Query, UseGuards, BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { ConditionReportService } from './condition-report.service';
@@ -52,6 +52,33 @@ export class ConditionReportController {
   ) {
     const report = await this.service.create(productId, user, dto);
     return { success: true, message: 'Condition report filed', data: report };
+  }
+}
+
+@ApiTags('Trust & Safety')
+@Controller('seller-badges')
+export class SellerBadgeBatchController {
+  constructor(private readonly service: KycBadgeService) {}
+
+  /**
+   * Lives outside @Controller('sellers') on purpose: SellerController owns
+   * @Get(':id'), and whichever module registers first wins, so a sibling
+   * /sellers/badges route resolves to the seller-by-id handler instead.
+   */
+  @Get()
+  @ApiOperation({
+    summary: 'Batch KYC badges keyed by user id (public, for listing grids)',
+  })
+  async badges(@Query('userIds') userIds: string) {
+    const ids = (userIds || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    if (ids.length > 100) {
+      throw new BadRequestException('At most 100 user ids per request');
+    }
+    const data = await this.service.badgesForUsers(ids);
+    return { success: true, data };
   }
 }
 

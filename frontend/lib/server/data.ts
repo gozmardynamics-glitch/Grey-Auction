@@ -63,6 +63,32 @@ async function apiFetch(path: string, options?: RequestInit): Promise<unknown> {
 }
 
 /**
+ * Like apiFetch, but returns the whole JSON envelope instead of unwrapping
+ * `data`. Endpoints that paginate put `total` / aggregates alongside `data`,
+ * and `data` alone would drop them.
+ */
+async function apiFetchEnvelope(
+  path: string,
+  options?: RequestInit,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const token = await getSessionToken();
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: 'no-store',
+      ...options,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Normalize a backend Product row into the frontend Auction shape so
  * cards/detail pages render real data (images, location, counts...).
  */
@@ -130,6 +156,40 @@ function normalizeAuction(p: unknown): Auction {
     rating: Number(raw?.seller?.rating ?? 0),
     reviewCount: Number(raw?.seller?.reviewCount ?? 0),
   };
+}
+
+/**
+ * Products are owned by a User while KYC lives on the separate Seller record,
+ * so the trust tier cannot be read off the listing payload. Resolve it in one
+ * batch call per grid (chunked to the endpoint's 100-id limit) rather than one
+ * request per card.
+ *
+ * The route is /seller-badges rather than /sellers/badges: SellerController
+ * owns @Get(':id'), so a sibling static segment under /sellers is shadowed.
+ */
+async function attachSellerBadges(auctions: Auction[]): Promise<Auction[]> {
+  const userIds = [...new Set(auctions.map((a) => a.sellerId).filter(Boolean))];
+  if (userIds.length === 0) return auctions;
+
+  const tiers: Record<string, string | null> = {};
+  for (let i = 0; i < userIds.length; i += 100) {
+    const chunk = userIds.slice(i, i + 100);
+    const data = await apiFetch(
+      `/seller-badges?userIds=${chunk.map(encodeURIComponent).join(',')}`,
+    );
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      Object.assign(tiers, data as Record<string, string | null>);
+    }
+  }
+
+  return auctions.map((auction) => {
+    const tier = tiers[auction.sellerId];
+    return {
+      ...auction,
+      sellerBadge:
+        tier === 'verified' || tier === 'trusted' ? tier : null,
+    };
+  });
 }
 
 /** Unwrap the many list shapes the API returns into a plain array. */
@@ -898,7 +958,9 @@ export async function getAuctions(filters?: AuctionFetchFilters) {
     collected.push(...list);
     if (list.length < PAGE_SIZE) break;
   }
-  if (collected.length > 0) return collected.map(normalizeAuction);
+  if (collected.length > 0) {
+    return attachSellerBadges(collected.map(normalizeAuction));
+  }
   return USE_MOCK_FALLBACK ? mockAuctions : [];
 }
 
@@ -928,10 +990,72 @@ export async function getAuctionBySlug(slug: string) {
   return USE_MOCK_FALLBACK ? mockAuctions.find((a) => a.slug === slug || a.id === slug) || null : null;
 }
 
+/** A seller review as exposed by the public GET /sellers/:id/reviews route. */
+export interface SellerReviewPublic {
+  id: string;
+  rating: number;
+  title?: string | null;
+  comment?: string | null;
+  response?: string | null;
+  responded_at?: string | null;
+  is_verified_purchase?: boolean;
+  helpful_count?: number;
+  images?: string[] | null;
+  created_at?: string;
+}
+
+export interface SellerReviewsView {
+  reviews: SellerReviewPublic[];
+  total: number;
+  averageRating: number;
+  /** star (1-5) -> count */
+  ratingBreakdown: Record<string, number>;
+}
+
+const EMPTY_REVIEWS: SellerReviewsView = {
+  reviews: [],
+  total: 0,
+  averageRating: 0,
+  ratingBreakdown: {},
+};
+
+/**
+ * Seller reputation for the lot page. Returns an empty view rather than
+ * throwing so a seller with no reviews — or a cold backend — still renders
+ * a sane tab instead of a broken page.
+ */
+export async function getSellerReviews(
+  sellerId: string,
+  limit = 10,
+): Promise<SellerReviewsView> {
+  if (!sellerId) return EMPTY_REVIEWS;
+  const json = await apiFetchEnvelope(
+    `/sellers/${encodeURIComponent(sellerId)}/reviews?page=1&limit=${limit}`,
+  );
+  if (!json) return EMPTY_REVIEWS;
+
+  const reviews = Array.isArray(json.data)
+    ? (json.data as SellerReviewPublic[])
+    : [];
+  const breakdown = json.rating_breakdown;
+
+  return {
+    reviews,
+    total: Number(json.total ?? reviews.length),
+    averageRating: Number(json.average_rating ?? 0),
+    ratingBreakdown:
+      breakdown && typeof breakdown === 'object'
+        ? (breakdown as Record<string, number>)
+        : {},
+  };
+}
+
 export async function getFeaturedAuctions() {
   const data = await apiFetch('/products/featured');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list.map(normalizeAuction);
+  if (list && list.length > 0) {
+    return attachSellerBadges(list.map(normalizeAuction));
+  }
   return USE_MOCK_FALLBACK ? mockAuctions.slice(0, 8) : [];
 }
 
@@ -947,7 +1071,9 @@ export async function getRelatedAuctions(category: string) {
     `/products/related?category=${encodeURIComponent(category)}`,
   );
   const list = unwrapList(data);
-  if (list && list.length > 0) return list.map(normalizeAuction);
+  if (list && list.length > 0) {
+    return attachSellerBadges(list.map(normalizeAuction));
+  }
   return USE_MOCK_FALLBACK
     ? mockAuctions.filter(
         (a) => a.category?.toLowerCase() === category?.toLowerCase(),
@@ -960,7 +1086,9 @@ export async function getAuctionsByCategory(category: string) {
     `/products?category=${encodeURIComponent(category)}`,
   );
   const list = unwrapList(data);
-  if (list && list.length > 0) return list.map(normalizeAuction);
+  if (list && list.length > 0) {
+    return attachSellerBadges(list.map(normalizeAuction));
+  }
   return USE_MOCK_FALLBACK
     ? mockAuctions.filter(
         (a) => a.category?.toLowerCase() === category?.toLowerCase(),
@@ -1053,8 +1181,12 @@ export async function getBuyerInvoice(invoiceId: string) {
 }
 
 export async function getWishlistItems() {
-  // Wishlist is frontend-owned state (Redux); no backend module exists
-  return [];
+  // Backed by the watchlist module; apiFetch forwards the session token so the
+  // JWT-guarded /watchlist route returns this user's lots.
+  const data = await apiFetch('/watchlist');
+  const list = unwrapList(data);
+  if (list) return list.map(normalizeAuction);
+  return [] as ReturnType<typeof normalizeAuction>[];
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────

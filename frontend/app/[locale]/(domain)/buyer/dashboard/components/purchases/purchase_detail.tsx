@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 
 import { Badge, Button, Separator } from '@/shared/components/common';
+import EscrowStatus from '@/shared/components/escrow/escrow_status';
+import { useAppSelector } from '@/redux/store';
 
 import type { PurchaseInvoice } from '../../../models';
 import { formatCurrency, statusStyles } from '@/shared/utils/helpers';
@@ -20,6 +22,7 @@ export default function PurchaseDetail({
   invoice,
   onBack,
 }: PurchaseDetailProps) {
+  const authToken = useAppSelector((state) => state.auth.token);
   const auctionFeeRate = 0.19;
   const subtotal = invoice.amount;
   const auctionFee = subtotal * auctionFeeRate;
@@ -164,6 +167,17 @@ export default function PurchaseDetail({
             bold
           />
         </div>
+      </div>
+
+      {/* Escrow & Settlement — funds lifecycle for this invoice */}
+      <div className="space-y-3 rounded-lg border p-5">
+        <div>
+          <h3 className="text-base font-semibold">Escrow &amp; Settlement</h3>
+          <p className="text-xs text-muted-foreground">
+            Your payment is held by Grey Auction until you confirm receipt of the lot.
+          </p>
+        </div>
+        <EscrowStatus invoiceId={invoice.id} token={authToken ?? undefined} />
       </div>
     </div>
   );
