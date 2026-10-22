@@ -7,6 +7,7 @@ import { Eye, EyeOff, CheckCircle2, Circle, AlertTriangle, UserX } from 'lucide-
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useAppSelector } from '@/redux/store';
+import { getErrorMessage } from '@/shared/utils/error_utils';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 
 import {
@@ -183,8 +184,8 @@ export default function SettingsSecurity() {
       toast.success('Your account has been deactivated.');
       setDeleteModalOpen(false);
       resetDeleteModal();
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to delete account');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Failed to delete account');
     }
   };
 

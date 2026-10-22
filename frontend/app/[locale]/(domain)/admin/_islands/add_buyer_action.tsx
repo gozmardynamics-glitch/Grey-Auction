@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
 import { useAppSelector } from '@/redux/store';
+import { getErrorMessage } from '@/shared/utils/error_utils';
 
 const AddUserDialog = dynamic(() => import('../buyers/components/add_user_dialog'));
 
@@ -39,8 +40,8 @@ export default function AddBuyerAction() {
             }
             toast.success('User created');
             setAddUserOpen(false);
-          } catch (error: any) {
-            toast.error(error?.message || 'Failed to add buyer');
+          } catch (error) {
+            toast.error(getErrorMessage(error) || 'Failed to add buyer');
           }
         }}
       />

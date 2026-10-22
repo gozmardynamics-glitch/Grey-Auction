@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
 import { useAppSelector } from '@/redux/store';
+import { getErrorMessage } from '@/shared/utils/error_utils';
 
 const AddAdminDialog = dynamic(() => import('../admins/components/add_admin_dialog'));
 
@@ -39,8 +40,8 @@ export default function AddAdminAction() {
             }
             toast.success('Admin created');
             setAddAdminOpen(false);
-          } catch (error: any) {
-            toast.error(error?.message || 'Failed to add admin');
+          } catch (error) {
+            toast.error(getErrorMessage(error) || 'Failed to add admin');
           }
         }}
       />

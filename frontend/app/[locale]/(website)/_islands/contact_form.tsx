@@ -17,6 +17,7 @@ import {
   Input,
 } from '@/shared/components/common';
 import { Textarea } from '@/shared/components/common/textarea';
+import { getErrorMessage } from '@/shared/utils/error_utils';
 import { ContactFormValues, contactSchema } from '../models/schema';
 
 export default function ContactForm() {
@@ -54,8 +55,8 @@ export default function ContactForm() {
       }
       toast.success('Thanks — our team will get back to you shortly.');
       form.reset();
-    } catch (error: any) {
-      toast.error(error?.message || 'Could not send your message. Please try again.');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Could not send your message. Please try again.');
     } finally {
       setIsLoading(false);
     }

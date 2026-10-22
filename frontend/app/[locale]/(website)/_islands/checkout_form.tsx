@@ -34,6 +34,7 @@ import {
 } from '@/shared/components/common/select';
 
 import { formatCurrency } from '@/shared/utils/helpers';
+import { getErrorMessage } from '@/shared/utils/error_utils';
 import {
   CheckoutFormValues,
   checkoutSchema,
@@ -113,8 +114,8 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
       }
 
       router.push(`/checkout/payment?invoice=${encodeURIComponent(invoiceId)}`);
-    } catch (error: any) {
-      toast.error(error?.message || 'Could not create the order. Please try again.');
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Could not create the order. Please try again.');
     } finally {
       setIsLoading(false);
     }
