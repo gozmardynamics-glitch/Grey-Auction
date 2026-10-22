@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, Between, Not, EntityManager } from 'typeorm';
 import { Product, ProductStatus } from './entities/product.entity';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
+import { ListingModerationService, ModerationVerdict } from '../common/typesafe/listing-moderation.service';
 
 @Injectable()
 export class ProductService {
+  private readonly logger = new Logger(ProductService.name);
+
   constructor(
     @InjectRepository(Product)
     private readonly repo: Repository<Product>,
+    @Optional()
+    private readonly moderation?: ListingModerationService,
   ) {}
 
   async create(dto: CreateProductDto, sellerId: string): Promise<Product> {
@@ -272,8 +277,47 @@ export class ProductService {
     await this.repo.remove(product);
   }
 
+  /**
+   * Run AI moderation on a listing without changing its status. Used by the
+   * admin UI to preview a verdict before approving.
+   */
+  async moderate(id: string): Promise<ModerationVerdict> {
+    const product = await this.findById(id);
+    if (!this.moderation) {
+      return { evaluated: false, decision: 'review', maxProbability: 0, rules: [] };
+    }
+    return this.moderation.moderateListing({
+      title: product.title,
+      description: product.description,
+      category: product.category,
+      specifications: product.specifications,
+    });
+  }
+
   async approve(id: string, dto: ApproveProductDto, adminId: string): Promise<Product> {
     const product = await this.findById(id);
+
+    // Gate publishing on AI moderation. A rejection blocks the listing unless
+    // an admin explicitly overrides after reviewing the flag; a `review` verdict
+    // is advisory (logged) so it never stalls the queue silently.
+    const verdict = await this.moderate(id);
+    if (verdict.decision === 'reject' && !dto.force) {
+      const fired = verdict.rules
+        .filter((r) => r.triggered)
+        .map((r) => `${r.label} (${(r.probability * 100).toFixed(0)}%)`)
+        .join(', ');
+      throw new BadRequestException(
+        'AI moderation blocked this listing: ' +
+          fired +
+          '. Review the content, or resend with force=true to publish anyway.',
+      );
+    }
+    if (verdict.decision === 'reject' && dto.force) {
+      this.logger.warn(
+        `Admin ${adminId} overrode moderation rejection for product ${id} (${product.title})`,
+      );
+    }
+
     product.status = ProductStatus.ACTIVE;
     product.approvedBy = adminId;
     product.approvedAt = new Date();
