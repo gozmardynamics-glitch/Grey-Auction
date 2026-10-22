@@ -12,13 +12,19 @@ import {
   ConditionReportController,
   DisputeController,
   KycBadgeController,
+  SellerBadgeBatchController,
 } from './trust.controller';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ConditionReport, Dispute, DisputeFeedback, Product, Seller, SellerDocument]),
   ],
-  controllers: [ConditionReportController, KycBadgeController, DisputeController],
+  controllers: [
+    ConditionReportController,
+    KycBadgeController,
+    SellerBadgeBatchController,
+    DisputeController,
+  ],
   providers: [ConditionReportService, DisputeService, KycBadgeService],
   exports: [ConditionReportService, DisputeService, KycBadgeService],
 })

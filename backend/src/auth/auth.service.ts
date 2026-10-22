@@ -179,6 +179,27 @@ export class AuthService {
     return { user: this.sanitizeUser(user) };
   }
 
+  /**
+   * Soft-delete an account: deactivate it and scramble the credential so the
+   * user can no longer sign in, while leaving historical bids/invoices intact
+   * for accounting and audit purposes.
+   */
+  async deleteAccount(userId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    user.isActive = false;
+    user.isEmailVerified = false;
+    // Revoke the ability to authenticate with the old password.
+    user.passwordHash = await bcrypt.hash(
+      `deleted-${userId}-${Date.now()}-${Math.random()}`,
+      12,
+    );
+    await this.userRepository.save(user);
+
+    return { id: user.id, deleted: true };
+  }
+
   async sendOtp(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     // No account enumeration: respond identically whether or not the user exists.

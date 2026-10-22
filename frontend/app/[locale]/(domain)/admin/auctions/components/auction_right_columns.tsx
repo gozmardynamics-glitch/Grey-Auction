@@ -39,7 +39,7 @@ export function PendingRightColumn({ auction }: { auction: AuctionDetail }) {
   const mechanical = auction.descriptionMechanical ?? DUMMY_MECHANICAL;
   const images =
     auction.productImages ??
-    Array(8).fill(auction.itemImage || '/images/audi-rsq8.png');
+    Array(8).fill(auction.itemImage || '/car.svg');
 
   const detailItems = [
     { id: 'specifications', label: t('specifications'), onClick: () => setSpecsOpen(true) },

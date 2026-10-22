@@ -132,7 +132,9 @@ export class ClaudeProvider implements AIProvider {
             if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
               yield parsed.delta.text;
             }
-          } catch {}
+          } catch {
+            /* malformed SSE frame — skip it and keep streaming */
+          }
         }
       }
     } finally {

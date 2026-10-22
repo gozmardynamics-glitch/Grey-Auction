@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, CheckCircle2, Circle, AlertTriangle, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useAppSelector } from '@/redux/store';
+import { getErrorMessage } from '@/shared/utils/error_utils';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 
 import {
@@ -54,6 +56,7 @@ type DeleteStep = 'info' | 'reason' | 'verify';
 
 export default function SettingsSecurity() {
   const t = useTranslations('buyer.settings.security');
+  const authToken = useAppSelector((state) => state.auth.token);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -166,16 +169,24 @@ export default function SettingsSecurity() {
   const handleDeleteAccount = async () => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/auth/delete-account`, {
+      const res = await fetch(`${apiBase}/auth/delete-account`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ reason: deleteReason, password: deletePassword }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Could not delete the account');
+      }
+      toast.success('Your account has been deactivated.');
+      setDeleteModalOpen(false);
+      resetDeleteModal();
     } catch (error) {
-      console.error('Failed to delete account:', error);
+      toast.error(getErrorMessage(error) || 'Failed to delete account');
     }
-    setDeleteModalOpen(false);
-    resetDeleteModal();
   };
 
   return (

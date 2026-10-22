@@ -473,13 +473,14 @@ export class SellerStatisticsService {
         end.setHours(23, 59, 59, 999);
         break;
 
-      case StatisticsPeriod.WEEKLY:
+      case StatisticsPeriod.WEEKLY: {
         const day = start.getDay();
         start.setDate(start.getDate() - day);
         start.setHours(0, 0, 0, 0);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
         break;
+      }
 
       case StatisticsPeriod.MONTHLY:
         start.setDate(1);
@@ -488,13 +489,14 @@ export class SellerStatisticsService {
         end.setHours(23, 59, 59, 999);
         break;
 
-      case StatisticsPeriod.QUARTERLY:
+      case StatisticsPeriod.QUARTERLY: {
         const currentQuarter = Math.floor(start.getMonth() / 3);
         start.setMonth(currentQuarter * 3, 1);
         start.setHours(0, 0, 0, 0);
         end.setMonth(currentQuarter * 3 + 3, 0);
         end.setHours(23, 59, 59, 999);
         break;
+      }
 
       case StatisticsPeriod.YEARLY:
         start.setMonth(0, 1);

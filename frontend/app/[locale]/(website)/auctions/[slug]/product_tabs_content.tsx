@@ -1,6 +1,8 @@
-import { FileText, AlertTriangle, Scale, Download } from 'lucide-react';
+import { FileText, AlertTriangle, Scale, Download, Star } from 'lucide-react';
 import { Button } from '@/shared/components/common';
+import type { SellerReviewsView } from '@/lib/server/data';
 import ProductDetailsTabs from '../tabs';
+import SellerReputation from './components/seller_reputation';
 
 interface AuctionDescription {
   about: string;
@@ -9,6 +11,8 @@ interface AuctionDescription {
 
 interface ProductTabsContentProps {
   description?: AuctionDescription;
+  reviews?: SellerReviewsView;
+  sellerName?: string;
 }
 
 const defaultDescription: AuctionDescription = {
@@ -18,6 +22,8 @@ const defaultDescription: AuctionDescription = {
 
 export default function ProductTabsContent({
   description = defaultDescription,
+  reviews,
+  sellerName,
 }: ProductTabsContentProps) {
   const tabs = [
     {
@@ -70,6 +76,24 @@ export default function ProductTabsContent({
               <p className="text-sm text-foreground">Collection only — Buyer responsible for transport</p>
             </div>
           </div>
+        </div>
+      ),
+    },
+    {
+      value: 'reviews',
+      label: `Seller Reviews${reviews && reviews.total > 0 ? ` (${reviews.total})` : ''}`,
+      content: (
+        <div className="space-y-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Star className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">
+              Seller Reputation
+            </h3>
+          </div>
+          <SellerReputation
+            data={reviews ?? { reviews: [], total: 0, averageRating: 0, ratingBreakdown: {} }}
+            sellerName={sellerName}
+          />
         </div>
       ),
     },

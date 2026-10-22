@@ -1828,7 +1828,8 @@
     "error": "Désolé, une erreur est survenue. Veuillez réessayer.",
     "notConfigured": "L'assistant IA n'est pas encore configuré. Veuillez réessayer plus tard.",
     "send": "Envoyer",
-    "close": "Fermer l'assistant"
+    "close": "Fermer l'assistant",
+    "signInRequired": "Veuillez vous connecter pour discuter avec l'assistant IA."
   },
   "checkout": {
     "title": "Paiement",

@@ -37,6 +37,12 @@ export function effectiveBidStep(currentBid: number, minBidIncrement?: number | 
 export const ANTI_SNIPE_WINDOW_MS = 2 * 60 * 1000; // extend when < 2 min left
 export const ANTI_SNIPE_EXTEND_MS = 2 * 60 * 1000; // extend by 2 min
 
+/** Minimum gap between two bids from the same user on the same lot. */
+export const BID_COOLDOWN_MS = 2 * 1000;
+
+/** Upper bound on tracked cooldown keys before expired ones are pruned. */
+const BID_COOLDOWN_MAX_ENTRIES = 5000;
+
 export interface AutoBidCandidate {
   bidderId: string;
   maxBid: number;
@@ -115,7 +121,39 @@ export class BidService {
     @Optional() private readonly walletService?: WalletService,
   ) {}
 
+  /** Timestamp of the last accepted bid, keyed by `productId:userId`. */
+  private readonly lastBidAt = new Map<string, number>();
+
+  /**
+   * Rejects a second bid from the same user on the same lot inside the
+   * cooldown window (bid-burst / double-submit protection). The HTTP layer
+   * also throttles by IP; this guards per-identity bursts.
+   */
+  private assertBidCooldown(productId: string, userId: string): void {
+    const last = this.lastBidAt.get(`${productId}:${userId}`);
+    if (last === undefined) return;
+    const elapsed = Date.now() - last;
+    if (elapsed >= BID_COOLDOWN_MS) return;
+    const waitSec = Math.max(1, Math.ceil((BID_COOLDOWN_MS - elapsed) / 1000));
+    throw new BadRequestException(
+      `Please wait ${waitSec}s before bidding again on this auction`,
+    );
+  }
+
+  /** Records an accepted bid so the next one from the same user is cooled down. */
+  private markBidPlaced(productId: string, userId: string): void {
+    const now = Date.now();
+    this.lastBidAt.set(`${productId}:${userId}`, now);
+    if (this.lastBidAt.size > BID_COOLDOWN_MAX_ENTRIES) {
+      for (const [key, at] of this.lastBidAt) {
+        if (now - at >= BID_COOLDOWN_MS) this.lastBidAt.delete(key);
+      }
+    }
+  }
+
   async placeBid(productId: string, userId: string, dto: PlaceBidDto): Promise<Bid> {
+    this.assertBidCooldown(productId, userId);
+
     const placed: Bid[] = [];
     // Bidders displaced from the leading slot during this bid action.
     const displaced = new Set<string>();
@@ -224,11 +262,15 @@ export class BidService {
         return row;
       };
 
-      // 1. Place the manual bid
+      // 1. Place the manual bid. dto.maxBid only SEEDS this bidder's proxy
+      //    ceiling — it does not switch the proxy engine on.
       await placeOne(userId, dto.amount, false, dto.maxBid ?? null);
 
-      // 2. Resolve proxy/auto-bids from every bidder's ceilings
-      if (dto.maxBid !== undefined) {
+      // 2. Resolve proxy/auto-bids from every bidder's stored ceilings.
+      //    This MUST run for every bid: a plain manual bid (no maxBid) still
+      //    has to re-resolve existing ceilings, otherwise a proxy bidder whose
+      //    ceiling is above the manual bid silently loses.
+      {
         const rows: { bidderId: string; maxBid: string }[] =
           await manager
             .createQueryBuilder(Bid, 'b')
@@ -271,6 +313,9 @@ export class BidService {
 
       return placed[0];
     });
+
+    // ─── Post-commit: cool down this user on this lot ───────────────────
+    this.markBidPlaced(productId, userId);
 
     // ─── Post-commit: notify every displaced bidder they've been outbid ──
     const finalWinnerId = placed[placed.length - 1]?.bidderId;

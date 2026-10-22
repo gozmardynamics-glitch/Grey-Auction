@@ -122,7 +122,7 @@ export class AIService {
       });
       const latencyMs = Date.now() - startTime;
       let modelCount = 0;
-      let message = resp.ok ? 'Connection successful' : 'Connection failed';
+      const message = resp.ok ? 'Connection successful' : 'Connection failed';
       if (resp.ok) {
         const data: any = await resp.json().catch(() => ({}));
         modelCount = data?.data?.length || data?.models?.length || 0;

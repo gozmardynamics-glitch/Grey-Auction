@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { Upload } from 'lucide-react';
 import { Button } from '@/shared/components/common';
 
@@ -8,7 +8,7 @@ import AddBuyerAction from '../_islands/add_buyer_action';
 import { getAdminBuyers } from '@/lib/server/data';
 
 export default async function Buyers() {
-  const t = useTranslations('admin.buyers.page');
+  const t = await getTranslations('admin.buyers.page');
   const buyers = await getAdminBuyers();
 
   return (

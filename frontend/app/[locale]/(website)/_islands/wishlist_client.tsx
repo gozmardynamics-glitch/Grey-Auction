@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppSelector } from '@/redux/store';
+import { useAppDispatch, useAppSelector } from '@/redux/store';
+import { setWishlist } from '@/redux/slices/wishlist.slice';
 
 import { Button, EmptyState } from '@/shared/components/common';
 
@@ -38,11 +39,15 @@ export default function WishlistClient({ auctions }: WishlistClientProps) {
   }, [counting]);
 
   const router = useRouter();
-  const wishlistItems = useAppSelector((state) => state.wishlist.items);
+  const dispatch = useAppDispatch();
+  // The server already returns exactly this user's watched lots, so filtering
+  // by Redux here would hide everything until AuthSync finished hydrating.
+  // Instead, seed Redux from the authoritative server list.
+  const wishlistedAuctions = auctions;
 
-  const wishlistedAuctions = auctions.filter((auction) =>
-    wishlistItems.includes(auction.id)
-  );
+  useEffect(() => {
+    dispatch(setWishlist(auctions.map((auction) => auction.id)));
+  }, [auctions, dispatch]);
 
   const handleBidClick = (auctionId: string) => {
     router.push(`/auctions/${auctionId}`);

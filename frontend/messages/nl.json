@@ -1828,7 +1828,8 @@
     "error": "Sorry, er is een fout opgetreden. Probeer het opnieuw.",
     "notConfigured": "De AI-assistent is nog niet geconfigureerd. Probeer het later opnieuw.",
     "send": "Verzenden",
-    "close": "Assistent sluiten"
+    "close": "Assistent sluiten",
+    "signInRequired": "Log in om met de AI-assistent te chatten."
   },
   "checkout": {
     "title": "Afrekenen",

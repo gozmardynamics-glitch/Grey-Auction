@@ -33,8 +33,11 @@ export const useApiError = <T extends Record<string, unknown>>({
 
     // Handle authentication errors (401)
     if (isErrorStatus(error, 401)) {
-      // Redirect to login or refresh token
-      window.location.href = '/login';
+      // Preserve the current locale prefix (e.g. /en) — the login page lives
+      // at /[locale]/auth/login, so a bare '/login' would 404.
+      const locale = window.location.pathname.split('/')[1] || 'en';
+      const prefix = /^[a-z]{2}(-[A-Z]{2})?$/.test(locale) ? '/' + locale : '';
+      window.location.href = prefix + '/auth/login';
       return;
     }
 

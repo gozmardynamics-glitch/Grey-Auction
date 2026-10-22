@@ -10,7 +10,7 @@ import { Order, OrderStatus } from './order.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
 import { InvoiceService } from '../invoices/invoice.service';
 import { FeeService } from '../fees/fee.service';
-import { Product, AuctionType } from '../products/entities/product.entity';
+import { Product, AuctionType, ProductStatus } from '../products/entities/product.entity';
 
 @Injectable()
 export class OrderService {
@@ -45,18 +45,32 @@ export class OrderService {
         throw new BadRequestException('Direct sale has no buy-now price');
       }
 
-      // One open invoice per direct-sale lot at a time.
+      // One purchase per direct-sale lot — ever. A PAID invoice means the lot
+      // is gone; an ISSUED one means a purchase is in flight. Only ISSUED
+      // invoices are idempotent for the same buyer.
       const invoiceRepo = manager.getRepository(Invoice);
       const existing = await invoiceRepo.findOne({
-        where: { product_id: productId, status: InvoiceStatus.ISSUED },
+        where: { product_id: productId },
+        order: { created_at: 'DESC' },
       });
       if (existing) {
-        if (existing.buyer_id !== buyerId) {
-          throw new BadRequestException('Another buyer already started this purchase');
+        if (existing.status === InvoiceStatus.PAID) {
+          throw new BadRequestException('This item has already been sold');
         }
-        const dup = await this.orderRepo.findOne({ where: { invoiceId: existing.id } });
-        if (dup) return dup;
-        return this.orderRepo.save(this.orderRepo.create(this.toOrder(existing)));
+        if (existing.status === InvoiceStatus.CANCELLED) {
+          // A cancelled attempt must not block a fresh purchase.
+        } else if (existing.buyer_id !== buyerId) {
+          throw new BadRequestException('Another buyer already started this purchase');
+        } else if (existing.status === InvoiceStatus.ISSUED) {
+          const dup = await this.orderRepo.findOne({ where: { invoiceId: existing.id } });
+          if (dup) return dup;
+          return this.orderRepo.save(this.orderRepo.create(this.toOrder(existing)));
+        }
+      }
+
+      // Never create a new purchase for a lot that is no longer on sale.
+      if (product.status !== ProductStatus.ACTIVE) {
+        throw new BadRequestException('This item is no longer available');
       }
 
       const hammer = Number(product.buyNowPrice);
@@ -139,7 +153,21 @@ export class OrderService {
 
     order.status = OrderStatus.PAID;
     if (paymentReference) order.paymentReference = paymentReference;
-    return orderRepo.save(order);
+    const saved = await orderRepo.save(order);
+
+    // A paid direct-sale order takes the lot off the market immediately, so a
+    // second buyer can never start a purchase for it.
+    const productRepo = manager.getRepository(Product);
+    const product = await productRepo.findOne({
+      where: { id: saved.productId },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (product && product.status === ProductStatus.ACTIVE) {
+      product.status = ProductStatus.SOLD;
+      await productRepo.save(product);
+    }
+
+    return saved;
   }
 
   async findById(id: string, viewerId?: string): Promise<Order> {

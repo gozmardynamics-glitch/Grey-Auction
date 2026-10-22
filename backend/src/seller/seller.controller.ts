@@ -724,10 +724,27 @@ export class SellerController {
       limit,
     );
 
+    // Public endpoint: the entity carries bidder_id, flagged_by_id and free-form
+    // moderation metadata. None of that may leave the building — buyer identity
+    // is a pseudonym here by design.
+    const data = result.data.map((review) => ({
+      id: review.id,
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment,
+      response: review.response,
+      responded_at: review.responded_at,
+      is_verified_purchase: review.is_verified_purchase,
+      helpful_count: review.helpful_count,
+      images: review.images,
+      created_at: review.created_at,
+    }));
+
     return {
       success: true,
       message: 'Reviews retrieved successfully',
       ...result,
+      data,
     };
   }
 
