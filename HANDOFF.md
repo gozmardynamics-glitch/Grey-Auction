@@ -20,7 +20,7 @@ Read this first, then `MASTER_IMPLEMENTATION_PLAN.md` for the feature backlog.
 | Frontend | `http://localhost:3000` (running) |
 | PostgreSQL | `localhost:5432`, db `greyauction`, service `postgresql-x64-18` |
 | ngrok | **not running** (config + authtoken saved; start with `.\start-ngrok.ps1`) |
-| Tests | backend **315 pass** (47 suites, TypeSafe branch) / frontend **84 pass** (18 files) |
+| Tests | backend **310 pass** (46 suites) on this branch; **315 / 47** once PR #2 (TypeSafe) lands; frontend **85 pass** (18 files) |
 
 ---
 
@@ -154,14 +154,16 @@ netstat -ano | Select-String ":3000.*LISTENING|:3001.*LISTENING"
 # 2. Backend
 cd C:\Users\user\Grey-Auction\backend
 npm run build
-npm test                                  # expect 47 suites / 315 tests
+npm test                                  # expect 46 suites / 310 tests on main
+                                          # (47 / 315 once TypeSafe PR #2 lands)
 node dist/src/main.js                     # http://localhost:3001/api/docs
 
 # 3. Frontend
 cd ..\frontend
 $env:PATH = "C:\node22\node-v22.18.0-win-x64;$env:PATH"
 npx tsc --noEmit                          # must exit 0
-npm test                                  # expect 18 files / 84 tests
+npm test                                  # expect 18 files / 85 tests
+npm run lint                              # expect 0 errors (warnings allowed)
 npm run dev
 
 # 4. MCP
