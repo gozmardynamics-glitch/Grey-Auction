@@ -132,6 +132,16 @@ export class ProductController {
     await this.productService.remove(id, user.id);
   }
 
+  @Post(':id/moderate')
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Preview AI moderation verdict for a listing (Admin)' })
+  async moderate(@Param('id') id: string) {
+    const verdict = await this.productService.moderate(id);
+    return { success: true, data: verdict };
+  }
+
   @Post(':id/approve')
   @UseGuards(JwtAuthGuard, AdminRolesGuard)
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)

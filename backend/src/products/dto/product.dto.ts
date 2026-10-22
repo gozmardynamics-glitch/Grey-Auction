@@ -143,6 +143,15 @@ export class ApproveProductDto {
   @IsOptional()
   @IsEnum(AuctionType)
   auctionType?: AuctionType;
+
+  /**
+   * Publish even when AI moderation flags the listing. Only for admins who have
+   * reviewed the flag — the override is logged.
+   */
+  @ApiProperty({ required: false, description: 'Override an AI moderation rejection' })
+  @IsOptional()
+  @IsBoolean()
+  force?: boolean;
 }
 
 export class RejectProductDto {
