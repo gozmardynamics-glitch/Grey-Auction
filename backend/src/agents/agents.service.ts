@@ -152,7 +152,9 @@ export class AgentsService {
           await this.agentRepo.save(agent);
         }
       }
-    } catch {}
+    } catch {
+      /* health sweep is best-effort; a failed agent must not stop the others */
+    }
   }
 
   private async callToolEndpoint(tool: AgentTool, input: Record<string, unknown>) {

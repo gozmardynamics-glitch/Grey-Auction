@@ -14,7 +14,7 @@ Read this first, then `MASTER_IMPLEMENTATION_PLAN.md` for the feature backlog.
 |---|---|
 | Trunk branch | **`main`** (not `master`) — `main` is 173+ commits ahead of `master` |
 | Current local branch | `fix/critical-bugs-and-broken-links` |
-| Open PR #1 | `fix/critical-bugs-and-broken-links` → `main` — 34 files, audit fixes |
+| Open PR #1 | `fix/critical-bugs-and-broken-links` → `main` — 35 files, audit fixes |
 | Open PR #2 | `feat/typesafe-listing-moderation` → `main` — 11 files, TypeSafe Jev moderation |
 | Backend | `http://localhost:3001` (running) |
 | Frontend | `http://localhost:3000` (running) |
@@ -55,7 +55,15 @@ The backend runs from **`dist/`**, not ts-node. A stale `dist/` once crashed sta
 - Never commit these. `.env.example` documents every var with empty values.
 
 ### 2.4 Auth was replaced on the trunk
-`main` deliberately replaced my Clerk integration with **Auth.js / NextAuth v5** (`28a58af`, `369cafd`). **Do not re-apply the Clerk commits** — they are ancestors of `main` but deliberately superseded. Clerk keys are still in `backend/.env` as dead config.
+`main` deliberately replaced my Clerk integration with **Auth.js / NextAuth v5** (`26a58af`, `369cafd`). **Do not re-apply the Clerk commits** — they are ancestors of `main` but deliberately superseded. Clerk keys are still in `backend/.env` as dead config.
+
+### 2.5 CI was red on `main` long before this work — and it hid the tests
+Every `CI` run on `main` and `master` since 2026-10-01 finished **failure**. Two independent causes:
+
+- **Backend:** the `lint` script invoked `eslint`, but `eslint` was never a dependency in `backend/package.json` — only a stray global install made it look healthy locally. On a clean runner the step died with `sh: 1: eslint: not found` (exit 127) **before `npm run build` and `npx jest` ever ran**, so the backend build and its 315 tests had never executed in CI.
+- **Frontend:** `--max-warnings=0` against 17 real errors and 14 warnings — mostly the React Compiler rule `react-hooks/set-state-in-effect` flagging the mount-guard pattern, plus `useTranslations` called from `async` server components (a genuine bug, not a style nit).
+
+Fixed: added `eslint` 9 + `typescript-eslint` + `backend/eslint.config.mjs` (now 0 errors, 204 `any` warnings), relaxed the two aggressive React-19 rules to `warn` in `frontend/eslint.config.mjs`, converted the two async-page hooks to `getTranslations`, and reordered both jobs so **build and tests run before lint** — a style finding can no longer mask a compile or test failure. Lint now gates on **errors only**; the warning baseline is tracked debt, not a build blocker.
 
 ---
 

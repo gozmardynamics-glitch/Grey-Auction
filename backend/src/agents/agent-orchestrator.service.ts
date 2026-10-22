@@ -124,7 +124,9 @@ export class AgentOrchestratorService {
       try {
         const tool = await this.agentsService.findToolById(id);
         if (tool && tool.isEnabled) tools.push(tool);
-      } catch {}
+      } catch {
+        /* an unresolvable tool must not abort the whole run — skip it */
+      }
     }
     return tools;
   }
