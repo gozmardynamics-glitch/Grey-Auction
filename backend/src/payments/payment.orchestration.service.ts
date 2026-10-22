@@ -86,7 +86,11 @@ export class PaymentOrchestrationService {
     const adapter = createProviderAdapter(command.provider);
     const result = await adapter.initialize({
       reference,
-      amount: command.amount,
+      // Server-authoritative amount: when an invoice is being paid, the
+      // invoice total wins over any client-supplied amount, otherwise the
+      // gateway captures one figure while the invoice expects another and
+      // settlement silently never happens.
+      amount,
       currency: 'NGN',
       email: command.email,
       callbackUrl: command.callbackUrl,

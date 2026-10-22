@@ -480,7 +480,7 @@ const DUMMY_SELLERS: Seller[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         category: 'Mart Garrys',
         price: 600000,
         date: '01-01-2026 • 2:16 PM',
@@ -489,7 +489,7 @@ const DUMMY_SELLERS: Seller[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         category: 'Mart Garrys',
         price: 600000,
         date: '01-01-2026 • 2:16 PM',
@@ -498,7 +498,7 @@ const DUMMY_SELLERS: Seller[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         category: 'Mart Garrys',
         price: 600000,
         date: '01-01-2026 • 2:16 PM',
@@ -509,7 +509,7 @@ const DUMMY_SELLERS: Seller[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         timestamp: 'Timestamp 4',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
@@ -532,7 +532,7 @@ const DUMMY_SELLERS: Seller[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         timestamp: 'Timestamp 4',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
@@ -541,7 +541,7 @@ const DUMMY_SELLERS: Seller[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         timestamp: 'Timestamp 4',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
@@ -1440,7 +1440,7 @@ const DUMMY_PAYMENTS: TransactionDetail[] = [
     method: 'Crypto',
     date: '10-01-2026 • 11:23 AM',
     status: 'Refunded',
-    itemImage: '/watch.svg',
+    itemImage: '/gen.svg',
     transactionType: 'Deposit',
     buyerId: 'BUY-003',
     buyerEmail: 'timilehinadekunle@gmail.com',
@@ -1534,7 +1534,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         bidAmount: 600000,
         status: 'Watching',
         date: '01-01-2026 • 2:16 PM',
@@ -1542,7 +1542,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         bidAmount: 600000,
         status: 'Watching',
         date: '01-01-2026 • 2:16 PM',
@@ -1550,7 +1550,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         bidAmount: 600000,
         status: 'Won',
         date: '01-01-2026 • 2:16 PM',
@@ -1558,7 +1558,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         bidAmount: 600000,
         status: 'Watching',
         date: '01-01-2026 • 2:16 PM',
@@ -1568,7 +1568,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
         status: 'Completed',
@@ -1576,7 +1576,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
         status: 'Completed',
@@ -1584,7 +1584,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
         status: 'Pending',
@@ -1592,7 +1592,7 @@ const DUMMY_BUYERS: Buyer[] = [
       {
         auctionId: 'AUC 1234',
         item: 'Audi RS08 Performance',
-        itemImage: '/images/placeholder.jpg',
+        itemImage: '/placeholder.svg',
         amount: 615000,
         date: '01-01-2026 • 2:16 PM',
         status: 'Completed',

@@ -58,6 +58,8 @@ interface Auction {
   buyerId?: string | null;
   rating?: number;
   reviewCount?: number;
+  /** Public KYC trust signal, mirroring the backend kyc-badge tiers. */
+  sellerBadge?: 'trusted' | 'verified' | null;
 }
 
 interface TimeRemaining {

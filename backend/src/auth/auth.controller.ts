@@ -85,6 +85,15 @@ export class AuthController {
     return { success: true, message: 'Password changed', data: result };
   }
 
+  @Post('delete-account')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Soft-delete the authenticated account' })
+  async deleteAccount(@CurrentUser() user: any) {
+    const result = await this.authService.deleteAccount(user.id);
+    return { success: true, message: 'Account deleted', data: result };
+  }
+
   // C2: tight per-IP throttle stops OTP email flooding.
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('send-otp')

@@ -2,6 +2,7 @@ import {
   Controller, Get, Post, Body, Param, Query,
   UseGuards, HttpStatus, ForbiddenException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { BidApiResponseDto } from './dto/bid-response.dto';
 import { BidService } from './bid.service';
@@ -16,6 +17,7 @@ export class BidController {
 
   @Post('auctions/:auctionId/bids')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 10_000 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Place a bid on an auction' })
   @ApiParam({ name: 'auctionId' })

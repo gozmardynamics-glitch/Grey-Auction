@@ -6,6 +6,7 @@ import { Button } from '@/shared/components/common/button';
 import { Input } from '@/shared/components/common/input';
 import { Card } from '@/shared/components/common/card';
 import { MiniSpinner } from '@/shared/components/common/spinner';
+import { useAppSelector } from '@/redux/store';
 import { MessageCircle, X, Send } from 'lucide-react';
 
 interface Message {
@@ -36,6 +37,7 @@ function buildInitialMessages(t: (key: string) => string): Message[] {
 
 export default function AIChatbot() {
   const t = useTranslations('chatbot');
+  const authToken = useAppSelector((state) => state.auth.token);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => buildInitialMessages(t));
   const [input, setInput] = useState('');
@@ -85,9 +87,12 @@ export default function AIChatbot() {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/ai/public/execute`, {
+      const res = await fetch(`${API_URL}/ai/execute`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           featureKey: 'chatbot_assistant',
           input: {
@@ -95,6 +100,15 @@ export default function AIChatbot() {
           },
         }),
       });
+
+      // The AI endpoint requires a signed-in account (LLM calls are metered).
+      if (res.status === 401) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: t('signInRequired') },
+        ]);
+        return;
+      }
 
       if (!res.ok) {
         const text = await res.text();

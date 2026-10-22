@@ -7,7 +7,7 @@ import { Order, OrderStatus } from './order.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
 import { FeeService } from '../fees/fee.service';
 import { InvoiceService } from '../invoices/invoice.service';
-import { Product, AuctionType } from '../products/entities/product.entity';
+import { Product, AuctionType, ProductStatus } from '../products/entities/product.entity';
 
 describe('OrderService', () => {
   let service: OrderService;
@@ -144,6 +144,7 @@ describe('OrderService', () => {
       buyNowPrice: '20000.00',
       category: 'art',
       sellerId: 's1',
+      status: ProductStatus.ACTIVE,
       escrowReleaseHours: 0,
     } as any;
 

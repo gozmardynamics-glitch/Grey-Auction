@@ -57,6 +57,7 @@ import AuctionSaleInfo from './components/auction_sale_info';
 import BidHistoryTable from './components/bid_history_table';
 import PlaceBidModal from './components/place_bid_modal';
 import ProductTabsContent from './product_tabs_content';
+import type { SellerReviewsView } from '@/lib/server/data';
 import RelatedLots from '../../components/related_lots/related_lots';
 import MoreFromSeller from '../../components/more_from_seller';
 import AIRecommendations from '../../components/ai_recommendations';
@@ -66,12 +67,14 @@ interface ProductDetailsClientProps {
   auction: Auction;
   images: string[];
   auctionDetails: AuctionDetail[];
+  reviews?: SellerReviewsView;
 }
 
 export default function ProductDetailsClient({
   auction,
   images,
   auctionDetails,
+  reviews,
 }: ProductDetailsClientProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -579,7 +582,11 @@ export default function ProductDetailsClient({
       {/* ─── Tabs + Bid History ───────────────────────────────────────── */}
       <div className="grid gap-8 sm:grid-cols-2">
         <section className="min-w-0">
-          <ProductTabsContent description={{ about: auction.description || 'No description provided for this lot.', mechanical: [] }} />
+          <ProductTabsContent
+            description={{ about: auction.description || 'No description provided for this lot.', mechanical: [] }}
+            reviews={reviews}
+            sellerName={auction.sellerName}
+          />
         </section>
 
         <section className="min-w-0 space-y-6 p-2">

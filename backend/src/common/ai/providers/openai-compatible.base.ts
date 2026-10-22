@@ -111,7 +111,9 @@ export abstract class OpenAICompatibleProvider implements AIProvider {
             const parsed = JSON.parse(data);
             const content = parsed?.choices?.[0]?.delta?.content;
             if (content) yield content;
-          } catch {}
+          } catch {
+            /* malformed SSE frame — skip it and keep streaming */
+          }
         }
       }
     } finally {

@@ -73,6 +73,50 @@ export class AdminService {
     return { success: true };
   }
 
+  // ─── Users (any role) ───────────────────────────────────────────
+  /**
+   * Create a user with an explicit role. The public registration DTO
+   * deliberately restricts roles to bidder|seller, so privileged creation
+   * lives here behind the admin guard.
+   */
+  async createUser(dto: {
+    email: string;
+    password: string;
+    name: string;
+    role?: 'bidder' | 'seller' | 'admin';
+  }) {
+    const email = (dto.email || '').trim().toLowerCase();
+    if (!email || !dto.password || !dto.name) {
+      throw new BadRequestException('email, password and name are required');
+    }
+    if (dto.password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
+    }
+
+    const existing = await this.userRepo.findOne({ where: { email } });
+    if (existing) {
+      throw new BadRequestException('A user with this email already exists');
+    }
+
+    const roleMap: Record<string, UserRole> = {
+      bidder: UserRole.BIDDER,
+      seller: UserRole.SELLER,
+      admin: UserRole.ADMIN,
+    };
+    const role = roleMap[dto.role || 'bidder'] ?? UserRole.BIDDER;
+
+    const user = this.userRepo.create({
+      email,
+      passwordHash: await bcrypt.hash(dto.password, 10),
+      name: dto.name.trim(),
+      role,
+      isEmailVerified: true,
+    });
+    const saved = await this.userRepo.save(user);
+    const { passwordHash: _ph, ...result } = saved;
+    return result;
+  }
+
   // ─── Buyers Management ──────────────────────────────────────────
   async findAllBuyers() {
     return this.userRepo.find({

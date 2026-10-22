@@ -1,4 +1,8 @@
-import type { LLMModel } from '../../models';
+import type {
+  AIFeatureConfig,
+  LLMModel,
+  LLMProvider,
+} from '../../models';
 import { auth } from '@/auth';
 import { cache } from 'react';
 
@@ -24,7 +28,7 @@ const getSessionToken = cache(async (): Promise<string | null> => {
 });
 
 /** Server-side GET with the Auth.js session token attached when present. */
-async function apiGet(path: string, fallback: unknown): Promise<any> {
+async function apiGet<T>(path: string, fallback: T): Promise<T> {
   try {
     const token = await getSessionToken();
     const res = await fetch(`${API_URL}${path}`, {
@@ -35,49 +39,54 @@ async function apiGet(path: string, fallback: unknown): Promise<any> {
       cache: 'no-store',
     });
     if (!res.ok) return fallback;
-    const json = await res.json();
+    const json = (await res.json()) as { data?: T };
     return json.data ?? fallback;
   } catch {
     return fallback;
   }
 }
 
-export async function getAIProviders() {
-  return apiGet('/admin/ai/providers', []);
+export interface AIUsageSummary {
+  totalTokens: number;
+  totalCost: number;
+  byProvider: Record<string, { tokens: number; cost: number }>;
 }
 
-export async function getAIProvider(id: string) {
-  return apiGet(`/admin/ai/providers/${id}`, undefined);
+export async function getAIProviders(): Promise<LLMProvider[]> {
+  return apiGet<LLMProvider[]>('/admin/ai/providers', []);
 }
 
-export async function getProviderModels(providerId: string) {
-  return apiGet(`/admin/ai/providers/${providerId}/models`, []);
+export async function getAIProvider(id: string): Promise<LLMProvider | undefined> {
+  return apiGet<LLMProvider | undefined>(`/admin/ai/providers/${id}`, undefined);
 }
 
-export async function getAIFeatures() {
-  return apiGet('/admin/ai/features', []);
+export async function getProviderModels(providerId: string): Promise<LLMModel[]> {
+  return apiGet<LLMModel[]>(`/admin/ai/providers/${providerId}/models`, []);
 }
 
-export async function getAIFeature(id: string) {
-  return apiGet(`/admin/ai/features/${id}`, undefined);
+export async function getAIFeatures(): Promise<AIFeatureConfig[]> {
+  return apiGet<AIFeatureConfig[]>('/admin/ai/features', []);
 }
 
-export async function getAIUsageSummary() {
-  return apiGet('/admin/ai/usage/summary', {
+export async function getAIFeature(id: string): Promise<AIFeatureConfig | undefined> {
+  return apiGet<AIFeatureConfig | undefined>(`/admin/ai/features/${id}`, undefined);
+}
+
+export async function getAIUsageSummary(): Promise<AIUsageSummary> {
+  return apiGet<AIUsageSummary>('/admin/ai/usage/summary', {
     totalTokens: 0,
     totalCost: 0,
     byProvider: {},
   });
 }
 
-export async function getAllModels() {
+export async function getAllModels(): Promise<LLMModel[]> {
   const providers = await getAIProviders();
-  const models: Record<string, unknown>[] = [];
+  const models: LLMModel[] = [];
   for (const p of providers) {
-    for (const m of (p.models || [])) {
+    for (const m of p.models ?? []) {
       models.push({ ...m, provider: p });
     }
   }
-  // Runtime shape is LLMModel + provider; assert at the boundary.
-  return models as unknown as LLMModel[];
+  return models;
 }

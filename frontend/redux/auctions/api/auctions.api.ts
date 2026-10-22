@@ -5,7 +5,7 @@ const auctionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getAuctions: builder.query<Auction[], AuctionFilters | void>({
       query: (filters) => ({
-        url: '/auctions',
+        url: '/products',
         params: filters
           ? {
               categories: filters.categories.join(','),
@@ -27,12 +27,12 @@ const auctionsApi = api.injectEndpoints({
     }),
 
     getFeaturedAuctions: builder.query<Auction[], void>({
-      query: () => '/auctions/featured',
+      query: () => '/products/featured',
       providesTags: [{ type: 'Auction', id: 'FEATURED' }],
     }),
 
     getAuctionById: builder.query<Auction, string>({
-      query: (id) => `/auctions/${id}`,
+      query: (id) => `/products/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'Auction', id }],
     }),
 
@@ -76,7 +76,7 @@ const auctionsApi = api.injectEndpoints({
 
     updateAuction: builder.mutation<Auction, { id: string; data: Partial<Auction> }>({
       query: ({ id, data }) => ({
-        url: `/auctions/${id}`,
+        url: `/products/${id}`,
         method: 'PATCH',
         body: data,
       }),
@@ -87,7 +87,7 @@ const auctionsApi = api.injectEndpoints({
     }),
 
     deleteAuction: builder.mutation<void, string>({
-      query: (id) => ({ url: `/auctions/${id}`, method: 'DELETE' }),
+      query: (id) => ({ url: `/products/${id}`, method: 'DELETE' }),
       invalidatesTags: (_result, _error, id) => [
         { type: 'Auction', id },
         { type: 'Auction', id: 'LIST' },
@@ -118,7 +118,7 @@ const auctionsApi = api.injectEndpoints({
     // ─── User-scoped ────────────────────────────────────────────────
 
     getUserAuctions: builder.query<Auction[], string>({
-      query: (userId) => `/users/${userId}/auctions`,
+      query: (userId) => `/products?sellerId=${userId}`,
       providesTags: [{ type: 'Auction', id: 'LIST' }],
     }),
 

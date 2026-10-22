@@ -24,7 +24,7 @@ const MY_BIDS_FILTER_TABS = [
 const data: MyBid[] = [
   {
     id: '1',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -34,7 +34,7 @@ const data: MyBid[] = [
   },
   {
     id: '2',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 35000000,
@@ -44,7 +44,7 @@ const data: MyBid[] = [
   },
   {
     id: '3',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 35000000,
@@ -54,7 +54,7 @@ const data: MyBid[] = [
   },
   {
     id: '4',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -64,7 +64,7 @@ const data: MyBid[] = [
   },
   {
     id: '5',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 35000000,
@@ -74,7 +74,7 @@ const data: MyBid[] = [
   },
   {
     id: '6',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -84,7 +84,7 @@ const data: MyBid[] = [
   },
   {
     id: '7',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -94,7 +94,7 @@ const data: MyBid[] = [
   },
   {
     id: '8',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -104,7 +104,7 @@ const data: MyBid[] = [
   },
   {
     id: '9',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -114,7 +114,7 @@ const data: MyBid[] = [
   },
   {
     id: '10',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     auction: 'Audi RSQ8 Performance',
     lot: '#123456',
     currentBid: 36000000,
@@ -129,7 +129,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '1',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -139,7 +139,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '2',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -149,7 +149,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '3',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -159,7 +159,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '4',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -169,7 +169,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '5',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -179,7 +179,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '6',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -189,7 +189,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '7',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -199,7 +199,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '8',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -209,7 +209,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '9',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -219,7 +219,7 @@ const purchases_data: PurchaseInvoice[] = [
   {
     id: '10',
     invoiceId: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -308,7 +308,7 @@ const DUMMY_WALLET_PAYMENTS: WalletPayment[] = [
 const buyer_active_auction_data: ActiveAuction[] = [
   {
     id: 'AUC-001',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     name: 'Audi RSQ8 Performance',
     details: '2022 · 14 km · 2 487 cm3',
     currentBid: 35000000,
@@ -317,7 +317,7 @@ const buyer_active_auction_data: ActiveAuction[] = [
   },
   {
     id: 'AUC-002',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     name: 'Audi RSQ8 Performance',
     details: '2022 · 14 km · 2 487 cm3',
     currentBid: 35000000,
@@ -326,7 +326,7 @@ const buyer_active_auction_data: ActiveAuction[] = [
   },
   {
     id: 'AUC-003',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     name: 'Audi RSQ8 Performance',
     details: '2022 · 14 km · 2 487 cm3',
     currentBid: 35000000,
@@ -362,7 +362,7 @@ const alerts: AuctionAlert[] = [
 const recent_invoice_data: RecentInvoice[] = [
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -371,7 +371,7 @@ const recent_invoice_data: RecentInvoice[] = [
   },
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -380,7 +380,7 @@ const recent_invoice_data: RecentInvoice[] = [
   },
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -389,7 +389,7 @@ const recent_invoice_data: RecentInvoice[] = [
   },
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -398,7 +398,7 @@ const recent_invoice_data: RecentInvoice[] = [
   },
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -407,7 +407,7 @@ const recent_invoice_data: RecentInvoice[] = [
   },
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -416,7 +416,7 @@ const recent_invoice_data: RecentInvoice[] = [
   },
   {
     id: 'INV-012',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     item: 'Audi RSQ8 Performance',
     vendor: 'Grey Auto',
     amount: 35000000,
@@ -580,7 +580,7 @@ const messages: Message[] = [
 const wishlistItems: WishlistItem[] = [
   {
     id: '1',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     title: 'Audi RSQ8 Performance',
     specs: '2022 · 14 km · 2 487 cm3 · Hybrid',
     currentBid: 5000000,
@@ -591,7 +591,7 @@ const wishlistItems: WishlistItem[] = [
   },
   {
     id: '2',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     title: 'Audi RSQ8 Performance',
     specs: '2022 · 14 km · 2 487 cm3 · Hybrid',
     currentBid: 5000000,
@@ -602,7 +602,7 @@ const wishlistItems: WishlistItem[] = [
   },
   {
     id: '3',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     title: 'Audi RSQ8 Performance',
     specs: '2022 · 14 km · 2 487 cm3 · Hybrid',
     currentBid: 5000000,
@@ -613,7 +613,7 @@ const wishlistItems: WishlistItem[] = [
   },
   {
     id: '4',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     title: 'Audi RSQ8 Performance',
     specs: '2022 · 14 km · 2 487 cm3 · Hybrid',
     currentBid: 5000000,
@@ -624,7 +624,7 @@ const wishlistItems: WishlistItem[] = [
   },
   {
     id: '5',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     title: 'Audi RSQ8 Performance',
     specs: '2022 · 14 km · 2 487 cm3 · Hybrid',
     currentBid: 5000000,
@@ -635,7 +635,7 @@ const wishlistItems: WishlistItem[] = [
   },
   {
     id: '6',
-    image: '/images/audi-rsq8.png',
+    image: '/car.svg',
     title: 'Audi RSQ8 Performance',
     specs: '2022 · 14 km · 2 487 cm3 · Hybrid',
     currentBid: 5000000,

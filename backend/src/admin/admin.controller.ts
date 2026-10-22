@@ -58,6 +58,23 @@ export class AdminController {
     return { success: true, message: 'Admin removed' };
   }
 
+  // ─── Users (buyers / sellers / admins) ──────────────────────────
+  @Post('users')
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
+  @ApiOperation({ summary: 'Create a user with any role (bidder | seller | admin)' })
+  async createUser(
+    @Body()
+    dto: {
+      email: string;
+      password: string;
+      name: string;
+      role?: 'bidder' | 'seller' | 'admin';
+    },
+  ) {
+    const data = await this.adminService.createUser(dto);
+    return { success: true, message: 'User created', data };
+  }
+
   // ─── Buyers Management ──────────────────────────────────────────
   @Get('buyers')
   @ApiOperation({ summary: 'List all buyers' })
