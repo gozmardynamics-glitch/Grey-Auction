@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { useAppSelector } from '@/redux/store';
 
 interface UseAIFeatureOptions {
   featureKey: string;
@@ -23,6 +24,8 @@ export function useAIFeature({ featureKey, onSuccess, onError }: UseAIFeatureOpt
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // /ai/execute is JWT-guarded; the session token comes from the Redux bridge.
+  const authToken = useAppSelector((state) => state.auth.token);
 
   const execute = useCallback(async (input: Record<string, unknown>): Promise<string | null> => {
     setIsLoading(true);
@@ -30,7 +33,10 @@ export function useAIFeature({ featureKey, onSuccess, onError }: UseAIFeatureOpt
     try {
       const res = await fetch(`${API_URL}/ai/execute`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ featureKey, input }),
         credentials: 'include',
       });
@@ -49,7 +55,7 @@ export function useAIFeature({ featureKey, onSuccess, onError }: UseAIFeatureOpt
     } finally {
       setIsLoading(false);
     }
-  }, [featureKey, onSuccess, onError]);
+  }, [featureKey, onSuccess, onError, authToken]);
 
   const reset = useCallback(() => {
     setResult(null);

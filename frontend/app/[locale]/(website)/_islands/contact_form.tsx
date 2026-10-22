@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 
 import { Card, CardContent } from '@/shared/components/common/card';
 import {
@@ -35,12 +36,26 @@ export default function ContactForm() {
     setIsLoading(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/contact`, {
+      // Backend ContactController: subject + message are required; the name is
+      // split into one field for the ticket queue.
+      const res = await fetch(`${apiBase}/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          email: data.email,
+          subject: `Website enquiry from ${data.firstName} ${data.lastName}`.trim(),
+          message: data.message,
+        }),
       });
-    } catch {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Could not send your message');
+      }
+      toast.success('Thanks — our team will get back to you shortly.');
+      form.reset();
+    } catch (error: any) {
+      toast.error(error?.message || 'Could not send your message. Please try again.');
     } finally {
       setIsLoading(false);
     }
