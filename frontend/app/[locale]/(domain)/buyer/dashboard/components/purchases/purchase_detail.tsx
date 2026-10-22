@@ -100,7 +100,7 @@ export default function PurchaseDetail({
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
               <Image
-                src="/images/avatar.png"
+                src="/placeholder.svg"
                 alt={invoice.vendor}
                 width={40}
                 height={40}

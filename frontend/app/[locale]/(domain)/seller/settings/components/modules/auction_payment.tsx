@@ -29,7 +29,7 @@ export default function AuctionPaymentSettings() {
       if (!token) return;
       setLoading(true);
       try {
-        const res = await fetch(apiBase + '/seller/profile/me', {
+        const res = await fetch(apiBase + '/sellers/profile/me', {
           headers: { Authorization: 'Bearer ' + token },
         });
         if (res.ok) {
@@ -53,7 +53,7 @@ export default function AuctionPaymentSettings() {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch(apiBase + '/seller/profile/me', {
+      const res = await fetch(apiBase + '/sellers/profile/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({

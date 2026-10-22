@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 
 import {
   Card,
@@ -86,14 +87,34 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
     setIsLoading(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/checkout`, {
+
+      // Checkout is driven by a won-auction invoice. The invoice id arrives in
+      // the URL (?invoice=...) from the invoice/bid flow — there is no
+      // server-side "cart" to post to.
+      const invoiceId =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('invoice')
+          : null;
+
+      if (!invoiceId) {
+        toast.error('No invoice selected. Win an auction first to check out.');
+        return;
+      }
+
+      const res = await fetch(`${apiBase}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ invoiceId, ...data }),
       });
-      router.push('/checkout/payment');
-    } catch {
-      router.push('/checkout/payment');
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Could not create the order');
+      }
+
+      router.push(`/checkout/payment?invoice=${encodeURIComponent(invoiceId)}`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Could not create the order. Please try again.');
     } finally {
       setIsLoading(false);
     }

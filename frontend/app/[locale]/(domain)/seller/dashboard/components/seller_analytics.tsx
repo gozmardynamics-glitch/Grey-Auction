@@ -65,7 +65,7 @@ export default function SellerAnalytics() {
         const label = d.toLocaleString(locale, { month: 'short' });
         requests.push(
           fetch(
-            apiBase + '/seller/statistics/me?period=MONTHLY&year=' + year + '&month=' + month,
+            apiBase + '/sellers/statistics/me?period=MONTHLY&year=' + year + '&month=' + month,
             { headers: { Authorization: 'Bearer ' + token } },
           )
             .then((r) => r.json())

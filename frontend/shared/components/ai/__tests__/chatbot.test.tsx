@@ -13,11 +13,18 @@ vi.mock('next-intl', () => ({
       greeting: 'Hello! I am the Grey Auctions assistant.',
       error: 'Sorry, I encountered an error. Please try again.',
       notConfigured: 'The AI assistant is not configured yet. Please try again later.',
+      signInRequired: 'Please sign in to chat with the AI assistant.',
       send: 'Send',
       close: 'Close assistant',
     };
     return translations[key] ?? key;
   },
+}));
+
+// The chatbot reads the backend JWT from Redux to call the guarded AI endpoint.
+vi.mock('@/redux/store', () => ({
+  useAppSelector: (selector: (state: any) => unknown) =>
+    selector({ auth: { token: 'test-token' } }),
 }));
 
 describe('AIChatbot', () => {
@@ -48,7 +55,7 @@ describe('AIChatbot', () => {
     expect(screen.getByPlaceholderText('Ask me anything...')).toBeInTheDocument();
   });
 
-  it('posts to /ai/public/execute and renders the reply', async () => {
+  it('posts to the authenticated /ai/execute endpoint and renders the reply', async () => {
     const user = userEvent.setup();
     render(<AIChatbot />);
     await user.click(screen.getByRole('button', { name: /open ai assistant/i }));
@@ -59,12 +66,35 @@ describe('AIChatbot', () => {
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
     const [url, opts] = (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toContain('/ai/public/execute');
+    expect(url).toContain('/ai/execute');
+    expect(url).not.toContain('/ai/public/execute');
     expect(opts.method).toBe('POST');
+    expect(opts.headers.Authorization).toBe('Bearer test-token');
     const body = JSON.parse(opts.body);
     expect(body.featureKey).toBe('chatbot_assistant');
 
     await waitFor(() => expect(screen.getByText('Here is a helpful reply.')).toBeInTheDocument());
+  });
+
+  it('asks anonymous visitors to sign in rather than failing silently', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized',
+    } as unknown as Response);
+
+    const user = userEvent.setup();
+    render(<AIChatbot />);
+    await user.click(screen.getByRole('button', { name: /open ai assistant/i }));
+
+    await user.type(screen.getByPlaceholderText('Ask me anything...'), 'hi');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Please sign in to chat with the AI assistant.'),
+      ).toBeInTheDocument(),
+    );
   });
 
   it('shows the not-configured copy for the not-enabled error', async () => {

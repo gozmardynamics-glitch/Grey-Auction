@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
+import { useAppSelector } from '@/redux/store';
 
 const AddAdminDialog = dynamic(() => import('../admins/components/add_admin_dialog'));
 
 export default function AddAdminAction() {
   const [addAdminOpen, setAddAdminOpen] = useState(false);
+  const token = useAppSelector((state) => state.auth.token);
 
   return (
     <>
@@ -22,13 +25,22 @@ export default function AddAdminAction() {
         onSubmit={async (data) => {
           try {
             const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/auth/register`, {
+            const res = await fetch(`${apiBase}/admin/admins`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...data, role: 'admin' }),
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({ ...data, role: 'platform_admin' }),
             });
-          } catch (error) {
-            console.error('Failed to add admin:', error);
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.message || 'Failed to create admin');
+            }
+            toast.success('Admin created');
+            setAddAdminOpen(false);
+          } catch (error: any) {
+            toast.error(error?.message || 'Failed to add admin');
           }
         }}
       />

@@ -1827,6 +1827,7 @@
     "greeting": "Hello! I'm the Grey Auctions assistant. How can I help you today?",
     "error": "Sorry, I encountered an error. Please try again.",
     "notConfigured": "The AI assistant is not configured yet. Please try again later.",
+    "signInRequired": "Please sign in to chat with the AI assistant.",
     "send": "Send",
     "close": "Close assistant"
   },

@@ -59,7 +59,7 @@ export default function SellerPaymentSettings() {
     const fetchAccounts = async () => {
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${apiBase}/seller/payment-accounts`);
+        const res = await fetch(`${apiBase}/sellers/payment-accounts`);
         if (res.ok) {
           const json = await res.json();
           const data = json.data ?? json;

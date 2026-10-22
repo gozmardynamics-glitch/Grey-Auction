@@ -16,7 +16,8 @@ export interface SettlementResult {
 
 type SettlementOutcome =
   | { kind: 'settled'; detail: string; buyerId: string; sellerId: string; title: string; slug: string | null; id: string; hammerPrice: number }
-  | { kind: 'no-bid' | 'skip'; detail: string };
+  | { kind: 'no-bid' | 'skip'; detail: string }
+  | { kind: 'reserve-not-met'; detail: string; sellerId: string; title: string };
 
 @Injectable()
 export class InvoiceSettlementService {
@@ -88,6 +89,32 @@ export class InvoiceSettlementService {
               },
             );
 
+            // R2: a reserve price is a hard floor. If the winning bid is below
+            // it the lot must NOT be invoiced — close it unsold instead, so a
+            // seller is never forced to sell under their stated minimum.
+            const reserve = Number(locked.reservePrice);
+            const hasReserve =
+              locked.hasReservePrice === true &&
+              locked.reservePrice != null &&
+              Number.isFinite(reserve) &&
+              reserve > 0;
+            if (hasReserve && Number(winningBid.amount) < reserve) {
+              locked.status = ProductStatus.CLOSED;
+              await productRepo.save(locked);
+              return {
+                kind: 'reserve-not-met',
+                detail:
+                  product.title +
+                  ': reserve not met (' +
+                  winningBid.amount +
+                  ' < ' +
+                  reserve +
+                  ') — closed unsold',
+                sellerId: locked.sellerId,
+                title: locked.title,
+              };
+            }
+
             await this.invoiceService.createInvoice(manager, {
               auctionId: locked.id,
               productId: locked.id,
@@ -146,6 +173,17 @@ export class InvoiceSettlementService {
         } else {
           result.skipped++;
           result.details.push(outcome.detail);
+
+          // Tell the seller their reserve was not met so they can relist.
+          if (outcome.kind === 'reserve-not-met' && this.notifications) {
+            void this.notifications
+              .notifyAuctionEnded(outcome.sellerId, {
+                auctionTitle: outcome.title ?? 'the auction',
+                auctionId: outcome.title ?? '',
+                link: '/seller/auctions',
+              })
+              .catch(() => undefined);
+          }
         }
       } catch (error: any) {
         result.errors++;
