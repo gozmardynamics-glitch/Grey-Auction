@@ -1295,3 +1295,72 @@ export async function getSellerConversations() {
   const list = unwrapList(data);
   return (list ?? []) as SellerConversation[];
 }
+
+/** Product document as returned by the public GET /products/:id/documents route. */
+export interface ProductDocument {
+  id: string;
+  productId: string;
+  documentType: string;
+  title?: string | null;
+  description?: string | null;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  verificationStatus: string;
+  uploadedAt: string;
+}
+
+/** Fee breakdown as returned by GET /fees/breakdown. */
+export interface FeeBreakdown {
+  bidAmount: number;
+  buyerFee: number;
+  sellerFee: number;
+  vatOnBid: number;
+  vatOnBuyerFee: number;
+  vatOnCommission: number;
+  otherCharges: number;
+  fixedFee: number;
+  total: number;
+  sellerNet: number;
+  vatBase: string;
+  source: string;
+}
+
+/**
+ * Fetch verified documents for a product (public endpoint, no auth required).
+ * Returns empty array on failure rather than throwing.
+ */
+export async function getProductDocuments(productId: string): Promise<ProductDocument[]> {
+  if (!productId) return [];
+  try {
+    const data = await apiFetch(`/products/${encodeURIComponent(productId)}/documents`);
+    const list = unwrapList(data);
+    if (list && Array.isArray(list)) return list as ProductDocument[];
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch fee breakdown for a bid amount (requires auth for per-product/seller overrides).
+ * Returns a minimal breakdown with buyerFee percentage for display.
+ */
+export async function getFeeBreakdown(
+  amount: number,
+  productId?: string,
+  category?: string,
+): Promise<FeeBreakdown | null> {
+  if (!amount || amount <= 0) return null;
+  const params = new URLSearchParams({ amount: String(amount) });
+  if (productId) params.set('productId', productId);
+  if (category) params.set('category', category);
+  try {
+    const data = await apiFetch(`/fees/breakdown?${params.toString()}`);
+    if (!data || typeof data !== 'object') return null;
+    return data as FeeBreakdown;
+  } catch {
+    return null;
+  }
+}

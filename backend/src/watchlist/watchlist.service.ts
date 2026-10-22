@@ -50,13 +50,14 @@ export class WatchlistService {
   /**
    * Idempotent toggle. Returns the resulting state so the client can reconcile
    * an optimistic UI update without a second round-trip.
+   * Also updates the product's watchersCount column for fast grid rendering.
    */
   async toggle(
     userId: string,
     productId: string,
   ): Promise<{ watching: boolean; watchersCount: number }> {
-    const exists = await this.products.findOne({ where: { id: productId } });
-    if (!exists) throw new NotFoundException('Product not found');
+    const product = await this.products.findOne({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Product not found');
 
     let watching: boolean;
     const existing = await this.watchlist.findOne({
@@ -65,11 +66,15 @@ export class WatchlistService {
     if (existing) {
       await this.watchlist.remove(existing);
       watching = false;
+      // Decrement watchersCount
+      await this.products.decrement({ id: productId }, 'watchersCount', 1);
     } else {
       await this.watchlist.save(
         this.watchlist.create({ userId, productId }),
       );
       watching = true;
+      // Increment watchersCount
+      await this.products.increment({ id: productId }, 'watchersCount', 1);
     }
 
     const watchersCount = await this.watchlist.count({
@@ -80,6 +85,7 @@ export class WatchlistService {
 
   async remove(userId: string, productId: string): Promise<{ watching: false }> {
     await this.watchlist.delete({ userId, productId });
+    await this.products.decrement({ id: productId }, 'watchersCount', 1);
     return { watching: false };
   }
 }

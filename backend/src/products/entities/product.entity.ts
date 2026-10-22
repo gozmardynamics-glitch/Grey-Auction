@@ -81,6 +81,9 @@ export class Product {
   @Column({ default: 0 })
   totalBids: number;
 
+  @Column({ default: 0 })
+  watchersCount: number;
+
   @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
   reservePrice: number;
 

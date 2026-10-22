@@ -1,8 +1,9 @@
 import { FileText, AlertTriangle, Scale, Download, Star } from 'lucide-react';
 import { Button } from '@/shared/components/common';
-import type { SellerReviewsView } from '@/lib/server/data';
+import type { SellerReviewsView, ProductDocument, FeeBreakdown } from '@/lib/server/data';
 import ProductDetailsTabs from '../tabs';
 import SellerReputation from './components/seller_reputation';
+import { formatCurrency } from '@/shared/utils/helpers';
 
 interface AuctionDescription {
   about: string;
@@ -13,6 +14,11 @@ interface ProductTabsContentProps {
   description?: AuctionDescription;
   reviews?: SellerReviewsView;
   sellerName?: string;
+  auctionId?: string;
+  category?: string;
+  startingBid?: number;
+  documents?: ProductDocument[];
+  feeBreakdown?: FeeBreakdown;
 }
 
 const defaultDescription: AuctionDescription = {
@@ -20,10 +26,28 @@ const defaultDescription: AuctionDescription = {
   mechanical: [],
 };
 
+function getDocumentIcon(mimeType: string) {
+  if (mimeType?.startsWith('image/')) return { color: 'bg-green-100', iconColor: 'text-green-600' };
+  if (mimeType?.includes('pdf')) return { color: 'bg-red-100', iconColor: 'text-red-600' };
+  if (mimeType?.includes('word') || mimeType?.includes('document')) return { color: 'bg-blue-100', iconColor: 'text-blue-600' };
+  return { color: 'bg-gray-100', iconColor: 'text-gray-600' };
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
+
 export default function ProductTabsContent({
-  description = defaultDescription,
+  description = { about: 'No description provided for this lot.', mechanical: [] },
   reviews,
   sellerName,
+  auctionId,
+  category,
+  startingBid,
+  documents = [],
+  feeBreakdown,
 }: ProductTabsContentProps) {
   const tabs = [
     {
@@ -121,7 +145,19 @@ export default function ProductTabsContent({
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>Full payment must be received within 48 hours of auction close</li>
                 <li>Accepted methods: Bank transfer, Flutterwave, Paystack</li>
-                <li>A buyer&apos;s premium of 10% applies to the winning bid amount</li>
+                <li>
+                  {feeBreakdown && feeBreakdown.bidAmount > 0 ? (
+                    <>
+                      A buyer&apos;s premium of{' '}
+                      <strong>
+                        {((feeBreakdown.buyerFee / feeBreakdown.bidAmount) * 100).toFixed(1)}%
+                      </strong>{' '}
+                      applies to the winning bid amount
+                    </>
+                  ) : (
+                    'A buyer&apos;s premium applies to the winning bid amount (see fee breakdown at checkout)'
+                  )}
+                </li>
                 <li>Items remain the property of the seller until full payment is received</li>
               </ul>
             </div>
@@ -149,60 +185,62 @@ export default function ProductTabsContent({
     },
     {
       value: 'document',
-      label: 'Documents',
+      label: `Documents${documents.length > 0 ? ` (${documents.length})` : ''}`,
       content: (
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <FileText className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold text-foreground">Available Documents</h3>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-border/50 p-4 hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-                  <FileText className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Vehicle Registration Certificate</p>
-                  <p className="text-xs text-muted-foreground">PDF &bull; 2.4 MB</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
+          {documents.length === 0 ? (
+            <div className="rounded-lg border border-border/50 p-6 text-center">
+              <p className="text-sm font-medium text-foreground">No documents available</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The seller has not uploaded any documents for this lot.
+              </p>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-border/50 p-4 hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Inspection Report</p>
-                  <p className="text-xs text-muted-foreground">PDF &bull; 1.8 MB</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
+          ) : (
+            <div className="space-y-3">
+              {documents.map((doc) => {
+                const { color, iconColor } = getDocumentIcon(doc.mimeType);
+                const isVerified = doc.verificationStatus === 'VERIFIED';
+                return (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between rounded-lg border border-border/50 p-4 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
+                        <FileText className={`h-5 w-5 ${iconColor}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {doc.title || doc.documentType.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-2">
+                          {doc.fileName} &bull; {formatFileSize(doc.fileSize)}
+                          {isVerified && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+                              Verified
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => window.open(doc.fileUrl, '_blank')}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-border/50 p-4 hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                  <FileText className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Service History</p>
-                  <p className="text-xs text-muted-foreground">PDF &bull; 3.1 MB</p>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
-            </div>
-          </div>
+          )}
           <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />

@@ -57,7 +57,7 @@ import AuctionSaleInfo from './components/auction_sale_info';
 import BidHistoryTable from './components/bid_history_table';
 import PlaceBidModal from './components/place_bid_modal';
 import ProductTabsContent from './product_tabs_content';
-import type { SellerReviewsView } from '@/lib/server/data';
+import type { SellerReviewsView, ProductDocument, FeeBreakdown } from '@/lib/server/data';
 import RelatedLots from '../../components/related_lots/related_lots';
 import MoreFromSeller from '../../components/more_from_seller';
 import AIRecommendations from '../../components/ai_recommendations';
@@ -68,6 +68,8 @@ interface ProductDetailsClientProps {
   images: string[];
   auctionDetails: AuctionDetail[];
   reviews?: SellerReviewsView;
+  documents?: ProductDocument[];
+  feeBreakdown?: FeeBreakdown;
 }
 
 export default function ProductDetailsClient({
@@ -75,6 +77,8 @@ export default function ProductDetailsClient({
   images,
   auctionDetails,
   reviews,
+  documents,
+  feeBreakdown,
 }: ProductDetailsClientProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -586,6 +590,11 @@ export default function ProductDetailsClient({
             description={{ about: auction.description || 'No description provided for this lot.', mechanical: [] }}
             reviews={reviews}
             sellerName={auction.sellerName}
+            auctionId={auction.id}
+            category={auction.category}
+            startingBid={auction.startingBid}
+            documents={documents}
+            feeBreakdown={feeBreakdown}
           />
         </section>
 

@@ -586,5 +586,7 @@ html.dark body::before {
 
 @layer base {
   * { @apply border-border outline-ring/50; }
+  /* Ensure the HTML hidden attribute is respected for Radix UI tabs and other components */
+  [hidden] { display: none !important; }
   body { @apply bg-background text-foreground; }
 }

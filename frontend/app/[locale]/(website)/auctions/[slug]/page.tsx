@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getAuctionBySlug, getSellerReviews } from '@/lib/server/data';
+import { getAuctionBySlug, getSellerReviews, getProductDocuments, getFeeBreakdown } from '@/lib/server/data';
 import { images, auctionDetails } from '../../models/data';
 import ProductDetailsClient from './product_details_client';
 import { AuctionSchema } from '@/shared/components/common/structured_data';
@@ -59,6 +59,9 @@ export default async function ProductDetailsPage({
   }
 
   const reviews = await getSellerReviews(auction.sellerId);
+  const documents = await getProductDocuments(auction.id);
+  const feeBreakdownRaw = await getFeeBreakdown(auction.startingBid, auction.id, auction.category);
+  const feeBreakdown = feeBreakdownRaw ?? undefined;
 
   return (
     <>
@@ -79,6 +82,8 @@ export default async function ProductDetailsPage({
         images={images}
         auctionDetails={auctionDetails}
         reviews={reviews}
+        documents={documents}
+        feeBreakdown={feeBreakdown}
       />
     </>
   );
