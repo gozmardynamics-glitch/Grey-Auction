@@ -65,6 +65,8 @@ Every `CI` run on `main` and `master` since 2026-10-01 finished **failure**. Two
 
 Fixed: added `eslint` 9 + `typescript-eslint` + `backend/eslint.config.mjs` (now 0 errors, 204 `any` warnings), relaxed the two aggressive React-19 rules to `warn` in `frontend/eslint.config.mjs`, converted the two async-page hooks to `getTranslations`, and reordered both jobs so **build and tests run before lint** — a style finding can no longer mask a compile or test failure. Lint now gates on **errors only**; the warning baseline is tracked debt, not a build blocker.
 
+**As of this handoff CI has never actually run green-to-completion.** After the fix landed, run `39815055800` sat in `queued` for 40+ minutes without a runner ever picking it up, and no later run started — so the workflow changes are unproven on a real runner. GitHub Actions capacity/quota is the suspect, not the YAML. Everything was instead verified locally (build, 310 backend tests, 85 frontend tests, `tsc`, lint, Playwright). First task next session: confirm a run completes.
+
 ---
 
 ## 3. What was built (this arc)
@@ -94,6 +96,16 @@ Verified live on `jev-1.14.0`: clean Hilux → approve (max 31%); replica Rolex 
 - Skill: `~/.config/mimocode/skills/typesafe-ai/SKILL.md` + `~/.agents/skills/typesafe-ai/SKILL.md`
 - **TypeSafe MCP server** (I wrote it — TypeSafe publishes no official MCP): `~/.config/mimocode/mcp/typesafe/server.mjs`, registered globally in `~/.config/mimocode/mimocode.jsonc` under `mcp.typesafe`. Tools: `typesafe_evaluate`, `typesafe_noul`, `typesafe_choice`, `typesafe_score`. Verified: `mimo mcp list` → `✓ typesafe connected`.
 
+### 3.5 Trust surface + server-side watchlist (later session)
+Four backlog items from §6, all verified against the running stack:
+
+- **Seller reviews on the lot page.** New `auctions/[slug]/components/seller_reputation.tsx` plus a `Seller Reviews` tab. `getSellerReviews()` fetches the aggregate server-side; the tab shows average, a 1-5 breakdown, per-review seller responses and a verified-purchase pill. The public `GET /sellers/:id/reviews` was serialising whole entities — `bidder_id`, `flagged_by_id` and `moderation metadata` are now stripped, so anonymous buyers are no longer identifiable by UUID.
+- **Verified-seller badge on cards.** `GET /seller-badges?userIds=…` (new `SellerBadgeBatchController`) resolves user → KYC tier in one chunked batch per grid. Deliberately **not** `/sellers/badges`: `SellerController` owns `@Get(':id')` and the first-registered module wins, which made the sibling route return 401. Cards render a `Verified` pill from that tier with no per-card request.
+- **Escrow UI mounted.** `EscrowStatus` now renders on the buyer purchase detail against `GET /escrow/holds/invoice/:id`. Disputes were already reachable through `MyDisputes` in the buyer dashboard.
+- **Server-side watchlist.** New `watchlist` module (`watchlist_items`, unique on `(userId, productId)`) with `GET /watchlist`, `GET /watchlist/ids`, `POST|DELETE /watchlist/:productId`. `AuthSync` hydrates Redux from `/watchlist/ids`; the card updates optimistically and rolls back on failure. The wishlist is now account-scoped, so `/wishlist` requires sign-in where it previously showed a guest's local list.
+
+Verification used Playwright against `localhost:3000` (badge present, reviews tab opens, no page errors); backend 310 tests, frontend 85, `tsc` and lint all clean.
+
 ---
 
 ## 4. Local credentials (dev only)
@@ -106,6 +118,8 @@ Verified live on `jev-1.14.0`: clean Hilux → approve (max 31%); replica Rolex 
 | support admin | `support@greyauction.com` | `Support@12345` |
 
 Seeded with `npm run seed:admins:dev` (reads `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD`). Also `admin@test.com` / `AdminPass123!` and `clerk.tester@example.com` exist from testing.
+
+**Dev data changed while testing the badge:** seller `70bd6713-a440-49b2-b750-086a2b3f78b3` (the `Seller` row whose `user_id` is the admin, which owns every seeded lot) was moved from `PENDING/INACTIVE` to **`APPROVED/ACTIVE`** via `POST /sellers/:id/approve`, so that at least one listing shows the Verified pill. Revert with `POST /sellers/70bd6713-a440-49b2-b750-086a2b3f78b3/reject` if you want the original state back.
 
 ---
 
@@ -125,21 +139,27 @@ ngrok authtoken + static domain `https://untying-heaviness-crestless.ngrok-free.
 
 ## 6. Known gaps — the backlog for the next session
 
-Deliberately **not** fixed (features, not bugs). Ordered by trust impact:
+Deliberately **not** fixed (features, not bugs). Ordered by trust impact.
 
-1. **Reviews aren't surfaced** — backend is complete (`seller-review.service.ts`, `GET /sellers/:id/reviews`) but no frontend component calls it. Add a reputation tab to the lot page.
-2. **No verified-seller badge on cards** — `KycBadge` renders only on the detail page.
-3. **Escrow/dispute UI unmounted** — `shared/components/escrow/escrow_status.tsx` and `shared/components/trust/dispute_dialog.tsx` exist but nothing renders them.
-4. **Watchlist is client-only** — in-memory Redux; `getWishlistItems()` returns `[]`.
+**Done this session (were items 1-4):** seller reviews are surfaced as a lot-page tab, verified-seller badges render on listing cards, `EscrowStatus` is mounted on the buyer purchase detail (disputes were already wired into the buyer dashboard via `MyDisputes`), and the watchlist is persisted server-side in a new `watchlist` module. See §3.5.
+
+Still open, in the same order as before:
+
 5. **Chat has no server store** — `GET /sellers/me/conversations` is a documented stub returning `[]`; the chat views call `/conversations/:id/messages` which does not exist.
 6. **Admin audit trail is a stub** — `audit.controller.ts` returns a hardcoded blob; no `AuditLog` entity.
 7. **Search is `ILIKE` only** — no full-text, no price/country/sort params (`product.service.ts:52`).
 8. **No metrics endpoint** — `health.controller.ts` is liveness-only.
 9. **Crons are in-process** — no queue; settlement lags up to 5 min past close.
-10. **Terms/documents hardcoded** in `product_tabs_content.tsx` (fake PDFs, fixed 10% premium shown).
+10. **Terms/documents hardcoded** in `product_tabs_content.tsx` (fake PDFs, fixed 10% premium shown). That file also still contains mojibake — `Used â€” Good condition` and `â‚¦5,000` — from a UTF-8 file read as cp1252.
 11. **Role vocabulary** — backend uses `bidder`, frontend uses `buyer`; `mapBackendRole` in `frontend/auth.ts` covers the session path but consumers weren't audited end-to-end.
 12. **Multi-currency is display-only**; payments hardcode `NGN`.
 13. **No buyer KYC** — sellers only.
+
+Newly observed while testing:
+
+- **Products are owned by a `User`, not a `Seller`** (`Product.seller` is a `User` relation, `Seller.user_id` links the KYC record). Any trust feature has to join across both. The seeded lots are all owned by `admin@greyauction.com`, so their "seller name" renders as "Super Admin".
+- **The lot page opens with a vaul drawer overlay** that intercepted Playwright clicks on first load. It did not reproduce on the second run, so treat it as an intermittent a11y/modal bug worth chasing.
+- `Product` has **no `watchersCount` column**; the card's eye counter only shows a value if the payload supplies one. The watchlist now exposes a live count per product if you want to wire it.
 
 TypeSafe could take several of these as decision features: `fraud_detection` (Noul per signal), `image_auto_tagging` (Choice), `pricing_recommendation` + `personalized_recommendations` (Score), `smart_search` (reranking). The `TypeSafeModule` + `ListingModerationService` pattern is already there to copy.
 
