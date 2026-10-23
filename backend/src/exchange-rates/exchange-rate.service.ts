@@ -1,15 +1,19 @@
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { ExchangeRate } from './exchange-rate.entity';
+import { ForexProviderService } from './forex-provider.service';
 
-/** Indicative, key-free defaults (NGN base). Overridable at runtime / via env feed. */
+/**
+ * Indicative fallbacks only — used when the table is empty AND no provider is
+ * reachable. Refreshed from live providers at boot and daily at 03:00 UTC.
+ */
 export const DEFAULT_RATES: Record<string, number> = {
   NGN: 1,
-  USD: 1500,
-  GHS: 85,
-  EUR: 1650,
+  USD: 1330,
+  GHS: 115,
+  EUR: 1495,
 };
 
 export interface RatesView {
@@ -25,10 +29,14 @@ export class ExchangeRateService implements OnModuleInit {
   constructor(
     @InjectRepository(ExchangeRate)
     private readonly repo: Repository<ExchangeRate>,
+    private readonly forex: ForexProviderService,
   ) {}
 
   async onModuleInit(): Promise<void> {
     await this.seedDefaults();
+    // Best effort: replace the indicative seeds with live rates at boot so a
+    // fresh install is not stuck on stale numbers. Failures keep the seeds.
+    void this.refresh().catch(() => undefined);
   }
 
   /** Insert defaults only when the table is empty (never clobbers edits). */
@@ -45,7 +53,9 @@ export class ExchangeRateService implements OnModuleInit {
     const rows = await this.repo.find();
     const rates: Record<string, number> = { NGN: 1 };
     for (const r of rows) rates[r.code] = Number(r.rate);
-    const updatedAt = rows.length ? new Date(Math.max(...rows.map((r) => r.updatedAt.getTime()))).toISOString() : null;
+    const updatedAt = rows.length
+      ? new Date(Math.max(...rows.map((r) => r.updatedAt.getTime()))).toISOString()
+      : null;
     return { base: 'NGN', rates, updatedAt };
   }
 
@@ -67,29 +77,67 @@ export class ExchangeRateService implements OnModuleInit {
   }
 
   /**
-   * Daily cron: refresh exchange rates from the configured feed.
-   * Runs at 03:00 UTC every day. No-op when EXCHANGE_RATE_API_URL is unset.
+   * Daily cron: refresh exchange rates from the open-source forex providers.
+   * Runs at 03:00 UTC. EXCHANGE_RATE_API_URL, when set, takes precedence.
    */
   @Cron('0 3 * * *')
   async handleRefreshCron(): Promise<void> {
-    const url = process.env.EXCHANGE_RATE_API_URL;
-    if (!url) {
-      this.logger.debug('Exchange-rate cron skipped: no EXCHANGE_RATE_API_URL configured');
-      return;
-    }
-    this.logger.log('Exchange-rate cron: refreshing from feed…');
+    this.logger.log('Exchange-rate cron: refreshing');
     const result = await this.refresh();
     if (result.updated > 0) {
       this.logger.log(`Exchange-rate cron: updated ${result.updated} rate(s)`);
     } else {
-      this.logger.warn('Exchange-rate cron: feed returned no usable rates');
+      this.logger.warn('Exchange-rate cron: no usable rates from any provider');
     }
   }
 
-  /** Best-effort live refresh from a configured feed (no-op without one). */
-  async refresh(): Promise<{ updated: number }> {
-    const url = process.env.EXCHANGE_RATE_API_URL;
-    if (!url) return { updated: 0 };
+  /**
+   * Best-effort live refresh.
+   *
+   * The default path uses the keyless open-source provider chain and re-bases
+   * its USD table onto NGN, which is how this table is stored:
+   *   rate[X] = NGN per 1 X = (USD→NGN) / (USD→X)
+   *
+   * An explicit EXCHANGE_RATE_API_URL still wins and is treated as an
+   * NGN-based `{ rates: { CODE: ngnPerUnit } }` map, matching the previous
+   * contract.
+   */
+  async refresh(): Promise<{ updated: number; source?: string }> {
+    const explicitUrl = process.env.EXCHANGE_RATE_API_URL;
+    if (explicitUrl) return this.refreshFromUrl(explicitUrl);
+
+    const usd = await this.forex.getUsdRates();
+    if (!usd) return { updated: 0 };
+
+    const ngnPerUsd = usd.rates.NGN;
+    if (!ngnPerUsd) {
+      this.logger.warn('Forex feed returned no NGN rate; keeping stored rates');
+      return { updated: 0, source: usd.source };
+    }
+
+    let updated = 0;
+    await this.upsert('NGN', 1);
+    updated += 1;
+
+    for (const [code, usdPerUnit] of Object.entries(usd.rates)) {
+      if (code === 'NGN' || !Number.isFinite(usdPerUnit) || usdPerUnit <= 0) continue;
+      const ngnPerUnit = Math.round((ngnPerUsd / usdPerUnit) * 1e6) / 1e6;
+      if (Number.isFinite(ngnPerUnit) && ngnPerUnit > 0) {
+        await this.upsert(code, ngnPerUnit);
+        updated += 1;
+      }
+    }
+
+    this.logger.log(
+      `Exchange rates refreshed from ${usd.source}: ${updated} code(s), NGN per USD ${ngnPerUsd}`,
+    );
+    return { updated, source: usd.source };
+  }
+
+  /** Legacy path: one configured feed returning `{ rates: {...} }`. */
+  private async refreshFromUrl(
+    url: string,
+  ): Promise<{ updated: number; source?: string }> {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
       if (!res.ok) return { updated: 0 };
@@ -99,11 +147,11 @@ export class ExchangeRateService implements OnModuleInit {
       for (const [code, rate] of Object.entries(rates)) {
         const n = Number(rate);
         if (Number.isFinite(n) && n > 0) {
-          await this.upsert(code, n);
+          await this.upsert(code.toUpperCase(), n);
           updated += 1;
         }
       }
-      return { updated };
+      return { updated, source: 'EXCHANGE_RATE_API_URL' };
     } catch (e) {
       this.logger.warn('Exchange-rate refresh failed: ' + (e as Error).message);
       return { updated: 0 };
