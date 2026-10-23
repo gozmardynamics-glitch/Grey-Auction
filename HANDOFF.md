@@ -155,17 +155,15 @@ Still open, in the same order as before:
 8. ~~**No metrics endpoint**~~ **DONE** — `prom-client` registry + `GET /api/metrics` (Prometheus text): process metrics, HTTP duration/count, business gauges.
 9. ~~**Crons are in-process**~~ **DONE** — BullMQ queue with retrying processor. Redis is optional: when unreachable the cron settles inline, so a dev box still settles.
 11. ~~**Role vocabulary**~~ **DONE (model corrected)** — the account holder IS the seller: `Product.sellerId` references their user id, so ownership is never gated on a `seller` role. New `GET /products/mine` (JWT-only) returns their own lots in any status; `GET /sellers/me/products` stays behind `SellerGuard` for onboarding/payouts. `getSellerListings()` reads `/products/mine` first.
-12. **Multi-currency** — display was already wired; invoices now carry a `currency` column (default NGN) and the gateway charges the invoice currency instead of a hardcoded NGN. **Still open:** FX conversion at charge time, and per-gateway currency support (Flutterwave/Paystack settle NGN only).
-13. **No buyer KYC** — sellers only. Not started; see the plan below.
+12. **Multi-currency** — display was already wired; invoices now carry a `currency` column (default NGN) and the gateway charges the invoice currency instead of a hardcoded NGN. **Live forex rates are in**: keyless open-source providers (fawazahmed0 currency-api primary, open.er-api.com fallback), re-based onto NGN, refreshed at boot and 03:00 UTC. **Still open:** FX conversion at charge time, and per-gateway currency support (Flutterwave/Paystack settle NGN only).
+13. ~~**No buyer KYC**~~ **DONE (backend + data helpers)** — account-holder KYC where the admin defines and names each document (`KycDocumentRequirement`: code, name, audience, required, MIME allowlist, size cap), reviews each upload, and requirements are deactivated rather than deleted. Routes: `/kyc/*` for the account holder, `/admin/kyc/*` for the admin. **Still open:** the buyer upload form (needs a storage-backed file picker — the API takes a `fileUrl`) and the admin requirements settings panel. `getKycStatus()` / `getKycRequirements()` are ready for both.
 
-### Item 13 plan (buyer KYC), for whoever picks it up
+### KYC notes for the next session
 
-Mirror the seller flow, which already works end to end:
-1. Reuse the `SellerDocument` pattern in `backend/src/seller/entities/seller-document.entity.ts` (document types, verification status enum, `verification_notes`, `expires_at`). Add a `buyer_documents` entity keyed by `user_id`, or generalise the existing table with an `owner_type` column — generalising is cleaner but touches existing seller queries.
-2. Service + controller: `POST /buyers/documents` (upload), `GET /buyers/documents/me`, `GET /buyers/:id/documents` (admin), `POST /buyers/documents/:id/verify` (admin). Copy `ProductDocumentService`/`Controller` as the template — it already does owner-checks and an admin verify step.
-3. Gate `POST /bids` on KYC once a threshold is configured, but keep a platform default of "no KYC required" so bidding never breaks.
-4. UI: reuse `shared/components/trust/kyc_badge.tsx` and the seller settings document panel.
-
+- The admin names the documents, so nothing about the required paperwork is hardcoded. Seed a starting set with `POST /admin/kyc/requirements` rather than a migration.
+- A re-upload supersedes the previous file for the same requirement; an approved document cannot be withdrawn, only replaced.
+- Bidding is deliberately NOT gated on KYC. `GET /kyc/status` exposes `isVerified` and `outstanding` so the UI can prompt without breaking a working flow.
+- Upload UI needs storage first: the API expects a `fileUrl`, so wire it to the existing upload/storage module (see `product-document.controller.ts` for the same pattern).
 
 Newly observed while testing:
 
