@@ -1264,6 +1264,13 @@ export async function getAdminTickets() {
 // ─── Seller ─────────────────────────────────────────────────────────────
 
 export async function getSellerListings() {
+  // Ownership belongs to the account holder, so read their own lots from the
+  // account-scoped route first. /sellers/me/products additionally requires a
+  // Seller KYC record and 403s for an account holder who has not onboarded one.
+  const mine = await apiFetch('/products/mine');
+  const mineList = unwrapList(mine);
+  if (mineList) return mineList.map(normalizeAuction);
+
   const data = await apiFetch('/sellers/me/products');
   const list = unwrapList(data);
   if (list && list.length > 0) return list.map(normalizeAuction);

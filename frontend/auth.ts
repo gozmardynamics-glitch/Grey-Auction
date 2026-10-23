@@ -4,6 +4,15 @@ import Credentials from 'next-auth/providers/credentials';
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+/**
+ * Normalises the backend role for UI routing.
+ *
+ * The account holder IS the seller: Product.sellerId references their user id,
+ * so owning lots is not a separate identity. `seller` and `bidder` therefore
+ * describe what the account holder is doing, not two different people — the
+ * session role is only used to pick a default dashboard, never to gate
+ * ownership (their own lots come from GET /products/mine).
+ */
 function mapBackendRole(role: string | undefined | null): string {
   if (role === 'admin') return 'admin';
   if (role === 'seller') return 'seller';
