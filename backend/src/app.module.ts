@@ -1,6 +1,6 @@
 import { Module, OnApplicationShutdown } from '@nestjs/common';
 import { TypeOrmModule, InjectDataSource } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
@@ -38,6 +38,8 @@ import { OrderModule } from './orders/order.module';
 import { HealthModule } from './health/health.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { ChatModule } from './chat/chat.module';
+import { MetricsModule } from './metrics/metrics.module';
+import { BullModule } from '@nestjs/bullmq';
 import { BackupModule } from './database/backup.module';
 
 @Module({
@@ -81,6 +83,25 @@ import { BackupModule } from './database/backup.module';
     HealthModule,
     WatchlistModule,
     ChatModule,
+    MetricsModule,
+    // BullMQ root connection. Redis is optional — queues degrade to inline
+    // processing when the broker is unreachable (see InvoiceSettlementService).
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT || 6379),
+        password: process.env.REDIS_PASSWORD || undefined,
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: true,
+      },
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+      },
+    }),
     // G51 — scheduled pg_dump → S3 backups (no-op unless DB_BACKUP_ENABLED=true).
     BackupModule,
   ],
