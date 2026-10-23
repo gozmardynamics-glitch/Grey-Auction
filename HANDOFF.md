@@ -151,13 +151,21 @@ Still open, in the same order as before:
 
 5. ~~**Chat has no server store** — `GET /sellers/me/conversations` is a documented stub returning `[]`; the chat views call `/conversations/:id/messages` which does not exist.~~ **DONE** — Chat module implemented with Conversation/Message entities, full CRUD API, and message read status.
 6. ~~**Admin audit trail is a stub** — `audit.controller.ts` returns a hardcoded blob; no `AuditLog` entity.~~ **DONE** — AuditLog entity, service, controller with full CRUD and stats endpoints.
-7. **Search is `ILIKE` only** — no full-text, no price/country/sort params (`product.service.ts:52`).
-8. **No metrics endpoint** — `health.controller.ts` is liveness-only.
-9. **Crons are in-process** — no queue; settlement lags up to 5 min past close.
-10. ~~**Terms/documents hardcoded** in `product_tabs_content.tsx` (fake PDFs, fixed 10% premium shown).~~ **DONE** — documents now fetched from `/products/:id/documents`, buyer's premium from `/fees/breakdown`.
-11. **Role vocabulary** — backend uses `bidder`, frontend uses `buyer`; `mapBackendRole` in `frontend/auth.ts` covers the session path but consumers weren't audited end-to-end.
-12. **Multi-currency is display-only**; payments hardcode `NGN`.
-13. **No buyer KYC** — sellers only.
+7. ~~**Search is `ILIKE` only**~~ **DONE** — PostgreSQL tsvector + `plainto_tsquery` over title/description/category, ranked by `ts_rank_cd`. `ProductQueryDto` gained `country`, `minPrice`, `maxPrice`, `sortBy` (newest | ending_soon | price_asc | price_desc | most_bids | highest_price).
+8. ~~**No metrics endpoint**~~ **DONE** — `prom-client` registry + `GET /api/metrics` (Prometheus text): process metrics, HTTP duration/count, business gauges.
+9. ~~**Crons are in-process**~~ **DONE** — BullMQ queue with retrying processor. Redis is optional: when unreachable the cron settles inline, so a dev box still settles.
+11. ~~**Role vocabulary**~~ **DONE (model corrected)** — the account holder IS the seller: `Product.sellerId` references their user id, so ownership is never gated on a `seller` role. New `GET /products/mine` (JWT-only) returns their own lots in any status; `GET /sellers/me/products` stays behind `SellerGuard` for onboarding/payouts. `getSellerListings()` reads `/products/mine` first.
+12. **Multi-currency** — display was already wired; invoices now carry a `currency` column (default NGN) and the gateway charges the invoice currency instead of a hardcoded NGN. **Still open:** FX conversion at charge time, and per-gateway currency support (Flutterwave/Paystack settle NGN only).
+13. **No buyer KYC** — sellers only. Not started; see the plan below.
+
+### Item 13 plan (buyer KYC), for whoever picks it up
+
+Mirror the seller flow, which already works end to end:
+1. Reuse the `SellerDocument` pattern in `backend/src/seller/entities/seller-document.entity.ts` (document types, verification status enum, `verification_notes`, `expires_at`). Add a `buyer_documents` entity keyed by `user_id`, or generalise the existing table with an `owner_type` column — generalising is cleaner but touches existing seller queries.
+2. Service + controller: `POST /buyers/documents` (upload), `GET /buyers/documents/me`, `GET /buyers/:id/documents` (admin), `POST /buyers/documents/:id/verify` (admin). Copy `ProductDocumentService`/`Controller` as the template — it already does owner-checks and an admin verify step.
+3. Gate `POST /bids` on KYC once a threshold is configured, but keep a platform default of "no KYC required" so bidding never breaks.
+4. UI: reuse `shared/components/trust/kyc_badge.tsx` and the seller settings document panel.
+
 
 Newly observed while testing:
 
