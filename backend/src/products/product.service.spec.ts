@@ -123,16 +123,52 @@ describe('ProductService', () => {
       );
     });
 
-    it('should apply search filter when provided', async () => {
-      (productRepository.findAndCount as jest.Mock).mockResolvedValue([[], 0]);
+    it('should apply full-text search when provided', async () => {
+      // Two query builders are used: one for the count, one for the ranked page.
+      const makeChain = () => ({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+      const countChain = makeChain();
+      const pageChain = makeChain();
+      (productRepository.createQueryBuilder as jest.Mock)
+        .mockReturnValueOnce(countChain)
+        .mockReturnValueOnce(pageChain);
 
-      await service.findAll({ search: 'test', page: 1, limit: 20 });
+      const res = await service.findAll({ search: 'test', page: 1, limit: 20 });
 
-      expect(productRepository.findAndCount).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.any(Array),
-        }),
+      expect(res).toEqual({ data: [], total: 0, page: 1, limit: 20 });
+      expect(productRepository.createQueryBuilder).toHaveBeenCalledWith('product');
+
+      // Both queries must apply the same filters, including plainto_tsquery.
+      for (const chain of [countChain, pageChain]) {
+        expect(chain.where).toHaveBeenCalledWith('product.status = :status', {
+          status: ProductStatus.ACTIVE,
+        });
+        expect(chain.andWhere).toHaveBeenCalledWith(
+          expect.stringContaining('plainto_tsquery'),
+          { search: 'test' },
+        );
+      }
+
+      // Ranking is applied to the page query only.
+      expect(pageChain.addSelect).toHaveBeenCalled();
+      expect(pageChain.orderBy).toHaveBeenCalledWith(
+        expect.stringContaining('ts_rank_cd'),
+        'DESC',
       );
+      expect(pageChain.offset).toHaveBeenCalledWith(0);
+      expect(pageChain.limit).toHaveBeenCalledWith(20);
+      expect(countChain.getCount).toHaveBeenCalled();
+      expect(pageChain.getMany).toHaveBeenCalled();
     });
   });
 

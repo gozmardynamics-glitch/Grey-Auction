@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 import { Invoice } from './invoice.entity';
 import { InvoiceService } from './invoice.service';
 import { InvoiceController } from './invoice.controller';
 import { InvoiceSettlementService } from './invoice-settlement.service';
 import { InvoiceCronService } from './invoice-cron.service';
+import { InvoiceSettlementProcessor, INVOICE_SETTLEMENT_QUEUE } from '../queue/invoice-settlement.processor';
+import { BullSettlementQueue } from '../queue/bull-settlement-queue';
+import { SETTLEMENT_QUEUE } from './settlement-queue.port';
 import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { Bid } from '../bids/entities/bid.entity';
@@ -15,12 +19,20 @@ import { NotificationModule } from '../notification/notification.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Invoice, User, Product, Bid]),
+    BullModule.registerQueue({ name: INVOICE_SETTLEMENT_QUEUE }),
     EmailModule,
     FeeModule,
     NotificationModule,
   ],
   controllers: [InvoiceController],
-  providers: [InvoiceService, InvoiceSettlementService, InvoiceCronService],
+  providers: [
+    InvoiceService,
+    InvoiceSettlementService,
+    InvoiceCronService,
+    InvoiceSettlementProcessor,
+    BullSettlementQueue,
+    { provide: SETTLEMENT_QUEUE, useExisting: BullSettlementQueue },
+  ],
   exports: [InvoiceService, InvoiceSettlementService],
 })
 export class InvoiceModule {}

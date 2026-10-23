@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, Between, Not, EntityManager } from 'typeorm';
-import { Product, ProductStatus } from './entities/product.entity';
-import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
+import { Product, ProductStatus, AuctionType } from './entities/product.entity';
+import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto, ProductSortBy } from './dto/product.dto';
 
 @Injectable()
 export class ProductService {
@@ -39,25 +39,115 @@ export class ProductService {
 
   async findAll(query: ProductQueryDto) {
     // Public listing defaults to ACTIVE auctions unless a status is requested
-    const { status, category, subCategory, search, page = 1, limit = 20, auctionType, allowBuyNow } = query;
+    const { status, category, subCategory, search, country, minPrice, maxPrice, sortBy = ProductSortBy.NEWEST, page = 1, limit = 20, auctionType, allowBuyNow } = query;
     const where: any = {};
 
     if (status) where.status = status;
     else where.status = ProductStatus.ACTIVE;
     if (category) where.category = category;
     if (subCategory) where.subCategory = subCategory;
+    if (country) where.country = country;
     if (auctionType) where.auctionType = auctionType;
     if (allowBuyNow !== undefined) where.allowBuyNow = allowBuyNow;
+    if (minPrice !== undefined) where.currentBid = { ...where.currentBid, gte: minPrice };
+    if (maxPrice !== undefined) where.currentBid = { ...where.currentBid, lte: maxPrice };
 
+    // Build order clause based on sortBy
+    let order: any = { createdAt: 'DESC' };
+    switch (sortBy) {
+      case ProductSortBy.ENDING_SOON:
+        order = { endTime: 'ASC' };
+        break;
+      case ProductSortBy.PRICE_ASC:
+        order = { currentBid: 'ASC' };
+        break;
+      case ProductSortBy.PRICE_DESC:
+        order = { currentBid: 'DESC' };
+        break;
+      case ProductSortBy.MOST_BIDS:
+        order = { totalBids: 'DESC' };
+        break;
+      case ProductSortBy.HIGHEST_PRICE:
+        order = { currentBid: 'DESC' };
+        break;
+      case ProductSortBy.NEWEST:
+      default:
+        order = { createdAt: 'DESC' };
+        break;
+    }
+
+    const whereClause: any = where;
+
+    // Full-text search: PostgreSQL tsvector/tsquery with relevance ranking.
+    if (search) {
+      // Shared filter predicate so the count query and the page query always
+      // agree on which rows match.
+      const applyFilters = (qb: ReturnType<Repository<Product>['createQueryBuilder']>) => {
+        qb.where('product.status = :status', { status: ProductStatus.ACTIVE });
+        if (category) qb.andWhere('product.category = :category', { category });
+        if (subCategory) qb.andWhere('product.subCategory = :subCategory', { subCategory });
+        if (country) qb.andWhere('product.country = :country', { country });
+        if (auctionType) qb.andWhere('product.auctionType = :auctionType', { auctionType });
+        if (allowBuyNow !== undefined) {
+          qb.andWhere('product.allowBuyNow = :allowBuyNow', { allowBuyNow });
+        }
+        if (minPrice !== undefined) qb.andWhere('product.currentBid >= :minPrice', { minPrice });
+        if (maxPrice !== undefined) qb.andWhere('product.currentBid <= :maxPrice', { maxPrice });
+        qb.andWhere(
+          `to_tsvector('english', COALESCE(product.title, '') || ' ' || COALESCE(product.description, '') || ' ' || COALESCE(product.category, ''))
+           @@ plainto_tsquery('english', :search)`,
+          { search },
+        );
+        return qb;
+      };
+
+      // Count separately: the ranked data query aliases a computed column, which
+      // TypeORM's getManyAndCount() reinjects into a COUNT() and fails on.
+      const total = await applyFilters(
+        this.repo.createQueryBuilder('product'),
+      ).getCount();
+
+      const orderField =
+        sortBy === ProductSortBy.ENDING_SOON ? 'product.endTime' :
+        sortBy === ProductSortBy.PRICE_ASC ? 'product.currentBid' :
+        sortBy === ProductSortBy.PRICE_DESC ? 'product.currentBid' :
+        sortBy === ProductSortBy.MOST_BIDS ? 'product.totalBids' :
+        sortBy === ProductSortBy.HIGHEST_PRICE ? 'product.currentBid' :
+        'product.createdAt';
+      const orderDirection =
+        sortBy === ProductSortBy.PRICE_ASC || sortBy === ProductSortBy.ENDING_SOON
+          ? 'ASC'
+          : 'DESC';
+
+      // Relevance expression, reused for both the projection and the ORDER BY.
+      // Ordering by the "searchRank" alias fails: Postgres folds the unquoted
+      // ORDER BY identifier to lowercase while the quoted alias keeps its case.
+      const rankExpr = `ts_rank_cd(
+        to_tsvector('english', COALESCE(product.title, '') || ' ' || COALESCE(product.description, '') || ' ' || COALESCE(product.category, '')),
+        plainto_tsquery('english', :search)
+      )`;
+
+      const data = await applyFilters(
+        this.repo.createQueryBuilder('product').leftJoinAndSelect('product.seller', 'seller'),
+      )
+        .addSelect(rankExpr, 'searchRank')
+        .orderBy(rankExpr, 'DESC')
+        .addOrderBy(orderField, orderDirection)
+        // Raw offset/limit rather than skip/take: skip/take re-queries through a
+        // DISTINCT-id subquery, which cannot resolve a computed column.
+        // product.seller is many-to-one, so raw paging cannot duplicate rows.
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .getMany();
+
+      return { data, total, page, limit };
+    }
+
+    // Non-search query - use simple findAndCount
     const [data, total] = await this.repo.findAndCount({
-      where: search
-        ? [
-            { ...where, title: ILike(`%${search}%`) },
-            { ...where, description: ILike(`%${search}%`) },
-          ]
-        : where,
+      where: whereClause,
       relations: ['seller'],
-      order: { createdAt: 'DESC' },
+      order,
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -69,6 +159,21 @@ export class ProductService {
     const product = await this.repo.findOne({ where: { id }, relations: ['seller'] });
     if (!product) throw new NotFoundException('Product not found');
     return product;
+  }
+
+  /**
+   * Listings owned by an account holder, in any status.
+   *
+   * Ownership is expressed by Product.sellerId, which points at the owning
+   * account (a User) — there is no separate seller identity. Any authenticated
+   * account holder can list, so this needs no Seller KYC record.
+   */
+  async findMine(userId: string): Promise<Product[]> {
+    return this.repo.find({
+      where: { sellerId: userId },
+      relations: ['seller'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async findByIdWithLock(id: string, manager?: EntityManager): Promise<Product> {

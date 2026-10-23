@@ -105,6 +105,21 @@ export class ProductController {
     return { success: true, data };
   }
 
+  @Get('mine')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Listings owned by the authenticated account holder (any status)",
+  })
+  async findMine(@CurrentUser() user: any) {
+    // Ownership is an account-holder property, not a separate seller identity:
+    // any authenticated user can list (see POST /products), so their own
+    // listings must be reachable without a Seller KYC record. The seller-facing
+    // GET /sellers/me/products stays for the onboarding/payout flows.
+    const data = await this.productService.findMine(user.id);
+    return { success: true, data: { items: data, total: data.length } };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID or slug' })
   @ApiParam({ name: 'id' })

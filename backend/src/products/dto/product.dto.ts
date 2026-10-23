@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsDateString, IsEnum, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsDateString, IsEnum, Min, IsUrl } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductStatus, AuctionType } from '../entities/product.entity';
@@ -151,6 +151,15 @@ export class RejectProductDto {
   rejectionReason: string;
 }
 
+export enum ProductSortBy {
+  NEWEST = 'newest',
+  ENDING_SOON = 'ending_soon',
+  PRICE_ASC = 'price_asc',
+  PRICE_DESC = 'price_desc',
+  MOST_BIDS = 'most_bids',
+  HIGHEST_PRICE = 'highest_price',
+}
+
 export class ProductQueryDto {
   @ApiProperty({ required: false })
   @IsOptional()
@@ -171,6 +180,30 @@ export class ProductQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minPrice?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxPrice?: number;
+
+  @ApiProperty({ required: false, enum: ProductSortBy, default: ProductSortBy.NEWEST })
+  @IsOptional()
+  @IsEnum(ProductSortBy)
+  sortBy?: ProductSortBy;
 
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()
