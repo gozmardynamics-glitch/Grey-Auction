@@ -38,6 +38,7 @@ import { OrderModule } from './orders/order.module';
 import { HealthModule } from './health/health.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { ChatModule } from './chat/chat.module';
+import { KycModule } from './kyc/kyc.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { BullModule } from '@nestjs/bullmq';
 import { BackupModule } from './database/backup.module';
@@ -83,6 +84,7 @@ import { BackupModule } from './database/backup.module';
     HealthModule,
     WatchlistModule,
     ChatModule,
+    KycModule,
     MetricsModule,
     // BullMQ root connection. Redis is optional — queues degrade to inline
     // processing when the broker is unreachable (see InvoiceSettlementService).

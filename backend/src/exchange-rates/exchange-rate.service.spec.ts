@@ -2,20 +2,35 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ExchangeRateService, DEFAULT_RATES } from './exchange-rate.service';
 import { ExchangeRate } from './exchange-rate.entity';
+import { ForexProviderService } from './forex-provider.service';
 
 describe('ExchangeRateService', () => {
   let service: ExchangeRateService;
-  const repo = { count: jest.fn(), find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn() };
+  const repo = {
+    count: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+  const forex = { getUsdRates: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    delete process.env.EXCHANGE_RATE_API_URL;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ExchangeRateService,
         { provide: getRepositoryToken(ExchangeRate), useValue: repo },
+        { provide: ForexProviderService, useValue: forex },
       ],
     }).compile();
     service = module.get<ExchangeRateService>(ExchangeRateService);
+  });
+
+  afterEach(() => {
+    delete process.env.EXCHANGE_RATE_API_URL;
+    delete (global as any).fetch;
   });
 
   it('seeds defaults only when the table is empty', async () => {
@@ -48,9 +63,10 @@ describe('ExchangeRateService', () => {
   });
 
   it('converts NGN into the target currency', async () => {
-    (repo.find as jest.Mock).mockResolvedValue([{ code: 'USD', rate: 1500, updatedAt: new Date() }]);
-    const usd = await service.fromNgn(3000, 'USD');
-    expect(usd).toBe(2);
+    (repo.find as jest.Mock).mockResolvedValue([
+      { code: 'USD', rate: 1500, updatedAt: new Date() },
+    ]);
+    await expect(service.fromNgn(3000, 'USD')).resolves.toBe(2);
   });
 
   it('falls back to NGN (1:1) for unknown currency codes', async () => {
@@ -73,49 +89,98 @@ describe('ExchangeRateService', () => {
     expect(res.code).toBe('USD');
   });
 
-  it('does nothing on refresh without a configured feed', async () => {
-    delete process.env.EXCHANGE_RATE_API_URL;
-    await expect(service.refresh()).resolves.toEqual({ updated: 0 });
-  });
-
   it('exposes the default rate set', () => {
     expect(DEFAULT_RATES.NGN).toBe(1);
     expect(DEFAULT_RATES.USD).toBeGreaterThan(0);
     expect(DEFAULT_RATES.GHS).toBeGreaterThan(0);
   });
 
-  // ── handleRefreshCron tests ──────────────────────────────────
+  // ── Provider path (no EXCHANGE_RATE_API_URL) ───────────────────────────
 
-  it('cron skips refresh when EXCHANGE_RATE_API_URL is unset', async () => {
-    delete process.env.EXCHANGE_RATE_API_URL;
-    const refreshSpy = jest.spyOn(service, 'refresh');
-    await service.handleRefreshCron();
-    expect(refreshSpy).not.toHaveBeenCalled();
+  it('returns zero updates when every forex provider is unreachable', async () => {
+    forex.getUsdRates.mockResolvedValue(null);
+    await expect(service.refresh()).resolves.toEqual({ updated: 0 });
+    expect(repo.save).not.toHaveBeenCalled();
   });
 
-  it('cron calls refresh when EXCHANGE_RATE_API_URL is set', async () => {
-    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
-    const refreshSpy = jest.spyOn(service, 'refresh').mockResolvedValue({ updated: 2 });
+  it('re-bases USD rates onto NGN: rate[X] = USD->NGN / USD->X', async () => {
+    forex.getUsdRates.mockResolvedValue({
+      source: 'fawazahmed0',
+      // 1 USD buys 1332.5 NGN, 11.5 GHS, 0.89 EUR
+      rates: { NGN: 1332.5, GHS: 11.5, EUR: 0.89, USD: 1 },
+    });
+    (repo.findOne as jest.Mock).mockResolvedValue(null);
+    (repo.create as jest.Mock).mockImplementation((x) => x);
+    const saved: any[] = [];
+    (repo.save as jest.Mock).mockImplementation(async (x) => {
+      saved.push(x);
+      return x;
+    });
+
+    const result = await service.refresh();
+
+    // NGN + GHS + EUR + USD
+    expect(result.updated).toBe(4);
+    expect(result.source).toBe('fawazahmed0');
+
+    const byCode = Object.fromEntries(saved.map((r) => [r.code, r.rate]));
+    expect(byCode.NGN).toBe(1);
+    expect(byCode.USD).toBeCloseTo(1332.5, 4);
+    // NGN per 1 GHS = 1332.5 / 11.5
+    expect(byCode.GHS).toBeCloseTo(115.869565, 4);
+    // NGN per 1 EUR = 1332.5 / 0.89
+    expect(byCode.EUR).toBeCloseTo(1497.191011, 4);
+  });
+
+  it('keeps stored rates when the feed omits NGN', async () => {
+    forex.getUsdRates.mockResolvedValue({
+      source: 'fawazahmed0',
+      rates: { USD: 1, EUR: 0.89 },
+    });
+    const result = await service.refresh();
+    expect(result.updated).toBe(0);
+    expect(result.source).toBe('fawazahmed0');
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it('skips non-positive and non-finite provider values', async () => {
+    forex.getUsdRates.mockResolvedValue({
+      source: 'fawazahmed0',
+      rates: { NGN: 1332.5, BAD: -1, ZERO: 0, NAN: Number.NaN },
+    });
+    (repo.findOne as jest.Mock).mockResolvedValue(null);
+    (repo.create as jest.Mock).mockImplementation((x) => x);
+    (repo.save as jest.Mock).mockImplementation(async (x) => x);
+
+    const result = await service.refresh();
+    // NGN only — the three invalid entries are skipped.
+    expect(result.updated).toBe(1);
+  });
+
+  // ── Cron ───────────────────────────────────────────────────────────────
+
+  it('cron always refreshes now that keyless providers are the default', async () => {
+    const refreshSpy = jest.spyOn(service, 'refresh').mockResolvedValue({ updated: 3 });
     await service.handleRefreshCron();
     expect(refreshSpy).toHaveBeenCalled();
-    delete process.env.EXCHANGE_RATE_API_URL;
   });
 
-  it('cron logs warning when feed returns zero updates', async () => {
-    process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
+  it('cron logs a warning when no provider yields rates', async () => {
     jest.spyOn(service, 'refresh').mockResolvedValue({ updated: 0 });
     const warnSpy = jest.spyOn(service['logger'], 'warn');
     await service.handleRefreshCron();
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('no usable rates'));
-    delete process.env.EXCHANGE_RATE_API_URL;
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('no usable rates'),
+    );
   });
 
-  it('refresh fetches from the configured URL and upserts rates', async () => {
+  // ── Legacy explicit-feed path ──────────────────────────────────────────
+
+  it('EXCHANGE_RATE_API_URL takes precedence over the providers', async () => {
     process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
-    const mockJson = { rates: { USD: 1550, GBP: 1900 } };
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => mockJson,
+      json: async () => ({ rates: { USD: 1550, GBP: 1900 } }),
     }) as any;
     (repo.findOne as jest.Mock).mockResolvedValue(null);
     (repo.create as jest.Mock).mockImplementation((x) => x);
@@ -123,62 +188,45 @@ describe('ExchangeRateService', () => {
 
     const result = await service.refresh();
     expect(result.updated).toBe(2);
-    expect(repo.save).toHaveBeenCalledTimes(2);
-    delete process.env.EXCHANGE_RATE_API_URL;
-    delete (global as any).fetch;
+    expect(result.source).toBe('EXCHANGE_RATE_API_URL');
+    expect(forex.getUsdRates).not.toHaveBeenCalled();
   });
 
   it('refresh handles fetch errors gracefully', async () => {
     process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
     global.fetch = jest.fn().mockRejectedValue(new Error('Network error')) as any;
-
-    const result = await service.refresh();
-    expect(result.updated).toBe(0);
-    delete process.env.EXCHANGE_RATE_API_URL;
-    delete (global as any).fetch;
+    await expect(service.refresh()).resolves.toEqual({ updated: 0 });
   });
 
-  it('refresh handles non-OK HTTP response', async () => {
+  it('refresh handles a non-OK HTTP response', async () => {
     process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 }) as any;
-
-    const result = await service.refresh();
-    expect(result.updated).toBe(0);
-    delete process.env.EXCHANGE_RATE_API_URL;
-    delete (global as any).fetch;
+    await expect(service.refresh()).resolves.toEqual({ updated: 0 });
   });
 
-  it('refresh handles { data: {...} } response format', async () => {
+  it('refresh handles the { data: {...} } response shape', async () => {
     process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
-    const mockJson = { data: { USD: 1550 } };
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => mockJson,
+      json: async () => ({ data: { USD: 1550 } }),
     }) as any;
     (repo.findOne as jest.Mock).mockResolvedValue(null);
     (repo.create as jest.Mock).mockImplementation((x) => x);
     (repo.save as jest.Mock).mockImplementation(async (x) => x);
 
-    const result = await service.refresh();
-    expect(result.updated).toBe(1);
-    delete process.env.EXCHANGE_RATE_API_URL;
-    delete (global as any).fetch;
+    await expect(service.refresh()).resolves.toMatchObject({ updated: 1 });
   });
 
   it('refresh skips invalid rate values', async () => {
     process.env.EXCHANGE_RATE_API_URL = 'https://example.com/rates';
-    const mockJson = { rates: { USD: 1550, BAD: -1, ZERO: 0, NAN: 'abc' } };
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => mockJson,
+      json: async () => ({ rates: { USD: 1550, BAD: -1, ZERO: 0, NAN: 'abc' } }),
     }) as any;
     (repo.findOne as jest.Mock).mockResolvedValue(null);
     (repo.create as jest.Mock).mockImplementation((x) => x);
     (repo.save as jest.Mock).mockImplementation(async (x) => x);
 
-    const result = await service.refresh();
-    expect(result.updated).toBe(1); // only USD
-    delete process.env.EXCHANGE_RATE_API_URL;
-    delete (global as any).fetch;
+    await expect(service.refresh()).resolves.toMatchObject({ updated: 1 });
   });
 });

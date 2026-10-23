@@ -1263,6 +1263,81 @@ export async function getAdminTickets() {
 
 // ─── Seller ─────────────────────────────────────────────────────────────
 
+/** One document the admin has asked the account holder to provide. */
+export interface KycChecklistItem {
+  requirementId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isRequired: boolean;
+  maxSizeMb: number;
+  allowedMimeTypes: string[];
+  document: {
+    id: string;
+    fileName: string;
+    status: 'pending' | 'approved' | 'rejected';
+    reviewNotes: string | null;
+    reviewedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
+  } | null;
+}
+
+export interface KycStatusView {
+  isVerified: boolean;
+  requiredTotal: number;
+  requiredApproved: number;
+  pendingReview: number;
+  rejected: number;
+  outstanding: Array<{ code: string; name: string }>;
+  checklist: KycChecklistItem[];
+}
+
+const EMPTY_KYC_STATUS: KycStatusView = {
+  isVerified: true,
+  requiredTotal: 0,
+  requiredApproved: 0,
+  pendingReview: 0,
+  rejected: 0,
+  outstanding: [],
+  checklist: [],
+};
+
+/**
+ * KYC status for the signed-in account holder. The requirement names come from
+ * the admin, so nothing here is hardcoded. Returns an empty ("nothing asked of
+ * you") status on failure rather than throwing.
+ */
+export async function getKycStatus(): Promise<KycStatusView> {
+  const data = await apiFetch('/kyc/status');
+  if (!data || typeof data !== 'object') return EMPTY_KYC_STATUS;
+  const view = data as Partial<KycStatusView>;
+  return {
+    ...EMPTY_KYC_STATUS,
+    ...view,
+    checklist: Array.isArray(view.checklist) ? view.checklist : [],
+    outstanding: Array.isArray(view.outstanding) ? view.outstanding : [],
+  };
+}
+
+/** Admin view: the document requirements currently configured. */
+export async function getKycRequirements(): Promise<
+  Array<{
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    audience: 'buyer' | 'seller' | 'both';
+    isRequired: boolean;
+    isActive: boolean;
+    sortOrder: number;
+  }>
+> {
+  const data = await apiFetch('/admin/kyc/requirements');
+  const list = unwrapList(data);
+  return (list ?? []) as any;
+}
+
 export async function getSellerListings() {
   // Ownership belongs to the account holder, so read their own lots from the
   // account-scoped route first. /sellers/me/products additionally requires a
