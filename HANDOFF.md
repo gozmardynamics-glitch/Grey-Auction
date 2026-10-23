@@ -149,8 +149,8 @@ Deliberately **not** fixed (features, not bugs). Ordered by trust impact.
 
 Still open, in the same order as before:
 
-5. **Chat has no server store** — `GET /sellers/me/conversations` is a documented stub returning `[]`; the chat views call `/conversations/:id/messages` which does not exist.
-6. **Admin audit trail is a stub** — `audit.controller.ts` returns a hardcoded blob; no `AuditLog` entity.
+5. ~~**Chat has no server store** — `GET /sellers/me/conversations` is a documented stub returning `[]`; the chat views call `/conversations/:id/messages` which does not exist.~~ **DONE** — Chat module implemented with Conversation/Message entities, full CRUD API, and message read status.
+6. ~~**Admin audit trail is a stub** — `audit.controller.ts` returns a hardcoded blob; no `AuditLog` entity.~~ **DONE** — AuditLog entity, service, controller with full CRUD and stats endpoints.
 7. **Search is `ILIKE` only** — no full-text, no price/country/sort params (`product.service.ts:52`).
 8. **No metrics endpoint** — `health.controller.ts` is liveness-only.
 9. **Crons are in-process** — no queue; settlement lags up to 5 min past close.
