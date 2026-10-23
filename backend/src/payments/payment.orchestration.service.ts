@@ -22,6 +22,9 @@ export interface InitPaymentCommand {
   type: PaymentType;
   provider: PaymentProvider;
   amount: number;
+  /** ISO-4217 charge currency. Defaults to NGN; invoice payments use the
+   *  currency the invoice was issued in. */
+  currency?: string;
   invoiceId?: string;
   email?: string;
   callbackUrl?: string;
@@ -50,6 +53,7 @@ export class PaymentOrchestrationService {
     // token payment against a large invoice and the success webhook would
     // still mark it paid. The client's amount is ignored for invoice payments.
     let amount = Number(command.amount);
+    let currency = (command.currency || 'NGN').toUpperCase();
     if (command.type === PaymentType.INVOICE) {
       if (!command.invoiceId) {
         throw new BadRequestException('invoiceId is required for invoice payments');
@@ -67,6 +71,9 @@ export class PaymentOrchestrationService {
         );
       }
       amount = Number(invoice.total);
+      // Charge in the currency the invoice was issued in, so the gateway's
+      // amount always matches the figure the invoice expects at settlement.
+      currency = invoice.currency || currency;
     }
 
     const reference = command.metadata?.reference
@@ -91,7 +98,7 @@ export class PaymentOrchestrationService {
       // gateway captures one figure while the invoice expects another and
       // settlement silently never happens.
       amount,
-      currency: 'NGN',
+      currency,
       email: command.email,
       callbackUrl: command.callbackUrl,
       metadata: command.metadata || {},

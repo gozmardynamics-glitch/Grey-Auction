@@ -28,6 +28,8 @@ export interface GenerateInvoiceDto {
   vatBase?: string;
   /** U5: escrow auto-release window snapshot (hours); 0 = immediate. */
   escrowWindowHours?: number | null;
+  /** Settlement currency (ISO-4217). Defaults to NGN. */
+  currency?: string;
 }
 
 export interface MarkPaidDto {
@@ -103,6 +105,7 @@ export class InvoiceService {
       fee_source: data.feeSource ?? 'default',
       vat_base: data.vatBase ?? 'hammer_and_fees',
       escrow_window_hours: data.escrowWindowHours ?? null,
+      currency: (data.currency || 'NGN').toUpperCase(),
       escrow_release_at: null,
       total,
       status: InvoiceStatus.ISSUED,

@@ -83,6 +83,11 @@ export class Invoice {
   @Column({ type: 'int', nullable: true })
   escrow_window_hours: number;
 
+  // Settlement currency. Amounts are stored in this currency; fee percentages
+  // are currency-agnostic, so changing this never changes the fee maths.
+  @Column({ type: 'varchar', length: 3, default: 'NGN' })
+  currency: string;
+
   // When the escrow auto-releases (paid_at + window).
   @Column({ type: 'timestamp', nullable: true })
   escrow_release_at: Date;
