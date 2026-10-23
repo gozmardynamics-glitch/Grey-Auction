@@ -37,6 +37,7 @@ import { ExchangeRateModule } from './exchange-rates/exchange-rate.module';
 import { OrderModule } from './orders/order.module';
 import { HealthModule } from './health/health.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
+import { ChatModule } from './chat/chat.module';
 import { BackupModule } from './database/backup.module';
 
 @Module({
@@ -79,6 +80,7 @@ import { BackupModule } from './database/backup.module';
     OrderModule,
     HealthModule,
     WatchlistModule,
+    ChatModule,
     // G51 — scheduled pg_dump → S3 backups (no-op unless DB_BACKUP_ENABLED=true).
     BackupModule,
   ],
