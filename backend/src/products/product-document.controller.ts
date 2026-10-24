@@ -92,7 +92,8 @@ export class ProductDocumentController {
   }
 
   @Post('documents/:id/verify')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.SUPPORT_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Verify or reject a document (admin)' })
   @ApiParam({ name: 'id' })
