@@ -22,6 +22,7 @@ import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { AdminRole } from '../admin/entities/admin.entity';
 import { KycService } from './kyc.service';
+import { KycRiskService } from './kyc-risk.service';
 import {
   CreateKycRequirementDto,
   ReviewKycDocumentDto,
@@ -43,7 +44,48 @@ import { KycDocumentStatus } from './entities/kyc-document.entity';
 )
 @Controller('admin/kyc')
 export class KycAdminController {
-  constructor(private readonly service: KycService) {}
+  constructor(
+    private readonly service: KycService,
+    private readonly risk: KycRiskService,
+  ) {}
+
+  @Get('sellers/:userId/risk')
+  @ApiOperation({
+    summary: 'KYC risk assessment for a seller (advisory to the publish decision)',
+  })
+  @ApiParam({ name: 'userId' })
+  async sellerRisk(@Param('userId') userId: string) {
+    const report = await this.risk.assess(userId);
+    const publishing = await this.service.publishingStateFor(userId);
+    return { success: true, data: { ...report, publishing } };
+  }
+
+  @Post('sellers/:userId/publish')
+  @ApiOperation({ summary: 'Approve or withhold a seller publishing lots' })
+  @ApiParam({ name: 'userId' })
+  async decidePublish(
+    @CurrentUser() user: any,
+    @Param('userId') userId: string,
+    @Body() body: { approved: boolean; note?: string },
+  ) {
+    const report = await this.risk.assess(userId);
+    const seller = await this.service.decidePublishing(
+      userId,
+      user.id,
+      body.approved === true,
+      body.note,
+      { complianceScore: report.complianceScore, band: report.band },
+    );
+    return {
+      success: true,
+      message: body.approved ? 'Publishing approved' : 'Publishing withheld',
+      data: {
+        publishApproved: seller.publish_approved,
+        complianceScore: seller.compliance_score,
+        band: seller.risk_band,
+      },
+    };
+  }
 
   @Get('requirements')
   @ApiOperation({ summary: 'List KYC document requirements' })

@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, VersionColumn, Index } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
+import { decimalTransformer } from '../../common/transformers/decimal.transformer';
 
 export enum ProductStatus {
   DRAFT = 'draft',
@@ -54,10 +55,10 @@ export class Product {
   @Column({ nullable: true })
   lotNumber: string;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, transformer: decimalTransformer })
   startingBid: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   currentBid: number;
 
   @Column()
@@ -84,10 +85,10 @@ export class Product {
   @Column({ default: 0 })
   watchersCount: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true, transformer: decimalTransformer })
   reservePrice: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true, transformer: decimalTransformer })
   buyNowPrice: number;
 
   @Column({ default: false })
@@ -111,7 +112,7 @@ export class Product {
 
   // U5 answer #5 — seller-set minimum bid increment (NGN).
   // null = use the platform's per-price-level ladder.
-  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true, transformer: decimalTransformer })
   minBidIncrement: number;
 
   // U5 answer #4 — escrow auto-release window in hours, FIXED AT CREATION.

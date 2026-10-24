@@ -318,6 +318,30 @@ export class Seller {
   internal_notes: string; // Admin notes (not visible to seller)
 
   // ==========================================
+  // KYC publishing gate
+  // ==========================================
+  // A seller may always create listings; a lot only becomes public once KYC
+  // passes and an admin approves publishing. These columns hold the admin's
+  // decision, separate from `verification_status`, which is the KYC outcome.
+  @Column({ type: 'int', default: 0 })
+  compliance_score: number; // 0-100, advisory input to the decision
+
+  @Column({ type: 'varchar', length: 10, default: 'high' })
+  risk_band: string; // low | medium | high
+
+  @Column({ default: false })
+  publish_approved: boolean; // admin decision: may this seller publish?
+
+  @Column({ type: 'text', nullable: true })
+  publish_decision_note: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  publish_decided_by: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  publish_decided_at: Date;
+
+  // ==========================================
   // Timestamps
   // ==========================================
   @CreateDateColumn({ type: 'timestamp with time zone' })

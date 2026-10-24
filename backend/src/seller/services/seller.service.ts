@@ -22,6 +22,8 @@ import {
   UpdateCommissionRateDto,
   SellerQueryDto,
 } from '../dto';
+import { EscrowHold } from '../../escrow/entities/escrow-hold.entity';
+import { toMoney } from '../../common/transformers/decimal.transformer';
 
 /**
  * Service for managing sellers
@@ -35,6 +37,8 @@ export class SellerService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
+    @InjectRepository(EscrowHold)
+    private readonly escrowRepo: Repository<EscrowHold>,
   ) {}
 
   // ==========================================
@@ -72,10 +76,93 @@ export class SellerService {
     };
   }
 
+  /**
+   * What the seller actually receives, per lot, with the full calculation.
+   *
+   * `getMySales` above sums `invoice.total`, which is what the *buyer* paid.
+   * Reporting that as seller revenue overstates every sale by the buyer premium,
+   * the fees and the VAT. This returns the stored split so the seller can see the
+   * arithmetic line by line instead of trusting a single number.
+   */
+  async getMyEarnings(userId: string) {
+    const invoices = await this.invoiceRepo.find({
+      where: { seller_id: userId },
+      order: { issued_at: 'DESC' },
+    });
+
+    const products = await this.productRepo.find({
+      where: { sellerId: userId, status: ProductStatus.SOLD },
+    });
+    const titleById = new Map(products.map((p) => [p.id, p.title]));
+
+    const holds = await this.escrowRepo.find({
+      where: { sellerId: userId },
+    });
+    const holdByInvoice = new Map(holds.map((h) => [h.invoiceId, h]));
+
+    const lines = invoices.map((inv) => {
+      const hold = holdByInvoice.get(inv.id);
+      return {
+        invoiceId: inv.id,
+        invoiceNumber: inv.invoice_number,
+        lotTitle: titleById.get(inv.product_id) ?? null,
+        currency: inv.currency || 'NGN',
+        issuedAt: inv.issued_at,
+        status: inv.status,
+        // The buyer's bill, itemised.
+        buyer: {
+          hammerPrice: toMoney(inv.hammer_price),
+          buyerPremium: toMoney(inv.commission),
+          vat: toMoney(inv.vat),
+          otherCharges: toMoney(inv.other_charges),
+          fixedFee: toMoney(inv.fixed_fee),
+          total: toMoney(inv.total),
+        },
+        // What is deducted from the seller, itemised.
+        deductions: {
+          platformCommission: toMoney(inv.seller_fee),
+          ratePctOfHammer:
+            toMoney(inv.hammer_price) > 0
+              ? Math.round((toMoney(inv.seller_fee) / toMoney(inv.hammer_price)) * 10000) / 100
+              : 0,
+        },
+        // What the seller banks.
+        seller: {
+          net: toMoney(inv.seller_net),
+          escrowStatus: hold?.status ?? null,
+          escrowReleaseAt: hold?.autoReleaseAt ?? null,
+          releasedAt: hold?.releasedAt ?? null,
+        },
+      };
+    });
+
+    const sum = (pick: (l: (typeof lines)[number]) => number) =>
+      Math.round(lines.reduce((acc, l) => acc + pick(l), 0) * 100) / 100;
+
+    return {
+      currency: lines[0]?.currency ?? 'NGN',
+      totals: {
+        lotsSold: lines.length,
+        // These three reconcile: net === buyerTotal − (premium + fees + VAT + commission)
+        grossBilledToBuyers: sum((l) => l.buyer.total),
+        totalDeductions: sum((l) => l.deductions.platformCommission),
+        sellerNet: sum((l) => l.seller.net),
+        pendingEscrow: sum((l) =>
+          l.seller.escrowStatus === 'held' || l.seller.escrowStatus === 'disputed'
+            ? l.seller.net
+            : 0,
+        ),
+        releasedToWallet: sum((l) =>
+          l.seller.escrowStatus === 'released' ? l.seller.net : 0,
+        ),
+      },
+      lines,
+    };
+  }
+
   // ==========================================
   // CRUD OPERATIONS
   // ==========================================
-
   /**
    * Register a new seller
    */

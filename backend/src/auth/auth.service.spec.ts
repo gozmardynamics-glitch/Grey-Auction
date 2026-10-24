@@ -258,7 +258,11 @@ describe('AuthService', () => {
       const result = await service.forgotPassword('test@example.com');
 
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
-      expect(jwtService.sign).toHaveBeenCalledWith({ sub: mockUser.id }, { expiresIn: '1h' });
+      // `typ` marks the token's purpose so it cannot be replayed as an access token.
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        { sub: mockUser.id, typ: 'password_reset' },
+        { expiresIn: '1h' },
+      );
       expect(emailService.sendPasswordResetEmail).toHaveBeenCalled();
       // Never leak the token in the response (S2).
       expect(result).toEqual({ success: true, message: expect.any(String) });

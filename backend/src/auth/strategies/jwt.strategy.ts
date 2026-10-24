@@ -22,7 +22,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string }) {
+  async validate(payload: { sub: string; email: string; role: string; typ?: string }) {
+    // Purpose-bound tokens (password reset) must never authenticate a request,
+    // even though they are signed with the same secret.
+    if (payload.typ && payload.typ !== 'access') {
+      throw new UnauthorizedException();
+    }
+
     const user = await this.userRepository.findOne({ where: { id: payload.sub } });
 
     if (!user || !user.isActive) {

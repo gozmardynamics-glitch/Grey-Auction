@@ -1,13 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ProductService } from './product.service';
 import { Product, ProductStatus } from './entities/product.entity';
+import { KycRiskService } from '../kyc/kyc-risk.service';
 
 describe('ProductService', () => {
   let service: ProductService;
   let productRepository: jest.Mocked<Partial<Repository<Product>>>;
+  // Approving a lot publishes it, which is gated on KYC. Default: allowed, so
+  // the pre-existing approve tests keep exercising status logic rather than the gate.
+  const kycRisk = { canPublish: jest.fn(), isPublishAllowed: jest.fn() };
 
   const mockProduct: Partial<Product> = {
     id: 'product-1',
@@ -25,6 +29,13 @@ describe('ProductService', () => {
   };
 
   beforeEach(async () => {
+    kycRisk.canPublish.mockResolvedValue({
+      allowed: true,
+      reason: 'KYC approved and publishing authorised',
+      report: { complianceScore: 100, band: 'low' },
+      publishApproved: true,
+      verificationStatus: 'APPROVED',
+    });
     productRepository = {
       find: jest.fn(),
       findOne: jest.fn(),
@@ -40,6 +51,7 @@ describe('ProductService', () => {
       providers: [
         ProductService,
         { provide: getRepositoryToken(Product), useValue: productRepository },
+        { provide: KycRiskService, useValue: kycRisk },
       ],
     }).compile();
 
@@ -334,6 +346,37 @@ describe('ProductService', () => {
 
       expect(productRepository.save).toHaveBeenCalled();
       expect(result.status).toBe(ProductStatus.ACTIVE);
+    });
+
+    it('refuses to publish a lot when the seller has not passed KYC', async () => {
+      (productRepository.findOne as jest.Mock).mockResolvedValue(mockProduct);
+      kycRisk.canPublish.mockResolvedValue({
+        allowed: false,
+        reason: 'KYC is not approved (status: PENDING)',
+        report: { complianceScore: 0, band: 'high' },
+        publishApproved: false,
+        verificationStatus: 'PENDING',
+      });
+
+      await expect(
+        service.approve('product-1', {} as any, 'admin-1'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(productRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('refuses to publish when KYC passed but the admin withheld publishing', async () => {
+      (productRepository.findOne as jest.Mock).mockResolvedValue(mockProduct);
+      kycRisk.canPublish.mockResolvedValue({
+        allowed: false,
+        reason: 'Awaiting admin approval to publish',
+        report: { complianceScore: 100, band: 'low' },
+        publishApproved: false,
+        verificationStatus: 'APPROVED',
+      });
+
+      await expect(
+        service.approve('product-1', {} as any, 'admin-1'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('should set approvedBy and approvedAt on approval', async () => {

@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
+import { decimalTransformer } from '../common/transformers/decimal.transformer';
 
 @Entity('wallets')
 @Index(['userId'], { unique: true })
@@ -16,7 +17,7 @@ export class Wallet {
   @Column({ type: 'uuid' })
   userId: string;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   balance: number;
 
   @Column({ default: 'NGN' })

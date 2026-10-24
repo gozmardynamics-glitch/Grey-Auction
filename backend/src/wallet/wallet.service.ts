@@ -12,6 +12,7 @@ import {
   WalletTransactionType,
   WalletTransactionStatus,
 } from './wallet-transaction.entity';
+import { toMoney, roundMoney } from '../common/transformers/decimal.transformer';
 
 export interface DepositDto {
   amount: number;
@@ -173,12 +174,16 @@ export class WalletService {
         }
       }
 
-      const balance = Number(wallet.balance);
-      if (dto.amount > balance) {
+      const amount = toMoney(dto.amount);
+      const balance = toMoney(wallet.balance);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new BadRequestException('Amount must be a positive number');
+      }
+      if (amount > balance) {
         throw new BadRequestException('Insufficient balance');
       }
 
-      const newBalance = balance - dto.amount;
+      const newBalance = roundMoney(balance - amount);
       const txRepo = manager.getRepository(WalletTransaction);
       await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
 
@@ -186,7 +191,7 @@ export class WalletService {
         txRepo.create({
           walletId: wallet.id,
           type: WalletTransactionType.WITHDRAW,
-          amount: dto.amount,
+          amount,
           status: WalletTransactionStatus.COMPLETED,
           balanceAfter: newBalance,
         }),
@@ -214,7 +219,15 @@ export class WalletService {
     userId: string,
     input: WalletCreditInput,
   ) {
-    if (!input.amount || input.amount <= 0) {
+    /**
+     * Defensive coercion. Every decimal column now carries a transformer, but a
+     * caller may still hand us a raw string (a plain query result, a DTO, or an
+     * entity built before the transformer). `Number(a) + 'b'` concatenates
+     * strings instead of adding, which silently multiplies a balance by 100 —
+     * 1000.00 + '50000.00' became 100050000.00.
+     */
+    const amount = toMoney(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
       throw new BadRequestException('Amount must be a positive number');
     }
     const wallet = await this.getOrCreateLocked(manager, userId);
@@ -225,18 +238,18 @@ export class WalletService {
         where: { reference: input.reference, type: input.type },
       });
       if (existing) {
-        return { balance: Number(wallet.balance), transaction: existing, idempotent: true };
+        return { balance: toMoney(wallet.balance), transaction: existing, idempotent: true };
       }
     }
 
-    const newBalance = Number(wallet.balance) + input.amount;
+    const newBalance = roundMoney(toMoney(wallet.balance) + amount);
     await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
 
     const tx = await txRepo.save(
       txRepo.create({
         walletId: wallet.id,
         type: input.type,
-        amount: input.amount,
+        amount,
         reference: input.reference || null,
         description: input.description || null,
         status: WalletTransactionStatus.COMPLETED,

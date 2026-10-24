@@ -3,7 +3,9 @@ import { TypeOrmModule, InjectDataSource } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { DataSource } from 'typeorm';
 import { dataSourceOptions } from './config/database.config';
 import { CommonModule } from './common/common.module';
@@ -112,6 +114,10 @@ import { BackupModule } from './database/backup.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    // Order matters: metrics must wrap audit so a failed audit write cannot cost
+    // a request its telemetry.
+    { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
 export class AppModule implements OnApplicationShutdown {

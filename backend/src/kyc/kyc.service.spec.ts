@@ -12,6 +12,7 @@ import {
   KycRequirementAudience,
 } from './entities/kyc-document-requirement.entity';
 import { KycDocument, KycDocumentStatus } from './entities/kyc-document.entity';
+import { Seller } from '../seller/entities/seller.entity';
 
 describe('KycService', () => {
   let service: KycService;
@@ -30,6 +31,7 @@ describe('KycService', () => {
     save: jest.fn(),
     delete: jest.fn(),
   };
+  const sellers = { findOne: jest.fn(), save: jest.fn() };
 
   const requirement = (over: Partial<KycDocumentRequirement> = {}) =>
     ({
@@ -69,6 +71,7 @@ describe('KycService', () => {
         KycService,
         { provide: getRepositoryToken(KycDocumentRequirement), useValue: requirements },
         { provide: getRepositoryToken(KycDocument), useValue: documents },
+        { provide: getRepositoryToken(Seller), useValue: sellers },
       ],
     }).compile();
     service = module.get<KycService>(KycService);

@@ -164,6 +164,19 @@ export class SellerController {
     return { success: true, data: sales };
   }
 
+  // Account-holder scoped (JWT only): what the seller actually receives, per lot,
+  // with the arithmetic. Ownership belongs to the account, not to a KYC record.
+  @Get('me/earnings')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'What I actually receive per lot, with the full calculation',
+  })
+  async getMyEarnings(@CurrentUser() user: any) {
+    const data = await this.sellerService.getMyEarnings(user.id);
+    return { success: true, data };
+  }
+
   @Get('me/conversations')
   @UseGuards(JwtAuthGuard, SellerGuard)
   @SellerOnly()
@@ -256,16 +269,46 @@ export class SellerController {
     const seller = await this.sellerService.findById(id);
     const reviews = await this.reviewService.getSellerReviews(id, 1, 5);
 
-    // Remove sensitive data
-    delete seller.bank_account_details;
-    delete seller.internal_notes;
+    // Allow-list, not deny-list. Deleting two fields from the entity left tax id,
+    // business registration number, private contact emails and phones, internal
+    // moderation reasons and commission rate publicly readable on an
+    // unauthenticated route. Only what a buyer legitimately needs is exposed.
+    const publicSeller = {
+      id: seller.id,
+      business_name: seller.business_name,
+      business_type: seller.business_type,
+      description: seller.business_description ?? null,
+      city: seller.city ?? null,
+      country: seller.country ?? null,
+      website: seller.website ?? null,
+      rating: Number(seller.rating) || 0,
+      total_reviews: Number(seller.total_reviews) || 0,
+      total_sales: Number(seller.total_sales) || 0,
+      verification_status: seller.verification_status,
+      member_since: seller.created_at ?? null,
+    };
+
+    // Project reviews exactly as the dedicated reviews endpoint does: no
+    // bidder_id, no moderator identity, no flag reason.
+    const recentReviews = reviews.data.map((review) => ({
+      id: review.id,
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment,
+      response: review.response,
+      responded_at: review.responded_at,
+      is_verified_purchase: review.is_verified_purchase,
+      helpful_count: review.helpful_count,
+      images: review.images,
+      created_at: review.created_at,
+    }));
 
     return {
       success: true,
       message: 'Profile retrieved successfully',
       data: {
-        seller,
-        recent_reviews: reviews.data,
+        seller: publicSeller,
+        recent_reviews: recentReviews,
         total_reviews: reviews.total,
         rating_breakdown: reviews.rating_breakdown,
       },
@@ -308,6 +351,24 @@ export class SellerController {
     return {
       success: true,
       message: 'Sellers retrieved successfully',
+      ...result,
+    };
+  }
+
+  // Declared before @Get(':id'): Nest registers routes in declaration order, so
+  // an unconstrained :id matches "payouts" first and 500s on the uuid column.
+  @Get('payouts')
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all payouts (Admin)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Payouts retrieved successfully' })
+  async getAllPayouts(@Query() query: PayoutQueryDto) {
+    const result = await this.payoutService.findAll(query);
+
+    return {
+      success: true,
+      message: 'Payouts retrieved successfully',
       ...result,
     };
   }
@@ -641,22 +702,6 @@ export class SellerController {
       success: true,
       message: 'Payout cancelled successfully',
       data: payout,
-    };
-  }
-
-  @Get('payouts')
-  @UseGuards(JwtAuthGuard, AdminRolesGuard)
-  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'List all payouts (Admin)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Payouts retrieved successfully' })
-  async getAllPayouts(@Query() query: PayoutQueryDto) {
-    const result = await this.payoutService.findAll(query);
-
-    return {
-      success: true,
-      message: 'Payouts retrieved successfully',
-      ...result,
     };
   }
 

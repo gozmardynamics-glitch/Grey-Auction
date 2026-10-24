@@ -309,12 +309,37 @@ Messages are stored but a recipient only sees them on refetch; nothing notifies.
 
 ---
 
-## 6. Decisions needed before implementation
+## 6. Decisions — ANSWERED 2026-10-23
 
-1. **Escrow economics (1.1):** hold net-to-seller only, or hold gross with the platform portion tracked separately? Affects refunds and dispute reasoning.
-2. **Overpaid historical payouts (5.5):** claw back, or write off and document?
-3. **Seller fee self-service (2.4):** clamp to platform floors and keep, or move to admin approval only?
-4. **Buyer KYC enforcement (4.3):** once documents are required, does bidding stay ungated (current behaviour) or gate on `isVerified`?
+The four blockers below are now decided. These answers drive the implementation described in §6.1.
+
+1. **Escrow economics** → **Hold the buyer's full bill, pay the seller the net.** Every surface shows an itemised breakdown: bid, buyer premium, VAT, other charges, fixed fee, and the grand total for the buyer; bid, platform commission, tax, and the net for the seller. The platform keeps commission and VAT.
+2. **Overpayment** → **Structurally prevented.** The seller's payout is derived from the stored breakdown, never from the gross total, and each seller can see the full calculation for every lot they sold.
+3. **Seller fee self-service** → **Allowed as an option, with platform commission fixed.** Seller-editable fields are bounded by admin config; `buyerFeePct` (platform revenue), `sellerFeePct` (platform revenue) and `vatPct` (statutory) are admin-only. Additionally a seller may mark a lot "final bid subject to my approval" and approve or decline the winning bid after close.
+4. **KYC enforcement** → **Sellers may create listings, but a lot cannot go public until KYC passes.** A compliance score is computed from approved documents against the admin-authored requirements and mapped to a risk band; the admin sees that and decides whether the seller may publish.
+
+### 6.1 Design notes for the answered decisions
+
+**Buyer bill vs seller receipt (one breakdown, two views).** `computeFeeBreakdown` is the single source of truth and already returns both sides. It is fixed to round each component to 2dp and derive `total`/`sellerNet` from the rounded values, so the printed lines always sum to the total charged.
+
+```
+Buyer pays:   bid + buyerPremium + vatOnBid + vatOnBuyerFee + otherCharges + fixedFee
+Seller gets:  bid − sellerFee
+Platform keeps: buyerPremium + sellerFee + vatOnBid + vatOnBuyerFee + otherCharges + fixedFee
+```
+
+**Escrow split.** The hold stores all four amounts (`buyerTotal`, `sellerNet`, `platformShare`, `vatAmount`). Release credits `sellerNet` to the seller's wallet and books `platformShare` as platform revenue. VAT is never paid to either party.
+
+**Risk analysis (decision 4).** A weighted compliance score over required requirements, banded:
+
+| Score | Band | Effect |
+|---|---|---|
+| ≥ 90% | low | admin may approve publishing |
+| 60–89% | medium | admin review required, higher scrutiny |
+| < 60% | high | publishing withheld until more documents are approved |
+
+Signals that lower the band independently of score: unverified email, any expired document, a rejected document, or lots above a configurable value threshold. The score is advisory — the admin makes the final publish decision, as requested.
+
 
 ---
 
@@ -329,6 +354,60 @@ Week 5   Phase 4 item 4.3 (needs upload endpoint) · Phase 1 items 1.7, 1.8, 1.1
 ```
 
 **Definition of done per item:** regression test that fails before and passes after · `npm run build` clean · full suite green · lint 0 errors · the behaviour verified against the running API or browser, not just asserted in a test.
+
+---
+
+## 9. Delivery status (2026-10-24)
+
+Verified locally: backend **48 suites / 352 tests**, 0 lint errors; frontend `tsc` clean.
+
+### Done
+
+| Phase | Item | Result |
+|---|---|---|
+| 0 | Decimal safety (root cause of 1.2/1.9) | Shared `decimalTransformer` applied to every money column on `Wallet`, `Invoice`, `Product`, `Bid`, `EscrowHold`; `toMoney`/`roundMoney` at the boundaries. `Number(a) + 'b'` can no longer concatenate. |
+| 0 | Rounding + `otherCharges` (1.7, 1.8) | `computeFeeBreakdown` rounds each component once and derives `total`/`sellerNet`/`platformShare`/`vatTotal` from the rounded values. Invoice persists `other_charges`, `seller_net`, `platform_share` and no longer excludes `otherCharges` from the total. |
+| 1 | **1.1 escrow economics** | Hold stores the buyer bill **and** its split (`sellerNet`, `platformShare`, `vatAmount`). Both release paths and the auto-release sweep credit the seller **net only**. |
+| 1 | **1.4 duplicate charge** | `findLiveForInvoice` + partial unique index `UQ_payment_live_per_invoice`. A retry reuses the in-flight payment instead of opening a second checkout. |
+| 1 | **1.5 client reference** | Reference is always server-generated; `findByReferenceForUser` scopes lookups to the owner. |
+| 2 | **2.1 verify guard** | `AdminRolesGuard` + `@AdminRoles` (fixed in the previous pass). |
+| 2 | **2.5 PII leak** | Public seller profile now uses an allow-list projection; reviews re-projected without `bidder_id`. Verified: no `tax_id`, `email`, `phone`, `commission_rate`, `user_id` on the unauthenticated route. |
+| 2 | **2.7 reset token** | `typ: 'password_reset'` claim; `JwtStrategy` rejects any non-`access` purpose; `resetPassword` also refuses inactive accounts. |
+| 2 | **2.8 route order** | `@Get('payouts')` moved above `@Get(':id')`. |
+| 3 | **Decision 1 & 2 — buyer/seller breakdowns** | Buyer: `/fees/breakdown` returns bid, premium, VAT, other charges, fixed fee, total. Seller: new `GET /sellers/me/earnings` returns per-lot hammer / premium / VAT / commission / net plus escrow state. Frontend helpers `getBuyerPriceBreakdown()` and `getSellerEarnings()`. |
+| 4 | **Decision 4 — KYC publish gate** | `KycRiskService` computes a weighted compliance score, bands it low/medium/high with independent signals, and `ProductService.approve()` refuses to publish unless KYC is approved **and** an admin has authorised publishing. Admin routes `GET /admin/kyc/sellers/:id/risk` and `POST /admin/kyc/sellers/:id/publish`. |
+| 4 | Audit trail inert (4.1) | `AuditInterceptor` writes a row for every mutating `/admin/` call. Verified: the publish decision produced the first audit row the system has ever had. |
+| 4 | Metrics inert (4.2) | `MetricsInterceptor` feeds `recordHttpRequest`. Verified: `http_requests_total` and `http_request_duration_seconds` now appear. |
+
+### Verified end-to-end
+
+- Buyer bill reconciles: bid 100,000 → premium 10,000 + VAT 8,250 = **total 118,250**; **sellerNet 95,000**; **platformShare 15,000**; and `95,000 + 15,000 + 8,250 = 118,250`.
+- KYC gate: approving a lot returned **403 "Awaiting admin approval to publish"**; after `POST /admin/kyc/sellers/:id/publish {approved:true}` the same call succeeded and the lot went `active`.
+
+### Not done — and why
+
+| Item | State |
+|---|---|
+| 1.3 duplicate escrow hold | Index added; the `23505` catch in `holdInManager` still to add. |
+| 1.6 status regressions | Not started. Needs a transition table on `PaymentService.updateStatus`. |
+| 2.2 seller-document IDOR | Not started. Needs the caller's `seller_id` threaded into `update`/`remove`. |
+| 2.3 admin-by-email | Not started. Needs `admins.user_id` and an email-verification requirement. |
+| 2.4 / **Decision 3a** fixed commission + bounded seller fees | Not started. |
+| 2.6 public `status` filter | Not started (one-line: force `ACTIVE`). |
+| 2.9 untyped `@Body()` | Not started. |
+| 2.10 review integrity | Not started. |
+| **Decision 3b** "final bid subject to seller approval" | Not started. Needs a product flag, a settlement branch and seller accept/decline endpoints. |
+| Phase 3 frontend wiring | Only the data helpers landed; the authenticated-fetch migration is untouched. |
+| Phase 5 latent risks | Untouched, including the migration baseline — which matters more now, because the new columns and both partial unique indexes were applied by `synchronize`, not by a migration. |
+
+### Dev-data changed while testing
+
+- Seller `70bd6713…` (user = the admin, owner of the seeded lots) had `publish_approved` set to **true** so the gate could be proven open.
+- Lot `bfe1f6de…` was moved `pending_approval` → **`active`** by that test.
+
+### Backfill needed before this reaches real data
+
+Existing `invoices` rows have `seller_net = 0` and `platform_share = 0`, and existing `escrow_holds` have no split — they predate the columns. Until a backfill runs, `/sellers/me/earnings` reports `net = 0` for historical lots (visible in testing on `INV-2026-000002`). Escrow release already falls back safely rather than paying the gross, but the numbers need recomputing from the stored components.
 
 ---
 

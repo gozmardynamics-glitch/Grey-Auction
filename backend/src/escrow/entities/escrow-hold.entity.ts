@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import { decimalTransformer } from '../../common/transformers/decimal.transformer';
 
 export enum EscrowStatus {
   HELD = 'held',
@@ -10,14 +11,29 @@ export enum EscrowStatus {
 /**
  * Escrow hold (L5): the funds-in-escrow lifecycle for a paid invoice.
  *
- * This is the state-machine seam only - it records the hold and its
- * transitions. When a real payment gateway is configured, release/refund hook
- * into the payout/disbursement provider (see the payments module).
+ * The hold records the buyer's **full bill** and its split, so the money that
+ * leaves escrow is a stored fact rather than a recomputation:
+ *
+ *   amount        (buyerTotal)  what the buyer actually paid
+ *   sellerNet                   what the seller receives  = hammer − sellerFee
+ *   platformShare               commission + fees + other = the platform's revenue
+ *   vatAmount                   VAT, which belongs to neither party
+ *
+ * On release the seller is credited `sellerNet` only. Paying `amount` to the
+ * seller (the previous behaviour) handed them the buyer's premium and the VAT,
+ * and silently dropped the platform's entire commission.
  */
 @Entity('escrow_holds')
 @Index(['invoiceId'])
 @Index(['buyerId'])
 @Index(['sellerId'])
+// One open hold per invoice. `SELECT … FOR UPDATE` locks nothing when the row
+// is absent, so a partial unique index is the only thing that stops two
+// concurrent settlements creating two holds that both release.
+@Index('UQ_escrow_open_per_invoice', ['invoiceId'], {
+  unique: true,
+  where: `"status" IN ('held', 'disputed')`,
+})
 export class EscrowHold {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -25,8 +41,21 @@ export class EscrowHold {
   @Column({ type: 'uuid' })
   invoiceId: string;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  /** The buyer's gross bill for this invoice. */
+  @Column({ type: 'decimal', precision: 18, scale: 2, transformer: decimalTransformer })
   amount: number;
+
+  /** What the seller receives on release: hammer − seller fee. */
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  sellerNet: number;
+
+  /** Platform revenue held in this escrow: buyer premium + seller fee + fees. */
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  platformShare: number;
+
+  /** VAT component; remitted by the platform, paid to neither party. */
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  vatAmount: number;
 
   @Column({ type: 'uuid' })
   buyerId: string;

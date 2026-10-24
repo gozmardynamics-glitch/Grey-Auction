@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, In
 import { User } from '../../auth/entities/user.entity';
 import { Product } from '../../products/entities/product.entity';
 import { Room } from '../../rooms/entities/room.entity';
+import { decimalTransformer } from '../../common/transformers/decimal.transformer';
 
 @Entity('bids')
 @Index(['productId'])
@@ -29,11 +30,11 @@ export class Bid {
   @Column()
   bidderId: string;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, transformer: decimalTransformer })
   amount: number;
 
   /** Maximum the bidder is willing to go (proxy/auto-bid ceiling). */
-  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true, transformer: decimalTransformer })
   maxBid: number | null;
 
   @Column({ default: false })

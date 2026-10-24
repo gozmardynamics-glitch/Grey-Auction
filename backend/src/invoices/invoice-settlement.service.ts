@@ -219,6 +219,7 @@ export class InvoiceSettlementService {
         commission: breakdown.buyerFee,
         vat: breakdown.vatOnBid + breakdown.vatOnBuyerFee,
         fixedFee: breakdown.fixedFee,
+        otherCharges: breakdown.otherCharges,
         sellerFee: breakdown.sellerFee,
         feeSource: breakdown.source,
         vatBase: breakdown.vatBase,

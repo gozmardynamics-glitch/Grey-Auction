@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, Between, Not, EntityManager } from 'typeorm';
 import { Product, ProductStatus, AuctionType } from './entities/product.entity';
+import { KycRiskService } from '../kyc/kyc-risk.service';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto, ProductSortBy } from './dto/product.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly repo: Repository<Product>,
+    private readonly kycRisk: KycRiskService,
   ) {}
 
   async create(dto: CreateProductDto, sellerId: string): Promise<Product> {
@@ -379,6 +381,17 @@ export class ProductService {
 
   async approve(id: string, dto: ApproveProductDto, adminId: string): Promise<Product> {
     const product = await this.findById(id);
+
+    // Publishing gate: approving a lot makes it publicly bid-able, so the owner
+    // must have passed KYC *and* been authorised to publish. Sellers can always
+    // create and edit listings — this only blocks the public step.
+    const gate = await this.kycRisk.canPublish(product.sellerId);
+    if (!gate.allowed) {
+      throw new ForbiddenException(
+        `Lot cannot be published: ${gate.reason}`,
+      );
+    }
+
     product.status = ProductStatus.ACTIVE;
     product.approvedBy = adminId;
     product.approvedAt = new Date();

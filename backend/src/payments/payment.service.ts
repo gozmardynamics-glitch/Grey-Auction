@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Payment, PaymentStatus, PaymentType, PaymentProvider } from './entities/payment.entity';
 
 export interface CreatePaymentDto {
@@ -29,9 +29,40 @@ export class PaymentService {
       this.repo.create({
         ...dto,
         status: PaymentStatus.PENDING,
-        currency: dto.currency || 'NGN',
+        currency: (dto.currency || 'NGN').toUpperCase(),
       }),
     );
+  }
+
+  /**
+   * The live (PENDING or SUCCEEDED) payment for an invoice, if any.
+   *
+   * Used to stop a second checkout being opened for an invoice that is already
+   * being paid or has been paid: two live payments mean two captures and only one
+   * settlement, leaving the buyer charged twice with no refund path.
+   */
+  async findLiveForInvoice(invoiceId: string): Promise<Payment | null> {
+    return this.repo.findOne({
+      where: {
+        invoiceId,
+        status: In([PaymentStatus.PENDING, PaymentStatus.SUCCEEDED]),
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * A payment by reference, scoped to its owner.
+   *
+   * The unscoped lookup let a caller resolve another user's payment by guessing
+   * or supplying their reference. Webhooks do not have a caller identity, so they
+   * keep using `findByReference`; user-facing paths must use this.
+   */
+  async findByReferenceForUser(
+    reference: string,
+    userId: string,
+  ): Promise<Payment | null> {
+    return this.repo.findOne({ where: { reference, userId } });
   }
 
   async findByReference(reference: string): Promise<Payment | null> {

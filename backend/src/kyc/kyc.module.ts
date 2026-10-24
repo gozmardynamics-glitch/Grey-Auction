@@ -3,14 +3,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { KycDocumentRequirement } from './entities/kyc-document-requirement.entity';
 import { KycDocument } from './entities/kyc-document.entity';
+import { User } from '../auth/entities/user.entity';
+import { Seller } from '../seller/entities/seller.entity';
 import { KycController } from './kyc.controller';
 import { KycAdminController } from './kyc-admin.controller';
 import { KycService } from './kyc.service';
+import { KycRiskService } from './kyc-risk.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([KycDocumentRequirement, KycDocument])],
+  imports: [
+    TypeOrmModule.forFeature([KycDocumentRequirement, KycDocument, User, Seller]),
+  ],
   controllers: [KycController, KycAdminController],
-  providers: [KycService],
-  exports: [KycService],
+  providers: [KycService, KycRiskService],
+  exports: [KycService, KycRiskService],
 })
 export class KycModule {}

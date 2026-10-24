@@ -127,7 +127,13 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     if (user) {
-      const resetToken = this.jwtService.sign({ sub: user.id }, { expiresIn: '1h' });
+      // `typ` marks the purpose. Without it this token was byte-identical in shape
+      // to an access token and signed with the same secret, so the reset link in
+      // an email was also a full API bearer credential for an hour.
+      const resetToken = this.jwtService.sign(
+        { sub: user.id, typ: 'password_reset' },
+        { expiresIn: '1h' },
+      );
       const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login/forgot_password/reset_password?token=${resetToken}`;
       this.emailService.sendPasswordResetEmail(email, resetLink).catch((err) => {
         this.logger.error(`Failed to send password reset email: ${err.message}`);
@@ -138,15 +144,24 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string) {
-    let payload: { sub: string };
+    let payload: { sub: string; typ?: string };
     try {
       payload = this.jwtService.verify(token);
     } catch {
       throw new UnauthorizedException('Invalid or expired reset token');
     }
 
+    // Only a token minted for this purpose may reset a password. An access token
+    // (no `typ`) is rejected, which closes "change the password with a stolen
+    // session token and no knowledge of the current one".
+    if (payload.typ !== 'password_reset') {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
     const user = await this.userRepository.findOne({ where: { id: payload.sub } });
     if (!user) throw new UnauthorizedException('User not found');
+    // A soft-deleted account must not be re-armed by a reset link.
+    if (!user.isActive) throw new UnauthorizedException('This account is not active');
 
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.save(user);

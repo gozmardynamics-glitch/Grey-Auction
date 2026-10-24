@@ -1338,6 +1338,100 @@ export async function getKycRequirements(): Promise<
   return (list ?? []) as any;
 }
 
+/** Full price breakdown for a bid amount — the buyer's final bill, itemised. */
+export interface BuyerPriceBreakdown {
+  bidAmount: number;
+  buyerFee: number;
+  vatOnBid: number;
+  vatOnBuyerFee: number;
+  otherCharges: number;
+  fixedFee: number;
+  total: number;
+  vatTotal: number;
+  source: string;
+  vatBase: string;
+  rates?: Record<string, unknown>;
+}
+
+export async function getBuyerPriceBreakdown(
+  amount: number,
+  productId?: string,
+  sellerId?: string,
+  category?: string,
+): Promise<BuyerPriceBreakdown | null> {
+  if (!amount || amount <= 0) return null;
+  const params = new URLSearchParams({ amount: String(amount) });
+  if (productId) params.set('productId', productId);
+  if (sellerId) params.set('sellerId', sellerId);
+  if (category) params.set('category', category);
+  const data = await apiFetch(`/fees/breakdown?${params.toString()}`);
+  if (!data || typeof data !== 'object') return null;
+  return data as BuyerPriceBreakdown;
+}
+
+/** One sold lot as the seller sees it: buyer bill, deductions, and net. */
+export interface SellerEarningLine {
+  invoiceId: string;
+  invoiceNumber: string;
+  lotTitle: string | null;
+  currency: string;
+  issuedAt: string;
+  status: string;
+  buyer: {
+    hammerPrice: number;
+    buyerPremium: number;
+    vat: number;
+    otherCharges: number;
+    fixedFee: number;
+    total: number;
+  };
+  deductions: { platformCommission: number; ratePctOfHammer: number };
+  seller: {
+    net: number;
+    escrowStatus: string | null;
+    escrowReleaseAt: string | null;
+    releasedAt: string | null;
+  };
+}
+
+export interface SellerEarnings {
+  currency: string;
+  totals: {
+    lotsSold: number;
+    grossBilledToBuyers: number;
+    totalDeductions: number;
+    sellerNet: number;
+    pendingEscrow: number;
+    releasedToWallet: number;
+  };
+  lines: SellerEarningLine[];
+}
+
+const EMPTY_EARNINGS: SellerEarnings = {
+  currency: 'NGN',
+  totals: {
+    lotsSold: 0,
+    grossBilledToBuyers: 0,
+    totalDeductions: 0,
+    sellerNet: 0,
+    pendingEscrow: 0,
+    releasedToWallet: 0,
+  },
+  lines: [],
+};
+
+/** What the account holder actually receives, per lot, with the calculation. */
+export async function getSellerEarnings(): Promise<SellerEarnings> {
+  const data = await apiFetch('/sellers/me/earnings');
+  if (!data || typeof data !== 'object') return EMPTY_EARNINGS;
+  const view = data as Partial<SellerEarnings>;
+  return {
+    currency: view.currency ?? 'NGN',
+    totals: { ...EMPTY_EARNINGS.totals, ...(view.totals ?? {}) },
+    lines: Array.isArray(view.lines) ? view.lines : [],
+  };
+}
+
 export async function getSellerListings() {
   // Ownership belongs to the account holder, so read their own lots from the
   // account-scoped route first. /sellers/me/products additionally requires a

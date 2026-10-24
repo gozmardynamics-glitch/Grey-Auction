@@ -37,6 +37,12 @@ export enum PaymentStatus {
 @Index(['reference'], { unique: true })
 @Index(['userId'])
 @Index(['invoiceId'])
+// At most one live payment per invoice: two live payments mean two captures but
+// only one settlement, so the second charge has no way back to the buyer.
+@Index('UQ_payment_live_per_invoice', ['invoiceId'], {
+  unique: true,
+  where: `"status" IN ('pending', 'succeeded')`,
+})
 @Index(['provider', 'providerReference'])
 export class Payment {
   @PrimaryGeneratedColumn('uuid')

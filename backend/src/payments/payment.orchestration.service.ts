@@ -76,9 +76,33 @@ export class PaymentOrchestrationService {
       currency = invoice.currency || currency;
     }
 
-    const reference = command.metadata?.reference
-      ? String(command.metadata.reference)
-      : 'PAY-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+    // The reference is always server-generated. It used to honour a
+    // client-supplied `metadata.reference`, and the webhook resolves a payment by
+    // reference alone — so a caller could pass someone else's reference and be
+    // handed their payment row.
+    const reference =
+      'PAY-' + Date.now().toString(36).toUpperCase() + '-' +
+      Math.random().toString(36).slice(2, 7).toUpperCase();
+
+    // One live payment per invoice. Without this a double-click (or a retry after
+    // a slow redirect) opens two gateway checkouts, both capture, and only one
+    // can settle — the second charge has no refund path.
+    if (command.invoiceId) {
+      const live = await this.paymentService.findLiveForInvoice(command.invoiceId);
+      if (live) {
+        this.logger.warn(
+          `Reusing in-flight payment ${live.reference} for invoice ${command.invoiceId}`,
+        );
+        // Shape matches the normal success return so callers need no special case.
+        return {
+          payment: live,
+          checkoutUrl: null,
+          paymentInstruction: null,
+          message: 'A payment for this invoice is already in progress',
+          reused: true,
+        };
+      }
+    }
 
     const payment = await this.paymentService.create({
       userId: command.userId,
@@ -87,6 +111,7 @@ export class PaymentOrchestrationService {
       provider: command.provider,
       reference,
       amount,
+      currency,
       metadata: command.metadata || {},
     });
 

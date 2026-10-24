@@ -4,6 +4,7 @@ import { SellerService } from './seller.service';
 import { Seller } from '../entities/seller.entity';
 import { Product } from '../../products/entities/product.entity';
 import { Invoice } from '../../invoices/invoice.entity';
+import { EscrowHold } from '../../escrow/entities/escrow-hold.entity';
 
 describe('SellerService', () => {
   let service: SellerService;
@@ -19,6 +20,7 @@ describe('SellerService', () => {
         { provide: getRepositoryToken(Seller), useValue: sellerRepo },
         { provide: getRepositoryToken(Product), useValue: productRepo },
         { provide: getRepositoryToken(Invoice), useValue: invoiceRepo },
+        { provide: getRepositoryToken(EscrowHold), useValue: { find: jest.fn().mockResolvedValue([]) } },
       ],
     }).compile();
     service = module.get<SellerService>(SellerService);

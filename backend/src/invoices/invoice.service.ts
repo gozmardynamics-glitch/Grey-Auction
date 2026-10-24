@@ -30,6 +30,8 @@ export interface GenerateInvoiceDto {
   escrowWindowHours?: number | null;
   /** Settlement currency (ISO-4217). Defaults to NGN. */
   currency?: string;
+  /** Percentage-based extra charge from the resolved breakdown. */
+  otherCharges?: number;
 }
 
 export interface MarkPaidDto {
@@ -85,11 +87,21 @@ export class InvoiceService {
     const year = new Date().getFullYear();
     const invoiceNumber = `INV-${year}-${String(next).padStart(6, '0')}`;
 
+    // Every component is persisted individually and the total is the sum of the
+    // values actually stored, so the printed lines always equal what is charged.
+    // `otherCharges` used to be dropped here, which understated every invoice
+    // the moment an admin configured otherChargesPct.
+    const hammerPrice = Number(data.hammerPrice) || 0;
+    const commission = Number(data.commission) || 0;
+    const vat = Number(data.vat) || 0;
+    const fixedFee = Number(data.fixedFee) || 0;
+    const sellerFee = Number(data.sellerFee ?? 0) || 0;
+    const otherCharges = Number(data.otherCharges ?? 0) || 0;
+
     const total =
-      Number(data.hammerPrice) +
-      Number(data.commission) +
-      Number(data.vat) +
-      Number(data.fixedFee);
+      hammerPrice + commission + vat + fixedFee + otherCharges;
+    const sellerNet = hammerPrice - sellerFee;
+    const platformShare = commission + sellerFee + fixedFee + otherCharges;
 
     const invoice = repo.create({
       invoice_number: invoiceNumber,
@@ -97,11 +109,14 @@ export class InvoiceService {
       product_id: data.productId,
       buyer_id: data.buyerId,
       seller_id: data.sellerId,
-      hammer_price: data.hammerPrice,
-      commission: data.commission,
-      vat: data.vat,
-      fixed_fee: data.fixedFee,
-      seller_fee: data.sellerFee ?? 0,
+      hammer_price: hammerPrice,
+      commission,
+      vat,
+      fixed_fee: fixedFee,
+      other_charges: otherCharges,
+      seller_fee: sellerFee,
+      seller_net: sellerNet,
+      platform_share: platformShare,
       fee_source: data.feeSource ?? 'default',
       vat_base: data.vatBase ?? 'hammer_and_fees',
       escrow_window_hours: data.escrowWindowHours ?? null,

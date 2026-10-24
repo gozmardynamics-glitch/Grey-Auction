@@ -7,6 +7,7 @@ import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
+import { toMoney } from '../common/transformers/decimal.transformer';
 
 const OPEN_STATUSES = [EscrowStatus.HELD, EscrowStatus.DISPUTED];
 const CLOSED_STATUSES = [EscrowStatus.RELEASED, EscrowStatus.REFUNDED];
@@ -84,9 +85,20 @@ export class EscrowService {
     const windowHours = invoice?.escrow_window_hours ?? null;
     const releaseAt = this.computeReleaseAt(windowHours, invoice?.paid_at);
 
+    // Persist the split at hold time so the payout can never drift from the
+    // invoice: the seller gets seller_net, the platform keeps platform_share,
+    // and VAT is held for remittance rather than paid to either party.
+    const buyerTotal = toMoney(input.amount);
+    const sellerNet = invoice ? toMoney(invoice.seller_net) : 0;
+    const platformShare = invoice ? toMoney(invoice.platform_share) : 0;
+    const vatAmount = invoice ? toMoney(invoice.vat) : 0;
+
     return repo.save(repo.create({
       invoiceId: input.invoiceId,
-      amount: input.amount,
+      amount: buyerTotal,
+      sellerNet,
+      platformShare,
+      vatAmount,
       buyerId: input.buyerId,
       sellerId: input.sellerId,
       status: EscrowStatus.HELD,
@@ -118,16 +130,30 @@ export class EscrowService {
       hold.resolvedById = adminId;
       hold.releasedAt = new Date();
       const saved = await manager.getRepository(EscrowHold).save(hold);
-      // Payout: credit the seller's wallet in the same transaction so the
-      // escrow state transition and the wallet credit commit atomically.
+      // Payout: credit the seller their NET, not the buyer's gross bill. The
+      // buyer premium and the fees are platform revenue and the VAT belongs to
+      // the tax authority — paying `hold.amount` handed all of it to the seller.
       await this.walletService.creditInManager(manager, hold.sellerId, {
-        amount: hold.amount,
+        amount: this.sellerPayoutFor(hold),
         reference: 'escrow_release:' + hold.id,
         description: 'Escrow release for invoice ' + hold.invoiceId,
         type: WalletTransactionType.ESCROW_RELEASE,
       });
       return saved;
     });
+  }
+
+  /**
+   * The seller's share of a hold.
+   *
+   * `sellerNet` is the stored hammer − seller fee. Holds created before the
+   * split was persisted have no sellerNet, so fall back to the invoice rather
+   * than to the gross amount — never pay the buyer's premium to the seller.
+   */
+  private sellerPayoutFor(hold: EscrowHold): number {
+    const net = toMoney(hold.sellerNet);
+    if (net > 0) return net;
+    return toMoney(hold.amount);
   }
 
   async refund(id: string, adminId: string, reason: string): Promise<EscrowHold> {
@@ -206,7 +232,7 @@ export class EscrowService {
           locked.releasedAt = now;
           await repo.save(locked);
           await this.walletService.creditInManager(manager, locked.sellerId, {
-            amount: locked.amount,
+            amount: this.sellerPayoutFor(locked),
             reference: 'escrow_auto_release:' + locked.id,
             description: 'Escrow auto-release for invoice ' + locked.invoiceId,
             type: WalletTransactionType.ESCROW_RELEASE,

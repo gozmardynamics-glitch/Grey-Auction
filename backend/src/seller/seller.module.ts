@@ -19,6 +19,7 @@ import {
 } from './entities';
 import { Product } from '../products/entities/product.entity';
 import { Invoice } from '../invoices/invoice.entity';
+import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { FeeModule } from '../fees/fee.module';
 import {
   SellerGuard,
@@ -36,6 +37,7 @@ import {
       SellerStatistics,
       Product,
       Invoice,
+      EscrowHold,
     ]),
     StorageModule,
     EmailModule,

@@ -20,6 +20,8 @@ export enum InvoiceStatus {
  * Invoice Entity
  * Represents an invoice issued to a winning bidder after an auction closes.
  */
+import { decimalTransformer } from '../common/transformers/decimal.transformer';
+
 @Entity('invoices')
 @Index(['invoice_number'], { unique: true })
 @Index(['buyer_id'])
@@ -51,25 +53,40 @@ export class Invoice {
   // ==========================================
   // Amounts
   // ==========================================
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   hammer_price: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   commission: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   vat: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   fixed_fee: number;
 
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   total: number;
 
   // ─── U5 fee-rule audit columns ─────────────────────────────
   // Seller-side platform commission deducted from the seller's proceeds.
-  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
   seller_fee: number;
+
+  // Extra percentage-based charge (was computed but never persisted, so the
+  // invoice total silently omitted it once an admin set otherChargesPct).
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  other_charges: number;
+
+  // What the seller is actually paid: hammer − seller fee. Stored, not
+  // recomputed, so the escrow release cannot drift from the invoice.
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  seller_net: number;
+
+  // Everything the platform keeps on this invoice: buyer fee + seller fee +
+  // other charges + fixed fee. VAT is tracked separately because it is owed.
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  platform_share: number;
 
   // Where the fee values came from: product | seller | category | default.
   @Column({ type: 'varchar', length: 20, default: 'default' })

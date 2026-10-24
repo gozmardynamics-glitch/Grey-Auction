@@ -13,6 +13,7 @@ import {
   KycRequirementAudience,
 } from './entities/kyc-document-requirement.entity';
 import { KycDocument, KycDocumentStatus } from './entities/kyc-document.entity';
+import { Seller } from '../seller/entities/seller.entity';
 import {
   CreateKycRequirementDto,
   ReviewKycDocumentDto,
@@ -60,6 +61,8 @@ export class KycService {
     private readonly requirements: Repository<KycDocumentRequirement>,
     @InjectRepository(KycDocument)
     private readonly documents: Repository<KycDocument>,
+    @InjectRepository(Seller)
+    private readonly sellers: Repository<Seller>,
   ) {}
 
   // ── Admin: document requirements ───────────────────────────────────────
@@ -282,6 +285,51 @@ export class KycService {
       );
     }
     await this.documents.delete({ id: documentId });
+  }
+
+  /**
+   * Record the admin's publishing decision for a seller.
+   *
+   * Deliberately separate from KYC approval: KYC passing says the documents are
+   * good, it does not authorise publishing. Also writes the compliance score and
+   * band that the decision was taken against, so the record shows what the admin
+   * actually saw.
+   */
+  async decidePublishing(
+    userId: string,
+    adminId: string,
+    approved: boolean,
+    note: string | undefined,
+    assessment: { complianceScore: number; band: string },
+  ): Promise<Seller> {
+    const seller = await this.sellers.findOne({ where: { user_id: userId } });
+    if (!seller) throw new NotFoundException('Seller profile not found for this account');
+
+    seller.compliance_score = assessment.complianceScore;
+    seller.risk_band = assessment.band;
+    seller.publish_approved = approved;
+    seller.publish_decision_note = note ?? null;
+    seller.publish_decided_by = adminId;
+    seller.publish_decided_at = new Date();
+    return this.sellers.save(seller);
+  }
+
+  /** Publishing state as the seller is allowed to see it. */
+  async publishingStateFor(userId: string): Promise<{
+    publishApproved: boolean;
+    complianceScore: number;
+    band: string;
+    decisionNote: string | null;
+    decidedAt: Date | null;
+  }> {
+    const seller = await this.sellers.findOne({ where: { user_id: userId } });
+    return {
+      publishApproved: seller?.publish_approved === true,
+      complianceScore: seller?.compliance_score ?? 0,
+      band: seller?.risk_band ?? 'high',
+      decisionNote: seller?.publish_decision_note ?? null,
+      decidedAt: seller?.publish_decided_at ?? null,
+    };
   }
 
   // ── Admin: review queue ───────────────────────────────────────────────
