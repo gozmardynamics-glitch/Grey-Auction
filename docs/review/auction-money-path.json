@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Auction Money Path — Review",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "output": "C:/Users/user/Grey-Auction/docs/review/auction-money-path.html"
+  },
+  "lanes": [
+    { "id": "auction", "label": "Auction and Settlement" },
+    { "id": "pay", "label": "Payment and Escrow" },
+    { "id": "payout", "label": "Payout and Ledger" },
+    { "id": "defects", "label": "Verified Defects", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "bidding", "label": "Bidding", "fromCol": 0, "toCol": 1 },
+    { "id": "settling", "label": "Invoice and pay", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "moneyout", "label": "Escrow to wallet", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["bid", "close", "invoice", "pay", "hold", "release"],
+  "nodes": [
+    { "id": "bid", "lane": "auction", "col": 0, "type": "backend", "label": "Bid Engine", "sublabel": "proxy ceilings", "tag": "single txn", "width": 150 },
+    { "id": "close", "lane": "auction", "col": 1, "type": "backend", "label": "Auction Close", "sublabel": "cron and queue", "width": 150 },
+    { "id": "invoice", "lane": "auction", "col": 2, "type": "backend", "label": "Invoice Issued", "sublabel": "hammer + fees + VAT", "width": 142 },
+    { "id": "pay", "lane": "pay", "col": 3, "type": "frontend", "label": "Buyer Pays", "sublabel": "gateway checkout", "width": 150 },
+    { "id": "hold", "lane": "pay", "col": 4, "type": "database", "label": "Escrow Hold", "sublabel": "held until window", "tag": "amount = invoice.total", "width": 146 },
+    { "id": "release", "lane": "payout", "col": 5, "type": "database", "label": "Auto-Release", "sublabel": "credits seller wallet", "width": 142 },
+    { "id": "d_fee", "lane": "defects", "col": 4, "type": "security", "label": "Holds Gross", "sublabel": "seller_fee unused", "tag": "platform earns 0", "width": 118 },
+    { "id": "d_concat", "lane": "defects", "col": 5, "type": "security", "label": "String Concat", "sublabel": "Number(a) + b", "tag": "balance x100", "width": 104 }
+  ],
+  "edges": [
+    { "id": "bid-close", "from": "bid", "to": "close", "label": "highest bid wins", "variant": "default" },
+    { "id": "close-invoice", "from": "close", "to": "invoice", "label": "reserve met", "variant": "emphasis" },
+    { "id": "invoice-pay", "from": "invoice", "to": "pay", "label": "total due", "variant": "default" },
+    { "id": "pay-hold", "from": "pay", "to": "hold", "label": "webhook settled", "variant": "emphasis" },
+    { "id": "hold-release", "from": "hold", "to": "release", "label": "window elapsed", "variant": "default" },
+    { "id": "hold-fee", "from": "hold", "to": "d_fee", "label": "gross enters escrow", "variant": "security", "role": "error" },
+    { "id": "release-concat", "from": "release", "to": "d_concat", "label": "decimal is a string", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Money Defects",
+      "items": [
+        "Escrow holds invoice.total, so fees and VAT reach the seller",
+        "Number(balance) + amount concatenates: 1000.00 plus 50000.00 stores 100050000.00",
+        "A retry opens a second live payment, and two holds can both release"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Access and Silence",
+      "items": [
+        "Document verify was JWT-only, so any account could self-verify (fixed)",
+        "Most money-path fetches omit the token, get 401, and still toast success"
+      ]
+    }
+  ]
+}

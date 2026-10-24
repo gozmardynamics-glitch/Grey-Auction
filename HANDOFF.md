@@ -69,6 +69,56 @@ Fixed: added `eslint` 9 + `typescript-eslint` + `backend/eslint.config.mjs` (now
 
 ---
 
+## 2.6 ⚠️ Confirmed defects found by full-platform review (nothing fixed yet unless noted)
+
+Three independent audits covered money paths, auth/authorization, and frontend↔API wiring. Each item below was read in the source; the severity-1 and -2 items were re-verified by hand. Diagram: `docs/review/auction-money-path.html` (spec `docs/review/auction-money-path.json`).
+
+**Fix in this order — the first three lose or duplicate money on normal traffic.**
+
+| # | Severity | Defect | Where |
+|---|---|---|---|
+| 1 | critical | `Number(wallet.balance) + input.amount` concatenates, because every decimal column is a runtime **string** (no TypeORM transformer anywhere). `1000.00 + "50000.00"` stores `100050000.00`; with cents it becomes an invalid numeric literal, the release transaction rolls back, and `catch {}` hides it so the hold never releases. | `wallet/wallet.service.ts:232` (callers: `escrow/escrow.service.ts:124,144,209`, `payments/payment.orchestration.service.ts:241`) |
+| 2 | critical | Escrow holds `invoice.total` (hammer + buyer fee + VAT) and auto-releases that **whole gross** to the seller. `invoice.seller_fee` is written at settlement and read nowhere, so platform commission is never collected and VAT is handed to the seller. Correct hold is `hammer − seller_fee`. | `payments/payment.orchestration.service.ts:230-235` → `escrow/escrow.service.ts:208-213` |
+| 3 | critical | Duplicate escrow holds can both release: `SELECT … FOR UPDATE` locks nothing when the row is absent, and `escrow_holds.invoiceId` has a plain index, not a unique one. A retry opens a second live payment (fresh random reference each call), so two webhooks create two holds. | `escrow/escrow.service.ts:73-77`; `payments/payment.orchestration.service.ts:57-91` |
+| 4 | high | No in-flight guard per invoice: double-clicking Pay creates two payments and two gateway checkouts, both charge, only one settles, no refund path. Second capture is still marked SUCCEEDED. | `payments/payment.orchestration.service.ts:57-91` |
+| 5 | high | Client-supplied `metadata.reference` becomes the payment reference, and the lookup ignores `userId`, so an attacker can be handed another user's payment row. | `payments/payment.orchestration.service.ts:79-81`; `payment.service.ts:26-27` |
+| 6 | high | `POST /products/documents/:id/verify` had only `JwtAuthGuard`, so any account could self-verify its own document. **FIXED this session** (`AdminRolesGuard` + `@AdminRoles`), tests green. | `products/product-document.controller.ts:94` |
+| 7 | high | Seller-document `PATCH`/`DELETE` take a bare id with no ownership check → edit or soft-delete a rival's KYC file. `SellerOwnershipGuard` exists and is even provided, but `@CheckOwnership()` is on zero routes. | `seller/seller.controller.ts:502-536`; `seller/services/seller-document.service.ts:133-173` |
+| 8 | high | Admin authority is resolved by email against the separate `admins` table, and email is never verified at register or login, so registering an admin's email can grant admin. The deactivated-admin `ForbiddenException` is also swallowed by the surrounding `catch {}`. | `admin/guards/admin-roles.guard.ts:36-56` |
+| 9 | high | A seller can set their own `buyerFeePct`/`sellerFeePct`/`vatPct` to 0 via `PUT /sellers/settings/fees`; seller-scope overrides outrank category and default. | `seller/seller.controller.ts:229-249`; `fees/fee.service.ts:150-156` |
+| 10 | high | Unauthenticated `GET /sellers/:id/public` returns the raw `Seller` entity (tax id, business registration, private contact emails) plus **unmapped review entities**, re-exposing the `bidder_id` that the reviews endpoint deliberately strips. | `seller/seller.controller.ts:251-273` |
+| 11 | medium | `GET /products?status=…` is public, so `status=DRAFT` / `PENDING_APPROVAL` / `REJECTED` lists unapproved lots including `reservePrice`. | `products/product.controller.ts:72-76` |
+| 12 | medium | Password-reset tokens share `JWT_SECRET` with access tokens and carry no purpose claim, so a reset link is a full 1-hour API bearer token, and an access token can change the password with no current-password check. | `auth/auth.service.ts:130,140-154` |
+| 13 | medium | Route-ordering: `@Get(':id')` is declared before `@Get('payouts')`, so the admin payouts list is unreachable and 500s. | `seller/seller.controller.ts:315` vs `:647` |
+| 14 | medium | `@Body()` typed as an inline object literal skips ValidationPipe entirely (`metatype` is `Object`), so `change-password`, `send-otp`, `verify-otp` and wallet bodies accept any shape — a 1-character password is allowed. | `auth/auth.controller.ts:76-113`; `wallet/wallet.controller.ts:32-46` |
+| 15 | medium | KYC accepts client-asserted `fileUrl`/`mimeType`/`fileSize` with no upload endpoint and no owner binding, so the size and MIME policy is decorative; `expiresAt` is a free string that can produce `Invalid Date` and a 500. `audienceFor()` hard-codes `BUYER`, so `SELLER` requirements never apply. | `kyc/kyc.service.ts:214-262,125-129` |
+| 16 | medium | KYC admin actions record `@CurrentUser().id` (users table) as `createdById`/`reviewedById`, not the admin id, so the approval trail cannot be joined to an admin. | `kyc/kyc-admin.controller.ts:61-64,110-121` |
+| 17 | medium | Invoice `total` omits `otherCharges` (`fee-breakdown.ts` includes it, `invoice.service.ts:88-92` recomputes without it). Latent only while `otherChargesPct` is 0. | `invoices/invoice.service.ts:88-92` |
+| 18 | medium | Seller minimum bid increment is not enforced: `product.currentBid + sellerStep` concatenates a decimal string with a number. | `bids/bid.service.ts:195` |
+| 19 | medium | Payment status can regress SUCCEEDED → FAILED on an out-of-order webhook, and reconciliation only scans PENDING, so it never recovers. A replayed success after a refund then creates a **new** hold and pays again. | `payments/payment.service.ts:41-51`; `payment.orchestration.service.ts:151-153` |
+| 20 | medium | Payment `currency` is never persisted (always NGN) while the gateway is charged the invoice currency, so the amount check is currency-blind. | `payments/payment.orchestration.service.ts:83-91` |
+| 21 | low | Float fee breakdown vs 2dp columns: `total` can be 1 cent off the sum of its own printed line items. | `fees/fee-breakdown.ts:51-77` |
+| 22 | low | Refund credits the buyer's wallet but leaves the order PAID and the lot SOLD. | `escrow/escrow.service.ts:133-151` |
+| 23 | low | `POST /sellers/reviews/:id/helpful` is unauthenticated and unthrottled; `POST /sellers/:id/reviews` has no self-review check. | `seller/seller.controller.ts:772-784,688-710` |
+
+### Frontend wiring — the money path mostly talks to the wrong place
+
+- **Most fetches omit the bearer token**, hit a JWT-guarded route, get 401, and the handler **does not check `res.ok`**, so it still toasts "Saved". Settings (admin general/security/email/notifications, seller profile, buyer profile), admin AI/agents/invoices islands, invoice PDF, seller invoices.
+- **Buyer "Purchases" always renders four ₦35M demo invoices** — the fetch is unauthenticated (401) and the `catch` substitutes `purchases_data`.
+- **Checkout can never create an order**: no token → 401; with a token the body fails `forbidNonWhitelisted` → 400.
+- **Checkout → payment loses the invoice**: pushes `?invoice=`, the page reads `sp.invoiceId`.
+- **`GET /sellers/payment-accounts` does not exist** (404) and the component falls back to two hardcoded bank accounts.
+- **Bid history is never fetched** — "Total Bids" shows 0 on a lot with 12 bids; the RTK query exists and is unused.
+- **Seller "My Listings" casts `Auction[]` to `Listing[]`**, so Lot ID, Item, Reserve, Bids and Date render blank.
+- **Buyer wallet renders hardcoded dummy transactions** and a ₦20,000,000 balance even on a fresh account.
+- **Auction filters silently do nothing**: country/brand/price are written to the slice and counted in the badge but never applied; `newest`/`ending-soon` sorts are unimplemented; homepage links use `subCategory` while the listing reads `subcategory`.
+
+### Verified correct (do not "fix" these)
+
+Bid ↔ settlement serialization (both take `pessimistic_write` on the product then re-check status); the bid engine's single-transaction winner/`currentBid`/`totalBids` update; the proxy resolver's monotonicity; the reserve-price floor in settlement; `applySucceeded`'s per-payment idempotency and amount-mismatch refusal; webhook signature verification failing closed; `markPaidInManager`; invoice numbering via `pg_advisory_xact_lock`; wallet deposit/credit row locks plus `wallet_transactions.reference` dedupe; chat participant checks and sender projection; watchlist scoping; `AdminRolesGuard` failing closed without `@AdminRoles`; registration blocking `role=admin`.
+
+---
+
 ## 3. What was built (this arc)
 
 ### 3.1 Platform overhaul (in `main` via `40a0ed1`)
