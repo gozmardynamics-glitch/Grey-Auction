@@ -7,6 +7,7 @@ import { Product } from '../products/entities/product.entity';
 import { Conversation, ConversationType, Message, MessageType } from './entities/chat.entity';
 import { CreateConversationDto, SendMessageDto } from './dto/chat.dto';
 import { NotificationService } from '../notification/notification.service';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class ChatService {
@@ -21,6 +22,8 @@ export class ChatService {
     private readonly dataSource: DataSource,
     @Optional()
     private readonly notifications?: NotificationService,
+    @Optional()
+    private readonly gateway?: ChatGateway,
   ) {}
 
   private get users(): Repository<User> {
@@ -281,6 +284,22 @@ export class ChatService {
     await this.conversations.update(conversationId, {
       lastMessageAt: new Date(),
       lastMessageById: userId,
+    });
+
+    // Live delivery: push the saved row to everyone in the conversation room so
+    // the open thread updates without a refetch.
+    this.gateway?.emitMessage(conversationId, {
+      id: saved.id,
+      conversationId: saved.conversationId,
+      senderId: saved.senderId,
+      type: saved.type,
+      content: saved.content,
+      fileUrl: saved.fileUrl,
+      fileName: saved.fileName,
+      fileSize: saved.fileSize,
+      mimeType: saved.mimeType,
+      isRead: saved.isRead,
+      createdAt: saved.createdAt,
     });
 
     // Delivery path: the recipient used to see a message only on refetch.

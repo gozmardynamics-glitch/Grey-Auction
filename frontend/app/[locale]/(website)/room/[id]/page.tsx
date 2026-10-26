@@ -255,11 +255,20 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
     const connect = async () => {
       try {
         const { io } = await import('socket.io-client');
-        // Connect to the API origin (without the /api path) on the '/auctions' namespace
-        const configured = process.env.NEXT_PUBLIC_API_URL;
-        const apiOrigin = configured ? new URL(configured).origin : 'http://localhost:3001';
-        const socket = io(`${apiOrigin}/auctions`, {
-          auth: { token: authToken },
+        const { apiFetch } = await import('@/shared/utils/api-client');
+        // Sockets cannot ride the same-origin proxy and the browser holds no API
+        // token (5.6), so fetch a short-lived ticket over the authenticated proxy
+        // and present it in the handshake.
+        const ticketJson = await apiFetch<{ data?: { ticket?: string } }>('realtime/ticket', {
+          method: 'POST',
+        });
+        const ticket = ticketJson?.data?.ticket;
+        if (!ticket) return;
+
+        const realtimeBase = process.env.NEXT_PUBLIC_REALTIME_URL || 'http://localhost:3001';
+        const socket = io(`${realtimeBase}/auctions`, {
+          auth: { ticket },
+          transports: ['websocket', 'polling'],
         });
         socketRef.current = socket;
 

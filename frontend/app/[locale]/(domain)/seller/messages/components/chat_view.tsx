@@ -6,6 +6,7 @@ import { Button, Input, ScrollArea } from '@/shared/components/common';
 import { cn } from '@/lib/utils';
 import { Conversation } from '../../models';
 import { apiFetch } from '@/shared/utils/api-client';
+import { useRealtimeSocket } from '@/shared/hooks/use-realtime-socket';
 import Image from 'next/image';
 
 interface ChatViewProps {
@@ -44,6 +45,22 @@ export default function ChatView({
   const [messages, setMessages] = useState<Conversation['messages']>(
     conversation.messages ?? [],
   );
+
+  // Live delivery: append messages the other side sends while this thread is open.
+  const socket = useRealtimeSocket('/chat', Boolean(currentUserId));
+  useEffect(() => {
+    if (!socket) return;
+    const onMessage = (raw: RawChatMessage & { conversationId?: string }) => {
+      if (raw?.conversationId !== conversation.id) return;
+      setMessages((prev) =>
+        prev.some((m) => m.id === raw.id) ? prev : [...prev, toMessage(raw as RawChatMessage)],
+      );
+    };
+    socket.on('newMessage', onMessage);
+    return () => {
+      socket.off('newMessage', onMessage);
+    };
+  }, [socket, conversation.id]);
 
   // Load the thread for the selected conversation (newest last for display).
   useEffect(() => {

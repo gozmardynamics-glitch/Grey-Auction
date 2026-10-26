@@ -8,9 +8,10 @@ import { ProductModule } from '../products/product.module';
 import { NotificationModule } from '../notification/notification.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { Seller } from '../seller/entities/seller.entity';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
-  imports: [
+  imports: [RealtimeModule, 
     TypeOrmModule.forFeature([Bid, Seller]),
     ProductModule,
     NotificationModule,

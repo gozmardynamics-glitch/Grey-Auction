@@ -9,6 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
+import { RealtimeService } from '../../realtime/realtime.service';
+
 @WebSocketGateway({
   cors: { origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map((o) => o.trim()), credentials: true },
   namespace: '/auctions',
@@ -17,13 +19,19 @@ export class AuctionGateway implements OnGatewayConnection, OnGatewayDisconnect 
   @WebSocketServer()
   server: Server;
 
+  constructor(private readonly realtime: RealtimeService) {}
+
   handleConnection(client: Socket) {
-    const token = client.handshake.auth?.token || client.handshake.query?.token;
-    if (!token) {
+    // Browsers no longer hold the API bearer token (5.6), so the handshake
+    // carries a short-lived ticket issued over the authenticated HTTP proxy.
+    const ticket = client.handshake.auth?.ticket || client.handshake.query?.ticket;
+    const userId = this.realtime.verify(ticket);
+    if (!userId) {
       client.emit('error', { message: 'Authentication required' });
-      client.disconnect();
+      client.disconnect(true);
       return;
     }
+    client.data.userId = userId;
   }
 
   handleDisconnect(client: Socket) {
