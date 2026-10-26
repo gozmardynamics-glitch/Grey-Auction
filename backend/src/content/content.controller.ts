@@ -1,6 +1,7 @@
 import { Controller, Get, Put, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ContentService } from './content.service';
+import { UpsertContentPageDto } from './dto/content.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
@@ -21,7 +22,7 @@ export class ContentController {
   @UseGuards(JwtAuthGuard, AdminRolesGuard)
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
   @ApiBearerAuth()
-  async upsert(@Param('slug') slug: string, @Body() dto: any) {
+  async upsert(@Param('slug') slug: string, @Body() dto: UpsertContentPageDto) {
     const page = await this.service.upsert(slug, dto);
     return { success: true, data: page };
   }

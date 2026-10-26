@@ -86,9 +86,12 @@ export class ProductDocumentService {
     await this.documents.softDelete(id);
   }
 
+  /**
+   * Record an admin verification. Authorisation happens at the route
+   * (JwtAuthGuard + AdminRolesGuard + @AdminRoles), which is the correct place
+   * for it; `adminId` is the resolved admins row for attribution.
+   */
   async verify(id: string, userId: string, dto: VerifyProductDocumentDto): Promise<ProductDocument> {
-    // Only admin can verify
-    // TODO: Add proper admin check via guard
     const document = await this.findOne(id);
     document.verificationStatus =
       dto.status === 'VERIFIED'

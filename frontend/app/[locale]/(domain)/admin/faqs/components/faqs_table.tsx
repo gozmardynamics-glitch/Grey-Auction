@@ -89,14 +89,22 @@ export default function FaqsTable({
         }}
         onSave={async (faq) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/faqs/${faq.id}`, {
+            // The API validates its body and rejects unknown fields, so send
+            // only what it accepts instead of the whole row.
+            await apiFetch(`admin/faqs/${faq.id}`, {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(faq),
+              body: {
+                question: faq.question,
+                answer: faq.answer,
+                category: faq.category,
+                order: faq.order,
+                isActive: faq.status !== 'Inactive',
+              },
             });
-          } catch (error) {
-            console.error('Failed to save FAQ:', error);
+            toast.success('FAQ saved');
+            router.refresh();
+          } catch {
+            toast.error('Could not save the FAQ');
           }
           setDetailsOpen(false);
         }}

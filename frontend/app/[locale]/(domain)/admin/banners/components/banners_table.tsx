@@ -91,14 +91,20 @@ export default function BannersTable({
         }}
         onSave={async (banner) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/banners/${banner.id}`, {
+            // Whitelisted fields only: the API rejects unknown properties.
+            await apiFetch(`admin/banners/${banner.id}`, {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(banner),
+              body: {
+                title: banner.title,
+                link: banner.link || undefined,
+                type: banner.type || undefined,
+                isActive: banner.status !== 'Inactive',
+              },
             });
-          } catch (error) {
-            console.error('Failed to save banner:', error);
+            toast.success('Banner saved');
+            router.refresh();
+          } catch {
+            toast.error('Could not save the banner');
           }
           setDetailsOpen(false);
         }}

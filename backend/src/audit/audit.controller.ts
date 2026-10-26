@@ -97,7 +97,7 @@ export class AuditController {
   @ApiOperation({ summary: 'Manually create an audit log entry (admin)' })
   async createLog(
     @CurrentUser() user: any,
-    @Body() dto: any,
+    @Body() dto: CreateAuditLogDto,
   ) {
     // Admin can manually create audit logs for testing or manual tracking
     const data = await this.service.log(user.id, dto);

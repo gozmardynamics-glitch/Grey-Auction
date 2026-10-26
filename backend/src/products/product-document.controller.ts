@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CurrentAdmin } from '../admin/decorators/current-admin.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
@@ -99,10 +100,12 @@ export class ProductDocumentController {
   @ApiParam({ name: 'id' })
   async verify(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentAdmin() admin: any,
     @Body() dto: VerifyProductDocumentDto,
   ) {
-    const data = await this.service.verify(id, user.id, dto);
+    // Attribution records the resolved admins row (request.admin), not the
+    // users row that merely authenticates.
+    const data = await this.service.verify(id, admin.id, dto);
     return { success: true, message: `Document ${dto.status.toLowerCase()}`, data };
   }
 }
