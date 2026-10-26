@@ -13,6 +13,7 @@ import {
 } from './entities/kyc-document-requirement.entity';
 import { KycDocument, KycDocumentStatus } from './entities/kyc-document.entity';
 import { Seller } from '../seller/entities/seller.entity';
+import { StorageService } from '../common/storage/storage.service';
 
 describe('KycService', () => {
   let service: KycService;
@@ -31,7 +32,8 @@ describe('KycService', () => {
     save: jest.fn(),
     delete: jest.fn(),
   };
-  const sellers = { findOne: jest.fn(), save: jest.fn() };
+  const sellers = { findOne: jest.fn(), exists: jest.fn(), save: jest.fn() };
+  const storage = { uploadFile: jest.fn(), deleteFile: jest.fn().mockResolvedValue(undefined) };
 
   const requirement = (over: Partial<KycDocumentRequirement> = {}) =>
     ({
@@ -66,12 +68,15 @@ describe('KycService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // Default: the holder has no seller profile → buyer requirements only.
+    sellers.exists.mockResolvedValue(false);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KycService,
         { provide: getRepositoryToken(KycDocumentRequirement), useValue: requirements },
         { provide: getRepositoryToken(KycDocument), useValue: documents },
         { provide: getRepositoryToken(Seller), useValue: sellers },
+        { provide: StorageService, useValue: storage },
       ],
     }).compile();
     service = module.get<KycService>(KycService);
@@ -185,69 +190,113 @@ describe('KycService', () => {
     expect(status.isVerified).toBe(true);
   });
 
-  // ── Submission ─────────────────────────────────────────────────────────
+  // ── Submission (server-derived file metadata) ─────────────────────────
 
-  it('submitting replaces the previous file for the same requirement', async () => {
+  const stored = {
+    url: 'https://cdn.example.com/kyc/id.pdf',
+    fileName: 'id.pdf',
+    size: 2048,
+    mimeType: 'application/pdf',
+  };
+
+  it('records the stored file and replaces the previous submission', async () => {
     requirements.findOne.mockResolvedValue(requirement());
-    documents.delete.mockResolvedValue({});
+    documents.find.mockResolvedValue([
+      document({ id: 'old', fileUrl: 'https://cdn.example.com/kyc/old.pdf' }),
+    ]);
     documents.create.mockImplementation((x) => x);
     documents.save.mockImplementation(async (x) => x);
 
-    const saved = await service.submitDocument('user-1', {
-      requirementCode: 'national_id',
-      fileUrl: 'https://cdn.example.com/id.pdf',
-      fileName: 'id.pdf',
-      fileSize: 2048,
-      mimeType: 'application/pdf',
-    });
+    const saved = await service.submitUpload(
+      'user-1',
+      { requirementCode: 'national_id' },
+      stored,
+    );
 
-    expect(documents.delete).toHaveBeenCalledWith({
-      userId: 'user-1',
-      requirementId: 'req-1',
-    });
     expect(saved.status).toBe(KycDocumentStatus.PENDING);
     expect(saved.userId).toBe('user-1');
+    // Metadata comes from the stored object, never from the request.
+    expect(saved.fileUrl).toBe(stored.url);
+    expect(saved.fileSize).toBe(stored.size);
+    expect(saved.mimeType).toBe(stored.mimeType);
+    // The superseded ROW is replaced, and its stored object removed with it —
+    // deleting only the file would leave a row pointing at nothing.
+    expect(documents.delete).toHaveBeenCalledWith({ id: 'old' });
+    expect(storage.deleteFile).toHaveBeenCalledWith('https://cdn.example.com/kyc/old.pdf');
   });
 
   it('rejects a document for an unknown or inactive requirement', async () => {
     requirements.findOne.mockResolvedValue(requirement({ isActive: false }));
     await expect(
-      service.submitDocument('user-1', {
-        requirementCode: 'national_id',
-        fileUrl: 'https://cdn.example.com/id.pdf',
-        fileName: 'id.pdf',
-        fileSize: 10,
-        mimeType: 'application/pdf',
-      }),
+      service.submitUpload('user-1', { requirementCode: 'national_id' }, stored),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('enforces the requirement MIME allowlist', async () => {
+  it('enforces the requirement MIME allowlist before upload', async () => {
     requirements.findOne.mockResolvedValue(
       requirement({ allowedMimeTypes: ['application/pdf'] }),
     );
     await expect(
-      service.submitDocument('user-1', {
-        requirementCode: 'national_id',
-        fileUrl: 'https://cdn.example.com/id.exe',
-        fileName: 'id.exe',
-        fileSize: 10,
-        mimeType: 'application/octet-stream',
-      }),
+      service.assertUploadAllowed('national_id', 'application/octet-stream', 10),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('enforces the requirement size cap', async () => {
+  it('enforces the requirement size cap before upload', async () => {
     requirements.findOne.mockResolvedValue(requirement({ maxSizeMb: 2 }));
     await expect(
-      service.submitDocument('user-1', {
-        requirementCode: 'national_id',
-        fileUrl: 'https://cdn.example.com/id.pdf',
-        fileName: 'id.pdf',
-        fileSize: 3 * 1024 * 1024,
-        mimeType: 'application/pdf',
-      }),
+      service.assertUploadAllowed('national_id', 'application/pdf', 3 * 1024 * 1024),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects an expiry date in the past', async () => {
+    requirements.findOne.mockResolvedValue(requirement());
+    await expect(
+      service.submitUpload(
+        'user-1',
+        { requirementCode: 'national_id', expiresAt: '2020-01-01' },
+        stored,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects an unparseable expiry date instead of storing Invalid Date', async () => {
+    requirements.findOne.mockResolvedValue(requirement());
+    await expect(
+      service.submitUpload(
+        'user-1',
+        { requirementCode: 'national_id', expiresAt: 'not-a-date' },
+        stored,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('accepts a future expiry date', async () => {
+    requirements.findOne.mockResolvedValue(requirement());
+    documents.find.mockResolvedValue([]);
+    documents.create.mockImplementation((x) => x);
+    documents.save.mockImplementation(async (x) => x);
+
+    const saved = await service.submitUpload(
+      'user-1',
+      { requirementCode: 'national_id', expiresAt: '2031-01-31' },
+      stored,
+    );
+    expect(saved.expiresAt).toBeInstanceOf(Date);
+  });
+
+  it('includes seller-audience requirements for an account that sells', async () => {
+    sellers.exists.mockResolvedValue(true);
+    requirements.find.mockResolvedValue([]);
+
+    await service.checklistFor('user-1');
+
+    const where = requirements.find.mock.calls[0][0].where;
+    // The first branch must union buyer AND seller audiences.
+    const audiences = where[0].audience as { _value?: string[] } | string[];
+    const values = Array.isArray(audiences) ? audiences : audiences._value;
+    expect(values).toEqual(
+      expect.arrayContaining([KycRequirementAudience.BUYER, KycRequirementAudience.SELLER]),
+    );
   });
 
   it('cannot withdraw an approved document', async () => {

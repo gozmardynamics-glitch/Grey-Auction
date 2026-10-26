@@ -14,6 +14,9 @@ export class MetricsService implements OnModuleInit {
   private readonly totalRevenue: Counter;
   private readonly bidCount: Counter;
   private readonly userRegistrations: Counter;
+  private readonly queueAvailable: Gauge;
+  private readonly queueUnavailable: Counter;
+  private readonly inlineSettlements: Counter;
 
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {
     this.registry = new Registry();
@@ -80,6 +83,26 @@ export class MetricsService implements OnModuleInit {
       labelNames: ['role'],
       registers: [this.registry],
     });
+
+    // Settlement queue health (5.10): without these, a Redis outage degrades
+    // settlement to inline mode with nothing but a log line to notice it.
+    this.queueAvailable = new Gauge({
+      name: 'settlement_queue_available',
+      help: '1 when the settlement queue (Redis) is reachable, 0 when degraded to inline settlement',
+      registers: [this.registry],
+    });
+
+    this.queueUnavailable = new Counter({
+      name: 'settlement_queue_unavailable_total',
+      help: 'Number of times the settlement queue probe failed',
+      registers: [this.registry],
+    });
+
+    this.inlineSettlements = new Counter({
+      name: 'settlement_inline_total',
+      help: 'Settlement ticks that ran inline because the queue was unavailable',
+      registers: [this.registry],
+    });
   }
 
   onModuleInit(): void {
@@ -123,6 +146,17 @@ export class MetricsService implements OnModuleInit {
 
   incrementUserRegistrations(role: string): void {
     this.userRegistrations.inc({ role });
+  }
+
+  /** Queue health: 1 reachable, 0 degraded. */
+  setQueueAvailable(available: boolean): void {
+    this.queueAvailable.set(available ? 1 : 0);
+    if (!available) this.queueUnavailable.inc();
+  }
+
+  /** A settlement tick that had to run inline because the queue was down. */
+  incrementInlineSettlement(): void {
+    this.inlineSettlements.inc();
   }
 
   // Get metrics

@@ -61,6 +61,10 @@ export class AdminRolesGuard implements CanActivate {
     }
 
     request.user.adminRole = admin.role;
+    // Expose the resolved admins row itself so admin attribution
+    // (reviewedById, createdById, processed_by…) records the admin identity,
+    // not the users-table id that merely authenticates.
+    request.admin = admin;
 
     if (!requiredRoles.includes(admin.role)) {
       throw new ForbiddenException('Insufficient admin permissions');

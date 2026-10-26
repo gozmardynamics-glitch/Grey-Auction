@@ -14,12 +14,21 @@ import {
 } from './entities/kyc-document-requirement.entity';
 import { KycDocument, KycDocumentStatus } from './entities/kyc-document.entity';
 import { Seller } from '../seller/entities/seller.entity';
+import { StorageService } from '../common/storage/storage.service';
 import {
   CreateKycRequirementDto,
   ReviewKycDocumentDto,
-  SubmitKycDocumentDto,
   UpdateKycRequirementDto,
+  UploadKycDocumentDto,
 } from './dto/kyc.dto';
+
+/** What the storage layer actually stored, derived server-side. */
+export interface StoredKycFile {
+  url: string;
+  fileName: string;
+  size: number;
+  mimeType: string;
+}
 
 export interface KycChecklistItem {
   requirementId: string;
@@ -63,6 +72,7 @@ export class KycService {
     private readonly documents: Repository<KycDocument>,
     @InjectRepository(Seller)
     private readonly sellers: Repository<Seller>,
+    private readonly storage: StorageService,
   ) {}
 
   // ── Admin: document requirements ───────────────────────────────────────
@@ -125,18 +135,26 @@ export class KycService {
 
   // ── Account holder ────────────────────────────────────────────────────
 
-  private audienceFor(): KycRequirementAudience {
-    // One account holder both bids and sells, so buyer-facing KYC also honours
-    // requirements marked 'both'.
-    return KycRequirementAudience.BUYER;
+  /**
+   * Which requirement audiences apply to this account holder.
+   *
+   * Everyone is a buyer; an account holder who has a seller profile also
+   * answers seller-scoped requirements. (This used to hard-code BUYER, so
+   * requirements marked 'seller' were invisible forever.)
+   */
+  private async audiencesFor(userId: string): Promise<KycRequirementAudience[]> {
+    const isSeller = await this.sellers.exists({ where: { user_id: userId } });
+    return isSeller
+      ? [KycRequirementAudience.BUYER, KycRequirementAudience.SELLER]
+      : [KycRequirementAudience.BUYER];
   }
 
-  /** Active requirements for buyers, each joined to the holder's latest upload. */
+  /** Active requirements for this holder (buyer, plus seller when applicable). */
   async checklistFor(userId: string): Promise<KycChecklistItem[]> {
-    const audience = this.audienceFor();
+    const audiences = await this.audiencesFor(userId);
     const requirements = await this.requirements.find({
       where: [
-        { isActive: true, audience },
+        { isActive: true, audience: In(audiences) },
         { isActive: true, audience: KycRequirementAudience.BOTH },
       ],
       order: { sortOrder: 'ASC', name: 'ASC' },
@@ -214,55 +232,118 @@ export class KycService {
     };
   }
 
-  async submitDocument(
-    userId: string,
-    dto: SubmitKycDocumentDto,
-  ): Promise<KycDocument> {
-    const requirement = await this.requirements.findOne({
-      where: { code: dto.requirementCode },
-    });
-    if (!requirement || !requirement.isActive) {
-      throw new BadRequestException(
-        `Unknown or inactive KYC requirement: ${dto.requirementCode}`,
-      );
-    }
+  /**
+   * Validate an upload against the requirement BEFORE the bytes are stored:
+   * an unacceptable file must never leave an orphaned object behind.
+   * Returns the requirement so the caller can label the upload.
+   */
+  async assertUploadAllowed(
+    requirementCode: string,
+    mimeType: string,
+    size: number,
+  ): Promise<KycDocumentRequirement> {
+    const requirement = await this.requireActiveRequirement(requirementCode);
 
     if (
       requirement.allowedMimeTypes?.length &&
-      !requirement.allowedMimeTypes.includes(dto.mimeType)
+      !requirement.allowedMimeTypes.includes(mimeType)
     ) {
       throw new BadRequestException(
-        `File type ${dto.mimeType} is not accepted for ${requirement.name}`,
+        `File type ${mimeType} is not accepted for ${requirement.name}`,
       );
     }
 
     const maxBytes = (requirement.maxSizeMb || 10) * 1024 * 1024;
-    if (dto.fileSize > maxBytes) {
+    if (size > maxBytes) {
+      throw new BadRequestException(
+        `File exceeds ${requirement.maxSizeMb} MB for ${requirement.name}`,
+      );
+    }
+    return requirement;
+  }
+
+  private async requireActiveRequirement(
+    requirementCode: string,
+  ): Promise<KycDocumentRequirement> {
+    const requirement = await this.requirements.findOne({
+      where: { code: requirementCode },
+    });
+    if (!requirement || !requirement.isActive) {
+      throw new BadRequestException(
+        `Unknown or inactive KYC requirement: ${requirementCode}`,
+      );
+    }
+    return requirement;
+  }
+
+  /**
+   * Record an uploaded KYC document.
+   *
+   * Every file attribute comes from what was actually stored (StoredKycFile),
+   * never from the request, so the MIME and size policy cannot be bypassed by
+   * claiming the file is something else.
+   */
+  async submitUpload(
+    userId: string,
+    dto: UploadKycDocumentDto,
+    stored: StoredKycFile,
+  ): Promise<KycDocument> {
+    const requirement = await this.requireActiveRequirement(
+      dto.requirementCode,
+    );
+
+    const maxBytes = (requirement.maxSizeMb || 10) * 1024 * 1024;
+    if (stored.size > maxBytes) {
       throw new BadRequestException(
         `File exceeds ${requirement.maxSizeMb} MB for ${requirement.name}`,
       );
     }
 
-    // A superseded upload is removed so the checklist always shows one current
+    const expiresAt = this.parseExpiry(dto.expiresAt);
+
+    // A superseded upload is replaced so the checklist always shows one current
     // file per requirement and the review queue never holds stale duplicates.
-    await this.documents.delete({
-      userId,
-      requirementId: requirement.id,
+    // The old ROWS are removed (not just their files — deleting only the files
+    // leaves rows pointing at objects that no longer exist), and the objects go
+    // with them.
+    const superseded = await this.documents.find({
+      where: { userId, requirementId: requirement.id },
     });
 
-    return this.documents.save(
+    const saved = await this.documents.save(
       this.documents.create({
         userId,
         requirementId: requirement.id,
-        fileUrl: dto.fileUrl,
-        fileName: dto.fileName,
-        fileSize: dto.fileSize,
-        mimeType: dto.mimeType,
+        fileUrl: stored.url,
+        fileName: stored.fileName,
+        fileSize: stored.size,
+        mimeType: stored.mimeType,
         documentNumber: dto.documentNumber,
-        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+        expiresAt,
         status: KycDocumentStatus.PENDING,
       }),
     );
+
+    for (const old of superseded) {
+      await this.documents.delete({ id: old.id });
+      await this.storage.deleteFile(old.fileUrl).catch(() => undefined);
+    }
+    return saved;
+  }
+
+  /** `expiresAt` is optional; when given it must be a real, future date. */
+  private parseExpiry(raw?: string): Date | null {
+    if (!raw) return null;
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('expiresAt is not a valid date');
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (parsed < today) {
+      throw new BadRequestException('expiresAt must be today or later');
+    }
+    return parsed;
   }
 
   async listMyDocuments(userId: string): Promise<KycDocument[]> {

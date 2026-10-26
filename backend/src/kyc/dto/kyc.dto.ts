@@ -1,10 +1,10 @@
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
   MaxLength,
   Min,
@@ -111,29 +111,20 @@ export class UpdateKycRequirementDto {
   maxSizeMb?: number;
 }
 
-export class SubmitKycDocumentDto {
+/**
+ * Multipart submit of one KYC document.
+ *
+ * The file itself is the `file` part; everything about it (size, MIME type,
+ * stored URL) is derived server-side from the stored object, so a client can no
+ * longer assert that a third-party URL is an 8-byte PDF.
+ */
+export class UploadKycDocumentDto {
   @ApiProperty({ example: 'national_id', description: 'Requirement code' })
   @IsString()
+  @Matches(/^[a-z0-9_]{3,64}$/, {
+    message: 'requirementCode must be 3-64 chars of lowercase letters, digits or underscore',
+  })
   requirementCode: string;
-
-  @ApiProperty({ example: 'https://cdn.example.com/kyc/id-front.jpg' })
-  @IsUrl()
-  fileUrl: string;
-
-  @ApiProperty({ example: 'id-front.jpg' })
-  @IsString()
-  @MaxLength(255)
-  fileName: string;
-
-  @ApiProperty({ example: 482133 })
-  @IsInt()
-  @Min(1)
-  fileSize: number;
-
-  @ApiProperty({ example: 'image/jpeg' })
-  @IsString()
-  @MaxLength(100)
-  mimeType: string;
 
   @ApiPropertyOptional({ example: 'A01234567' })
   @IsOptional()
@@ -141,9 +132,9 @@ export class SubmitKycDocumentDto {
   @MaxLength(120)
   documentNumber?: string;
 
-  @ApiPropertyOptional({ example: '2030-01-31' })
+  @ApiPropertyOptional({ example: '2030-01-31', description: 'Document expiry (YYYY-MM-DD)' })
   @IsOptional()
-  @IsString()
+  @IsDateString()
   expiresAt?: string;
 }
 

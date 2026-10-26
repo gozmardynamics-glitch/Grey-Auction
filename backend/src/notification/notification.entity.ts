@@ -17,6 +17,8 @@ export enum NotificationType {
   SALE_APPROVAL_REQUESTED = 'sale_approval_requested',
   /** Decision 3b — seller declined the winning bid. */
   SALE_DECLINED = 'sale_declined',
+  /** A new chat message arrived for this account. */
+  NEW_MESSAGE = 'new_message',
 }
 
 @Entity('notifications')

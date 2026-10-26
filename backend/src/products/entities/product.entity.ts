@@ -134,6 +134,11 @@ export class Product {
   @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true, transformer: decimalTransformer })
   approvalThreshold: number;
 
+  // When settlement parked this lot in awaiting_seller_approval. The expiry
+  // sweep uses it so a lot can never wait for a seller indefinitely.
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  approvalRequestedAt: Date;
+
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.DRAFT })
   status: ProductStatus;
 

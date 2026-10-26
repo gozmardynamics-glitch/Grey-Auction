@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, In, Repository, Between } from 'typeorm';
 
@@ -6,6 +6,7 @@ import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { Conversation, ConversationType, Message, MessageType } from './entities/chat.entity';
 import { CreateConversationDto, SendMessageDto } from './dto/chat.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ChatService {
@@ -18,6 +19,8 @@ export class ChatService {
     private readonly products: Repository<Product>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    @Optional()
+    private readonly notifications?: NotificationService,
   ) {}
 
   private get users(): Repository<User> {
@@ -25,70 +28,96 @@ export class ChatService {
   }
 
   /**
-   * Get conversations for a user, with last message preview
+   * Get conversations for a user, with last message preview.
+   *
+   * Batched deliberately: the previous version issued three queries per
+   * conversation (other participant, last message, unread count), so a page of
+   * 20 cost 60 round-trips. Now it is two queries plus a fixed number of batch
+   * lookups, independent of the page size.
    */
   async listConversations(
     userId: string,
     page = 1,
     limit = 20,
   ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
-    const conversations = await this.conversations
-      .createQueryBuilder('conversation')
-      .where('conversation.participant1Id = :userId', { userId })
-      .orWhere('conversation.participant2Id = :userId', { userId })
-      .andWhere('conversation.isActive = :isActive', { isActive: true })
-      .orderBy('conversation.lastMessageAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
+    const where = [
+      { participant1Id: userId, isActive: true },
+      { participant2Id: userId, isActive: true },
+    ];
 
-    const total = await this.conversations
-      .createQueryBuilder('conversation')
-      .where('conversation.participant1Id = :userId', { userId })
-      .orWhere('conversation.participant2Id = :userId', { userId })
-      .andWhere('conversation.isActive = :isActive', { isActive: true })
-      .getCount();
+    const [conversations, total] = await this.conversations.findAndCount({
+      where,
+      order: { lastMessageAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    if (conversations.length === 0) return { data: [], total, page, limit };
 
-    // Hydrate with last message and other participant
-    const enriched = await Promise.all(
-      conversations.map(async (conv) => {
-        const otherId = conv.otherParticipantId;
-        const [otherUser, lastMessage] = await Promise.all([
-          this.users.findOne({ where: { id: otherId }, select: ['id', 'name', 'email'] }),
-          this.messages.findOne({
-            where: { conversationId: conv.id },
-            order: { createdAt: 'DESC' },
-          }),
-        ]);
+    const ids = conversations.map((c) => c.id);
+    const otherIds = [
+      ...new Set(conversations.map((c) => c.getOtherParticipantId(userId))),
+    ];
 
-        const unreadCount = await this.messages.count({
-          where: { conversationId: conv.id, senderId: otherId, isRead: false },
-        });
-
-        return {
-          id: conv.id,
-          type: conv.type,
-          productId: conv.productId,
-          subject: conv.subject,
-          isActive: conv.isActive,
-          createdAt: conv.createdAt,
-          lastMessageAt: conv.lastMessageAt,
-          otherParticipant: otherUser
-            ? { id: otherUser.id, name: otherUser.name, email: otherUser.email }
-            : null,
-          lastMessage: lastMessage
-            ? {
-                id: lastMessage.id,
-                content: lastMessage.content,
-                type: lastMessage.type,
-                senderId: lastMessage.senderId,
-                createdAt: lastMessage.createdAt,
-              }
-            : null,
-          unreadCount,
-        };
+    const [otherUsers, lastMessages, unreadRows] = await Promise.all([
+      this.users.find({
+        where: { id: In(otherIds) },
+        select: ['id', 'name', 'email'],
       }),
+      // DISTINCT ON yields exactly one row per conversation: the newest message.
+      this.messages
+        .createQueryBuilder('m')
+        .distinctOn(['m.conversationId'])
+        .where('m.conversationId IN (:...ids)', { ids })
+        .orderBy('m.conversationId')
+        .addOrderBy('m.createdAt', 'DESC')
+        .getMany(),
+      this.messages
+        .createQueryBuilder('m')
+        .select('m.conversationId', 'conversationId')
+        .addSelect('COUNT(*)::int', 'count')
+        .where('m.conversationId IN (:...ids)', { ids })
+        .andWhere('m.senderId != :userId', { userId })
+        .andWhere('m.isRead = :isRead', { isRead: false })
+        .groupBy('m.conversationId')
+        .getRawMany<{ conversationId: string; count: number }>(),
+    ]);
+
+    const userById = new Map(otherUsers.map((u) => [u.id, u]));
+    const lastByConversation = new Map(lastMessages.map((m) => [m.conversationId, m]));
+    const unreadByConversation = new Map(
+      unreadRows.map((r) => [r.conversationId, Number(r.count)]),
     );
+
+    const enriched = conversations.map((conv) => {
+      // getOtherParticipantId, not the context-free getter: otherwise the
+      // preview shows the caller as the *other* participant.
+      const otherId = conv.getOtherParticipantId(userId);
+      const otherUser = userById.get(otherId);
+      const lastMessage = lastByConversation.get(conv.id);
+
+      return {
+        id: conv.id,
+        type: conv.type,
+        productId: conv.productId,
+        subject: conv.subject,
+        isActive: conv.isActive,
+        createdAt: conv.createdAt,
+        lastMessageAt: conv.lastMessageAt,
+        otherParticipant: otherUser
+          ? { id: otherUser.id, name: otherUser.name, email: otherUser.email }
+          : null,
+        lastMessage: lastMessage
+          ? {
+              id: lastMessage.id,
+              content: lastMessage.content,
+              type: lastMessage.type,
+              senderId: lastMessage.senderId,
+              createdAt: lastMessage.createdAt,
+            }
+          : null,
+        unreadCount: unreadByConversation.get(conv.id) ?? 0,
+      };
+    });
 
     return { data: enriched, total, page, limit };
   }
@@ -254,8 +283,23 @@ export class ChatService {
       lastMessageById: userId,
     });
 
-    // Mark as unread for the other participant
-    // (handled by the read status logic)
+    // Delivery path: the recipient used to see a message only on refetch.
+    // Fire-and-forget so a notification failure never fails the send.
+    if (this.notifications) {
+      const recipientId = conversation.getOtherParticipantId(userId);
+      void this.users
+        .findOne({ where: { id: userId }, select: ['id', 'name'] })
+        .then((sender) =>
+          this.notifications!.notifyNewMessage(recipientId, {
+            senderName: sender?.name || 'Someone',
+            conversationId,
+            preview:
+              dto.content?.trim() ||
+              (dto.fileName ? `Sent you a file: ${dto.fileName}` : 'Sent you a message'),
+          }),
+        )
+        .catch(() => undefined);
+    }
 
     return {
       id: saved.id,
@@ -346,35 +390,26 @@ export class ChatService {
   }
 
   /**
-   * Get unread count for user
+   * Get unread count for user — one aggregate query, not one per conversation.
    */
   async getUnreadCount(userId: string): Promise<number> {
-    // Get all conversations for user
     const conversations = await this.conversations.find({
       where: [
         { participant1Id: userId, isActive: true },
         { participant2Id: userId, isActive: true },
       ],
+      select: ['id'],
     });
-
     if (conversations.length === 0) return 0;
 
-    const conversationIds = conversations.map((c) => c.id);
+    const row = await this.messages
+      .createQueryBuilder('m')
+      .select('COUNT(*)::int', 'count')
+      .where('m.conversationId IN (:...ids)', { ids: conversations.map((c) => c.id) })
+      .andWhere('m.senderId != :userId', { userId })
+      .andWhere('m.isRead = :isRead', { isRead: false })
+      .getRawOne<{ count: number }>();
 
-    // Count unread messages from other participants
-    let total = 0;
-    for (const conv of conversations) {
-      const otherId = conv.getOtherParticipantId(userId);
-      const count = await this.messages.count({
-        where: {
-          conversationId: conv.id,
-          senderId: otherId,
-          isRead: false,
-        },
-      });
-      total += count;
-    }
-
-    return total;
+    return Number(row?.count ?? 0);
   }
 }

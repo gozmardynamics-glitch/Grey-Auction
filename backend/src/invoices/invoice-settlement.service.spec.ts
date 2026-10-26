@@ -20,6 +20,7 @@ describe('InvoiceSettlementService', () => {
     notifyAuctionEnded: jest.fn().mockResolvedValue(undefined),
     notifySellerApprovalRequested: jest.fn().mockResolvedValue(undefined),
     notifySaleDeclined: jest.fn().mockResolvedValue(undefined),
+    create: jest.fn().mockResolvedValue(undefined),
   };
   const manager = {
     getRepository: jest.fn((entity) => (entity === Product ? productRepo : bidRepo)),
@@ -227,6 +228,60 @@ describe('InvoiceSettlementService', () => {
         id: 'p9', sellerId: 'owner-1', status: ProductStatus.ACTIVE,
       });
       await expect(service.decideSale('p9', 'owner-1', 'accept')).rejects.toThrow(BadRequestException);
+    });
+
+    describe('approval window expiry', () => {
+      const staleParked = {
+        id: 'p10',
+        title: 'Lamp',
+        slug: 'lamp',
+        sellerId: 'seller-1',
+        status: ProductStatus.AWAITING_SELLER_APPROVAL,
+        approvalRequestedAt: new Date(Date.now() - 100 * 3600_000),
+      };
+
+      it('closes an unapproved lot past the window and tells both sides', async () => {
+        (productRepo.find as jest.Mock).mockResolvedValue([staleParked]);
+        (productRepo.findOne as jest.Mock).mockResolvedValue(staleParked);
+        (bidRepo.findOne as jest.Mock).mockResolvedValue({ bidderId: 'b10', amount: 30000 });
+        (productRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
+
+        const expired = await service.expirePendingApprovals();
+
+        expect(expired).toBe(1);
+        expect(productRepo.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: ProductStatus.CLOSED,
+            approvalRequestedAt: null,
+          }),
+        );
+        // The buyer is told why, with the expiry wording not the decline wording.
+        expect(notifications.notifySaleDeclined).toHaveBeenCalledWith(
+          'b10',
+          expect.objectContaining({ reason: expect.stringContaining('did not approve') }),
+        );
+        // The seller is told the sale lapsed.
+        expect(notifications.create).toHaveBeenCalledWith(
+          'seller-1',
+          expect.objectContaining({ title: expect.stringContaining('expired') }),
+        );
+        expect(invoiceService.createInvoice).not.toHaveBeenCalled();
+      });
+
+      it('does nothing when the seller decided while the sweep was running', async () => {
+        (productRepo.find as jest.Mock).mockResolvedValue([staleParked]);
+        // Under the lock the lot is already SOLD.
+        (productRepo.findOne as jest.Mock).mockResolvedValue({
+          ...staleParked,
+          status: ProductStatus.SOLD,
+        });
+
+        const expired = await service.expirePendingApprovals();
+
+        expect(expired).toBe(0);
+        expect(productRepo.save).not.toHaveBeenCalled();
+        expect(notifications.notifySaleDeclined).not.toHaveBeenCalled();
+      });
     });
   });
 });

@@ -145,13 +145,29 @@ export class NotificationService {
   /** Decision 3b — tell the buyer the seller declined; the sale will not proceed. */
   async notifySaleDeclined(
     userId: string,
-    data: { auctionTitle: string; auctionId: string; hammerPrice?: number; link?: string },
+    data: { auctionTitle: string; auctionId: string; hammerPrice?: number; link?: string; reason?: string },
   ): Promise<Notification> {
     return this.create(userId, {
       type: NotificationType.SALE_DECLINED,
       title: 'Your bid was not approved',
-      body: `The seller of “${data.auctionTitle}” declined the winning bid. No payment is owed.`,
+      body:
+        data.reason ??
+        `The seller of “${data.auctionTitle}” declined the winning bid. No payment is owed.`,
       link: data.link ?? `/auctions/${data.auctionId}`,
+    });
+  }
+
+  /** A new chat message — the delivery path chat previously did not have. */
+  async notifyNewMessage(
+    userId: string,
+    data: { senderName: string; conversationId: string; preview: string },
+  ): Promise<Notification> {
+    const trimmed = data.preview.length > 120 ? data.preview.slice(0, 117) + '…' : data.preview;
+    return this.create(userId, {
+      type: NotificationType.NEW_MESSAGE,
+      title: `New message from ${data.senderName}`,
+      body: trimmed,
+      link: `/messages/${data.conversationId}`,
     });
   }
 }

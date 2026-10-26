@@ -1,5 +1,7 @@
 import { Injectable, Inject, Logger, Optional, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/notification.entity';
+import { MetricsService } from '../metrics/metrics.service';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, LessThan, In, Repository } from 'typeorm';
 import { Product, ProductStatus } from '../products/entities/product.entity';
@@ -56,6 +58,7 @@ export class InvoiceSettlementService {
     @Inject(SETTLEMENT_QUEUE)
     private readonly queue?: SettlementQueuePort,
     @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly metrics?: MetricsService,
   ) {}
 
   /**
@@ -80,6 +83,7 @@ export class InvoiceSettlementService {
     const queueAvailable = this.queue ? await this.queue.isReady(2000) : false;
     if (!queueAvailable) {
       this.logger.log('No settlement queue available — settling inline this tick');
+      this.metrics?.incrementInlineSettlement();
     }
 
     for (const product of ended) {
@@ -243,6 +247,7 @@ export class InvoiceSettlementService {
         (!Number.isFinite(threshold) || Number(winningBid.amount) < threshold);
       if (needsApproval) {
         locked.status = ProductStatus.AWAITING_SELLER_APPROVAL;
+        locked.approvalRequestedAt = new Date();
         await productRepo.save(locked);
         return {
           kind: 'awaiting-seller-approval',
@@ -279,6 +284,7 @@ export class InvoiceSettlementService {
       });
 
       locked.status = ProductStatus.SOLD;
+      locked.approvalRequestedAt = null;
       await productRepo.save(locked);
 
       return {
@@ -292,6 +298,94 @@ export class InvoiceSettlementService {
         hammerPrice: Number(winningBid.amount),
       };
     });
+  }
+
+  /**
+   * Decision 3b — expire lots whose seller never answered.
+   *
+   * A lot parked in awaiting_seller_approval used to wait forever, leaving the
+   * winning bidder in limbo and the lot unbillable. After
+   * SELLER_APPROVAL_WINDOW_HOURS (default 72) the sweep declines on the
+   * seller's behalf, closes the lot and tells both sides. Returns how many lots
+   * were expired.
+   */
+  async expirePendingApprovals(now = new Date()): Promise<number> {
+    const windowHours = Number(process.env.SELLER_APPROVAL_WINDOW_HOURS ?? 72);
+    const cutoff = new Date(
+      now.getTime() - (Number.isFinite(windowHours) ? windowHours : 72) * 3600_000,
+    );
+
+    const stale = await this.productRepo.find({
+      where: {
+        status: ProductStatus.AWAITING_SELLER_APPROVAL,
+        approvalRequestedAt: LessThan(cutoff),
+      },
+      take: 100,
+    });
+
+    let expired = 0;
+    for (const product of stale) {
+      try {
+        const didExpire = await this.dataSource.transaction(async (manager) => {
+          const repo = manager.getRepository(Product);
+          const locked = await repo.findOne({
+            where: { id: product.id },
+            lock: { mode: 'pessimistic_write' },
+          });
+          // Re-check under the lock: the seller may have decided meanwhile.
+          if (
+            !locked ||
+            locked.status !== ProductStatus.AWAITING_SELLER_APPROVAL ||
+            !locked.approvalRequestedAt ||
+            locked.approvalRequestedAt >= cutoff
+          ) {
+            return false;
+          }
+
+          const winningBid = await manager.getRepository(Bid).findOne({
+            where: { productId: locked.id, isWinningBid: true },
+          });
+
+          locked.status = ProductStatus.CLOSED;
+          locked.approvalRequestedAt = null;
+          await repo.save(locked);
+
+          if (this.notifications) {
+            const link = locked.slug ? '/auctions/' + locked.slug : '/auctions/' + locked.id;
+            if (winningBid) {
+              void this.notifications
+                .notifySaleDeclined(winningBid.bidderId, {
+                  auctionTitle: locked.title,
+                  auctionId: locked.id,
+                  hammerPrice: Number(winningBid.amount),
+                  link,
+                  reason: `The seller of “${locked.title}” did not approve the winning bid in time. No payment is owed.`,
+                })
+                .catch(() => undefined);
+            }
+            void this.notifications
+              .create(locked.sellerId, {
+                type: NotificationType.SYSTEM,
+                title: 'A winning bid expired unapproved',
+                body: `“${locked.title}” closed but was not approved within ${windowHours} hours, so the sale was cancelled. You can relist the lot.`,
+                link: '/seller/auctions',
+              })
+              .catch(() => undefined);
+          }
+          return true;
+        });
+        if (didExpire) expired += 1;
+      } catch (error: any) {
+        this.logger.warn(
+          'Approval expiry failed for ' + product.id + ': ' + (error?.message ?? error),
+        );
+      }
+    }
+
+    if (expired > 0) {
+      this.logger.log('Expired ' + expired + ' unapproved winning bid(s)');
+    }
+    return expired;
   }
 
   /**
@@ -339,6 +433,7 @@ export class InvoiceSettlementService {
 
       if (decision === 'decline') {
         locked.status = ProductStatus.CLOSED;
+        locked.approvalRequestedAt = null;
         await productRepo.save(locked);
         if (this.notifications) {
           void this.notifications
@@ -380,6 +475,7 @@ export class InvoiceSettlementService {
       });
 
       locked.status = ProductStatus.SOLD;
+      locked.approvalRequestedAt = null;
       await productRepo.save(locked);
 
       if (this.notifications) {

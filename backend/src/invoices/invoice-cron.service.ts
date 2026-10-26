@@ -6,6 +6,7 @@ import { AdvisoryLockService } from '../common/advisory-lock.service';
 @Injectable()
 export class InvoiceCronService implements OnModuleInit {
   private static readonly LOCK_KEY = 'grey:settlement';
+  private static readonly EXPIRY_LOCK_KEY = 'grey:approval-expiry';
   private readonly logger = new Logger(InvoiceCronService.name);
   /** Overlap guard: a slow settlement must not run concurrently with the next. */
   private running = false;
@@ -41,6 +42,25 @@ export class InvoiceCronService implements OnModuleInit {
       }
     } finally {
       this.running = false;
+    }
+  }
+
+  /**
+   * Decision 3b — every 10 minutes, expire winning bids the seller never
+   * approved, so a lot cannot sit in limbo forever.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async expireUnapprovedSales(): Promise<void> {
+    try {
+      const ran = await this.advisoryLock.tryRun(InvoiceCronService.EXPIRY_LOCK_KEY, async () => {
+        const expired = await this.settlement.expirePendingApprovals();
+        return expired;
+      });
+      if (ran === null) {
+        this.logger.log('Another instance holds the approval-expiry lock — skipping this tick');
+      }
+    } catch (error: any) {
+      this.logger.error('Approval expiry sweep failed: ' + error.message);
     }
   }
 

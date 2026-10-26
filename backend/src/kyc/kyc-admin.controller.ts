@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CurrentAdmin } from '../admin/decorators/current-admin.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
@@ -64,14 +65,14 @@ export class KycAdminController {
   @ApiOperation({ summary: 'Approve or withhold a seller publishing lots' })
   @ApiParam({ name: 'userId' })
   async decidePublish(
-    @CurrentUser() user: any,
+    @CurrentAdmin() admin: any,
     @Param('userId') userId: string,
     @Body() body: { approved: boolean; note?: string },
   ) {
     const report = await this.risk.assess(userId);
     const seller = await this.service.decidePublishing(
       userId,
-      user.id,
+      admin.id,
       body.approved === true,
       body.note,
       { complianceScore: report.complianceScore, band: report.band },
@@ -100,10 +101,10 @@ export class KycAdminController {
     summary: 'Define a KYC document requirement (name, audience, mandatory)',
   })
   async createRequirement(
-    @CurrentUser() user: any,
+    @CurrentAdmin() admin: any,
     @Body() dto: CreateKycRequirementDto,
   ) {
-    const data = await this.service.createRequirement(user.id, dto);
+    const data = await this.service.createRequirement(admin.id, dto);
     return { success: true, message: 'Requirement created', data };
   }
 
@@ -150,11 +151,11 @@ export class KycAdminController {
   @ApiOperation({ summary: 'Approve or reject a submitted document' })
   @ApiParam({ name: 'id' })
   async review(
-    @CurrentUser() user: any,
+    @CurrentAdmin() admin: any,
     @Param('id') id: string,
     @Body() dto: ReviewKycDocumentDto,
   ) {
-    const data = await this.service.reviewDocument(id, user.id, dto);
+    const data = await this.service.reviewDocument(id, admin.id, dto);
     return {
       success: true,
       message: `Document ${dto.status}`,

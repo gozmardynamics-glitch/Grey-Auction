@@ -40,3 +40,6 @@ npm-debug.log*
 *.tsbuildinfo
 # Test coverage output
 coverage/
+
+# Local storage driver output (dev uploads, KYC test artifacts)
+backend/uploads/
