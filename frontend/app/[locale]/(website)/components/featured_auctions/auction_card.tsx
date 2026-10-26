@@ -17,9 +17,9 @@ import { Auction } from '../../models';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
+import { useSession } from 'next-auth/react';
 import { toggleWishlist } from '@/redux/slices/wishlist.slice';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
 
 interface AuctionCardProps {
   auction: Auction;
@@ -85,7 +85,10 @@ export function AuctionCard({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const wishlistItems = useAppSelector((state) => state.wishlist.items);
-  const authToken = useAppSelector((state) => state.auth.token);
+  // Auth presence comes from the session; the request is authenticated by the
+  // /api/proxy cookie, not by a client-held token.
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   const isWishlisted = wishlistItems.includes(auction.id);
   const [isAnimating, setIsAnimating] = useState(false);
   const timeRemaining = useCountdown(auction.endTime);
@@ -94,33 +97,37 @@ export function AuctionCard({
     router.push(`/auctions/${auction.id}`);
   };
 
-  const handleWishlistClick = (e: React.MouseEvent) => {
+  const handleWishlistClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // A guest's heart would only ever be local state, so say so instead of
+    // pretending it was saved.
+    if (!isAuthed) {
+      toast('Sign in to save lots to your watchlist', {
+        icon: <Heart className="h-4 w-4 text-muted-foreground" />,
+      });
+      return;
+    }
+
     const wasWishlisted = isWishlisted;
     dispatch(toggleWishlist(auction.id));
     onWishlistClick?.(auction.id);
     setIsAnimating(true);
     setTimeout(() => setIsAnimating(false), 350);
 
-    // Mirror the optimistic Redux change to the server. Guests keep the local
-    // behaviour; a signed-in failure rolls the toggle back.
-    if (authToken) {
-      fetch(`${API_BASE}/watchlist/${encodeURIComponent(auction.id)}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${authToken}` },
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error('watchlist sync failed');
-        })
-        .catch(() => {
-          dispatch(toggleWishlist(auction.id));
-          toast.error('Could not update your watchlist. Please try again.');
-        });
+    try {
+      // POST adds, DELETE removes — the old code always POSTed, so un-hearting
+      // silently kept the row on the server.
+      await apiFetch(`watchlist/${encodeURIComponent(auction.id)}`, {
+        method: wasWishlisted ? 'DELETE' : 'POST',
+      });
+      toast(wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist', {
+        icon: <Heart className={`h-4 w-4 ${wasWishlisted ? 'text-muted-foreground' : 'fill-red-500 text-red-500'}`} />,
+      });
+    } catch {
+      dispatch(toggleWishlist(auction.id));
+      toast.error('Could not update your watchlist. Please try again.');
     }
-
-    toast(wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist', {
-      icon: <Heart className={`h-4 w-4 ${wasWishlisted ? 'text-muted-foreground' : 'fill-red-500 text-red-500'}`} />,
-    });
   };
 
   const handleShareClick = (e: React.MouseEvent) => {
