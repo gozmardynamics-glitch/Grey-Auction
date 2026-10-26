@@ -36,18 +36,17 @@ are grouped by what breaks if left alone.
 | 9 | **Seller dashboard charts still mock** | The stat cards, orders and payout counters now come from real endpoints, but `TotalRevenue` (12 mock months), `ListedAuctions` and `Messages` receive no data; admin `TotalRevenue`/`RegisteredUsers`/`AuctionActivity` are likewise still mock-driven behind the new KPI panel. | `seller/dashboard/components/total_revenue.tsx`, `admin/dashboard/components/*` |
 | 10 | **Admin settings fake-save** | `auctions.tsx`, `preferences.tsx`, `payments.tsx` "Save changes" are empty handlers that toast success (no endpoint exists for those sections). | `admin/settings/components/modules/*` |
 | 11 | **Agent studio sub-pages are stubs** | `agents/instances`, `agents/tools[/:id]`, `agents/workflows[/:id]` are one-line placeholders; only the settings editor for a single agent is real. | `admin/agents/**` |
-| 12 | **Room lifecycle never advances** | A room is created `scheduled` and nothing moves it to `live`/`closed` on time except the socket `roomEnded` event; the list shows `Pending` forever. | `backend/src/rooms/room-lifecycle.service.ts` |
-| 13 | **Room counts are placeholders** | `bidders` is 0 in both room tables (participants are not aggregated) and `auctions` is `productIds.length`, not live lot counts. | `frontend/lib/server/data.ts` room mappers |
+| 12 | **Room counts are placeholders** | `bidders` is 0 in both room tables (participants are not aggregated) and `auctions` is `productIds.length`, not live lot counts. | `frontend/lib/server/data.ts` room mappers |
 
 ### P3 — accepted, low value
 
 | # | Item | Note |
 |---|---|---|
-| 14 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
-| 15 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
-| 16 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
-| 17 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
-| 18 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
+| 13 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
+| 14 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
+| 15 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
+| 16 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
+| 17 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
 
 ### Fixed in the payments / invoice / invitation pass (for context, no action needed)
 
@@ -113,7 +112,9 @@ through `admins.user_id` + a verified email · registration blocking
 the same-origin `/api/proxy` BFF (session token never reaches client JS) ·
 WebSocket auth via short-lived `typ: realtime` tickets · settings reads
 admin-only with credentials redacted · single-flight payment/escrow partial
-unique indexes · cron advisory locks.
+unique indexes · cron advisory locks · the bidding-room lifecycle cron
+(`scheduled` → `live` → `closed` every minute, overlap-guarded, broadcasts over
+the socket) — verified live, do not rewrite it.
 
 ---
 
