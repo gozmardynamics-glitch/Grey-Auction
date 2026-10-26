@@ -49,9 +49,9 @@ export class AIController {
   }
 
   @Get('providers/:id')
-  @ApiOperation({ summary: 'Get provider details with models' })
+  @ApiOperation({ summary: 'Get provider details with models (apiKey masked)' })
   async findProviderById(@Param('id') id: string) {
-    const provider = await this.service.findProviderById(id);
+    const provider = await this.service.findProviderForApi(id);
     return { success: true, data: provider };
   }
 

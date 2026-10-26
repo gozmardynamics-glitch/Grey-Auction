@@ -459,6 +459,16 @@ Found by an audit of the frontend rather than the earlier defect lists: the same
 | **Product-document "TODO: add proper admin check"** | Stale: `JwtAuthGuard + AdminRolesGuard + @AdminRoles` has been on the route all along. The comment is replaced by what actually enforces it, and attribution now uses `@CurrentAdmin()` — verified that `verifiedById` equals the admins row id, not the users row. |
 | **Agent monitoring was a placeholder** | "Real-time agent metrics and logs. Coming soon." while `/admin/agents/metrics` returned them. Now a real table (agent, event, success/failure with error, latency, cost), per-agent filter, summary cards derived from the same rows, 15s live refresh that can be paused, and an honest empty state. Verified against a real execution row. |
 
+### Done — pass 7 (settings, lot documents, realtime, custom AI providers)
+
+| Item | Result |
+|---|---|
+| **Settings sections had an untyped body** | `PUT /settings/:section` took `@Body() dto: any` and stored it as-is. Each group now has typed fields (the path segment is the storage key, the payload's `section` names the sub-group), unknown properties are rejected by the global pipe, and a known field sent under the wrong group 400s. Verified 9/9. |
+| **Lot documents asserted their own metadata** | `POST /products/:productId/documents` now takes a multipart upload: ownership is checked before any bytes are stored, name/size/MIME/URL come from the stored object, and the object is deleted if the record fails (the KYC pattern). Verified 8/8 including non-owner 403 and the public listing of a verified document. |
+| **Found while testing: `undefined` became `NULL`** | The decimal transformer turned `undefined` into `null`, so TypeORM wrote an explicit NULL instead of letting a column DEFAULT apply. `POST /products` failed with `null value in column currentBid`, and a first-time wallet creation failed on `balance`. `undefined` now passes through; an explicit null is preserved for nullable columns. 8 transformer tests + a live new-user wallet. |
+| **Chat had no realtime** | Sockets cannot ride the same-origin proxy and the browser no longer holds the API token, so **the bidding-room socket had been silently rejected since the 5.6 change** — that regression is fixed too. `POST /realtime/ticket` issues a 120s ticket (`typ: realtime`, refused by the HTTP API), both gateways verify it, and a new `/chat` gateway auto-joins the user's conversations so a saved message is pushed live. Verified 9/9 with real socket clients. |
+| **Custom providers were not configurable end to end** | The registry already stored arbitrary base URLs, but agents ignored their own `providerName`/`modelId` and ran on a *feature key named after the agent*, so any agent without a matching AI feature could not run at all. Agents now execute on their configured registry entry through a new `executeWithModel` path, provider/model choices are validated on save (with the available options listed in the error), provider API keys are masked in every API response (blank on update keeps the stored key), the provider form exposes the protocol and no longer wipes the key, and the agent settings page is a real editor (provider → model, save, test run) instead of a stub. Verified 16/16 against a live mock OpenAI-compatible endpoint (including the key and model actually received) and 6/6 in the browser. |
+
 ### Remaining — outside code
 
 | Item | State |
@@ -467,9 +477,6 @@ Found by an audit of the frontend rather than the earlier defect lists: the same
 | Approval-expiry live tick | Covered by two unit tests (expiry + concurrent-decision race); not exercised against the running API because the next cron tick is up to 10 minutes away. |
 | Clawback of overpaid released escrow holds | Business decision: the row data is corrected by migration, but money already paid out is not recovered automatically. |
 | Bank-account name resolution | The add-account step saves the account as entered and says so; there is no name-enquiry provider wired, so nothing claims the name was verified. |
-| Settings sections still take an untyped body | `PUT /settings/:section` accepts `@Body() dto: any`; each section has its own shape, so validating it needs a per-section DTO set rather than one blob. Admin-only. |
-| Product-document uploads assert their own metadata | `POST /products/:productId/documents` still takes a client-supplied `fileUrl`/`size`/`mimeType` (the same gap fixed for KYC in pass 4); it should become a storage-backed multipart upload. |
-| Chat has no realtime | Messages are persisted and notified, but the open thread needs a refetch; the socket gateway covers bids, not chat. |
 | OPay / Interswitch webhooks | Vendor signature schemes unconfirmed; both fail closed, so nothing can be forged — they simply cannot settle until confirmed. |
 | Agent execution needs a provider | The probe run recorded a failed metric because no AI provider is configured in dev; monitoring now shows that honestly rather than hiding it. |
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgentInstance, AgentStatus } from './entities/agent-instance.entity';
@@ -7,6 +7,8 @@ import { AgentWorkflow, WorkflowStatus } from './entities/agent-workflow.entity'
 import { AgentMetric } from './entities/agent-metric.entity';
 import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 import { CreateToolDto, CreateWorkflowDto, UpdateWorkflowDto } from './dto/tool-workflow.dto';
+import { LLMProvider } from '../ai/entities/llm-provider.entity';
+import { LLMModel } from '../ai/entities/llm-model.entity';
 
 @Injectable()
 export class AgentsService {
@@ -17,6 +19,8 @@ export class AgentsService {
     @InjectRepository(AgentTool) private readonly toolRepo: Repository<AgentTool>,
     @InjectRepository(AgentWorkflow) private readonly workflowRepo: Repository<AgentWorkflow>,
     @InjectRepository(AgentMetric) private readonly metricRepo: Repository<AgentMetric>,
+    @InjectRepository(LLMProvider) private readonly providerRepo: Repository<LLMProvider>,
+    @InjectRepository(LLMModel) private readonly modelRepo: Repository<LLMModel>,
   ) {}
 
   async findAllAgents() { return this.agentRepo.find({ order: { category: 'ASC', name: 'ASC' } }); }
@@ -25,8 +29,51 @@ export class AgentsService {
     if (!agent) throw new NotFoundException(`Agent ${id} not found`);
     return agent;
   }
-  async createAgent(dto: CreateAgentDto) { return this.agentRepo.save(this.agentRepo.create(dto)); }
-  async updateAgent(id: string, dto: UpdateAgentDto) { await this.agentRepo.update(id, dto); return this.findAgentById(id); }
+  /**
+   * Validate the provider/model against the LLM registry so an agent cannot be
+   * pointed at a provider that does not exist (which used to fail only at
+   * execution time with a cryptic message).
+   */
+  private async assertProviderAndModel(providerName?: string, modelId?: string): Promise<void> {
+    if (!providerName) return;
+    const provider = await this.providerRepo.findOne({ where: { name: providerName } });
+    if (!provider) {
+      const available = (await this.providerRepo.find({ select: ['name'] })).map((p) => p.name);
+      throw new BadRequestException(
+        `Unknown provider '${providerName}'. Register it under AI Providers first.` +
+          (available.length ? ` Available: ${available.join(', ')}.` : ''),
+      );
+    }
+    if (!modelId) return;
+    const model = await this.modelRepo.findOne({
+      where: { providerId: provider.id, modelId },
+    });
+    if (!model) {
+      const available = (
+        await this.modelRepo.find({ where: { providerId: provider.id }, select: ['modelId'] })
+      ).map((m) => m.modelId);
+      throw new BadRequestException(
+        `Model '${modelId}' is not registered under provider '${providerName}'.` +
+          (available.length ? ` Available: ${available.join(', ')}.` : ' Add a model first.'),
+      );
+    }
+  }
+
+  async createAgent(dto: CreateAgentDto) {
+    await this.assertProviderAndModel(dto.providerName, dto.modelId);
+    return this.agentRepo.save(this.agentRepo.create(dto));
+  }
+  async updateAgent(id: string, dto: UpdateAgentDto) {
+    if (dto.providerName !== undefined || dto.modelId !== undefined) {
+      const current = await this.findAgentById(id);
+      await this.assertProviderAndModel(
+        dto.providerName ?? current.providerName,
+        dto.modelId ?? current.modelId,
+      );
+    }
+    await this.agentRepo.update(id, dto);
+    return this.findAgentById(id);
+  }
   async removeAgent(id: string) { const agent = await this.findAgentById(id); await this.agentRepo.remove(agent); }
   async toggleAgent(id: string) {
     const agent = await this.findAgentById(id);

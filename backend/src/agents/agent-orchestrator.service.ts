@@ -44,9 +44,20 @@ export class AgentOrchestratorService {
       }));
 
       const prompt = this.buildPrompt(agent, input, toolDescriptions, context);
-      const result = await this.aiOrchestrator.execute(agent.name, {
-        prompt,
-        messages: [{ role: 'user', content: JSON.stringify(input) }],
+      // The agent runs on ITS configured provider/model, resolved from the LLM
+      // registry — custom OpenAI-compatible providers included. It used to pass
+      // the agent name as a feature key, so `providerName`/`modelId` were
+      // ignored and any agent without a matching AI feature could not run.
+      const result = await this.aiOrchestrator.executeWithModel({
+        providerName: agent.providerName,
+        modelId: agent.modelId,
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: JSON.stringify(input) },
+        ],
+        temperature: Number(agent.temperature) || 0.7,
+        maxTokens: Number(agent.maxTokens) || 2048,
+        label: 'agent:' + agent.name,
       });
 
       agent.status = AgentStatus.ACTIVE;

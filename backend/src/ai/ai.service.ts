@@ -22,11 +22,34 @@ export class AIService {
     @InjectRepository(AIUsageLog) private readonly usageRepo: Repository<AIUsageLog>,
   ) {}
 
+  /**
+   * Provider list for the admin UI. The API key is a secret: it is replaced by
+   * a flag so the UI can say "configured" without shipping the credential.
+   */
   async findAllProviders() {
-    return this.providerRepo.find({
+    const providers = await this.providerRepo.find({
       relations: ['models'],
       order: { createdAt: 'DESC' },
     });
+    return providers.map((provider) => this.sanitiseProvider(provider));
+  }
+
+  private sanitiseProvider(provider: LLMProvider) {
+    const { apiKey, ...rest } = provider;
+    return { ...rest, hasApiKey: Boolean(apiKey), apiKey: '' };
+  }
+
+  /** Look up a provider by its registry name (case-insensitive). */
+  async findProviderByNameOrFail(name: string): Promise<LLMProvider> {
+    const provider = await this.providerRepo
+      .createQueryBuilder('provider')
+      .leftJoinAndSelect('provider.models', 'model')
+      .where('LOWER(provider.name) = LOWER(:name)', { name })
+      .getOne();
+    if (!provider) {
+      throw new NotFoundException(`Provider '${name}' is not registered`);
+    }
+    return provider;
   }
 
   async recordHealth(providerId: string, result: { success: boolean; latencyMs?: number; modelCount?: number }) {
@@ -197,13 +220,23 @@ export class AIService {
     return provider;
   }
 
+  /** Same as findProviderById but without the secret, for HTTP responses. */
+  async findProviderForApi(id: string) {
+    return this.sanitiseProvider(await this.findProviderById(id));
+  }
+
   async createProvider(dto: CreateProviderDto) {
-    return this.providerRepo.save(this.providerRepo.create(dto));
+    const saved = await this.providerRepo.save(this.providerRepo.create(dto));
+    return this.sanitiseProvider(saved);
   }
 
   async updateProvider(id: string, dto: UpdateProviderDto) {
-    await this.providerRepo.update(id, dto);
-    return this.findProviderById(id);
+    const patch: Partial<LLMProvider> = { ...dto };
+    // A blank key means "keep the current one": the API never returns it, so
+    // the edit form cannot send it back.
+    if (!patch.apiKey) delete patch.apiKey;
+    await this.providerRepo.update(id, patch);
+    return this.findProviderForApi(id);
   }
 
   async removeProvider(id: string) {

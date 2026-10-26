@@ -27,4 +27,5 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
   { name: 'minimax', displayName: 'Minimax', baseUrl: 'https://api.minimax.chat/v1', docs: 'https://platform.minimax.chat', tier: 'production' },
   { name: 'stepfun', displayName: 'StepFun', baseUrl: 'https://api.stepfun.com/v1', docs: 'https://platform.stepfun.com/docs', tier: 'production' },
   { name: 'ollama', displayName: 'Ollama (local Llama)', baseUrl: 'http://localhost:11434/v1', docs: 'https://ollama.com', tier: 'development' },
+  { name: 'custom', displayName: 'Custom (OpenAI-compatible)', baseUrl: 'https://your-endpoint/v1', docs: '', tier: 'production', providerType: 'openai' },
 ];

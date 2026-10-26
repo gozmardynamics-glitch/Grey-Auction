@@ -19,13 +19,17 @@ export default function AIProviderForm({ provider }: { provider: LLMProvider }) 
     baseUrl: string;
     apiKey: string;
     tier: string;
+    providerType: string;
     isActive: boolean;
   }>({
     displayName: provider.displayName,
     name: provider.name,
     baseUrl: provider.baseUrl,
-    apiKey: provider.apiKey,
+    // The API never returns the secret; a blank value means "keep the current
+    // key", which the backend honours.
+    apiKey: '',
     tier: provider.tier,
+    providerType: (provider as { providerType?: string }).providerType || 'openai',
     isActive: provider.isActive,
   });
   const [saving, setSaving] = useState(false);
@@ -35,8 +39,16 @@ export default function AIProviderForm({ provider }: { provider: LLMProvider }) 
     try {
       await apiFetch(`admin/ai/providers/${provider.id}`, {
         method: 'PATCH',
-        token: authToken,
-        body: form,
+        body: {
+          displayName: form.displayName,
+          name: form.name,
+          baseUrl: form.baseUrl,
+          tier: form.tier,
+          providerType: form.providerType,
+          isActive: form.isActive,
+          // Only send a key when one was typed; a blank keeps the stored key.
+          ...(form.apiKey.trim() ? { apiKey: form.apiKey.trim() } : {}),
+        },
       });
       toast.success('Provider updated');
     } catch {
@@ -59,7 +71,7 @@ export default function AIProviderForm({ provider }: { provider: LLMProvider }) 
         <div><Label>Name (ID)</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
         <div><Label>Display Name</Label><Input value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} /></div>
         <div><Label>Base URL</Label><Input value={form.baseUrl} onChange={(e) => setForm({ ...form, baseUrl: e.target.value })} /></div>
-        <div><Label>API Key</Label><Input type="password" value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} /></div>
+        <div><Label>API Key</Label><Input type="password" placeholder={provider.apiKey ? "leave blank to keep the current key" : "sk-..."} value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} /></div>
         <div>
           <Label>Tier</Label>
           <select className="w-full rounded-md border px-3 py-2" value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value })}>

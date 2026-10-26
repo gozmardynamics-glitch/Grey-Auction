@@ -8,6 +8,12 @@ import { OpenAICompatibleProvider } from '../providers/openai-compatible.base';
 import { ClaudeProvider } from '../providers/claude.provider';
 import { GeminiProvider } from '../providers/gemini.provider';
 
+/** Numeric coercion with a fallback for null/undefined/NaN. */
+function toNumberOr(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export interface AIFeatureInput {
   messages?: { role: 'system' | 'user' | 'assistant'; content: string }[];
   prompt?: string;
@@ -139,8 +145,110 @@ export class AIOrchestratorService {
     throw lastError || new Error(`All models failed for feature '${featureKey}'`);
   }
 
-  private createProviderFromRecord(model: LLMModel): AIProvider {
-    const provider = model.provider;
+  /**
+   * Run a single call against an explicit registry entry.
+   *
+   * Used by agents, which configure their own provider/model (including custom
+   * OpenAI-compatible providers an admin registered) instead of depending on a
+   * feature key. The provider is resolved from the llm_providers row, so any
+   * base URL, key and protocol in the registry works — no code change needed.
+   */
+  async executeWithModel(params: {
+    providerName?: string;
+    providerId?: string;
+    modelId?: string;
+    messages: { role: 'system' | 'user' | 'assistant'; content: string }[];
+    temperature?: number;
+    maxTokens?: number;
+    /** Attribution label for the usage log, e.g. `agent:<name>`. */
+    label: string;
+    userId?: string;
+  }): Promise<{
+    output: string;
+    modelUsed: string;
+    providerName: string;
+    latencyMs: number;
+    usage?: { promptTokens?: number; completionTokens?: number };
+  }> {
+    if (!params.providerName && !params.providerId) {
+      throw new Error(
+        'No provider configured. Set providerName (or providerId) to a provider registered under AI Providers.',
+      );
+    }
+
+    const provider: any = params.providerId
+      ? await this.aiService.findProviderById(params.providerId)
+      : await this.aiService.findProviderByNameOrFail(params.providerName as string);
+
+    if (!provider) {
+      throw new Error(`Provider '${params.providerName}' is not registered`);
+    }
+    if (provider.isActive === false) {
+      throw new Error(`Provider '${provider.name}' is disabled`);
+    }
+
+    const models: LLMModel[] = provider.models ?? [];
+    if (models.length === 0) {
+      throw new Error(
+        `Provider '${provider.name}' has no models yet — add one under AI Providers before using it.`,
+      );
+    }
+
+    let model: LLMModel | undefined;
+    if (params.modelId) {
+      model =
+        models.find((m) => m.modelId === params.modelId) ??
+        models.find((m) => m.id === params.modelId);
+      if (!model) {
+        throw new Error(
+          `Model '${params.modelId}' is not registered under provider '${provider.name}'. Available: ${models
+            .map((m) => m.modelId)
+            .join(', ')}`,
+        );
+      }
+    } else {
+      model = models.find((m) => m.isActive !== false) ?? models[0];
+    }
+
+    const startTime = Date.now();
+    const adapter = this.createProviderFromRecord(model as LLMModel, provider);
+    const result = await adapter.chat({
+      model: model.modelId,
+      messages: params.messages,
+      temperature: params.temperature ?? toNumberOr(model.defaultTemperature, 0.7),
+      maxTokens: params.maxTokens ?? toNumberOr(model.maxOutputTokens, 2048),
+    });
+    const latencyMs = Date.now() - startTime;
+
+    const promptTokens = result.usage?.promptTokens || 0;
+    const completionTokens = result.usage?.completionTokens || 0;
+
+    await this.usageLogService.log({
+      featureKey: params.label,
+      modelId: model.modelId,
+      providerName: provider.name,
+      userId: params.userId,
+      promptTokens,
+      completionTokens,
+      estimatedCost: this.estimateCost(model, promptTokens, completionTokens),
+      latencyMs,
+      success: true,
+      attemptNumber: 1,
+    });
+
+    return {
+      output: result.content,
+      modelUsed: model.modelId,
+      providerName: provider.name,
+      latencyMs,
+      usage: result.usage,
+    };
+  }
+
+  private createProviderFromRecord(model: LLMModel, providerOverride?: unknown): AIProvider {
+    // The provider may be supplied by the caller: a model loaded through the
+    // provider relation has no back-reference of its own.
+    const provider = (providerOverride ?? model.provider) as LLMModel['provider'];
     if (!provider) throw new Error('Model has no associated provider');
 
     const config = {

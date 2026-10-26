@@ -1,9 +1,14 @@
-import Link from 'next/link';
+import AgentSettingsEditor from '../../_islands/agent_settings_editor';
 
-export default function AgentEditPage() {
-  return (
-    <div className="space-y-4">
-      <p className="text-muted-foreground">Agent detail view — managed from <Link href="/admin/agents" className="text-primary hover:underline">Agent Studio</Link>.</p>
-    </div>
-  );
+/**
+ * Agent settings: provider/model wiring plus a test run. Previously a stub that
+ * pointed at Agent Studio, so an agent's model could not be configured at all.
+ */
+export default async function AgentEditPage({
+  params,
+}: {
+  params: Promise<{ agentId: string }>;
+}) {
+  const { agentId } = await params;
+  return <AgentSettingsEditor agentId={agentId} />;
 }
