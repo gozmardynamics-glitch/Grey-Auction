@@ -4,7 +4,11 @@ import { In, Repository } from 'typeorm';
 
 import { Product } from './entities/product.entity';
 import { ProductDocument, ProductDocumentType, ProductDocumentVerificationStatus } from './entities/product-document.entity';
-import { CreateProductDocumentDto, UpdateProductDocumentDto, VerifyProductDocumentDto } from './dto/product-document.dto';
+import {
+  UpdateProductDocumentDto,
+  UploadProductDocumentDto,
+  VerifyProductDocumentDto,
+} from './dto/product-document.dto';
 
 @Injectable()
 export class ProductDocumentService {
@@ -35,22 +39,39 @@ export class ProductDocumentService {
     return document;
   }
 
-  async create(
-    productId: string,
-    userId: string,
-    dto: CreateProductDocumentDto,
-  ): Promise<ProductDocument> {
+  /**
+   * Confirm the caller may upload to this lot BEFORE any bytes are stored, so a
+   * refused upload never leaves an orphaned object behind.
+   */
+  async assertCanUpload(productId: string, userId: string): Promise<void> {
     const product = await this.products.findOne({ where: { id: productId } });
     if (!product) throw new NotFoundException('Product not found');
-
-    // Only seller or admin can add documents
     if (product.sellerId !== userId) {
       throw new ForbiddenException('Only the seller can add documents to this lot');
     }
+  }
+
+  /**
+   * Record an uploaded lot document. File name, size, MIME type and URL all come
+   * from the stored object, never from the request.
+   */
+  async createWithStoredFile(
+    productId: string,
+    userId: string,
+    dto: UploadProductDocumentDto,
+    stored: { url: string; fileName: string; size: number; mimeType: string },
+  ): Promise<ProductDocument> {
+    await this.assertCanUpload(productId, userId);
 
     const document = this.documents.create({
-      ...dto,
       productId,
+      documentType: dto.documentType,
+      title: dto.title,
+      description: dto.description,
+      fileUrl: stored.url,
+      fileName: stored.fileName,
+      fileSize: stored.size,
+      mimeType: stored.mimeType,
       verificationStatus: ProductDocumentVerificationStatus.PENDING,
     });
 

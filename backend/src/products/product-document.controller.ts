@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -7,7 +8,9 @@ import {
   Param,
   Body,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,7 +18,10 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { StorageService } from '../common/storage/storage.service';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentAdmin } from '../admin/decorators/current-admin.decorator';
@@ -24,13 +30,16 @@ import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { AdminRole } from '../admin/entities/admin.entity';
 import { ProductDocumentService } from './product-document.service';
-import { CreateProductDocumentDto, UpdateProductDocumentDto, VerifyProductDocumentDto } from './dto/product-document.dto';
+import { UpdateProductDocumentDto, UploadProductDocumentDto, VerifyProductDocumentDto } from './dto/product-document.dto';
 import { ProductDocumentType } from './entities/product-document.entity';
 
 @ApiTags('Product Documents')
 @Controller('products')
 export class ProductDocumentController {
-  constructor(private readonly service: ProductDocumentService) {}
+  constructor(
+    private readonly service: ProductDocumentService,
+    private readonly storage: StorageService,
+  ) {}
 
   @Get(':productId/documents')
   @ApiOperation({ summary: 'Get documents for a product (public, only verified)' })
@@ -54,18 +63,44 @@ export class ProductDocumentController {
     return { success: true, data };
   }
 
+  /**
+   * Upload a lot document. Multipart only: the size, MIME type and stored URL
+   * are derived from the uploaded object rather than asserted by the client.
+   */
   @Post(':productId/documents')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Add a document to a product (seller only)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload a document for a product (seller only)' })
   @ApiParam({ name: 'productId' })
   async create(
     @Param('productId') productId: string,
     @CurrentUser() user: any,
-    @Body() dto: CreateProductDocumentDto,
+    @Body() dto: UploadProductDocumentDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    const data = await this.service.create(productId, user.id, dto);
-    return { success: true, message: 'Document uploaded', data };
+    if (!file) {
+      throw new BadRequestException('A file upload is required (form field "file")');
+    }
+
+    // Ownership first: a refused upload must not store bytes.
+    await this.service.assertCanUpload(productId, user.id);
+
+    const stored = await this.storage.uploadFile(file, 'products');
+    try {
+      const data = await this.service.createWithStoredFile(productId, user.id, dto, {
+        url: stored.url,
+        fileName: stored.filename,
+        size: stored.size,
+        mimeType: stored.mimetype,
+      });
+      return { success: true, message: 'Document uploaded', data };
+    } catch (error) {
+      // Never leave an orphaned object behind a rejected record.
+      await this.storage.deleteFile(stored.url).catch(() => undefined);
+      throw error;
+    }
   }
 
   @Put('documents/:id')

@@ -15,8 +15,14 @@ import { ValueTransformer } from 'typeorm';
  * a JS number is safe for the amounts this platform handles.
  */
 export const decimalTransformer: ValueTransformer = {
-  to: (value?: number | string | null): number | null => {
-    if (value === null || value === undefined || value === '') return null;
+  to: (value?: number | string | null): number | null | undefined => {
+    // `undefined` MUST stay undefined: TypeORM omits undefined properties from
+    // the INSERT so the column default applies. Returning null here wrote an
+    // explicit NULL instead, which broke every insert that omitted a money
+    // column with a default (POST /products died on currentBid, and wallet
+    // creation on balance).
+    if (value === undefined || value === '') return undefined;
+    if (value === null) return null;
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
   },

@@ -2,7 +2,14 @@ import { IsEnum, IsOptional, IsString, IsUrl, MaxLength, IsUUID, IsInt, Min, IsN
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductDocumentType } from '../entities/product-document.entity';
 
-export class CreateProductDocumentDto {
+/**
+ * Multipart submit of one lot document.
+ *
+ * The file itself is the `file` part; size, MIME type and stored URL are
+ * derived server-side from the stored object, so a client can no longer claim
+ * that an arbitrary third-party URL is a 2 MB PDF.
+ */
+export class UploadProductDocumentDto {
   @ApiProperty({ enum: ProductDocumentType, example: ProductDocumentType.INSPECTION_REPORT })
   @IsEnum(ProductDocumentType)
   documentType: ProductDocumentType;
@@ -16,47 +23,8 @@ export class CreateProductDocumentDto {
   @ApiPropertyOptional({ example: 'Full mechanical inspection by certified mechanic' })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
-
-  @ApiProperty({ example: 'https://s3.amazonaws.com/bucket/inspection-report.pdf' })
-  @IsUrl()
-  fileUrl: string;
-
-  @ApiProperty({ example: 'inspection-report.pdf' })
-  @IsString()
-  @MaxLength(255)
-  fileName: string;
-
-  @ApiProperty({ example: 2048576 })
-  @IsNumber()
-  @IsInt()
-  @Min(1)
-  fileSize: number;
-
-  @ApiProperty({ example: 'application/pdf' })
-  @IsString()
-  @MaxLength(100)
-  mimeType: string;
-
-  @ApiPropertyOptional({ example: 'sha256:abc123...' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  fileHash?: string;
-
-  @ApiPropertyOptional({ description: 'Additional metadata', example: { pages: 12 } })
-  @IsOptional()
-  metadata?: Record<string, any>;
-
-  @ApiPropertyOptional({ example: '2024-01-15' })
-  @IsOptional()
-  @IsString()
-  issueDate?: string;
-
-  @ApiPropertyOptional({ example: '2025-01-15' })
-  @IsOptional()
-  @IsString()
-  expiresAt?: string;
 }
 
 export class UpdateProductDocumentDto {
