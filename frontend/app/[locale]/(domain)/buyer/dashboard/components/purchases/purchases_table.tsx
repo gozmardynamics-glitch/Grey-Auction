@@ -23,7 +23,9 @@ interface BackendInvoice {
   commission: string;
   vat: string;
   fixed_fee: string;
+  other_charges?: string | null;
   total: string;
+  currency?: string;
   status: string;
   issued_at: string;
   paid_at: string | null;
@@ -62,6 +64,17 @@ export default function PurchasesTable({ onViewInvoice }: PurchasesTableProps) {
           amount: Number(inv.total),
           date: inv.issued_at ? new Date(inv.issued_at).toLocaleDateString('en-GB') : '—',
           status: statusMap[inv.status] ?? 'Pending',
+          currency: (inv.currency || 'NGN').toUpperCase(),
+          // The invoice is the record: carry its line items so the detail view
+          // never has to re-derive a premium from an assumed rate.
+          breakdown: {
+            hammerPrice: Number(inv.hammer_price ?? 0),
+            buyerPremium: Number(inv.commission ?? 0),
+            vat: Number(inv.vat ?? 0),
+            fixedFee: Number(inv.fixed_fee ?? 0),
+            otherCharges: Number(inv.other_charges ?? 0),
+            total: Number(inv.total ?? 0),
+          },
         }));
         setInvoices(mapped);
       } catch {

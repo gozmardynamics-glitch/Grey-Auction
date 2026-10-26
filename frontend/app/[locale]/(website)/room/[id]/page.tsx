@@ -26,6 +26,7 @@ import {
   Label,
 } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { apiFetch } from '@/shared/utils/api-client';
 import { useAppSelector } from '@/redux/store';
 import type { Socket } from 'socket.io-client';
 
@@ -103,85 +104,66 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
   useEffect(() => {
     const loadRoom = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${apiBase}/rooms/${roomId}`, {
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-        });
-        if (!res.ok) throw new Error('Room not found');
-        const json = await res.json();
-        const data = json.data ?? json;
+        // Through the BFF proxy: the session cookie authenticates the request,
+        // which a private room now requires.
+        const data = await apiFetch<RoomData>('rooms/' + roomId);
         setRoom(data);
         // First product in the room is the featured watch-room auction.
-        const productId = data.productIds?.[0] || data.productId || null;
+        const productId = data.productIds?.[0] || null;
         setSelectedProductId(productId);
-        setAuctions([
-          {
-            id: productId || data.productIds?.[0] || '1',
-            title: 'Featured Auction Item',
-            currentBid: 2500000,
-            totalBids: 12,
-            status: 'active',
-          },
+
+        if (!productId) return;
+
+        const [product, bids] = await Promise.all([
+          apiFetch<FeaturedProduct & { images?: string[] }>('products/' + productId).catch(() => null),
+          apiFetch<Array<Record<string, unknown>>>('auctions/' + productId + '/bids').catch(() => null),
         ]);
 
-        // PLACEHOLDER: product/bid-history endpoints may not be reachable in
-        // every environment; the socket events below keep the UI in sync when
-        // they are. Failures here degrade gracefully to the fallback card.
-        if (productId) {
-          const [productRes, bidsRes] = await Promise.all([
-            fetch(`${apiBase}/products/${productId}`).catch(() => null),
-            fetch(`${apiBase}/auctions/${productId}/bids`).catch(() => null),
+        if (product && typeof product === 'object') {
+          const featured: FeaturedProduct = {
+            id: product.id || productId,
+            title: product.title || 'Auction item',
+            imageUrl: product.images?.[0] || product.imageUrl,
+            currentBid: Number(product.currentBid) || 0,
+            totalBids: Number(product.totalBids) || 0,
+            endTime: product.endTime,
+          };
+          setProduct(featured);
+          setAuctions([
+            {
+              id: featured.id,
+              title: featured.title,
+              imageUrl: featured.imageUrl,
+              currentBid: featured.currentBid,
+              totalBids: featured.totalBids,
+              status: 'active',
+            },
           ]);
-          if (productRes?.ok) {
-            const pj = await productRes.json();
-            const p = pj.data ?? pj;
-            if (p && typeof p === 'object') {
-              const featured: FeaturedProduct = {
-                id: p.id || productId,
-                title: p.title || 'Featured Auction Item',
-                imageUrl: p.images?.[0],
-                currentBid: Number(p.currentBid) || 0,
-                totalBids: Number(p.totalBids) || 0,
-                endTime: p.endTime,
-              };
-              setProduct(featured);
-              setAuctions([
-                {
-                  id: featured.id,
-                  title: featured.title,
-                  imageUrl: featured.imageUrl,
-                  currentBid: featured.currentBid,
-                  totalBids: featured.totalBids,
-                  status: 'active',
-                },
-              ]);
-            }
-          }
-          if (bidsRes?.ok) {
-            const bj = await bidsRes.json();
-            const bids = bj.data ?? bj;
-            if (Array.isArray(bids) && bids.length > 0) {
-              const mapped: LiveBid[] = bids.map((b: unknown) => {
-                const bid = b as {
-                  id?: unknown;
-                  amount?: unknown;
-                  createdAt?: unknown;
-                  isAutoBid?: unknown;
-                  bidderName?: unknown;
-                  bidder?: { name?: unknown };
-                };
-                return {
-                  id: (typeof bid.id === 'string' && bid.id) || `bid-${Date.now()}-${Math.random()}`,
-                  bidderName: (typeof bid.bidderName === 'string' && bid.bidderName) || (typeof bid.bidder?.name === 'string' ? bid.bidder.name : undefined) || 'Bidder',
-                  amount: Number(bid.amount) || 0,
-                  createdAt: typeof bid.createdAt === 'string' ? bid.createdAt : undefined,
-                  isAutoBid: !!bid.isAutoBid,
-                };
-              });
-              mapped.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-              setLiveBids(mapped.slice(0, 30));
-            }
-          }
+        }
+
+        if (Array.isArray(bids) && bids.length > 0) {
+          const mapped: LiveBid[] = bids.map((raw) => {
+            const bid = raw as {
+              id?: unknown;
+              amount?: unknown;
+              createdAt?: unknown;
+              isAutoBid?: unknown;
+              bidderName?: unknown;
+              bidder?: { name?: unknown };
+            };
+            return {
+              id: (typeof bid.id === 'string' && bid.id) || String(Math.random()),
+              bidderName:
+                (typeof bid.bidderName === 'string' && bid.bidderName) ||
+                (typeof bid.bidder?.name === 'string' ? bid.bidder.name : undefined) ||
+                'Bidder',
+              amount: Number(bid.amount) || 0,
+              createdAt: typeof bid.createdAt === 'string' ? bid.createdAt : undefined,
+              isAutoBid: !!bid.isAutoBid,
+            };
+          });
+          mapped.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          setLiveBids(mapped.slice(0, 30));
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load room');
@@ -190,7 +172,7 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
       }
     };
     loadRoom();
-  }, [roomId, authToken]);
+  }, [roomId]);
 
   // Countdown timer
   useEffect(() => {
@@ -255,7 +237,6 @@ export default function LiveRoomView({ params }: { params: Promise<{ id: string 
     const connect = async () => {
       try {
         const { io } = await import('socket.io-client');
-        const { apiFetch } = await import('@/shared/utils/api-client');
         // Sockets cannot ride the same-origin proxy and the browser holds no API
         // token (5.6), so fetch a short-lived ticket over the authenticated proxy
         // and present it in the handshake.

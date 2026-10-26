@@ -1607,10 +1607,58 @@ export async function getAdminPayments() {
   return ((list ?? []) as RawInvoiceRow[]).map(toPaymentRow);
 }
 
+/**
+ * RoomStatus (scheduled/live/closed/cancelled/settled) → the admin UI's
+ * title-cased status union. The modal branches on 'Active'/'Pending'/…, so
+ * casting raw rows left its right-hand column empty on live data.
+ */
+const ROOM_STATUS_TO_ADMIN: Record<string, AdminBiddingRoom['status']> = {
+  scheduled: 'Pending',
+  live: 'Active',
+  closed: 'Completed',
+  settled: 'Completed',
+  cancelled: 'Rejected',
+};
+
+interface RawRoomRow {
+  id: string;
+  roomCode?: string | null;
+  name?: string | null;
+  description?: string | null;
+  type?: string | null;
+  status?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  createdAt?: string | null;
+  productIds?: string[] | null;
+  inviteCode?: string | null;
+  allowInviteCode?: boolean | null;
+  requiresDeposit?: boolean | null;
+  depositAmount?: number | string | null;
+  createdBy?: { id?: string; name?: string | null; email?: string | null } | null;
+}
+
+const toAdminRoomRow = (raw: RawRoomRow): AdminBiddingRoom =>
+  ({
+    id: raw.id,
+    name: raw.name || '—',
+    seller: raw.createdBy?.name || '—',
+    sellerEmail: raw.createdBy?.email || undefined,
+    auctions: raw.productIds?.length ?? 0,
+    bidders: 0,
+    date: toDisplayDate(raw.startTime ?? raw.createdAt),
+    startDate: toDisplayDate(raw.startTime),
+    endDate: toDisplayDate(raw.endTime),
+    description: raw.description || undefined,
+    status: ROOM_STATUS_TO_ADMIN[String(raw.status ?? '').toLowerCase()] ?? 'Pending',
+  }) as unknown as AdminBiddingRoom;
+
 export async function getAdminBiddingRooms() {
-  const data = await apiFetch('/rooms');
+  // Admin view: every room, public and private. The public /rooms listing is
+  // public-rooms-only, so it cannot back this table.
+  const data = await apiFetch('/admin/rooms');
   const list = unwrapList(data);
-  return (list ?? []) as AdminBiddingRoom[];
+  return ((list ?? []) as RawRoomRow[]).map(toAdminRoomRow);
 }
 
 interface RawTicketRow {
@@ -1912,10 +1960,40 @@ export async function getSellerSales() {
   return Array.isArray(products) ? (products as SellerSale[]) : [];
 }
 
+/** RoomStatus → the seller UI's status union. */
+const ROOM_STATUS_TO_SELLER: Record<string, SellerBiddingRoom['status']> = {
+  scheduled: 'Pending',
+  live: 'Active',
+  closed: 'Closed',
+  settled: 'Closed',
+  cancelled: 'Closed',
+};
+
+const toSellerRoomRow = (raw: RawRoomRow): SellerBiddingRoom =>
+  ({
+    id: raw.id,
+    roomId: raw.roomCode || raw.id.slice(0, 8),
+    roomName: raw.name || '—',
+    roomImage: '/car.svg',
+    items: raw.productIds?.length ?? 0,
+    bidders: 0,
+    date: toDisplayDate(raw.startTime ?? raw.createdAt),
+    status: ROOM_STATUS_TO_SELLER[String(raw.status ?? '').toLowerCase()] ?? 'Pending',
+    type: raw.type === 'private' ? 'private' : 'public',
+    requiresDeposit: !!raw.requiresDeposit,
+    depositAmount: raw.depositAmount ? toCount(raw.depositAmount) : 0,
+    allowInviteCode: !!raw.allowInviteCode,
+    inviteCode: raw.inviteCode || undefined,
+    participants: [],
+    auctions: [],
+  }) as unknown as SellerBiddingRoom;
+
 export async function getSellerBiddingRooms() {
-  const data = await apiFetch('/rooms');
+  // /rooms is the public listing (one seller must not see another's private
+  // rooms); /rooms/mine is the caller's own rooms, join codes included.
+  const data = await apiFetch('/rooms/mine');
   const list = unwrapList(data);
-  return (list ?? []) as SellerBiddingRoom[];
+  return ((list ?? []) as RawRoomRow[]).map(toSellerRoomRow);
 }
 
 /** Backend conversation row from GET /sellers/me/conversations. */

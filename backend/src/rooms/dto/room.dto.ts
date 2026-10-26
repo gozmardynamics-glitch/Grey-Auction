@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsBoolean, IsArray, IsDateString, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray, IsDateString, IsNumber, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { RoomType } from '../entities/room.entity';
 
 export class CreateRoomDto {
   @ApiProperty()
@@ -10,6 +11,16 @@ export class CreateRoomDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  /**
+   * Private rooms are invite-only; public rooms are listed for everyone. The
+   * entity defaults to public, so a seller creating an invite-only room must say
+   * so explicitly.
+   */
+  @ApiProperty({ required: false, enum: RoomType })
+  @IsOptional()
+  @IsEnum(RoomType)
+  type?: RoomType;
 
   @ApiProperty()
   @IsDateString()
@@ -55,4 +66,10 @@ export class JoinRoomDto {
   @IsOptional()
   @IsString()
   inviteCode?: string;
+
+  /** Token from an invitation email — the credential a private room hands out. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  inviteToken?: string;
 }

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Skeleton } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
+import { ApiError, apiFetch } from '@/shared/utils/api-client';
 import { useAppSelector } from '@/redux/store';
 
 interface InviteData {
@@ -63,22 +64,17 @@ export default function InviteLandingPage({
   const [startsSoon, setStartsSoon] = useState(false);
 
   const loadInvite = useCallback(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${apiBase}/invites/validate`, {
+    // POST /invites/validate answers the invitation with its room and lot, which
+    // is what this page renders. It used to return only the invite row, so
+    // `data.room.startTime` threw and every valid invitation showed as invalid.
+    apiFetch<InviteData>('invites/validate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: inviteToken }),
+      body: { token: inviteToken },
     })
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().then((err: { message?: string }) => {
-            throw new Error(err.message || 'Invalid or expired invitation');
-          });
+      .then((data) => {
+        if (!data?.room) {
+          throw new Error('This invitation is not linked to a room');
         }
-        return res.json();
-      })
-      .then((json) => {
-        const data = (json.data ?? json) as InviteData;
         setInvite(data);
         setStartsSoon(
           new Date(data.room.startTime).getTime() - Date.now() <
@@ -105,28 +101,19 @@ export default function InviteLandingPage({
     if (!invite) return;
     setJoining(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${apiBase}/rooms/${invite.room.id}/join`, {
+      // The invite token is the credential: POST /rooms/:id/join redeems it and
+      // records the acceptance server-side. Sending the *room's* join code here
+      // (as this did) never matched, so accepting an invitation always failed.
+      await apiFetch(`/rooms/${invite.room.id}/join`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: invite.token }),
+        body: { inviteToken: invite.token },
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Failed to join room');
-      }
-      // Record acceptance
-      await fetch(`${apiBase}/invites/respond`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: invite.token, response: 'accepted' }),
-      }).catch(() => {});
       setJoined(true);
       setTimeout(() => {
         router.push(`/room/${invite.room.id}`);
       }, 1500);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to join room');
+      setError(err instanceof ApiError ? err.message : 'Failed to join room');
       setJoining(false);
     }
   }, [invite, router]);
@@ -135,23 +122,19 @@ export default function InviteLandingPage({
     if (!invite) return;
     setRequesting(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(apiBase + '/invites/request-access', {
+      await apiFetch('invites/request-access', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           token: invite.token,
           name: authName || undefined,
           email: authEmail || undefined,
-        }),
+        },
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Request failed');
-      }
       setRequested(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not submit your request');
+      setError(
+        err instanceof ApiError ? err.message : 'Could not submit your request'
+      );
     } finally {
       setRequesting(false);
     }
@@ -160,16 +143,14 @@ export default function InviteLandingPage({
   const handleDecline = useCallback(async () => {
     if (!invite) return;
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/invites/respond`, {
+      await apiFetch('invites/respond', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: invite.token, response: 'declined' }),
-      }).catch(() => {});
-      router.push('/auctions');
+        body: { token: invite.token, response: 'declined' },
+      });
     } catch {
-      router.push('/auctions');
+      // A failed decline is not worth blocking the buyer's exit on.
     }
+    router.push('/auctions');
   }, [invite, router]);
 
   // Loading state
@@ -336,7 +317,7 @@ export default function InviteLandingPage({
             invite.mode === 'request' &&
             invite.response !== 'accepted' ? (
               <div className="space-y-2">
-                {requested || invite.response === 'pending' ? (
+                {requested ? (
                   <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
                     <Shield className="mr-1.5 inline h-4 w-4" />
                     Request submitted — the seller will approve your access.

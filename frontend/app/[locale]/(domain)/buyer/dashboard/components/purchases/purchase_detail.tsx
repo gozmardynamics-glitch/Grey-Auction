@@ -23,13 +23,15 @@ export default function PurchaseDetail({
   onBack,
 }: PurchaseDetailProps) {
   const authToken = useAppSelector((state) => state.auth.token);
-  const auctionFeeRate = 0.19;
-  const subtotal = invoice.amount;
-  const auctionFee = subtotal * auctionFeeRate;
-  const vatOnBidValue = 0;
-  const vatOnAuctionFee = 0;
-  const totalBidAmount =
-    subtotal + auctionFee + vatOnBidValue + vatOnAuctionFee;
+  // The invoice is the record of what was charged. Recomputing a premium from
+  // an assumed rate produced a total that could disagree with the document the
+  // buyer actually paid against.
+  const lines = invoice.breakdown ?? null;
+  const subtotal = lines?.hammerPrice ?? invoice.amount;
+  const auctionFee = lines?.buyerPremium ?? 0;
+  const vatOnBidValue = lines?.vat ?? 0;
+  const otherCharges = (lines?.fixedFee ?? 0) + (lines?.otherCharges ?? 0);
+  const totalBidAmount = lines?.total ?? invoice.amount;
 
   const handleDownloadInvoice = async () => {
     if (invoice.status !== 'Paid') {
@@ -146,26 +148,30 @@ export default function PurchaseDetail({
           <span className="text-center">1</span>
           <span className="text-right">{formatCurrency(subtotal)}</span>
         </div>
-        {/* Summary rows */}
+        {/* Summary rows — every figure is a stored invoice line, so what is
+            shown here always matches the document that was charged. */}
         <div className="space-y-3 border-t pt-4">
-          <SummaryRow label="Subtotal" value={formatCurrency(subtotal)} />
-          <SummaryRow
-            label="Auction fee (19%)"
-            value={formatCurrency(auctionFee)}
-          />
-          <SummaryRow
-            label="VAT on bid value"
-            value={formatCurrency(vatOnBidValue)}
-          />
-          <SummaryRow
-            label="VAT on auction fee"
-            value={formatCurrency(vatOnAuctionFee)}
-          />
+          <SummaryRow label="Hammer price" value={formatCurrency(subtotal)} />
+          {auctionFee > 0 && (
+            <SummaryRow label="Buyer premium" value={formatCurrency(auctionFee)} />
+          )}
+          {vatOnBidValue > 0 && (
+            <SummaryRow label="VAT" value={formatCurrency(vatOnBidValue)} />
+          )}
+          {otherCharges > 0 && (
+            <SummaryRow label="Other charges" value={formatCurrency(otherCharges)} />
+          )}
           <SummaryRow
             label="Total Bid Amount"
             value={formatCurrency(totalBidAmount)}
             bold
           />
+          {!lines && (
+            <p className="text-xs text-muted-foreground">
+              The itemised breakdown is not available for this invoice; the total
+              above is what was charged.
+            </p>
+          )}
         </div>
       </div>
 

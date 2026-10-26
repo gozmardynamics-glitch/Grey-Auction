@@ -185,6 +185,108 @@ describe('PaymentOrchestrationService', () => {
     });
   });
 
+  describe('provider allow-list', () => {
+    const rawDisabled = process.env.PAYMENT_PROVIDERS_DISABLED;
+    afterEach(() => {
+      if (rawDisabled === undefined) delete process.env.PAYMENT_PROVIDERS_DISABLED;
+      else process.env.PAYMENT_PROVIDERS_DISABLED = rawDisabled;
+    });
+
+    const ngnInvoice = () => ({
+      id: 'inv1',
+      buyer_id: 'u1',
+      status: 'issued',
+      total: '118250',
+      currency: 'NGN',
+    });
+
+    it('refuses a provider an operator switched off, persisting nothing', async () => {
+      process.env.PAYMENT_PROVIDERS_DISABLED = 'opay,interswitch';
+      (invoiceService.findById as jest.Mock).mockResolvedValue(ngnInvoice());
+
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.INVOICE,
+          provider: PaymentProvider.OPAY,
+          invoiceId: 'inv1',
+        } as any),
+      ).rejects.toThrow(/temporarily unavailable/);
+
+      expect(paymentService.create).not.toHaveBeenCalled();
+    });
+
+    it('ignores spacing and casing in the disabled list', async () => {
+      process.env.PAYMENT_PROVIDERS_DISABLED = ' OPay , Interswitch ';
+      (invoiceService.findById as jest.Mock).mockResolvedValue(ngnInvoice());
+
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.INVOICE,
+          provider: PaymentProvider.INTERSWITCH,
+          invoiceId: 'inv1',
+        } as any),
+      ).rejects.toThrow(/temporarily unavailable/);
+    });
+
+    it('still reaches the adapter for an enabled provider', async () => {
+      process.env.PAYMENT_PROVIDERS_DISABLED = 'opay,interswitch';
+      (invoiceService.findById as jest.Mock).mockResolvedValue(ngnInvoice());
+      (paymentService.findLiveForInvoice as jest.Mock).mockResolvedValue(null);
+      (paymentService.create as jest.Mock).mockResolvedValue({ id: 'p1', reference: 'PAY-X' });
+
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.INVOICE,
+          provider: PaymentProvider.PAYSTACK,
+          invoiceId: 'inv1',
+        } as any),
+      ).rejects.not.toThrow(/temporarily unavailable/);
+    });
+
+    it('refuses an unconfigured provider instead of pinning the invoice to a dead payment', async () => {
+      // No FLUTTERWAVE_SECRET_KEY in this suite, so it cannot take money.
+      process.env.PAYMENT_PROVIDERS_DISABLED = '';
+      delete process.env.FLUTTERWAVE_SECRET_KEY;
+      (invoiceService.findById as jest.Mock).mockResolvedValue(ngnInvoice());
+      (paymentService.findLiveForInvoice as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.INVOICE,
+          provider: PaymentProvider.FLUTTERWAVE,
+          invoiceId: 'inv1',
+        } as any),
+      ).rejects.toThrow(/not available right now/);
+
+      // Nothing may be persisted: an in-flight payment would block a retry.
+      expect(paymentService.create).not.toHaveBeenCalled();
+    });
+
+    it('reports availability separately from configuration', () => {
+      process.env.PAYMENT_PROVIDERS_DISABLED = 'opay';
+      const status = service.providersStatus();
+      const opay = status.find((p) => p.provider === PaymentProvider.OPAY);
+      const paystack = status.find((p) => p.provider === PaymentProvider.PAYSTACK);
+
+      expect(opay).toMatchObject({ available: false });
+      // Paystack has a key in this suite, so it is both configured and offered.
+      expect(paystack).toMatchObject({ configured: true, available: true });
+    });
+
+    it('never offers an unconfigured provider even when it is not switched off', () => {
+      process.env.PAYMENT_PROVIDERS_DISABLED = '';
+      const flutterwave = service
+        .providersStatus()
+        .find((p) => p.provider === PaymentProvider.FLUTTERWAVE);
+
+      expect(flutterwave).toMatchObject({ configured: false, available: false });
+    });
+  });
+
   it('refuses to settle a succeeded webhook whose amount mismatches the app payment', async () => {
     // hook amount 500000 kobo = 5000 naira; the app payment claims 4999.99.
     const { payload, headers, raw } = makeHook('REF', 'success');

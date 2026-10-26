@@ -61,6 +61,16 @@ interface PurchaseInvoice {
   amount: number;
   date: string;
   status: InvoiceStatus;
+  currency?: string;
+  /** Line items straight from the invoice — the UI never recomputes them. */
+  breakdown?: {
+    hammerPrice: number;
+    buyerPremium: number;
+    vat: number;
+    fixedFee: number;
+    otherCharges: number;
+    total: number;
+  };
 }
 
 interface RecentInvoice {

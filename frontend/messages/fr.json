@@ -198,7 +198,11 @@
         "activeAuctions": "Enchères actives",
         "bids": "Offres",
         "users": "Utilisateurs",
-        "pendingRequests": "Demandes en attente"
+        "pendingRequests": "Demandes en attente",
+        "activeLots": "Lots actifs",
+        "bidsReceived": "Offres reçues",
+        "orders": "Commandes",
+        "payoutsPending": "Paiements en cours"
       },
       "salesThisMonth": "Ventes (ce mois-ci)",
       "orders": "Commandes",

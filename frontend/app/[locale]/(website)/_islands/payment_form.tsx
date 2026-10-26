@@ -73,6 +73,12 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [provider, setProvider] = useState<PaymentProviderId>('paystack');
+  // Availability comes from the backend (a provider whose webhook cannot be
+  // verified is switched off there, and one without credentials cannot take
+  // money at all); offering either would take a payment we cannot settle.
+  const [providers, setProviders] = useState<
+    Array<{ provider: string; configured: boolean; available: boolean }>
+  >([]);
   const [instruction, setInstruction] = useState<string | null>(null);
   // Fallback when the page was reached without the invoice query param: the
   // buy-now flow persists the id in sessionStorage before redirecting here.
@@ -103,13 +109,52 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
     },
   });
 
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<{ data?: Array<{ provider: string; configured?: boolean; available: boolean }> }>(
+      'payments/providers',
+    )
+      .then((json) => {
+        if (cancelled || !Array.isArray(json?.data)) return;
+        setProviders(
+          json.data.map((p) => ({
+            provider: String(p.provider),
+            configured: p.configured !== false,
+            available: p.available !== false,
+          })),
+        );
+      })
+      .catch(() => setProviders([]));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const invoiceCurrency = (invoice?.currency || 'NGN').toUpperCase();
   const isPayableCurrency = invoiceCurrency === 'NGN';
+  const isProviderAvailable = !providers.some(
+    (p) => p.provider === String(provider) && !p.available,
+  );
+  // Two different reasons a provider cannot be offered: an operator switched it
+  // off (keys present, disabled on purpose) or this environment has no keys.
+  const noProviderConfigured =
+    providers.length > 0 && providers.every((p) => !p.configured);
+  const selected = providers.find((p) => p.provider === String(provider));
+  const selectionSwitchedOff =
+    !!selected && selected.available === false && selected.configured;
 
   const onSubmit = async (data: PaymentFormValues) => {
     setIsLoading(true);
     setInstruction(null);
     try {
+      if (!isProviderAvailable) {
+        toast.error(
+          selectionSwitchedOff
+            ? 'That payment method is switched off. Please choose another.'
+            : 'That payment method is not available here. Please choose another.',
+        );
+        return;
+      }
       if (!isPayableCurrency) {
         // The server refuses this too; say it here so nobody fills a card form
         // for a charge that cannot be taken.
@@ -202,6 +247,30 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
               )}
 
               <div>
+                {noProviderConfigured ? (
+                  <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                    <p className="font-semibold">Online payment is not set up here</p>
+                    <p className="mt-1 text-muted-foreground">
+                      No payment platform has credentials in this environment, so no
+                      charge can be taken. Nothing will be charged — contact the
+                      seller or support to complete this purchase.
+                    </p>
+                  </div>
+                ) : (
+                  !isProviderAvailable && (
+                    <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                      <p className="font-semibold">
+                        {selectionSwitchedOff
+                          ? 'This payment method is switched off'
+                          : 'This payment method is not available here'}
+                      </p>
+                      <p className="mt-1 text-muted-foreground">
+                        Choose another platform — we only offer methods we can confirm and
+                        settle.
+                      </p>
+                    </div>
+                  )
+                )}
                 <p className="mb-2 text-sm font-medium">Choose your payment platform</p>
                 <PaymentProviderSelector value={provider} onChange={setProvider} columns={4} />
               </div>
@@ -415,7 +484,7 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
               type="submit"
               className="w-full"
               size="lg"
-              disabled={isLoading || !isPayableCurrency}
+              disabled={isLoading || !isPayableCurrency || !isProviderAvailable}
             >
               {isLoading ? 'Processing...' : 'Place Order'}
             </Button>

@@ -7,7 +7,7 @@ import { Clock, Mail, Shield } from 'lucide-react';
 import { Button, Card, Skeleton } from '@/shared/components/common';
 import { ApiError, apiFetch } from '@/shared/utils/api-client';
 
-/** Wire shape of GET /invites/pending (backend/src/invites/invite.entity). */
+/** Wire shape of GET /invites/received (backend/src/invites/invite.service.ts). */
 interface PendingInvite {
   id: string;
   token: string;
@@ -20,25 +20,31 @@ interface PendingInvite {
   expiresAt: string;
   createdAt: string;
   isActive: boolean;
+  room?: { id: string; name: string; startTime: string; endTime: string } | null;
+  inviter?: { id: string; name: string } | null;
 }
 
 interface InvitationRow {
   id: string;
-  invitee: string;
+  token: string;
+  roomName: string;
+  inviter: string;
   expiresAt: string;
   createdAt: string;
-  roomRef: string;
   active: boolean;
+  mode: string;
 }
 
 function toRow(invite: PendingInvite): InvitationRow {
   return {
     id: invite.id,
-    invitee: invite.inviteeName || invite.inviteeEmail || 'Unnamed invitee',
+    token: invite.token,
+    roomName: invite.room?.name || 'Private auction room',
+    inviter: invite.inviter?.name || 'A GreyAuction seller',
     expiresAt: invite.expiresAt,
     createdAt: invite.createdAt,
-    roomRef: invite.roomId,
     active: invite.isActive,
+    mode: invite.mode,
   };
 }
 
@@ -61,11 +67,11 @@ export default function InvitationsModule() {
   const [error, setError] = useState<string | null>(null);
 
   const loadInvitations = useCallback(async () => {
-    // GET /rooms is public and lists every private room platform-wide, so it
-    // must never back this list. /invites/pending is the caller's own
-    // request-mode invites (owner-scoped by the service).
+    // /invites/received is the caller's own invitations, matched on their
+    // account email. This list used to be /invites/pending — invitations the
+    // caller *sent* — and before that every private room on the platform.
     const json = await apiFetch<PendingInvite[] | { data?: PendingInvite[] }>(
-      'invites/pending'
+      'invites/received'
     );
     const rows = Array.isArray(json) ? json : json.data ?? [];
     return rows.map(toRow);
@@ -125,8 +131,8 @@ export default function InvitationsModule() {
       <div>
         <h2 className="text-xl font-bold tracking-tight">My Invitations</h2>
         <p className="text-sm text-muted-foreground">
-          Private room invitations you have created and that are still awaiting a
-          response.
+          Private auction rooms you have been invited to. Open an invitation to
+          accept it and join the room.
         </p>
       </div>
 
@@ -143,8 +149,8 @@ export default function InvitationsModule() {
           </div>
           <h3 className="mb-1 text-lg font-semibold">No Pending Invitations</h3>
           <p className="mb-4 text-sm text-muted-foreground">
-            Invitations sent to you arrive as an email link, and they are not
-            listed here.
+            When a seller invites you to a private room it will appear here, as
+            well as in the email we send to your registered address.
           </p>
           <Button variant="outline" onClick={() => router.push('/auctions')}>
             Browse Public Auctions
@@ -160,7 +166,7 @@ export default function InvitationsModule() {
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                       <Shield className="h-3 w-3" />
-                      Awaiting response
+                      {inv.mode === 'request' ? 'Awaiting seller approval' : 'Awaiting your response'}
                     </span>
                     {!inv.active && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -169,10 +175,13 @@ export default function InvitationsModule() {
                     )}
                   </div>
 
-                  {/* Invitee */}
+                  {/* Room */}
                   <h3 className="text-lg font-bold line-clamp-1">
-                    {inv.invitee}
+                    {inv.roomName}
                   </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Invited by {inv.inviter}
+                  </p>
 
                   {/* Meta */}
                   <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
@@ -184,9 +193,15 @@ export default function InvitationsModule() {
                       <Mail className="h-3.5 w-3.5" />
                       Sent {formatDate(inv.createdAt)}
                     </span>
-                    <span className="truncate">Room {inv.roomRef.slice(0, 8)}</span>
                   </div>
                 </div>
+
+                <Button
+                  className="shrink-0"
+                  onClick={() => router.push(`/invite/${inv.token}`)}
+                >
+                  Review invitation
+                </Button>
               </div>
             </Card>
           ))}

@@ -17,10 +17,20 @@ export class InviteController {
     return this.inviteService.generate(req.user.id, dto);
   }
 
+  /** Invitations addressed to the signed-in account holder. */
+  @Get('received')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Invitations I received' })
+  async received(@Req() req: any) {
+    const data = await this.inviteService.received(req.user.id);
+    return { success: true, data };
+  }
+
   @Post('validate')
-  @ApiOperation({ summary: 'Validate an invite token' })
+  @ApiOperation({ summary: 'Validate an invite token and describe the room it opens' })
   validate(@Body() dto: ValidateInviteDto) {
-    return this.inviteService.validate(dto.token);
+    return this.inviteService.landing(dto.token);
   }
 
   @Post('respond')

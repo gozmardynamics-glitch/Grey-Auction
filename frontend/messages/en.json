@@ -198,7 +198,11 @@
         "activeAuctions": "Active Auctions",
         "bids": "Bids",
         "users": "Users",
-        "pendingRequests": "Pending Requests"
+        "pendingRequests": "Pending Requests",
+        "activeLots": "Active lots",
+        "bidsReceived": "Bids received",
+        "orders": "Orders",
+        "payoutsPending": "Payouts in progress"
       },
       "salesThisMonth": "Sales (this month)",
       "orders": "Orders",

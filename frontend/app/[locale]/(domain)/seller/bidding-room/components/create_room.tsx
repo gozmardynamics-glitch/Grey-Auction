@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Separator } from '@/shared/components/common';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import CreateRoomStepper from './create_room_steps/create_room_stepper';
 import RoomDetailsStep, {
   type RoomDetailsData,
@@ -10,6 +11,7 @@ import RoomDetailsStep, {
 import AuctionsStep from './create_room_steps/auctions_step';
 import ReviewStep from './create_room_steps/review_step';
 import RoomSubmittedDialog from './create_room_steps/room_submitted_dialog';
+import type { AuctionDuration } from '../../models';
 
 interface CreateRoomProps {
   onBack: () => void;
@@ -23,15 +25,23 @@ const DEFAULT_ROOM_DETAILS: RoomDetailsData = {
   duration: '7 days',
 };
 
-export default function CreateRoom({
-  onBack,
-  onGoToDashboard,
-}: CreateRoomProps) {
+/** Turn the chosen duration into the end date the API requires. */
+function addDuration(from: Date, duration: AuctionDuration): Date {
+  const end = new Date(from);
+  const [rawCount, unit = 'days'] = duration.split(' ');
+  const count = Number(rawCount) || 0;
+  if (unit.startsWith('day')) end.setDate(end.getDate() + count);
+  else end.setMonth(end.getMonth() + count);
+  return end;
+}
+
+export default function CreateRoom({ onBack, onGoToDashboard }: CreateRoomProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [roomDetails, setRoomDetails] =
     useState<RoomDetailsData>(DEFAULT_ROOM_DETAILS);
   const [selectedAuctionIds, setSelectedAuctionIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleNext = useCallback(() => {
@@ -46,26 +56,40 @@ export default function CreateRoom({
 
   const handlePublish = useCallback(async () => {
     setIsSubmitting(true);
+    setError(null);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${apiBase}/rooms`, {
+      const startTime = new Date();
+      const endTime = addDuration(startTime, roomDetails.duration);
+
+      // POST /rooms requires startTime and endTime; omitting them failed
+      // validation, and the failure used to be swallowed into a success dialog
+      // so the seller believed a room existed that did not.
+      await apiFetch('rooms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           name: roomDetails.roomName,
           description: roomDetails.roomName,
+          type: 'private',
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
           duration: roomDetails.duration,
-          inviteCode: roomDetails.allowInviteCode ? roomDetails.inviteCode : undefined,
+          allowInviteCode: roomDetails.allowInviteCode,
+          inviteCode: roomDetails.allowInviteCode
+            ? roomDetails.inviteCode || undefined
+            : undefined,
           auctionIds: selectedAuctionIds,
-        }),
+        },
       });
 
-      if (!res.ok) throw new Error('Failed to create room');
-    } catch {
-      // Swallow error — show success anyway for now (backend may not have rooms endpoint yet)
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'The room could not be created. Nothing was saved — please try again.',
+      );
     } finally {
       setIsSubmitting(false);
-      setShowSuccess(true);
     }
   }, [roomDetails, selectedAuctionIds]);
 
@@ -83,6 +107,12 @@ export default function CreateRoom({
       <div className="p-4 space-y-6 rounded-lg">
         <CreateRoomStepper currentStep={currentStep} />
         <Separator />
+
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+            {error}
+          </div>
+        )}
 
         {currentStep === 1 && (
           <RoomDetailsStep

@@ -21,7 +21,7 @@ import {
   Users,
   Share2,
 } from 'lucide-react';
-import { useAppSelector } from '@/redux/store';
+import { ApiError, apiFetch } from '@/shared/utils/api-client';
 
 interface InviteBidderModalProps {
   open: boolean;
@@ -40,6 +40,7 @@ export default function InviteBidderModal({
   roomId,
   productId,
 }: InviteBidderModalProps) {
+  const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -50,7 +51,6 @@ export default function InviteBidderModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
-  const authToken = useAppSelector((state) => state.auth.token);
 
   const handleReset = () => {
     setStep('form');
@@ -62,6 +62,7 @@ export default function InviteBidderModal({
     setMode('exclusive');
     setInviteLink('');
     setCopied(false);
+    setError(null);
     setIsSubmitting(false);
   };
 
@@ -72,46 +73,43 @@ export default function InviteBidderModal({
 
   const handleInvite = useCallback(async () => {
     setIsSubmitting(true);
+    setError(null);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${apiBase}/invites/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      // Through the BFF proxy, which attaches the session token server-side.
+      const json = await apiFetch<{ data?: { token?: string }; token?: string }>(
+        'invites/generate',
+        {
+          method: 'POST',
+          body: {
+            roomId,
+            productId,
+            expiry,
+            mode,
+            maxUsage: mode === 'request' ? 1 : 10,
+            inviteeEmail: email.trim() || undefined,
+            inviteeName: `${firstName} ${lastName}`.trim() || undefined,
+            inviteePhone: phone.trim() || undefined,
+          },
         },
-        body: JSON.stringify({
-          roomId,
-          productId,
-          expiry,
-          mode,
-          maxUsage: mode === 'request' ? 1 : 10,
-          inviteeEmail: email.trim() || undefined,
-          inviteeName: `${firstName} ${lastName}`.trim() || undefined,
-          inviteePhone: phone.trim() || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Failed to generate invite');
-      }
-
-      const json = await res.json();
-      const invite = json.data ?? json;
-      const baseUrl = window.location.origin;
-      setInviteLink(`${baseUrl}/invite/${invite.token}`);
-      setStep('success');
-    } catch {
-      // Fallback for demo: generate local link
-      setInviteLink(
-        `${window.location.origin}/invite/demo-${Date.now().toString(36)}`
       );
+
+      const invite = json?.data ?? json;
+      if (!invite?.token) throw new Error('The server did not return an invite link');
+      setInviteLink(`${window.location.origin}/invite/${invite.token}`);
       setStep('success');
+    } catch (err: unknown) {
+      // A link that looks real but joins nothing is a misrepresentation: if the
+      // bidder turns up to a sale that does not exist there is no evidence of
+      // anything. Fail visibly instead.
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Could not create the invitation. Nothing was sent — please try again.',
+      );
     } finally {
       setIsSubmitting(false);
     }
-  }, [authToken, roomId, productId, expiry, mode, email, firstName, lastName, phone]);
+  }, [roomId, productId, expiry, mode, email, firstName, lastName, phone]);
 
   const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(inviteLink);
@@ -344,6 +342,13 @@ export default function InviteBidderModal({
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+              <p className="font-semibold">Invitation not created</p>
+              <p className="mt-1 text-muted-foreground">{error}</p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => handleOpenChange(false)}>

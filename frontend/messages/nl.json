@@ -198,7 +198,11 @@
         "activeAuctions": "Actieve veilingen",
         "bids": "Biedingen",
         "users": "Gebruikers",
-        "pendingRequests": "Openstaande verzoeken"
+        "pendingRequests": "Openstaande verzoeken",
+        "activeLots": "Actieve kavels",
+        "bidsReceived": "Ontvangen biedingen",
+        "orders": "Bestellingen",
+        "payoutsPending": "Uitbetalingen in behandeling"
       },
       "salesThisMonth": "Verkopen (deze maand)",
       "orders": "Orders",

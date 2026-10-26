@@ -1,60 +1,60 @@
 import StatsCard from '@/shared/components/common/stats_card';
-import { Gavel, HandCoins, Users, ClipboardList } from 'lucide-react';
+import { Gavel, HandCoins, ClipboardList, Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface DashboardStatsProps {
-  activeAuctions: number;
-  bids: number;
-  users: number;
-  pendingRequests: number;
-  auctionsTrend?: number;
-  bidsTrend?: number;
-  usersTrend?: number;
-  requestsTrend?: number;
+  activeLots: number;
+  bidsReceived: number;
+  orders: number;
+  payoutsPending: number;
+  activeLotsTrend?: number;
+  bidsReceivedTrend?: number;
+  ordersTrend?: number;
+  payoutsPendingTrend?: number;
 }
 
 export default function DashboardStats({
-  activeAuctions,
-  bids,
-  users,
-  pendingRequests,
-  auctionsTrend = 0,
-  bidsTrend = 0,
-  usersTrend = 0,
-  requestsTrend = 0,
+  activeLots,
+  bidsReceived,
+  orders,
+  payoutsPending,
+  activeLotsTrend = 0,
+  bidsReceivedTrend = 0,
+  ordersTrend = 0,
+  payoutsPendingTrend = 0,
 }: DashboardStatsProps) {
   const t = useTranslations('seller.home.stats');
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <StatsCard
-        title={t('activeAuctions')}
-        value={activeAuctions}
+        title={t('activeLots')}
+        value={activeLots}
         icon={Gavel}
-        trend={auctionsTrend}
+        trend={activeLotsTrend}
         iconColor="text-foreground"
         iconBgColor="bg-background"
       />
       <StatsCard
-        title={t('bids')}
-        value={bids}
+        title={t('bidsReceived')}
+        value={bidsReceived}
         icon={HandCoins}
-        trend={bidsTrend}
+        trend={bidsReceivedTrend}
         iconColor="text-foreground"
         iconBgColor="bg-background"
       />
       <StatsCard
-        title={t('users')}
-        value={users}
-        icon={Users}
-        trend={usersTrend}
-        iconColor="text-foreground"
-        iconBgColor="bg-background"
-      />
-      <StatsCard
-        title={t('pendingRequests')}
-        value={pendingRequests}
+        title={t('orders')}
+        value={orders}
         icon={ClipboardList}
-        trend={requestsTrend}
+        trend={ordersTrend}
+        iconColor="text-foreground"
+        iconBgColor="bg-background"
+      />
+      <StatsCard
+        title={t('payoutsPending')}
+        value={payoutsPending}
+        icon={Wallet}
+        trend={payoutsPendingTrend}
         iconColor="text-foreground"
         iconBgColor="bg-background"
       />

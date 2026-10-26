@@ -20,71 +20,69 @@ are grouped by what breaks if left alone.
 
 | # | Item | Why it matters | Where | Next step |
 |---|---|---|---|---|
-| 1 | **Overpaid escrow holds** | Holds released before the payout split existed were paid the buyer's gross amount. Row data is corrected; the money has moved. | `backend/src/escrow/escrow.service.ts` | Finance decision: absorb, offset a future payout, or invoice. Then optionally an admin report listing holds whose components do not reconcile. |
-| 2 | **OPay webhook signature** | OPay cannot settle. Fails closed, so nothing can be forged. | `backend/src/payments/providers/opay.provider.ts:26` | Confirm the header name from OPay's docs, implement, replay a sample payload in a test. |
-| 3 | **Interswitch IPN signature** | Same for Interswitch. | `backend/src/payments/providers/interswitch.provider.ts:27` | Confirm the signing scheme, implement, test. |
-| 4 | **Bank-account name enquiry** | The *controls* now exist (a changed account must rest `PAYOUT_BANK_HOLD_HOURS`, and it cannot be changed while a payout is in flight), but nothing verifies that the account name matches the seller. | `frontend/shared/components/add_account_steps/add_account_step.tsx` | Needs a name-enquiry provider + key (Paystack/Flutterwave resolve-account); store asserted vs returned name and only clear the rest early when they match. |
+| 1 | **Overpaid escrow holds** | Holds released before the payout split existed were paid the buyer's gross amount. Row data is corrected; the money has moved. | `backend/src/escrow/escrow.service.ts` | Finance decision: absorb, offset a future payout, or invoice. The admin KPI panel now reports `holdsNotReconciling`, so this is measurable. |
+| 2 | **OPay webhook signature** | OPay cannot settle. Fails closed, so nothing can be forged. The provider is switched off at checkout until this is done. | `backend/src/payments/providers/opay.provider.ts:26` | Confirm the header name from OPay's docs, implement, replay a sample payload in a test, then drop `opay` from `PAYMENT_PROVIDERS_DISABLED`. |
+| 3 | **Interswitch IPN signature** | Same for Interswitch; also switched off at checkout. | `backend/src/payments/providers/interswitch.provider.ts:27` | Confirm the signing scheme, implement, test, then re-enable. |
+| 4 | **Bank-account name enquiry** | The *controls* exist (a changed account must rest `PAYOUT_BANK_HOLD_HOURS`, and it cannot be changed while a payout is in flight), but nothing verifies that the account name matches the seller. | `frontend/shared/components/add_account_steps/add_account_step.tsx` | Needs a name-enquiry provider + key (Paystack/Flutterwave resolve-account); store asserted vs returned name and only clear the rest early when they match. |
 
 ### P2 — money and trust flows that still do not work
 
 | # | Item | Why it matters | Where |
 |---|---|---|---|
-| 6 | **Admin "Add seller" makes the ADMIN a seller** | `POST /sellers/register` attaches the profile to the *caller*, and there is no admin route to create a seller for another account. The form now sends a valid body, so it succeeds — with the wrong owner. | `frontend/app/[locale]/(domain)/admin/_islands/add_seller_action.tsx`, needs a backend admin endpoint |
-| 7 | **Buyers cannot see invitations they received** | `GET /invites/pending` returns invites *created by* the caller. Nothing exposes invitations *received*; they only arrive as email links. The invitations module now lists the caller's own sent invites instead of every private room (which it used to leak). | backend `invites` module needs a received-invitations route |
-| 8 | **Seller bidding room: create + invite** | `create_room.tsx` omits required `startTime`/`endTime`; `invite_bidder_modal.tsx` fabricates a `/invite/demo-…` link when the call fails; `getSellerBiddingRooms()` casts raw `Room` rows to `BiddingRoom` so the table is blank. `GET /rooms` is also public and returns every tenant's rooms. | `seller/bidding-room/**`, `lib/server/data.ts`, backend `rooms` controller |
-| 9 | **Create-listing wizard loses data** | `imageFiles = []` so `images` is always empty (no upload call), and the `lotAndInventory` step is never sent; there is no draft save. | `seller/auctions/create_listing/page.tsx` |
-| 10 | **Tab filters disagree with the data** | Admin payments tabs use `Successful` while rows say `Completed`, so that tab is empty; bids `Ending` has no source. | `admin/payment/components/*`, `admin/bids/components/*` |
-| 11 | **Purchase detail invents the fee** | Recomputes a hardcoded 19% premium instead of using the invoice line items, so the displayed total can disagree with the invoice. | `buyer/dashboard/components/purchases/purchase_detail.tsx:28-33` |
-| 12 | **Currency formatting ignores the invoice currency** | `formatCurrency` is NGN-only; rows carry `currency`. Checkout is NGN-only by decision, but display should not mislabel. | `shared/utils/helpers.ts` |
-| 13 | **Dashboards still show placeholders** | Seller dashboard stat cards are hardcoded `0`, `total_revenue` renders 12 mock months, `ListedAuctions`/`Messages` get no data; admin dashboard cards are `0` with mock charts. | `seller/dashboard/**`, `admin/_islands/admin_dashboard.tsx` |
-| 14 | **Admin settings fake-save** | `auctions.tsx`, `preferences.tsx`, `payments.tsx` "Save changes" are empty handlers that toast success (no endpoint exists for those sections). | `admin/settings/components/modules/*` |
-| 15 | **Agent studio sub-pages are stubs** | `agents/instances`, `agents/tools[/:id]`, `agents/workflows[/:id]` are one-line placeholders; only the settings editor for a single agent is real. | `admin/agents/**` |
-| 16 | **Room status casing** | `GET /rooms` returns `scheduled|live|closed|…`; the room detail modal branches on capitalised labels, so its right column is empty on live data. | `admin/bidding-room/components/room_details_modal.tsx` |
+| 5 | **Admin "Add seller" makes the ADMIN a seller** | `POST /sellers/register` attaches the profile to the *caller*, and there is no admin route to create a seller for another account. The form now sends a valid body, so it succeeds — with the wrong owner. | `frontend/app/[locale]/(domain)/admin/_islands/add_seller_action.tsx`, needs a backend admin endpoint |
+| 6 | **Create-listing wizard loses data** | `imageFiles = []` so `images` is always empty (no upload call), and the `lotAndInventory` step is never sent; there is no draft save. | `seller/auctions/create_listing/page.tsx` |
+| 7 | **Tab filters disagree with the data** | Admin payments tabs use `Successful` while rows say `Completed`, so that tab is empty; bids `Ending` has no source. | `admin/payment/components/*`, `admin/bids/components/*` |
+| 8 | **Currency formatting ignores the invoice currency** | `formatCurrency` is NGN-only; rows carry `currency`. Checkout is NGN-only by decision, but display should not mislabel. | `shared/utils/helpers.ts` |
+| 9 | **Seller dashboard charts still mock** | The stat cards, orders and payout counters now come from real endpoints, but `TotalRevenue` (12 mock months), `ListedAuctions` and `Messages` receive no data; admin `TotalRevenue`/`RegisteredUsers`/`AuctionActivity` are likewise still mock-driven behind the new KPI panel. | `seller/dashboard/components/total_revenue.tsx`, `admin/dashboard/components/*` |
+| 10 | **Admin settings fake-save** | `auctions.tsx`, `preferences.tsx`, `payments.tsx` "Save changes" are empty handlers that toast success (no endpoint exists for those sections). | `admin/settings/components/modules/*` |
+| 11 | **Agent studio sub-pages are stubs** | `agents/instances`, `agents/tools[/:id]`, `agents/workflows[/:id]` are one-line placeholders; only the settings editor for a single agent is real. | `admin/agents/**` |
+| 12 | **Room lifecycle never advances** | A room is created `scheduled` and nothing moves it to `live`/`closed` on time except the socket `roomEnded` event; the list shows `Pending` forever. | `backend/src/rooms/room-lifecycle.service.ts` |
+| 13 | **Room counts are placeholders** | `bidders` is 0 in both room tables (participants are not aggregated) and `auctions` is `productIds.length`, not live lot counts. | `frontend/lib/server/data.ts` room mappers |
 
 ### P3 — accepted, low value
 
 | # | Item | Note |
 |---|---|---|
-| 17 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
-| 18 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
-| 19 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
-| 20 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
+| 14 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
+| 15 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
+| 16 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
+| 17 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
+| 18 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
 
-### Fixed in the role-wiring pass (for context, no action needed)
+### Fixed in the payments / invoice / invitation pass (for context, no action needed)
 
-**Payouts are now ledger-backed (verified 14/14 against the API).** A payout
-draws down the seller's wallet — where escrow release credits `seller_net` —
-instead of recomputing a balance from invoice rows, and the amount is debited
-the moment it is requested (a two-phase hold), so a second request cannot
-overspend it. Commission is no longer deducted a second time at payout, the
-wallet PIN is verified server-side, a cancelled or failed payout returns the
-money, a payout account cannot be changed while one is in flight, and a changed
-account must rest before money can leave it. The seller payment screen reads the
-ledger balance (it derived ₦0 from a status string) and the withdraw dialog
-actually posts `sellers/payouts/request`.
+**Checkout only offers providers that can actually settle (verified 52/52).**
+`PAYMENT_PROVIDERS_DISABLED` (default `opay,interswitch`) removes a provider at
+the server; a provider with no credentials is refused too, because creating a
+payment for it left a PENDING row that pinned the invoice — the buyer could
+never pay it, and a retry was answered with "already in progress". The checkout
+page reads `available`/`configured` and names the reason it cannot offer a
+method.
 
-Onboarding was broken end to end and is now verified working: organization
-registration sent a `categories` field the DTO rejects, an invalid `COMPANY`
-business type and an empty required `postal_code` — it reported success while
-failing, and it posted through an absolute URL. `postal_code` is now optional in
-the DTO (the column defaults to `''`), the payload matches the DTO, failures are
-reported honestly, the proxy forwards a caller-supplied bearer for pre-login
-calls, buyer `complete_profile` sends only DTO fields, forgot-password navigates
-with the reset token only when one exists, and the OTP page verifies against the
-API instead of navigating blindly. Seller settings (profile, security, store,
-payment terms, fees/payouts) now save through the proxy with real error
-handling; the fee screen no longer sends percentages the DTO rejects. Buyer
-dashboard stats, bids, recent invoices, notifications and the payout-account
-card load real data or show honest empty states, and the invitations module no
-longer lists every private room. Admin tables (categories, payments, buyers,
-sellers, bids, auctions, tickets) map the API onto what the columns render —
-the tickets page used to crash on the first real ticket — buyer
-suspend/activate uses the real POST routes, auction moderation calls the product
-approve/reject endpoints (with the modal gate fixed for lowercase statuses), the
-legal-page editors are real client editors sending `{title, content}`, the three
-create-user payloads match their DTOs, and the FAQ "Add Category" affordance was
-removed because no such endpoint exists. KYC reviews now notify the applicant,
-and unverified lot documents are no longer publicly listable.
+**Money is reported as three different things.** `GET /admin/kpi` sums stored
+columns only: GMV (hammer value), platform revenue (`platform_share`, ex-VAT),
+VAT (a liability), buyer-billed, receivable, escrow float and its seller/platform/
+VAT split, in-flight payouts, and a control count of escrow holds whose
+components do not add up. The admin dashboard labels each figure and shows no
+mock numbers; the seller dashboard's cards come from `sellers/dashboard`,
+`sellers/me/products` and `sellers/payouts/me` (`in_progress_count` is new).
+The buyer's purchase detail renders the invoice's own line items instead of
+recomputing a 19% premium.
+
+**Invitations and private rooms work end to end (verified).** `GET
+/invites/received` returns invitations addressed to the account, with the room
+and the inviter; `POST /invites/validate` describes the room the link opens
+(it returned a bare invite row, so the landing page treated every invitation as
+invalid); `POST /rooms/:id/join` accepts an `inviteToken` and redeems it; a
+request-mode invitation only admits the bidder after the seller approves, and
+can no longer be self-approved through `POST /invites/respond`; the token must
+match the room and, when the invite names an invitee, the account email.
+`GET /rooms` is public-rooms-only, `GET /rooms/mine` gives a seller their own
+rooms with join codes, `GET /rooms/:id` and `/:id/participants` refuse
+non-members of a private room, and the admin report (`GET /admin/rooms`) still
+sees every room. Seller room create sends `startTime`/`endTime`, posts through
+the proxy and reports failure instead of showing a success dialog; the invite
+dialog surfaces its error instead of fabricating a demo link.
 
 ## 2. Decisions already taken — do not reopen
 
@@ -95,6 +93,8 @@ and unverified lot documents are no longer publicly listable.
 | Final bid subject to seller approval | Optional per lot (`requiresSellerApproval` + `approvalThreshold`). Settlement parks the lot in `awaiting_seller_approval`; the seller accepts (invoice issued) or declines (lot closed). Unanswered lots expire after `SELLER_APPROVAL_WINDOW_HOURS` (default 72). |
 | KYC vs publishing | KYC approval is **not** publishing consent. The compliance score/band is advisory; an admin makes the publish decision. Both are required before a lot can go public. |
 | Multi-currency | **NGN-only checkout.** No FX at charge time; a non-NGN invoice is refused at payment init with an explanation. Display/rates may vary, settlement may not. |
+| Provider availability | A provider is offered only when it is configured **and** not listed in `PAYMENT_PROVIDERS_DISABLED`. Taking money the platform cannot confirm is not an option. |
+| Private rooms | `GET /rooms` lists public rooms only. A private room is readable and joinable only by its owner, its invited bidders, or a redeemed invitation token; a join code is a weaker credential the seller may also enable. |
 
 ---
 
@@ -126,21 +126,29 @@ See `frontend/.env.example`.
 
 **Environment (backend).** `SELLER_APPROVAL_WINDOW_HOURS` (default 72),
 `QUEUE_REQUIRED` (on by default in production), `PAYOUT_BANK_HOLD_HOURS`
-(default 48; how long a changed payout account must rest), `DB_*`, `JWT_SECRET`.
+(default 48; how long a changed payout account must rest),
+`PAYMENT_PROVIDERS_DISABLED` (comma-separated; **set to `opay,interswitch`
+until their webhook signatures are implemented**), `DB_*`, `JWT_SECRET`.
 Optional: Redis (`REDIS_URL`) — without it settlement runs inline and
 `settlement_queue_available` reports 0.
 
 **Verify before shipping.**
 ```
-cd backend  && npm run build && npx jest && npm run lint   # 51 suites / 397 tests, 0 lint errors
+cd backend  && npm run build && npx jest && npm run lint   # 51 suites / 415 tests, 0 lint errors
 cd frontend && npx tsc --noEmit && npm run lint && npm test && npm run build
 ```
 CI runs the same steps on `main`; all three jobs (Backend, Frontend, Lighthouse)
 are green. A migration baseline exists — run `npm run migration:run` after
 pulling.
 
-**Dev data touched by verification.** The following dev rows were changed while proving behaviour and are safe to reset: the lot 2019 Toyota Hilux 2.4 GD-6 (356daaed…) was parked and then closed by the approval-expiry sweep; phase1.seller@, phase4.buyer@ and wallet.probe.*@greyauction.dev are test accounts; settings.email holds a dummy SMTP host whose password reads back masked; the KYC requirement 
-ational_id has one submitted document.
+**Dev data touched by verification.** The following dev rows were changed while
+proving behaviour and are safe to reset: the lot 2019 Toyota Hilux 2.4 GD-6
+(356daaed…) was parked and then closed by the approval-expiry sweep;
+phase1.seller@, phase4.buyer@ and wallet.probe.*@greyauction.dev are test
+accounts; settings.email holds a dummy SMTP host whose password reads back
+masked; several `verification:*` private rooms and their invitations/participants
+were created by the invitation verification; the KYC requirement for
+national_id has one submitted document.
 
 **Dev credentials.** `admin@greyauction.com` / `Admin@12345`
 (`admin@test.com` is linked but unverified on purpose — useful for testing the
@@ -161,7 +169,9 @@ KYC upload/review/publish consoles, seller Messages, agent monitoring, agent
 settings) · latent risks (migrations baseline + backfills, GIN search index,
 cron advisory locks, pagination, queue monitoring, NGN-only checkout) · realtime
 (ticket-authenticated sockets, live chat) · the LLM registry (custom
-OpenAI-compatible providers usable by agents, API keys masked).
+OpenAI-compatible providers usable by agents, API keys masked) · ledger-backed
+seller payouts (wallet drawdown, two-phase hold, server-side PIN, bank-change
+rest) · provider allow-list, money KPIs and the invitation/private-room flows.
 
 Each of those landed with tests and a live verification; `git log` has the
 detail.

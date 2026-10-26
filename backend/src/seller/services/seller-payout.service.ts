@@ -423,6 +423,7 @@ export class SellerPayoutService {
     total_payouts: number;
     total_amount: number;
     pending_amount: number;
+    in_progress_count: number;
     completed_amount: number;
     failed_count: number;
     average_payout: number;
@@ -432,9 +433,15 @@ export class SellerPayoutService {
       .createQueryBuilder('payout')
       .select('COUNT(payout.id)', 'total_payouts')
       .addSelect('SUM(payout.net_amount)', 'total_amount')
+      // `pending_amount` is money still owed to the seller: a requested payout
+      // is debited from the wallet immediately, so PROCESSING is owed too.
       .addSelect(
-        'SUM(CASE WHEN payout.status = :pending THEN payout.net_amount ELSE 0 END)',
+        'SUM(CASE WHEN payout.status IN (:...inFlight) THEN payout.net_amount ELSE 0 END)',
         'pending_amount',
+      )
+      .addSelect(
+        'SUM(CASE WHEN payout.status IN (:...inFlight) THEN 1 ELSE 0 END)',
+        'in_progress_count',
       )
       .addSelect(
         'SUM(CASE WHEN payout.status = :completed THEN payout.net_amount ELSE 0 END)',
@@ -448,7 +455,7 @@ export class SellerPayoutService {
       .addSelect('MAX(payout.completed_at)', 'last_payout_date')
       .where('payout.seller_id = :sellerId', { sellerId })
       .setParameters({
-        pending: PayoutStatus.PENDING,
+        inFlight: [PayoutStatus.PENDING, PayoutStatus.PROCESSING],
         completed: PayoutStatus.COMPLETED,
         failed: PayoutStatus.FAILED,
       })
@@ -458,6 +465,7 @@ export class SellerPayoutService {
       total_payouts: parseInt(raw.total_payouts, 10) || 0,
       total_amount: parseFloat(raw.total_amount) || 0,
       pending_amount: parseFloat(raw.pending_amount) || 0,
+      in_progress_count: parseInt(raw.in_progress_count, 10) || 0,
       completed_amount: parseFloat(raw.completed_amount) || 0,
       failed_count: parseInt(raw.failed_count, 10) || 0,
       average_payout: parseFloat(raw.average_payout) || 0,

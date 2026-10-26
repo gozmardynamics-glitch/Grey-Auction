@@ -6,14 +6,22 @@ import { Product } from '../products/entities/product.entity';
 import { Bid } from '../bids/entities/bid.entity';
 import { Seller } from '../seller/entities/seller.entity';
 import { Invoice } from '../invoices/invoice.entity';
+import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
+import { SellerPayout } from '../seller/entities/seller-payout.entity';
+import { User } from '../auth/entities/user.entity';
+import { Room } from '../rooms/entities/room.entity';
 
 describe('AdminReportsController', () => {
   let controller: AdminReportsController;
   const repos = {
-    product: { findAndCount: jest.fn() },
-    bid: { findAndCount: jest.fn() },
-    seller: { findAndCount: jest.fn() },
-    invoice: { findAndCount: jest.fn() },
+    product: { findAndCount: jest.fn(), count: jest.fn() },
+    bid: { findAndCount: jest.fn(), count: jest.fn() },
+    seller: { findAndCount: jest.fn(), count: jest.fn() },
+    invoice: { findAndCount: jest.fn(), find: jest.fn() },
+    escrow: { find: jest.fn() },
+    payout: { find: jest.fn() },
+    user: { count: jest.fn() },
+    room: { findAndCount: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -24,6 +32,10 @@ describe('AdminReportsController', () => {
         { provide: getRepositoryToken(Bid), useValue: repos.bid },
         { provide: getRepositoryToken(Seller), useValue: repos.seller },
         { provide: getRepositoryToken(Invoice), useValue: repos.invoice },
+        { provide: getRepositoryToken(EscrowHold), useValue: repos.escrow },
+        { provide: getRepositoryToken(SellerPayout), useValue: repos.payout },
+        { provide: getRepositoryToken(User), useValue: repos.user },
+        { provide: getRepositoryToken(Room), useValue: repos.room },
         {
           provide: DataSource,
           useValue: { getRepository: jest.fn() },
@@ -78,5 +90,99 @@ describe('AdminReportsController', () => {
     expect(repos.invoice.findAndCount).toHaveBeenCalledWith(
       expect.objectContaining({ order: { issued_at: 'DESC' } }),
     );
+  });
+
+  it('lists every room for an admin (private ones included)', async () => {
+    (repos.room.findAndCount as jest.Mock).mockResolvedValue([
+      [{ id: 'r1', type: 'private' }],
+      1,
+    ]);
+
+    const res = await controller.rooms();
+
+    expect(res.data.total).toBe(1);
+    expect(repos.room.findAndCount).toHaveBeenCalledWith(
+      expect.objectContaining({ order: { createdAt: 'DESC' } }),
+    );
+  });
+
+  describe('money KPIs', () => {
+    const paidInvoice = {
+      status: 'paid',
+      hammer_price: 100000,
+      commission: 10000,
+      seller_fee: 5000,
+      fixed_fee: 0,
+      other_charges: 0,
+      vat: 1125,
+      platform_share: 15000,
+      total: 111125,
+    };
+    const issuedInvoice = { status: 'issued', total: 5000 };
+
+    /** amount = sellerNet + platformShare + vatAmount */
+    const reconciledHold = {
+      amount: 111125,
+      sellerNet: 95000,
+      platformShare: 15000,
+      vatAmount: 1125,
+    };
+
+    beforeEach(() => {
+      (repos.invoice.find as jest.Mock).mockResolvedValue([paidInvoice, issuedInvoice]);
+      (repos.escrow.find as jest.Mock).mockResolvedValue([reconciledHold]);
+      (repos.payout.find as jest.Mock).mockResolvedValue([{ net_amount: 4000 }]);
+      (repos.product.count as jest.Mock).mockResolvedValue(3);
+      (repos.bid.count as jest.Mock).mockResolvedValue(7);
+      (repos.user.count as jest.Mock).mockResolvedValue(5);
+      (repos.seller.count as jest.Mock).mockResolvedValue(2);
+    });
+
+    it('reports GMV separately from revenue and VAT', async () => {
+      const res = await controller.kpi();
+
+      expect(res.data.gmv).toBe(100000); // hammer value only
+      expect(res.data.platformRevenue).toBe(15000); // stored platform share
+      expect(res.data.vatCollected).toBe(1125); // a liability, not income
+      expect(res.data.buyerBilled).toBe(111125);
+      expect(res.data.receivable).toBe(5000); // unpaid invoice total
+      expect(res.data.invoicesPaid).toBe(1);
+      expect(res.data.invoicesUnpaid).toBe(1);
+
+      // Revenue + VAT must never be added into GMV by a consumer of this shape.
+      expect(res.data.gmv).not.toBe(res.data.platformRevenue);
+    });
+
+    it('treats escrow float and in-flight payouts as liabilities', async () => {
+      const res = await controller.kpi();
+
+      expect(res.data.escrowFloat).toBe(111125);
+      expect(res.data.escrowSellerNetHeld).toBe(95000);
+      expect(res.data.escrowRevenueHeld).toBe(15000);
+      expect(res.data.escrowVatHeld).toBe(1125);
+      expect(res.data.payoutsInProgress).toBe(4000);
+    });
+
+    it('flags an escrow hold whose components do not add up', async () => {
+      (repos.escrow.find as jest.Mock).mockResolvedValue([
+        { ...reconciledHold, sellerNet: 1000 },
+      ]);
+
+      const res = await controller.kpi();
+
+      expect(res.data.holdsOpen).toBe(1);
+      expect(res.data.holdsNotReconciling).toBe(1);
+    });
+
+    it('carries the overview counters so the cards are exact totals', async () => {
+      const res = await controller.kpi();
+
+      expect(res.data).toMatchObject({
+        activeAuctions: 3,
+        totalBids: 7,
+        totalBuyers: 5,
+        pendingSellers: 2,
+      });
+    });
   });
 });

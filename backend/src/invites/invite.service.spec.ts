@@ -4,6 +4,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { InviteService } from './invite.service';
 import { Invite, InviteMode, InviteResponse } from './invite.entity';
 import { Room } from '../rooms/entities/room.entity';
+import { User } from '../auth/entities/user.entity';
+import { Product } from '../products/entities/product.entity';
 import { EmailService } from '../common/email/email.service';
 import { SmsService } from '../common/sms/sms.service';
 
@@ -15,7 +17,9 @@ describe('InviteService request-mode approvals', () => {
     create: jest.fn(),
     save: jest.fn(),
   };
-  const roomRepo = { findOne: jest.fn() };
+  const roomRepo = { findOne: jest.fn(), find: jest.fn() };
+  const userRepo = { findOne: jest.fn(), find: jest.fn() };
+  const productRepo = { find: jest.fn() };
   const email = { sendRoomInviteEmail: jest.fn() };
   const sms = { sendRoomInviteSms: jest.fn() };
 
@@ -41,6 +45,8 @@ describe('InviteService request-mode approvals', () => {
         InviteService,
         { provide: getRepositoryToken(Invite), useValue: repo },
         { provide: getRepositoryToken(Room), useValue: roomRepo },
+        { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: getRepositoryToken(Product), useValue: productRepo },
         { provide: EmailService, useValue: email },
         { provide: SmsService, useValue: sms },
       ],
@@ -153,5 +159,94 @@ describe('InviteService request-mode approvals', () => {
     await expect(service.approve('nope', 'seller-1')).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  describe('request-mode invites are the seller\u2019s decision', () => {
+    it('refuses to let the holder accept a request-mode invite themselves', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue({
+        ...requestInvite,
+        response: InviteResponse.PENDING,
+      });
+
+      await expect(service.respond('tok-1', 'accepted')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('still lets the holder decline', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue({
+        ...requestInvite,
+        response: InviteResponse.PENDING,
+      });
+      (repo.save as jest.Mock).mockImplementation(async (i) => i);
+
+      const result = await service.respond('tok-1', 'declined');
+
+      expect(result.response).toBe(InviteResponse.DECLINED);
+    });
+
+    it('does not admit a bidder through a request-mode token before approval', async () => {
+      const pending = {
+        ...requestInvite,
+        response: InviteResponse.PENDING,
+        roomId: 'r1',
+        inviteeEmail: 'buyer@example.com',
+      };
+      // validate() and the redeem lookup both hit repo.findOne.
+      (repo.findOne as jest.Mock).mockResolvedValue(pending);
+
+      await expect(
+        service.redeemForRoom('tok-1', 'r1', {
+          id: 'buyer-1',
+          email: 'buyer@example.com',
+        }),
+      ).rejects.toThrow(/not approved/);
+    });
+
+    it('admits the invitee once the seller has approved', async () => {
+      const approved = {
+        ...requestInvite,
+        response: InviteResponse.ACCEPTED,
+        roomId: 'r1',
+        inviteeEmail: 'buyer@example.com',
+      };
+      (repo.findOne as jest.Mock).mockResolvedValue(approved);
+
+      const result = await service.redeemForRoom('tok-1', 'r1', {
+        id: 'buyer-1',
+        email: 'buyer@example.com',
+      });
+
+      expect(result).toBe(approved);
+    });
+
+    it('refuses a token that was issued to a different address', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue({
+        ...requestInvite,
+        response: InviteResponse.ACCEPTED,
+        roomId: 'r1',
+        inviteeEmail: 'invited@example.com',
+      });
+
+      await expect(
+        service.redeemForRoom('tok-1', 'r1', {
+          id: 'stranger',
+          email: 'stranger@example.com',
+        }),
+      ).rejects.toThrow(/another account/);
+    });
+
+    it('refuses a token issued for a different room', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue({
+        ...requestInvite,
+        response: InviteResponse.ACCEPTED,
+        roomId: 'r1',
+      });
+
+      await expect(
+        service.redeemForRoom('tok-1', 'r2', { id: 'buyer-1', email: 'a@b.com' }),
+      ).rejects.toThrow(/different room/);
+    });
   });
 });

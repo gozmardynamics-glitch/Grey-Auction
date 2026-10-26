@@ -6,15 +6,19 @@ import { RoomController } from './room.controller';
 import { RoomLifecycleService } from './room-lifecycle.service';
 import { BidModule } from '../bids/bid.module';
 import { NotificationModule } from '../notification/notification.module';
+import { InviteModule } from '../invites/invite.module';
+import { User } from '../auth/entities/user.entity';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Room, RoomParticipant]),
+    TypeOrmModule.forFeature([Room, RoomParticipant, User]),
     BidModule,
     NotificationModule,
+    InviteModule,
   ],
   controllers: [RoomController],
-  providers: [RoomService, RoomLifecycleService],
+  providers: [RoomService, RoomLifecycleService, OptionalJwtAuthGuard],
   exports: [RoomService],
 })
 export class RoomModule {}

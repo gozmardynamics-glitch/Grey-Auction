@@ -39,6 +39,22 @@ export interface InitPaymentCommand {
  */
 const SETTLEMENT_CURRENCY = 'NGN';
 
+/**
+ * Providers an operator has switched off (comma-separated, e.g. "opay,interswitch").
+ *
+ * A provider whose webhook cannot be signature-verified must not be offered: the
+ * buyer would pay and the confirmation would be rejected, leaving an order that
+ * never settles. Availability is a config decision, not a code change.
+ */
+function disabledProviders(): Set<string> {
+  return new Set(
+    (process.env.PAYMENT_PROVIDERS_DISABLED || '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
 @Injectable()
 export class PaymentOrchestrationService {
   private readonly logger = new Logger(PaymentOrchestrationService.name);
@@ -98,6 +114,22 @@ export class PaymentOrchestrationService {
       );
     }
 
+    if (disabledProviders().has(String(command.provider).toLowerCase())) {
+      throw new BadRequestException(
+        `${command.provider} is temporarily unavailable. Please choose another payment method.`,
+      );
+    }
+
+    // A provider with no credentials cannot take money. Letting it through used
+    // to create a PENDING payment that no gateway could ever confirm — and
+    // because an in-flight payment pins the invoice, the buyer then could not
+    // start a payment with a working provider either.
+    if (!createProviderAdapter(command.provider).configured()) {
+      throw new BadRequestException(
+        `${command.provider} is not available right now. Please choose another payment method.`,
+      );
+    }
+
     // The reference is always server-generated. It used to honour a
     // client-supplied `metadata.reference`, and the webhook resolves a payment by
     // reference alone — so a caller could pass someone else's reference and be
@@ -137,8 +169,7 @@ export class PaymentOrchestrationService {
       metadata: command.metadata || {},
     });
 
-    const adapter = createProviderAdapter(command.provider);
-    const result = await adapter.initialize({
+    const result = await createProviderAdapter(command.provider).initialize({
       reference,
       // Server-authoritative amount: when an invoice is being paid, the
       // invoice total wins over any client-supplied amount, otherwise the
@@ -213,10 +244,17 @@ export class PaymentOrchestrationService {
   }
 
   /** Report which providers are configured (env key present) for admin/UI. */
-  providersStatus(): Array<{ provider: PaymentProvider; configured: boolean }> {
+  providersStatus(): Array<{ provider: PaymentProvider; configured: boolean; available: boolean }> {
+    const disabled = disabledProviders();
     return Object.values(PaymentProvider).map((provider) => {
       const adapter = createProviderAdapter(provider);
-      return { provider, configured: adapter.configured() };
+      const configured = adapter.configured();
+      const switchedOff = disabled.has(String(provider).toLowerCase());
+      return {
+        provider,
+        configured,
+        available: configured && !switchedOff,
+      };
     });
   }
 
