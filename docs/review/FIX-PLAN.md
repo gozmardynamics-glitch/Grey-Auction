@@ -450,6 +450,15 @@ Found by an audit of the frontend rather than the earlier defect lists: the same
 | **KYC had no UI at all** | Built all three surfaces: an account-holder checklist with upload (multipart through the proxy), the admin review queue with approve/reject + reasons, the compliance assessment with band/score/signals, and the separate publish decision. Requirements are managed by the admin (create/deactivate) — nothing hardcoded. Reachable from both dashboards (buyer module + seller settings) since KYC is account-holder level. `apiFetch` now forwards `FormData` untouched. Verified 13/13 end-to-end: buyer upload → queue → admin approve → publishing decision on a real seller. |
 | **Misleading publish button for non-sellers** | Found while testing: the console offered "Approve publishing" to a pure buyer, where the call correctly 404s. `publishingStateFor` now reports `hasSellerProfile`, and the console explains there is nothing to decide instead of showing buttons that cannot work. |
 
+### Done — pass 6 (currency decision, admin write validation, monitoring)
+
+| Item | Result |
+|---|---|
+| **Multi-currency — decision: NGN-only checkout** | No FX at charge time. `payment init` refuses an invoice whose currency is not NGN, naming the invoice currency and the reason, and nothing is persisted for a refused charge; the orchestration boundary also refuses a non-NGN deposit (in practice the init DTO already rejects a `currency` field, so that gate is defence in depth). The payment page reads the invoice currency, explains that it cannot be paid online, and disables Place Order instead of letting the buyer fill a card form for a charge that will be refused. 3 orchestration tests + 7/7 live checks. |
+| **Admin content writes were unvalidated** | FAQs, banners and content pages took `@Body() dto: any` straight into `repo.update(id, dto)` — untyped mass-assignment on admin routes, so `id`, `createdAt` or any other column could be written. Each now has a DTO with real constraints (required fields, URL validation on the banner link, bounded lengths, integer ordering); unknown properties are rejected by the global pipe. The audit-log route reuses the `CreateAuditLogDto` that already existed. The admin forms sent whole rows on save, which the new validation would reject, so they now send only whitelisted fields and surface failures. Verified 11/11. |
+| **Product-document "TODO: add proper admin check"** | Stale: `JwtAuthGuard + AdminRolesGuard + @AdminRoles` has been on the route all along. The comment is replaced by what actually enforces it, and attribution now uses `@CurrentAdmin()` — verified that `verifiedById` equals the admins row id, not the users row. |
+| **Agent monitoring was a placeholder** | "Real-time agent metrics and logs. Coming soon." while `/admin/agents/metrics` returned them. Now a real table (agent, event, success/failure with error, latency, cost), per-agent filter, summary cards derived from the same rows, 15s live refresh that can be paused, and an honest empty state. Verified against a real execution row. |
+
 ### Remaining — outside code
 
 | Item | State |
@@ -458,12 +467,11 @@ Found by an audit of the frontend rather than the earlier defect lists: the same
 | Approval-expiry live tick | Covered by two unit tests (expiry + concurrent-decision race); not exercised against the running API because the next cron tick is up to 10 minutes away. |
 | Clawback of overpaid released escrow holds | Business decision: the row data is corrected by migration, but money already paid out is not recovered automatically. |
 | Bank-account name resolution | The add-account step saves the account as entered and says so; there is no name-enquiry provider wired, so nothing claims the name was verified. |
-| Multi-currency conversion at charge time | Rates are ingested and invoices carry a currency, but checkout does not convert and gateways settle NGN only. Needs a decision: convert at charge time (accept FX risk) or restrict checkout to NGN lots. |
-| Admin FAQ/banner writes are unvalidated | `@Body() dto: any` on those admin routes — the same defect class as 2.9, admin-only. |
-| Product-document admin check | `product-document.service.ts:91` still carries a "TODO: add proper admin check via guard". |
-| Agent monitoring page | `admin/agents/monitoring` renders "Coming soon" although `/admin/agents/metrics` exists. |
+| Settings sections still take an untyped body | `PUT /settings/:section` accepts `@Body() dto: any`; each section has its own shape, so validating it needs a per-section DTO set rather than one blob. Admin-only. |
+| Product-document uploads assert their own metadata | `POST /products/:productId/documents` still takes a client-supplied `fileUrl`/`size`/`mimeType` (the same gap fixed for KYC in pass 4); it should become a storage-backed multipart upload. |
 | Chat has no realtime | Messages are persisted and notified, but the open thread needs a refetch; the socket gateway covers bids, not chat. |
 | OPay / Interswitch webhooks | Vendor signature schemes unconfirmed; both fail closed, so nothing can be forged — they simply cannot settle until confirmed. |
+| Agent execution needs a provider | The probe run recorded a failed metric because no AI provider is configured in dev; monitoring now shows that honestly rather than hiding it. |
 
 ### Dev-data changed while testing
 
