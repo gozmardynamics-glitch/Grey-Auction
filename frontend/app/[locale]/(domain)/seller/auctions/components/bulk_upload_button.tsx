@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { UploadCloud, Download, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
@@ -14,7 +15,8 @@ const TEMPLATE_CSV = [
 
 export default function BulkUploadButton() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const authToken = useAppSelector((state) => state.auth.token);
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<{ created: number; failed: number } | null>(null);
 
@@ -31,7 +33,7 @@ export default function BulkUploadButton() {
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!authToken) {
+    if (!isAuthed) {
       toast.error('Please sign in as a seller first');
       return;
     }
@@ -43,7 +45,8 @@ export default function BulkUploadButton() {
       fd.append('file', file);
       const res = await fetch(apiBase + '/products/bulk', {
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + authToken },
+        // Multipart upload through the same-origin proxy; the bearer token is
+        // added server-side from the session cookie (5.6).
         body: fd,
       });
       const json = await res.json().catch(() => ({}));

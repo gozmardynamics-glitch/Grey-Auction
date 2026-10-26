@@ -5,9 +5,7 @@ import { Dialog, DialogContent } from '@/shared/components/common';
 
 // Add account flow steps (shared)
 import AddAccountStep from '@/shared/components/add_account_steps/add_account_step';
-import VerifyBankStep from '@/shared/components/add_account_steps/verify_bank_step';
 import SetupPinStep from '@/shared/components/add_account_steps/setup_pin_step';
-import VerifyPinStep from '@/shared/components/add_account_steps/verify_pin_step';
 import AccountSuccessStep from '@/shared/components/add_account_steps/account_success_step';
 
 // Withdraw flow steps
@@ -27,7 +25,14 @@ interface WithdrawModalProps {
   balance?: number;
   bankAccount?: BankAccountInfo | null;
   hasPin?: boolean;
+  /** Called after a withdrawal succeeds so the wallet can refresh its balance. */
+  onWithdrawn?: () => void;
 }
+
+const newReference = (): string =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : 'wd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 
 export default function WithdrawModal({
   open,
@@ -35,6 +40,7 @@ export default function WithdrawModal({
   balance = 0,
   bankAccount = null,
   hasPin = false,
+  onWithdrawn,
 }: WithdrawModalProps) {
   const hasBankAccount = !!bankAccount;
 
@@ -45,12 +51,24 @@ export default function WithdrawModal({
   };
 
   const [step, setStep] = useState<WithdrawStep>(getInitialStep);
+  // The flow's inputs, lifted so the review step can submit them. `reference`
+  // is generated once per flow: a retry reuses it and the server dedupes.
+  const [amount, setAmount] = useState(0);
+  const [pin, setPin] = useState('');
+  const [reference, setReference] = useState(newReference);
+  // Filled once the account is saved, so the flow can continue without a reload.
+  const [savedAccount, setSavedAccount] = useState<BankAccountInfo | null>(null);
 
   const handleClose = () => onOpenChange(false);
 
   // Reset the flow when the modal opens.
   const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) setStep(getInitialStep());
+    if (nextOpen) {
+      setStep(getInitialStep());
+      setAmount(0);
+      setPin('');
+      setReference(newReference());
+    }
     onOpenChange(nextOpen);
   };
 
@@ -67,24 +85,31 @@ export default function WithdrawModal({
         {/* Add Account Flow */}
         {step === 'add-account' && (
           <AddAccountStep
-            onNext={() => setStep('verify-bank')}
+            // The account is persisted to the seller profile by the step
+            // itself; the fake OTP "verification" hop is gone, so the flow no
+            // longer pretends a bank confirmed anything.
+            onNext={() => setStep('setup-pin')}
             onCancel={handleClose}
+            onSaved={(account) => {
+              setSavedAccount({
+                name: account.bankName,
+                bankName: account.bankName,
+                maskedAccount: '••••' + account.accountNumber.slice(-4),
+              });
+            }}
           />
-        )}
-
-        {step === 'verify-bank' && (
-          <VerifyBankStep onNext={() => setStep('setup-pin')} />
         )}
 
         {step === 'setup-pin' && (
           <SetupPinStep
-            onNext={() => setStep('verify-pin')}
+            // The PIN is saved for real now, so there is nothing left to
+            // "verify" with a fake code: go straight to withdrawing when we
+            // already know the account, otherwise show the success screen.
+            onNext={() =>
+              setStep(bankAccount || savedAccount ? 'amount' : 'account-success')
+            }
             onCancel={handleClose}
           />
-        )}
-
-        {step === 'verify-pin' && (
-          <VerifyPinStep onNext={() => setStep('account-success')} />
         )}
 
         {step === 'account-success' && (
@@ -95,8 +120,11 @@ export default function WithdrawModal({
         {step === 'amount' && (
           <AmountStep
             balance={balance}
-            bankAccount={bankAccount}
-            onNext={() => setStep('pin')}
+            bankAccount={bankAccount ?? savedAccount}
+            onNext={(value) => {
+              setAmount(value);
+              setStep('pin');
+            }}
             onCancel={handleClose}
             onAddAccount={() => setStep('add-account')}
           />
@@ -104,13 +132,24 @@ export default function WithdrawModal({
 
         {step === 'pin' && (
           <PinStep
-            onNext={() => setStep('review')}
+            onNext={(value) => {
+              setPin(value);
+              setStep('review');
+            }}
             onBack={() => setStep('amount')}
             onForgotPin={() => setStep('forgot-pin')}
           />
         )}
 
-        {step === 'review' && <ReviewStep onDone={handleClose} />}
+        {step === 'review' && (
+          <ReviewStep
+            amount={amount}
+            pin={pin}
+            reference={reference}
+            onDone={handleClose}
+            onWithdrawn={onWithdrawn}
+          />
+        )}
 
         {/* Reset PIN Flow */}
         {step === 'forgot-pin' && (

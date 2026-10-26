@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Download, Receipt, FileText } from 'lucide-react';
 import {
   Button,
@@ -43,10 +44,13 @@ export default function SalesView({ sales }: SalesViewProps) {
   const [invoices, setInvoices] = useState<SellerInvoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const authUser = useAppSelector((state) => state.auth.user);
-  const authToken = useAppSelector((state) => state.auth.token);
+  // Auth presence comes from the session, not from a client token: browser
+  // calls are authenticated by the /api/proxy cookie (5.6).
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
 
   useEffect(() => {
-    if (!authToken) {
+    if (!isAuthed) {
       setLoadingInvoices(false);
       return;
     }
@@ -54,9 +58,7 @@ export default function SalesView({ sales }: SalesViewProps) {
     const loadInvoices = async () => {
       try {
         // Server-scoped: a non-admin caller always sees their own invoices.
-        const json = await apiFetch<{ data: SellerInvoice[] }>('invoices', {
-          token: authToken,
-        });
+        const json = await apiFetch<{ data: SellerInvoice[] }>('invoices');
         if (!cancelled) setInvoices(json.data || []);
       } catch {
         if (!cancelled) setInvoices([]);
@@ -68,7 +70,7 @@ export default function SalesView({ sales }: SalesViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [authToken]);
+  }, [isAuthed]);
 
   const handleViewReceipt = (sale: Sale) => {
     setSelectedSale(sale);
@@ -81,7 +83,32 @@ export default function SalesView({ sales }: SalesViewProps) {
   );
 
   const handleExport = () => {
-    
+    // Real export of the invoice table (the authoritative per-sale record):
+    // commission here is the seller-side fee, so the net is shown explicitly.
+    const header = ['Invoice', 'Hammer Price', 'Commission', 'VAT', 'Total', 'Status', 'Issued'];
+    const rows = invoices.map((inv) => [
+      inv.invoice_number,
+      Number(inv.hammer_price),
+      Number(inv.commission),
+      Number(inv.vat),
+      Number(inv.total),
+      inv.status,
+      inv.issued_at ? new Date(inv.issued_at).toISOString().slice(0, 10) : '',
+    ]);
+    const escape = (value: string | number) => {
+      const s = String(value ?? '');
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const csv = [header, ...rows].map((r) => r.map(escape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -172,7 +199,7 @@ export default function SalesView({ sales }: SalesViewProps) {
                           variant="outline"
                           size="sm"
                           className="gap-1.5 h-7 text-xs"
-                          onClick={() => downloadInvoicePdf(inv.id, authToken)}
+                          onClick={() => downloadInvoicePdf(inv.id)}
                         >
                           <Download className="h-3 w-3" />
                           PDF

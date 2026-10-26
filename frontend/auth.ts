@@ -1,8 +1,9 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { SERVER_API_BASE } from '@/lib/api-base';
+
+const API_BASE = SERVER_API_BASE;
 
 /**
  * Normalises the backend role for UI routing.
@@ -76,7 +77,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id || '';
         session.user.role = token.role || 'buyer';
-        session.user.accessToken = token.accessToken || '';
+        // The backend bearer token stays ONLY in the encrypted JWT cookie.
+        // Session objects are client-readable, so exposing it here meant any
+        // XSS could lift a full API token (5.6). Browser calls go through
+        // /api/proxy, which reads the cookie server-side.
       }
       return session;
     },

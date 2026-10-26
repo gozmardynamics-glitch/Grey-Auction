@@ -23,8 +23,18 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Base URL for API calls.
+ *
+ * In the browser this is the same-origin BFF proxy: the backend JWT never
+ * reaches client JavaScript, the proxy attaches it from the HTTP-only session
+ * cookie (5.6). Server-side callers keep talking to the backend directly.
+ */
 export function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  if (typeof window !== 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
+  }
+  return process.env.API_URL || 'http://localhost:3001/api';
 }
 
 export interface ApiFetchOptions {
@@ -73,7 +83,7 @@ export async function apiFetch<T = unknown>(
     throw new ApiError(0, 'Network error — API unreachable', err);
   }
 
-  let payload: any = null;
+  let payload: unknown = null;
   const text = await res.text();
   if (text) {
     try {
@@ -84,11 +94,14 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    const message =
-      (payload && typeof payload === 'object' &&
-        (payload.message || payload.error)) ||
-      `Request failed with status ${res.status}`;
-    throw new ApiError(res.status, Array.isArray(message) ? message.join('; ') : String(message), payload);
+    const body = (payload ?? {}) as { message?: unknown; error?: unknown };
+    const raw = body.message ?? body.error;
+    const message = Array.isArray(raw)
+      ? raw.join('; ')
+      : raw
+        ? String(raw)
+        : `Request failed with status ${res.status}`;
+    throw new ApiError(res.status, message, payload);
   }
 
   return payload as T;

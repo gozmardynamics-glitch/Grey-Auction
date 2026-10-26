@@ -9,7 +9,7 @@ import {
   EmptyState,
 } from '@/shared/components/common';
 import { apiFetch } from '@/shared/utils/api-client';
-import { useAppSelector } from '@/redux/store';
+import { useSession } from 'next-auth/react';
 
 import { useActivityLogColumns } from '../activity_logs_column';
 import type { ActivityLog } from '../audit_logs_data';
@@ -29,18 +29,18 @@ const titleCase = (value: string) =>
 
 export default function AuditLogsSettings() {
   const t = useTranslations('admin.settings.auditLogs');
-  const authToken = useAppSelector((state) => state.auth.token);
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   const activityLogColumns = useActivityLogColumns();
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
 
   useEffect(() => {
-    if (!authToken) {
+    if (!isAuthed) {
       setLogs([]);
       return;
     }
     let cancelled = false;
     apiFetch<{ data: BackendAuditRow[]; total?: number }>('admin/audit', {
-      token: authToken,
       query: { limit: 100, page: 1 },
     })
       .then((json) => {
@@ -71,7 +71,7 @@ export default function AuditLogsSettings() {
     return () => {
       cancelled = true;
     };
-  }, [authToken]);
+  }, [isAuthed]);
 
   return (
     <div className="space-y-8 p-6">

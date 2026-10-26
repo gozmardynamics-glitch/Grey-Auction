@@ -36,7 +36,7 @@ import {
 import { formatCurrency } from '@/shared/utils/helpers';
 import { getErrorMessage } from '@/shared/utils/error_utils';
 import { apiFetch, ApiError } from '@/shared/utils/api-client';
-import { useAppSelector } from '@/redux/store';
+import { useSession } from 'next-auth/react';
 import {
   CheckoutFormValues,
   checkoutSchema,
@@ -53,7 +53,8 @@ interface CheckoutFormProps {
 
 export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
   const router = useRouter();
-  const authToken = useAppSelector((state) => state.auth.token);
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   const [isLoading, setIsLoading] = useState(false);
 
   const total = orderItems.reduce((sum, item) => sum + item.price, 0);
@@ -90,7 +91,7 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsLoading(true);
     try {
-      if (!authToken) {
+      if (!isAuthed) {
         toast.error('Please sign in to check out.');
         router.push('/sign-in');
         return;
@@ -114,7 +115,6 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
       // identity from the token — never from the body.
       await apiFetch('orders', {
         method: 'POST',
-        token: authToken,
         body: { invoiceId },
       });
 

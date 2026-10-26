@@ -5,17 +5,20 @@ import { useSession } from 'next-auth/react';
 import { useAppDispatch } from '@/redux/store';
 import { setUser, clearUser } from '@/app/[locale]/(auth)/slices/auth.slice';
 import { setWishlist, clearWishlist } from '@/redux/slices/wishlist.slice';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
 
 /**
- * Bridges the Auth.js (NextAuth) JWT session into Redux, and hydrates the
- * server-owned watchlist so hearts render correctly on a cold page load.
+ * Bridges the Auth.js session into Redux, and hydrates the server-owned
+ * watchlist so hearts render correctly on a cold page load.
+ *
+ * The session no longer carries the backend bearer token (5.6) — browser
+ * requests go through /api/proxy, which attaches it server-side. The Redux
+ * `token` field therefore stays empty; nothing should read it for API calls.
  */
 export function AuthSync() {
   const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
-  const token = session?.user?.accessToken;
+  const isSignedIn = status === 'authenticated' && Boolean(session?.user);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -29,7 +32,7 @@ export function AuthSync() {
             email: session.user.email || '',
             role: (session.user.role as 'admin' | 'seller' | 'buyer') || 'buyer',
           },
-          token: session.user.accessToken || '',
+          token: '',
         }),
       );
     } else {
@@ -39,16 +42,12 @@ export function AuthSync() {
   }, [session, status, dispatch]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isSignedIn) return;
     let cancelled = false;
-    fetch(`${API_BASE}/watchlist/ids`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store',
-    })
-      .then((res) => (res.ok ? res.json() : null))
+    apiFetch<{ data: string[] }>('watchlist/ids')
       .then((json) => {
         if (!cancelled && Array.isArray(json?.data)) {
-          dispatch(setWishlist(json.data as string[]));
+          dispatch(setWishlist(json.data));
         }
       })
       .catch(() => {
@@ -57,7 +56,7 @@ export function AuthSync() {
     return () => {
       cancelled = true;
     };
-  }, [token, dispatch]);
+  }, [isSignedIn, dispatch]);
 
   return null;
 }

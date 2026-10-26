@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -13,6 +12,7 @@ import {
 import DepositAmountStep from './deposit_steps/amount_step';
 import type { PaymentMethodOption } from './deposit_steps/amount_step';
 import type { PaymentProviderId } from '@/shared/components/common/payment_provider_selector';
+import { apiFetch } from '@/shared/utils/api-client';
 import DepositConfirmStep from './deposit_steps/confirm_step';
 import DepositSuccessStep from './deposit_steps/success_step';
 import DepositFailureStep from './deposit_steps/failure_step';
@@ -36,7 +36,6 @@ export default function DepositModal({
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethodOption>('bank-transfer');
   const [provider, setProvider] = useState<PaymentProviderId>('paystack');
-  const { data: session } = useSession();
   const t = useTranslations('buyer.wallet.deposit');
 
   // Direct debit state
@@ -69,29 +68,20 @@ export default function DepositModal({
 
   const handleConfirmDeposit = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const token = session?.user?.accessToken ?? null;
-      const res = await fetch(apiBase + '/payments/init', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Through the BFF proxy: the bearer token is attached server-side (5.6).
+      const json = await apiFetch<{ data?: { checkoutUrl?: string | null } }>(
+        'payments/init',
+        {
+          method: 'POST',
+          body: {
+            type: 'deposit',
+            provider,
+            amount,
+            callbackUrl: window.location.origin + '/buyer/dashboard/wallet',
+            metadata: {},
+          },
         },
-        body: JSON.stringify({
-          type: 'deposit',
-          provider,
-          amount,
-          callbackUrl: window.location.origin + '/buyer/dashboard/wallet',
-          metadata: {},
-        }),
-      });
-      if (!res.ok) {
-        // A failed init (401/400/validation) must surface as failure, never
-        // silently fall through to the success step.
-        setStep('failure');
-        return;
-      }
-      const json = await res.json().catch(() => null);
+      );
       const d = json?.data;
       if (d?.checkoutUrl) {
         // Redirect to the chosen provider's hosted checkout.

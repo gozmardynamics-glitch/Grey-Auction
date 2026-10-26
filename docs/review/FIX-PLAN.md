@@ -422,18 +422,29 @@ Verified locally: backend **49 suites / 377 tests**, 0 lint errors; frontend `ts
 - Backfilled invoice: `INV-2026-000002` → hammer 250,000 / **seller_net 250,000** / platform_share 25,000.
 - Migration run: 6 migrations recorded, `IDX_products_fts`, both partial unique indexes and `UQ_admin_user` present.
 
-### Not done — and why
+### Done — pass 4 (the gaps from pass 3, closed)
+
+| Item | Result |
+|---|---|
+| **5.2 CI failures** | Root-caused from the actual runs, not guessed: the Frontend job failed on exactly **3 `no-explicit-any` lint errors** (all in files from pass 3) and Lighthouse failed because `lighthouserc.json` asserted an audit id **`tbt`, which does not exist** — the failure was `auditRan`, not a budget breach. Both fixed (typed the payload/bid mapping, removed the bogus assertion; the real `total-blocking-time` assertion was already there). Local lint is 0 errors and `next build` now emits `/api/proxy/[...path]`. |
+| **4.3 KYC upload endpoint** | `POST /kyc/documents` is now **multipart only**: the file is stored through `StorageService`, and `mimeType`/`fileSize`/`fileUrl` are derived from the stored object, so the MIME and size policy can no longer be bypassed by asserting metadata. Requirement policy is checked **before** the bytes are stored (no orphaned objects), the stored object is deleted if the record fails, `expiresAt` must be a real future date (the old `new Date(bad)` threw a 500), and a replacement deletes the superseded row **and** its file. Live-verified: upload 201 with server-derived size/MIME, `application/zip` → 400, past expiry → 400, and exactly one row remains per requirement. |
+| **4.4 KYC attribution** | `AdminRolesGuard` now exposes the resolved `admins` row (`request.admin`) and `@CurrentAdmin()` returns it, so `createdById`/`reviewedById`/`publish_decided_by` record the admin identity rather than the users-table id. Applied to the KYC admin routes; the decorator change upgrades every other admin-attributed column at once. |
+| **4.5 SELLER audience** | `audiencesFor(userId)` unions BUYER + SELLER for an account that has a seller profile, so seller-scoped requirements are no longer invisible. Test asserts the query. |
+| **4.6 Chat delivery + N+1** | A message now notifies the recipient (`new_message`, preview truncated, deep link) — fire-and-forget so a notification failure never fails a send. `listConversations` went from three queries **per conversation** to a fixed set of batched queries (`DISTINCT ON` for the last message, `GROUP BY` for unread counts), and `getUnreadCount` from N queries to one aggregate. Fixed a related bug found in the same function: the list used the context-free `otherParticipantId` getter, so the "other participant" could be the caller. Live-verified: the `new_message` notification row exists for the recipient. |
+| **Approval expiry (3b terminal state)** | New `products.approvalRequestedAt` (indexed) is set when settlement parks a lot; a 10-minute advisory-locked sweep closes lots whose seller never answered after `SELLER_APPROVAL_WINDOW_HOURS` (default 72), re-checking under a pessimistic lock so a late decision wins. Both parties are notified (buyer gets an explicit "did not approve in time" reason, seller gets a relist prompt). Migration `1795000000000` backfills existing parked lots from `updatedAt`. |
+| **5.10 Redis / queue monitoring** | `settlement_queue_available` gauge plus `settlement_queue_unavailable_total` and `settlement_inline_total` counters, a `QueueHealthService` that probes every 60s and logs at **error** level once per transition (not per probe), and `QUEUE_REQUIRED` (default on in production) so a degraded topology is called out. Live-verified: the metrics are exported and the gauge correctly reads **0** with Redis down. |
+| **5.6 `accessToken` exposure** | Closed with a same-origin BFF proxy: `app/api/proxy/[...path]` reads the bearer token from the HTTP-only Auth.js JWT and forwards it, and the session object **no longer carries the token at all** (`session.user` = `id, email, name, role`). Server code reads the JWT via `getToken()`; the browser base URL is `/api/proxy` so even the ~20 legacy raw `fetch` call sites are authenticated by cookie. The proxy authenticates but does not authorise (public endpoints stay public; guarded ones answer 401 themselves). Browser-verified 11/11: anonymous catalogue works, anonymous wallet is refused, authenticated wallet works, admin-guarded route works, no JWT anywhere in rendered HTML. |
+| **Withdraw flow (was never wired)** | Found while adopting the idempotency key: the modal's steps were cosmetic — the amount and PIN were discarded and **nothing was ever posted**, and the PIN was checked against a hardcoded `'1234'` in the browser. Now the flow carries amount + PIN + a per-flow `reference` into `POST /wallet/withdraw` (retry reuses the reference, so it dedupes), the server validates the bcrypt PIN, the wallet refreshes after success, and the "add account"/"set PIN" steps persist to `sellers/profile/me` and `POST /wallet/pin` instead of faking verification with a hardcoded name and a mock OTP. |
+| **Sales-view export** | Implemented as a real CSV of the invoice table (proper quoting, dated filename). |
+
+### Remaining — outside code
 
 | Item | State |
 |---|---|
-| 5.2 CI has never completed a run | Still queued/broken upstream — needs repo admin to re-run; every other gate is green locally. |
-| 5.6 `accessToken` in the NextAuth session | Unchanged (needs the server-side proxy or scoped tokens — a design task, not a patch). |
-| 5.10 Redis alerting | Not started; the advisory locks remove the double-run risk but queue-unavailable still only logs. |
-| 4.3 KYC upload endpoint | Not started (storage-backed upload still missing). |
-| 4.4 KYC attribution / 4.5 seller audience / 4.6 chat notifications | Not started. |
-| Sales-view "Export" button | Still a stub (client-side CSV would duplicate the PDF flow; needs a format decision). |
-| Withdraw idempotency adoption | The API accepts `reference` but the withdraw modal does not send one yet. |
-| Approval expiry | `AWAITING_SELLER_APPROVAL` lots wait indefinitely if the seller never decides — no auto-decline cron yet. |
+| CI green run | Code-level causes fixed and every step run locally (build, tests, lint, `next build`); the badge depends on the next pushed run. |
+| Approval-expiry live tick | Covered by two unit tests (expiry + concurrent-decision race); not exercised against the running API because the next cron tick is up to 10 minutes away. |
+| Clawback of overpaid released escrow holds | Business decision: the row data is corrected by migration, but money already paid out is not recovered automatically. |
+| Bank-account name resolution | The add-account step saves the account as entered and says so; there is no name-enquiry provider wired, so nothing claims the name was verified. |
 
 ### Dev-data changed while testing
 

@@ -1,6 +1,22 @@
 import { api } from '@/redux/api';
 import type { Auction, AuctionFilters, Bid, CreateAuctionData } from '../models';
 
+/**
+ * The wire shape of GET /auctions/:id/bids.
+ *
+ * The backend returns Bid entities with a display-safe bidder projection
+ * ({ name } only), so the field names differ from the client `Bid` model
+ * (productId/createdAt/bidder vs auctionId/timestamp/bidderName).
+ */
+export interface ServerBid {
+  id: string;
+  productId: string;
+  bidderId: string;
+  amount: string | number;
+  createdAt: string;
+  bidder?: { name?: string | null } | null;
+}
+
 const auctionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getAuctions: builder.query<Auction[], AuctionFilters | void>({
@@ -106,7 +122,7 @@ const auctionsApi = api.injectEndpoints({
 
     // ─── Bids ───────────────────────────────────────────────────────
 
-    getAuctionBids: builder.query<Bid[], string>({
+    getAuctionBids: builder.query<ServerBid[], string>({
       query: (auctionId) => `/auctions/${auctionId}/bids`,
       providesTags: (_result, _error, auctionId) => [
         { type: 'Bid', id: auctionId },

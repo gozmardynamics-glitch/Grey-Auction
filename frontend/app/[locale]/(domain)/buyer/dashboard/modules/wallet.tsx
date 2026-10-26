@@ -5,13 +5,19 @@ import dynamic from 'next/dynamic';
 import { ListFilter, Search } from 'lucide-react';
 
 import { Button, Input, SortDropdown } from '@/shared/components/common';
-import { useAppSelector } from '@/redux/store';
 import { useTranslations } from 'next-intl';
 
 import WalletBalanceCard from '../components/wallet/wallet_balance_card';
 import WalletPaymentsTable from '../components/wallet/wallet_payments_table';
 import type { WalletPayment } from '../../models';
 import { apiFetch } from '@/shared/utils/api-client';
+import { useSession } from 'next-auth/react';
+
+interface BankAccountInfo {
+  name: string;
+  bankName: string;
+  maskedAccount: string;
+}
 
 const DepositModal = dynamic(() => import('../components/wallet/deposit_modal'));
 const WithdrawModal = dynamic(() => import('../components/wallet/withdraw_modal'));
@@ -36,23 +42,31 @@ export default function BuyerWalletModule() {
   const [sortValue, setSortValue] = useState('default');
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const authToken = useAppSelector((state) => state.auth.token);
+  const { status } = useSession();
+  const isAuthenticated = status === 'authenticated';
 
   // Honest start: ₦0 until the API answers. No demo balance.
   const [walletBalance, setWalletBalance] = useState(0);
   const [hasPin, setHasPin] = useState(false);
   const [transactions, setTransactions] = useState<WalletPayment[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  // The payout account lives on the seller profile; withdrawals need it.
+  const [bankAccount, setBankAccount] = useState<BankAccountInfo | null>(null);
 
   // Load the live wallet when available
   useEffect(() => {
-    if (!authToken) return;
+    if (!isAuthenticated) return;
     let cancelled = false;
 
     const load = async () => {
       try {
-        const [walletJson, txJson] = await Promise.all([
-          apiFetch<{ data: { balance: number; hasPin: boolean } }>('wallet', { token: authToken }),
-          apiFetch<{ data: WalletApiData['transactions'] }>('wallet/transactions', { token: authToken }),
+        const [walletJson, txJson, profileJson] = await Promise.all([
+          apiFetch<{ data: { balance: number; hasPin: boolean } }>('wallet'),
+          apiFetch<{ data: WalletApiData['transactions'] }>('wallet/transactions'),
+          // 404s for an account with no seller profile — treated as "no account".
+          apiFetch<{ data?: { bank_account_details?: { bank_name?: string; account_number?: string; account_name?: string } | null } }>(
+            'sellers/profile/me',
+          ).catch(() => null),
         ]);
         if (cancelled) return;
         const wallet = walletJson.data;
@@ -60,6 +74,16 @@ export default function BuyerWalletModule() {
           setWalletBalance(Number(wallet.balance));
           setHasPin(Boolean(wallet.hasPin));
         }
+        const details = profileJson?.data?.bank_account_details;
+        setBankAccount(
+          details?.account_number
+            ? {
+                name: details.account_name || 'Payout account',
+                bankName: details.bank_name || 'Bank account',
+                maskedAccount: '••••' + details.account_number.slice(-4),
+              }
+            : null,
+        );
         const txs = txJson.data;
         if (Array.isArray(txs)) {
           setTransactions(
@@ -85,9 +109,7 @@ export default function BuyerWalletModule() {
     return () => {
       cancelled = true;
     };
-  }, [authToken]);
-
-  const bankAccount = null; // no linked bank account flow in the API yet
+  }, [isAuthenticated, refreshKey]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -141,6 +163,7 @@ export default function BuyerWalletModule() {
         balance={walletBalance}
         bankAccount={bankAccount}
         hasPin={hasPin}
+        onWithdrawn={() => setRefreshKey((k) => k + 1)}
       />
     </div>
   );

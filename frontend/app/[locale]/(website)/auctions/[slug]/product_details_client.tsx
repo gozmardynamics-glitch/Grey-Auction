@@ -111,11 +111,11 @@ export default function ProductDetailsClient({
     if (!serverBids) return;
     dispatch(
       setBidHistory(
-        serverBids.map((b: any) => ({
+        serverBids.map((b) => ({
           id: b.id,
           amount: Number(b.amount),
           auctionId,
-          timestamp: b.createdAt,
+          timestamp: new Date(b.createdAt),
           bidderId: b.bidderId,
           bidderName: b.bidder?.name || 'Bidder',
         })),

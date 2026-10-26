@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -58,6 +59,13 @@ interface PaymentFormProps {
   invoice?: InvoiceSummary | null;
 }
 
+/** Shape of the POST /payments/init payload (`data`). */
+interface InitPaymentResult {
+  checkoutUrl?: string | null;
+  paymentInstruction?: string | null;
+  message?: string | null;
+}
+
 export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -97,8 +105,6 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
     setIsLoading(true);
     setInstruction(null);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
       // Forwarding the invoice id links the Payment to the invoice so webhook
       // success flips the right order to paid (U5 flow). The server still
       // derives the charged amount from the invoice — never from this body.
@@ -106,38 +112,38 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
       // Buyer picks the payment platform; we create a Payment record and let the
       // chosen provider initialize. Redirect providers return a hosted checkout
       // URL; transfer/account providers return a payment instruction.
-      const token = session?.user?.accessToken ?? null;
-      const res = await fetch(`${apiBase}/payments/init`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        // NOTE: `email` is intentionally NOT sent — the init DTO whitelists
-        // fields and rejects unknown ones; the backend takes the buyer email
-        // from the authenticated session instead.
-        body: JSON.stringify({
-          type: 'invoice',
-          provider,
-          amount: total,
-          callbackUrl:
-            window.location.origin +
-            '/checkout/confirmation' +
-            (effectiveInvoiceId ? '?invoiceId=' + encodeURIComponent(effectiveInvoiceId) : ''),
-          metadata: {},
-          ...(effectiveInvoiceId ? { invoiceId: effectiveInvoiceId } : {}),
-        }),
-      });
-
-      if (!res.ok) {
+      // Browser calls go through /api/proxy, which attaches the bearer token
+      // server-side (5.6) — no token is read from the session here.
+      let json: { data?: InitPaymentResult } | null = null;
+      try {
+        json = await apiFetch<{ data?: InitPaymentResult }>('payments/init', {
+          method: 'POST',
+          // NOTE: `email` is intentionally NOT sent — the init DTO whitelists
+          // fields and rejects unknown ones; the backend takes the buyer email
+          // from the authenticated session instead.
+          body: {
+            type: 'invoice',
+            provider,
+            amount: total,
+            callbackUrl:
+              window.location.origin +
+              '/checkout/confirmation' +
+              (effectiveInvoiceId ? '?invoiceId=' + encodeURIComponent(effectiveInvoiceId) : ''),
+            metadata: {},
+            ...(effectiveInvoiceId ? { invoiceId: effectiveInvoiceId } : {}),
+          },
+        });
+      } catch (err) {
         // Never fake success: a failed init must stop here with a visible
         // error instead of routing to the confirmation page.
-        const err = await res.json().catch(() => null);
-        toast.error(err?.message || 'Could not start the payment. Please try again.');
+        toast.error(
+          err instanceof ApiError
+            ? err.message
+            : 'Could not start the payment. Please try again.',
+        );
         return;
       }
 
-      const json = await res.json().catch(() => null);
       const d = json?.data;
 
       if (d?.checkoutUrl) {

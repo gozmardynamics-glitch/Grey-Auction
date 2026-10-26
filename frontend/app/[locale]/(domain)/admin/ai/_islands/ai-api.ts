@@ -3,10 +3,13 @@ import type {
   LLMModel,
   LLMProvider,
 } from '../../models';
-import { auth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
+import { headers } from 'next/headers';
 import { cache } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { SERVER_API_BASE } from '@/lib/api-base';
+
+const API_URL = SERVER_API_BASE;
 
 /**
  * Per-request session token — cached with React cache() so a page render
@@ -20,8 +23,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
  */
 const getSessionToken = cache(async (): Promise<string | null> => {
   try {
-    const session = await auth();
-    return session?.user?.accessToken || null;
+    // The session object no longer carries the token (5.6); decode the
+    // HTTP-only JWT cookie server-side instead.
+    const incoming = await headers();
+    const jwt = await getToken({
+      req: { headers: incoming } as unknown as Parameters<typeof getToken>[0]['req'],
+      secret: process.env.AUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === 'production',
+    });
+    return (jwt as { accessToken?: string } | null)?.accessToken || null;
   } catch {
     return null;
   }

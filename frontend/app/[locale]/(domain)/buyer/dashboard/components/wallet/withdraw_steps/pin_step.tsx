@@ -11,10 +11,9 @@ import {
 } from '@/shared/components/common';
 import { useTranslations } from 'next-intl';
 
-const MOCK_PIN = '1234';
-
 interface PinStepProps {
-  onNext: () => void;
+  /** The typed PIN is handed to the server, which is the only authority on it. */
+  onNext: (pin: string) => void;
   onBack: () => void;
   onForgotPin?: () => void;
 }
@@ -25,11 +24,14 @@ export default function PinStep({ onNext, onBack, onForgotPin }: PinStepProps) {
   const [error, setError] = useState('');
 
   const handleConfirm = () => {
-    if (pin !== MOCK_PIN) {
+    // The previous build compared against a hardcoded '1234' in the browser,
+    // which both blocked real PINs and validated nothing. The wallet PIN is
+    // bcrypt-hashed server-side; send it and let /wallet/withdraw decide.
+    if (pin.length !== 4) {
       setError(t('invalid'));
       return;
     }
-    onNext();
+    onNext(pin);
   };
 
   return (

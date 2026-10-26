@@ -2,13 +2,12 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { apiFetch } from '@/shared/utils/api-client';
 import { CheckCircle2, Clock3, SearchX, XCircle } from 'lucide-react';
 import { Button, Card, CardContent } from '@/shared/components/common';
 import { formatCurrency } from '@/shared/utils/helpers';
 import Link from 'next/link';
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface InvoiceState {
   id?: string;
@@ -19,14 +18,12 @@ interface InvoiceState {
 
 /**
  * Checkout confirmation (D2): reflects REAL server state. The buyer's invoice
- * is fetched with the session token (party-guarded API) and the page renders
+ * is fetched through the same-origin proxy (party-guarded API) and renders
  * paid / processing / failed honestly — including polling for a few seconds
  * because the provider webhook can land shortly after the redirect home.
  */
 function ConfirmationContent() {
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
-  const token = session?.user?.accessToken ?? null;
   const queryInvoiceId =
     searchParams.get('invoiceId') || searchParams.get('orderId') || '';
   const [invoiceId, setInvoiceId] = useState<string>(queryInvoiceId);
@@ -45,17 +42,13 @@ function ConfirmationContent() {
     }
   }, [invoiceId]);
 
-  const loadInvoice = useCallback(async (id: string, bearer: string | null) => {
+  const loadInvoice = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`${apiBase}/invoices/${encodeURIComponent(id)}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-        },
-        cache: 'no-store',
-      });
-      if (!res.ok) return null;
-      const json = await res.json().catch(() => null);
+      // Through the BFF proxy: the bearer token is attached server-side (5.6),
+      // so the poll loop no longer needs the session token.
+      const json = await apiFetch<{ data?: InvoiceState }>(
+        `invoices/${encodeURIComponent(id)}`,
+      );
       return (json?.data ?? null) as InvoiceState | null;
     } catch {
       return null;
@@ -63,12 +56,12 @@ function ConfirmationContent() {
   }, []);
 
   useEffect(() => {
-    if (!invoiceId || !token) return;
+    if (!invoiceId) return;
     let cancelled = false;
     let attempts = 0;
     const tick = async () => {
       attempts += 1;
-      const inv = await loadInvoice(invoiceId, token);
+      const inv = await loadInvoice(invoiceId);
       if (cancelled) return;
       if (inv) setInvoice(inv);
       const status = inv?.status;
@@ -88,7 +81,7 @@ function ConfirmationContent() {
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [invoiceId, token, loadInvoice]);
+  }, [invoiceId, loadInvoice]);
 
   const status = invoice?.status;
 

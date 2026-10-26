@@ -11,6 +11,7 @@ import {
   Label,
 } from '@/shared/components/common';
 import { useTranslations } from 'next-intl';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 
 interface SetupPinStepProps {
   onNext: () => void;
@@ -22,16 +23,29 @@ export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const canSubmit =
     newPin.length === 4 && confirmPin.length === 4 && newPin === confirmPin;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (newPin !== confirmPin) {
       setError(t('mismatch'));
       return;
     }
-    onNext();
+    setError('');
+    setSaving(true);
+    try {
+      // The PIN is hashed server-side; the client only carries it once.
+      await apiFetch('wallet/pin', { method: 'POST', body: { pin: newPin } });
+      onNext();
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Could not save the PIN. Please try again.',
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -92,8 +106,8 @@ export default function SetupPinStep({ onNext, onCancel }: SetupPinStepProps) {
         <Button variant="outline" onClick={onCancel}>
           {t('cancel')}
         </Button>
-        <Button disabled={!canSubmit} onClick={handleConfirm}>
-          {t('confirm')}
+        <Button disabled={!canSubmit || saving} onClick={handleConfirm}>
+          {saving ? 'Saving…' : t('confirm')}
         </Button>
       </div>
     </div>

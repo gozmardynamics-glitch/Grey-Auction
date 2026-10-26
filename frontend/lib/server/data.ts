@@ -1,4 +1,5 @@
-import { auth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
+import { headers } from 'next/headers';
 import { cache } from 'react';
 import type { Auction } from '@/app/[locale]/(website)/models';
 
@@ -23,16 +24,28 @@ import type {
 } from '@/app/[locale]/(domain)/seller/models';
 import type { Category as WebsiteCategory } from '@/app/[locale]/(website)/models';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { SERVER_API_BASE } from '@/lib/api-base';
+
+const API_BASE = SERVER_API_BASE;
 
 /**
- * Per-request session token — cached with React cache() so a page render
- * performs at most one auth() decode (no cross-request leakage).
+ * Per-request backend bearer token, read from the Auth.js JWT server-side.
+ *
+ * Deliberately NOT from `auth()`: the session object is client-readable, so it
+ * no longer carries the token (5.6). The encrypted JWT cookie is HTTP-only, and
+ * only server code can decode it. Cached per request so a render performs at
+ * most one decode.
  */
 const getSessionToken = cache(async (): Promise<string | null> => {
   try {
-    const session = await auth();
-    return session?.user?.accessToken || null;
+    const incoming = await headers();
+    const jwt = await getToken({
+      // getToken reads the cookie header; NextRequest/Headers both work.
+      req: { headers: incoming } as unknown as Parameters<typeof getToken>[0]['req'],
+      secret: process.env.AUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === 'production',
+    });
+    return (jwt as { accessToken?: string } | null)?.accessToken || null;
   } catch {
     return null;
   }
@@ -1355,21 +1368,21 @@ export async function getKycStatus(): Promise<KycStatusView> {
 }
 
 /** Admin view: the document requirements currently configured. */
-export async function getKycRequirements(): Promise<
-  Array<{
-    id: string;
-    code: string;
-    name: string;
-    description: string | null;
-    audience: 'buyer' | 'seller' | 'both';
-    isRequired: boolean;
-    isActive: boolean;
-    sortOrder: number;
-  }>
-> {
+export interface KycRequirementRow {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  audience: 'buyer' | 'seller' | 'both';
+  isRequired: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export async function getKycRequirements(): Promise<KycRequirementRow[]> {
   const data = await apiFetch('/admin/kyc/requirements');
   const list = unwrapList(data);
-  return (list ?? []) as any;
+  return (list ?? []) as unknown as KycRequirementRow[];
 }
 
 /** Full price breakdown for a bid amount — the buyer's final bill, itemised. */

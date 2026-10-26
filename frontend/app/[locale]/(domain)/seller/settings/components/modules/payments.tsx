@@ -15,7 +15,7 @@ import {
 } from '@/shared/components/common';
 import AddAccountModal from '@/shared/components/add_account_steps/add_account_modal';
 import { apiFetch } from '@/shared/utils/api-client';
-import { useAppSelector } from '@/redux/store';
+import { useSession } from 'next-auth/react';
 
 interface BankAccount {
   id: string;
@@ -43,7 +43,8 @@ interface SellerProfileResponse {
 
 export default function SellerPaymentSettings() {
   const t = useTranslations('seller.settings.payments');
-  const authToken = useAppSelector((state) => state.auth.token);
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   // The API stores ONE payout account per seller (sellers.bank_account_details).
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null);
@@ -53,15 +54,14 @@ export default function SellerPaymentSettings() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (!authToken) return;
+    if (!isAuthed) return;
     let cancelled = false;
     const fetchAccounts = async () => {
       try {
         // /sellers/payment-accounts does not exist; the payout account lives on
         // the seller profile as bank_account_details (0..1 accounts).
         const json = await apiFetch<SellerProfileResponse>('sellers/profile/me', {
-          token: authToken,
-        });
+          });
         if (cancelled) return;
         const details = json.data?.bank_account_details;
         if (details && details.account_number) {
@@ -90,7 +90,7 @@ export default function SellerPaymentSettings() {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, authToken]);
+  }, [refreshKey, isAuthed]);
 
   const handleSelectAccount = (account: BankAccount) => {
     setSelectedAccount(account);
@@ -108,8 +108,7 @@ export default function SellerPaymentSettings() {
       try {
         await apiFetch('sellers/profile/me', {
           method: 'PATCH',
-          token: authToken,
-          body: { bank_account_details: null },
+            body: { bank_account_details: null },
         });
         setAccounts((prev) => prev.filter((a) => a.id !== selectedAccount.id));
       } catch (error) {

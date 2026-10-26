@@ -1,15 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common/card';
 import { Badge } from '@/shared/components/common/badge';
 import { toast } from 'sonner';
 import { Cpu, Layers, Zap, DollarSign } from 'lucide-react';
 import type { LLMProvider, AIUsageLog } from '../../models';
 import Link from 'next/link';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
 
 interface AIDashboardProps {
   providers: LLMProvider[];
@@ -18,17 +16,13 @@ interface AIDashboardProps {
 
 export default function AIDashboard({ providers, summary }: AIDashboardProps) {
   const [usageLogs, setUsageLogs] = useState<AIUsageLog[]>([]);
-  const { data: session } = useSession();
 
   const fetchUsage = useCallback(() => {
-    const token = session?.user?.accessToken;
-    fetch(`${API_URL}/admin/ai/usage`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((response) => response.json())
+    // Through the BFF proxy: the bearer token is attached server-side (5.6).
+    apiFetch<{ data?: AIUsageLog[] }>('admin/ai/usage')
       .then((data) => setUsageLogs(data.data || []))
       .catch(() => toast.error('Failed to load usage data'));
-  }, [session]);
+  }, []);
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);
 

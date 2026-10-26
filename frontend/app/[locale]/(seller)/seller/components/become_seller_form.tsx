@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Clock, Building2, UserRound, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,7 +49,8 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
   isActive,
 }) => {
   const router = useRouter();
-  const authToken = useAppSelector((state) => state.auth.token);
+  const { status } = useSession();
+  const isAuthed = status === 'authenticated';
   const [currentStep, setCurrentStep] = useState(0);
   const [sellerType, setSellerType] = useState<'individual' | 'organization'>(
     'individual'
@@ -72,7 +74,7 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
     const finalData = { ...formData, ...data };
 
     // The seller profile endpoint requires an authenticated account
-    if (!authToken) {
+    if (!isAuthed) {
       toast.error('Please create a seller account first');
       router.push('/auth/seller/register');
       return;
@@ -101,7 +103,7 @@ export const BecomeSellerForm: React.FC<BecomeSellerFormProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + authToken,
+          
         },
         body: JSON.stringify(payload),
       });
