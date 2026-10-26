@@ -31,6 +31,14 @@ export interface InitPaymentCommand {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Every wired provider (Paystack, Flutterwave, Interswitch, OPay) settles NGN.
+ * Checkout is therefore limited to NGN invoices — there is no FX conversion at
+ * charge time, so charging a foreign-currency invoice would either be rejected
+ * by the gateway or settle at the wrong amount.
+ */
+const SETTLEMENT_CURRENCY = 'NGN';
+
 @Injectable()
 export class PaymentOrchestrationService {
   private readonly logger = new Logger(PaymentOrchestrationService.name);
@@ -73,7 +81,21 @@ export class PaymentOrchestrationService {
       amount = Number(invoice.total);
       // Charge in the currency the invoice was issued in, so the gateway's
       // amount always matches the figure the invoice expects at settlement.
-      currency = invoice.currency || currency;
+      currency = (invoice.currency || SETTLEMENT_CURRENCY).toUpperCase();
+      if (currency !== SETTLEMENT_CURRENCY) {
+        throw new BadRequestException(
+          `This invoice is issued in ${currency}. Checkout is currently limited to ` +
+            `${SETTLEMENT_CURRENCY} lots because the payment providers settle NGN only.`,
+        );
+      }
+    }
+
+    if (currency !== SETTLEMENT_CURRENCY) {
+      // Deposits take their currency from the request, so this is the boundary
+      // where a non-NGN top-up would otherwise reach an NGN-only gateway.
+      throw new BadRequestException(
+        `Wallet top-ups are ${SETTLEMENT_CURRENCY}-only; the payment providers settle no other currency.`,
+      );
     }
 
     // The reference is always server-generated. It used to honour a

@@ -1213,7 +1213,13 @@ export async function getBuyerInvoice(invoiceId: string) {
   if (!invoiceId) return null;
   try {
     const inv = (await apiFetch(`/invoices/${encodeURIComponent(invoiceId)}`)) as
-      | { id?: string; invoice_number?: string; total?: number | string; status?: string }
+      | {
+          id?: string;
+          invoice_number?: string;
+          total?: number | string;
+          status?: string;
+          currency?: string;
+        }
       | null;
     if (!inv?.id) return null;
     return {
@@ -1221,6 +1227,7 @@ export async function getBuyerInvoice(invoiceId: string) {
       invoiceNumber: inv.invoice_number || '',
       total: Number(inv.total ?? 0),
       status: inv.status || 'issued',
+      currency: (inv.currency || 'NGN').toUpperCase(),
     };
   } catch {
     return null;

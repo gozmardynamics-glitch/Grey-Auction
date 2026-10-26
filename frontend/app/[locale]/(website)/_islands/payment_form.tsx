@@ -52,6 +52,8 @@ interface InvoiceSummary {
   invoiceNumber: string;
   total: number;
   status: string;
+  /** Settlement currency; checkout is NGN-only because the providers settle NGN. */
+  currency?: string;
 }
 
 interface PaymentFormProps {
@@ -101,10 +103,19 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
     },
   });
 
+  const invoiceCurrency = (invoice?.currency || 'NGN').toUpperCase();
+  const isPayableCurrency = invoiceCurrency === 'NGN';
+
   const onSubmit = async (data: PaymentFormValues) => {
     setIsLoading(true);
     setInstruction(null);
     try {
+      if (!isPayableCurrency) {
+        // The server refuses this too; say it here so nobody fills a card form
+        // for a charge that cannot be taken.
+        toast.error(`This invoice is issued in ${invoiceCurrency}. Checkout is NGN-only.`);
+        return;
+      }
       // Forwarding the invoice id links the Payment to the invoice so webhook
       // success flips the right order to paid (U5 flow). The server still
       // derives the charged amount from the invoice — never from this body.
@@ -180,6 +191,16 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
               <CardTitle className="text-base">Card Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              {!isPayableCurrency && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                  <p className="font-semibold">This invoice cannot be paid online yet</p>
+                  <p className="mt-1 text-muted-foreground">
+                    It is issued in {invoiceCurrency}. Checkout is limited to NGN lots because the
+                    payment providers settle NGN only. Contact support to arrange settlement.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <p className="mb-2 text-sm font-medium">Choose your payment platform</p>
                 <PaymentProviderSelector value={provider} onChange={setProvider} columns={4} />
@@ -394,7 +415,7 @@ export default function PaymentForm({ orderItems, invoice }: PaymentFormProps) {
               type="submit"
               className="w-full"
               size="lg"
-              disabled={isLoading}
+              disabled={isLoading || !isPayableCurrency}
             >
               {isLoading ? 'Processing...' : 'Place Order'}
             </Button>

@@ -11,8 +11,8 @@ import { PaymentProvider, PaymentStatus, PaymentType } from './entities/payment.
 
 describe('PaymentOrchestrationService', () => {
   let service: PaymentOrchestrationService;
-  const paymentService = { create: jest.fn(), findByReference: jest.fn(), updateStatus: jest.fn(), listByUser: jest.fn() };
-  const invoiceService = { markPaidInManager: jest.fn() };
+  const paymentService = { create: jest.fn(), findByReference: jest.fn(), updateStatus: jest.fn(), listByUser: jest.fn(), findLiveForInvoice: jest.fn() };
+  const invoiceService = { markPaidInManager: jest.fn(), findById: jest.fn(), findLiveForInvoice: jest.fn() };
   const walletService = { creditInManager: jest.fn() };
   const orderService = { markPaidInManager: jest.fn() };
   const escrowService = { holdInManager: jest.fn() };
@@ -126,6 +126,63 @@ describe('PaymentOrchestrationService', () => {
     expect(res.success).toBe(true);
     expect(invoiceService.markPaidInManager).not.toHaveBeenCalled();
     expect(orderService.markPaidInManager).not.toHaveBeenCalled();
+  });
+
+  describe('NGN-only checkout', () => {
+    const invoice = (currency: string) => ({
+      id: 'inv1',
+      buyer_id: 'u1',
+      status: 'issued',
+      total: '118250',
+      currency,
+    });
+
+    it('refuses a non-NGN invoice instead of charging it through an NGN gateway', async () => {
+      (invoiceService.findById as jest.Mock).mockResolvedValue(invoice('USD'));
+      (paymentService.findLiveForInvoice as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.INVOICE,
+          provider: PaymentProvider.PAYSTACK,
+          invoiceId: 'inv1',
+        } as any),
+      ).rejects.toThrow(/limited to NGN/);
+
+      // Nothing may be persisted for a refused charge.
+      expect(paymentService.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts an NGN invoice (the normal path)', async () => {
+      (invoiceService.findById as jest.Mock).mockResolvedValue(invoice('NGN'));
+      (paymentService.findLiveForInvoice as jest.Mock).mockResolvedValue(null);
+      (paymentService.create as jest.Mock).mockResolvedValue({ id: 'p1', reference: 'PAY-X', status: 'pending' });
+
+      // The provider is not configured in the test env, so the adapter call is
+      // allowed to fail — the point is that the currency gate did not refuse it.
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.INVOICE,
+          provider: PaymentProvider.PAYSTACK,
+          invoiceId: 'inv1',
+        } as any),
+      ).rejects.not.toThrow(/limited to NGN/);
+    });
+
+    it('refuses a non-NGN wallet top-up', async () => {
+      await expect(
+        service.initialize({
+          userId: 'u1',
+          type: PaymentType.DEPOSIT,
+          provider: PaymentProvider.PAYSTACK,
+          amount: 5000,
+          currency: 'USD',
+        } as any),
+      ).rejects.toThrow(/NGN-only/);
+      expect(paymentService.create).not.toHaveBeenCalled();
+    });
   });
 
   it('refuses to settle a succeeded webhook whose amount mismatches the app payment', async () => {
