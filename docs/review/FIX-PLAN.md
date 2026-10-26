@@ -437,6 +437,19 @@ Verified locally: backend **49 suites / 377 tests**, 0 lint errors; frontend `ts
 | **Withdraw flow (was never wired)** | Found while adopting the idempotency key: the modal's steps were cosmetic — the amount and PIN were discarded and **nothing was ever posted**, and the PIN was checked against a hardcoded `'1234'` in the browser. Now the flow carries amount + PIN + a per-flow `reference` into `POST /wallet/withdraw` (retry reuses the reference, so it dedupes), the server validates the bcrypt PIN, the wallet refreshes after success, and the "add account"/"set PIN" steps persist to `sellers/profile/me` and `POST /wallet/pin` instead of faking verification with a hardcoded name and a mock OTP. |
 | **Sales-view export** | Implemented as a real CSV of the invoice table (proper quoting, dated filename). |
 
+### Done — pass 5 (unbuilt / inert surfaces, verified phase by phase)
+
+Found by an audit of the frontend rather than the earlier defect lists: the same
+"backend works, last mile missing" pattern.
+
+| Item | Result |
+|---|---|
+| **Seller Messages page was permanently empty** | `GET /sellers/me/conversations` was a documented stub returning `[]` while the chat module held the data. It now delegates to `ChatService.listConversations`, `lib/server/data.ts` maps the chat row onto the seller UI model (it previously cast a different shape, so even real data would have rendered blanks), and the chat view fetches the thread and identifies own/other bubbles from the real session id instead of a hardcoded `'seller-1'`. Verified as a real seller account: list renders, thread loads, a message sent from the UI persists. |
+| **Admin Enable/Disable, Activate/Deactivate and Suspend were no-ops** | Three tables rendered `status` from a field the API never sends (`isActive`), so every row looked active and the menu items called nothing. Data layer now maps `isActive` → the UI status string (banner Active/Inactive + Visible/Hidden, FAQ, admin Active/Suspended), and each table PATCHes `isActive` through the proxy, toasts and refreshes. Verified 7/7 (API) and 6/6 (browser: a row flipped to Inactive and the server agreed). |
+| **Listing-card heart never saved** | Its sync was gated on the now-empty Redux token, so the request never fired, and it always POSTed — un-hearting kept the row server-side. Now gated on the session, POST adds / DELETE removes with rollback, and guests are told to sign in instead of getting a fake local toggle. Verified 8/8 in the browser. |
+| **KYC had no UI at all** | Built all three surfaces: an account-holder checklist with upload (multipart through the proxy), the admin review queue with approve/reject + reasons, the compliance assessment with band/score/signals, and the separate publish decision. Requirements are managed by the admin (create/deactivate) — nothing hardcoded. Reachable from both dashboards (buyer module + seller settings) since KYC is account-holder level. `apiFetch` now forwards `FormData` untouched. Verified 13/13 end-to-end: buyer upload → queue → admin approve → publishing decision on a real seller. |
+| **Misleading publish button for non-sellers** | Found while testing: the console offered "Approve publishing" to a pure buyer, where the call correctly 404s. `publishingStateFor` now reports `hasSellerProfile`, and the console explains there is nothing to decide instead of showing buttons that cannot work. |
+
 ### Remaining — outside code
 
 | Item | State |
@@ -445,6 +458,12 @@ Verified locally: backend **49 suites / 377 tests**, 0 lint errors; frontend `ts
 | Approval-expiry live tick | Covered by two unit tests (expiry + concurrent-decision race); not exercised against the running API because the next cron tick is up to 10 minutes away. |
 | Clawback of overpaid released escrow holds | Business decision: the row data is corrected by migration, but money already paid out is not recovered automatically. |
 | Bank-account name resolution | The add-account step saves the account as entered and says so; there is no name-enquiry provider wired, so nothing claims the name was verified. |
+| Multi-currency conversion at charge time | Rates are ingested and invoices carry a currency, but checkout does not convert and gateways settle NGN only. Needs a decision: convert at charge time (accept FX risk) or restrict checkout to NGN lots. |
+| Admin FAQ/banner writes are unvalidated | `@Body() dto: any` on those admin routes — the same defect class as 2.9, admin-only. |
+| Product-document admin check | `product-document.service.ts:91` still carries a "TODO: add proper admin check via guard". |
+| Agent monitoring page | `admin/agents/monitoring` renders "Coming soon" although `/admin/agents/metrics` exists. |
+| Chat has no realtime | Messages are persisted and notified, but the open thread needs a refetch; the socket gateway covers bids, not chat. |
+| OPay / Interswitch webhooks | Vendor signature schemes unconfirmed; both fail closed, so nothing can be forged — they simply cannot settle until confirmed. |
 
 ### Dev-data changed while testing
 

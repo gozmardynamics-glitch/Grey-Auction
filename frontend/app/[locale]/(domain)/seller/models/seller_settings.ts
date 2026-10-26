@@ -1,4 +1,4 @@
-import { CreditCard, Gavel, Lock, Bell, Store, Package, Percent } from 'lucide-react';
+import { CreditCard, Gavel, Lock, Bell, Store, Package, Percent, ShieldCheck } from 'lucide-react';
 import { SlidersHorizontal } from 'lucide-react';
 
 /**
@@ -8,6 +8,7 @@ import { SlidersHorizontal } from 'lucide-react';
 export const SELLER_SETTINGS_MODULES = [
   { key: 'my-profile', label: 'myProfile', icon: Gavel },
   { key: 'security', label: 'security', icon: Gavel },
+  { key: 'verification', label: 'verification', icon: ShieldCheck },
   { key: 'store', label: 'store', icon: Store },
   { key: 'payments', label: 'payments', icon: CreditCard },
   { key: 'fees-payouts', label: 'feesPayouts', icon: Percent },

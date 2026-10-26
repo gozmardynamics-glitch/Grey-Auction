@@ -21,6 +21,7 @@ const settingsLoader = () => (
 const MODULE_MAP: Record<SettingsModuleKey, React.ComponentType> = {
   'my-profile': dynamic(() => import('../settings/components/modules/my_profile'), { loading: settingsLoader }),
   security: dynamic(() => import('../settings/components/modules/security'), { loading: settingsLoader }),
+  verification: dynamic(() => import('@/shared/components/kyc/verification_panel'), { loading: settingsLoader }),
   store: dynamic(() => import('../settings/components/modules/store'), { loading: settingsLoader }),
   payments: dynamic(() => import('../settings/components/modules/payments'), { loading: settingsLoader }),
   'fees-payouts': dynamic(() => import('../settings/components/modules/fees_payouts'), { loading: settingsLoader }),

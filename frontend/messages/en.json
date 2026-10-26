@@ -457,6 +457,7 @@
     "profile": "My Profile",
     "notifications": "Notifications",
     "security": "Security",
+      "verification": "Verification",
     "preferences": "Preferences",
     "planPackages": "Plan & Packages",
     "nav": {
@@ -813,6 +814,7 @@
       "purchases": "Purchases",
       "wallet": "Wallet",
       "delivery": "Delivery",
+      "verification": "Verification",
       "disputes": "Disputes",
       "notifications": "Notifications",
       "settings": "Settings",

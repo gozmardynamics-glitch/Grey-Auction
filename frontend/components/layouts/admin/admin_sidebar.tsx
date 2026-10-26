@@ -23,6 +23,7 @@ import {
   Ticket,
   Cpu,
   ArrowLeftRight,
+  ShieldCheck,
 } from 'lucide-react';
 
 import {
@@ -73,6 +74,7 @@ const navGroups: NavGroup[] = [
     items: [
       { icon: Users, label: 'Buyers', path: '/admin/buyers' },
       { icon: UserRound, label: 'Sellers', path: '/admin/sellers' },
+      { icon: ShieldCheck, label: 'KYC', path: '/admin/kyc' },
     ],
   },
   {

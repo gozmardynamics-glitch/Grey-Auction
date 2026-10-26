@@ -402,6 +402,8 @@ export class KycService {
     band: string;
     decisionNote: string | null;
     decidedAt: Date | null;
+    /** False for a pure buyer: there is no seller record to authorise. */
+    hasSellerProfile: boolean;
   }> {
     const seller = await this.sellers.findOne({ where: { user_id: userId } });
     return {
@@ -410,6 +412,7 @@ export class KycService {
       band: seller?.risk_band ?? 'high',
       decisionNote: seller?.publish_decision_note ?? null,
       decidedAt: seller?.publish_decided_at ?? null,
+      hasSellerProfile: Boolean(seller),
     };
   }
 

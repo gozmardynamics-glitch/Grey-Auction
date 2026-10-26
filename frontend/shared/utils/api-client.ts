@@ -66,7 +66,10 @@ export async function apiFetch<T = unknown>(
   }
 
   const headers: Record<string, string> = {};
-  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData must be sent untouched: the browser has to set the multipart
+  // boundary itself, so no Content-Type and no JSON serialisation.
+  const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData;
+  if (opts.body !== undefined && !isFormData) headers['Content-Type'] = 'application/json';
   if (opts.token) headers['Authorization'] = `Bearer ${opts.token}`;
 
   let res: Response;
@@ -74,7 +77,12 @@ export async function apiFetch<T = unknown>(
     res = await fetch(url, {
       method: opts.method ?? 'GET',
       headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      body:
+        opts.body === undefined
+          ? undefined
+          : isFormData
+            ? (opts.body as FormData)
+            : JSON.stringify(opts.body),
       cache: 'no-store',
       signal: opts.signal,
     });

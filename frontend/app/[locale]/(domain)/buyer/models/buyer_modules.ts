@@ -13,6 +13,7 @@ export const BUYER_MODULES = [
   { key: 'purchases', label: 'purchases', icon: BaggageClaim },
   { key: 'wallet', label: 'wallet', icon: Wallet },
   { key: 'delivery', label: 'delivery', icon: Truck },
+  { key: 'verification', label: 'verification', icon: Shield },
   { key: 'disputes', label: 'disputes', icon: Scale },
   { key: 'notifications', label: 'notifications', icon: MessageSquare },
   { key: 'settings', label: 'settings', icon: Settings }
