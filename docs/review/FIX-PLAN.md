@@ -441,7 +441,7 @@ Verified locally: backend **49 suites / 377 tests**, 0 lint errors; frontend `ts
 
 | Item | State |
 |---|---|
-| CI green run | Code-level causes fixed and every step run locally (build, tests, lint, `next build`); the badge depends on the next pushed run. |
+| CI green run | **Done** — run `40290584210` finished `success` with all three jobs green (Backend 1m38s, Frontend 2m9s, Lighthouse 3m27s). First successful run in the repo. |
 | Approval-expiry live tick | Covered by two unit tests (expiry + concurrent-decision race); not exercised against the running API because the next cron tick is up to 10 minutes away. |
 | Clawback of overpaid released escrow holds | Business decision: the row data is corrected by migration, but money already paid out is not recovered automatically. |
 | Bank-account name resolution | The add-account step saves the account as entered and says so; there is no name-enquiry provider wired, so nothing claims the name was verified. |
