@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WalletApiResponseDto, WalletTransactionsApiResponseDto, DepositApiResponseDto } from './dto/wallet-response.dto';
 import { DepositDto, WithdrawDto, SetPinDto } from './dto/wallet.dto';
@@ -27,6 +28,7 @@ export class WalletController {
     return { success: true, data: await this.walletService.getTransactions(user.id) };
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('deposit')
   @ApiOperation({ summary: 'Deposit funds (mock settlement)' })
   @ApiResponse({ status: 201, description: 'Deposit result', type: DepositApiResponseDto })
@@ -34,12 +36,15 @@ export class WalletController {
     return { success: true, data: await this.walletService.deposit(user.id, dto) };
   }
 
+  // A 4-6 digit wallet PIN is guessable at speed: bound the attempts per IP.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('withdraw')
   @ApiOperation({ summary: 'Withdraw funds' })
   async withdraw(@CurrentUser() user: any, @Body() dto: WithdrawDto) {
     return { success: true, data: await this.walletService.withdraw(user.id, dto) };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('pin')
   @ApiOperation({ summary: 'Set or change the wallet PIN' })
   async setPin(@CurrentUser() user: any, @Body() dto: SetPinDto) {

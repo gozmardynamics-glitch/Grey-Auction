@@ -25,7 +25,14 @@ import { AdminRole } from '../admin/entities/admin.entity';
 export class SettingsController {
   constructor(private readonly service: SettingsService) {}
 
+  /**
+   * Settings are admin-only to READ as well as write: the email section holds
+   * the SMTP password, and this route used to answer anonymously.
+   */
   @Get(':section')
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
+  @ApiBearerAuth()
   async get(@Param('section') section: string) {
     const data = await this.service.get(section);
     return { success: true, data };
@@ -67,7 +74,8 @@ export class SettingsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
   @ApiBearerAuth()
   async getAll() {
     return this.service.getAll();

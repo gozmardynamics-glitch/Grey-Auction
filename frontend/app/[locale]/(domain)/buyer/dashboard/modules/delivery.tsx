@@ -1,11 +1,9 @@
 'use client';
 
-import { useAppSelector } from '@/redux/store';
 import { AddressBook, RateEstimator } from '@/shared/components/shipping';
 
 /** Buyer dashboard "Delivery" module (L5 shipping + escrow seams). */
 export default function BuyerDeliveryModule() {
-  const token = useAppSelector((state) => state.auth.token);
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -15,7 +13,7 @@ export default function BuyerDeliveryModule() {
         </p>
       </div>
       <RateEstimator />
-      <AddressBook token={token ?? undefined} />
+      <AddressBook />
     </div>
   );
 }
