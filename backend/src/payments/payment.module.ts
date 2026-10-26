@@ -9,9 +9,10 @@ import { InvoiceModule } from '../invoices/invoice.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { OrderModule } from '../orders/order.module';
 import { EscrowModule } from '../escrow/escrow.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment]), InvoiceModule, WalletModule, OrderModule, EscrowModule],
+  imports: [TypeOrmModule.forFeature([Payment]), InvoiceModule, WalletModule, OrderModule, EscrowModule, CommonModule],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentOrchestrationService, PaymentReconciliationService],
   exports: [PaymentService, PaymentOrchestrationService],

@@ -15,6 +15,7 @@ import {
   UseInterceptors,
   Logger,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -50,11 +51,10 @@ import {
   FlagReviewDto,
   ReviewQueryDto,
   PayoutFrequencyDto,
-  SellerFeeOverrideDto,
+  SellerFeeSelfServiceDto,
 } from './dto';
 import { FeeService } from '../fees/fee.service';
 import { FeeOverrideScope } from '../fees/fee-override.entity';
-import { VatBase } from '../fees/fee-breakdown';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
@@ -238,25 +238,24 @@ export class SellerController {
     return { success: true, data };
   }
 
-  /** U5 answer #1 — upsert the current seller's own fee override. */
+  /** U5 answer #1 + Decision 3a — the seller's own fee preferences.
+    * Decision 3a: platform commission is fixed by the admin. Only the two
+    * toggles are seller-editable; percentages and VAT are rejected by the
+    * DTO whitelist before this handler runs. */
   @Put('settings/fees')
   @UseGuards(JwtAuthGuard, SellerGuard)
   @SellerOnly()
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Set the current seller's fee override (U5)" })
+  @ApiOperation({ summary: "Set the current seller's fee toggles (Decision 3a — percentages are admin-fixed)" })
   async setMyFeeOverride(
     @CurrentSeller() seller: Seller,
-    @Body() dto: SellerFeeOverrideDto,
+    @Body() dto: SellerFeeSelfServiceDto,
   ) {
     const data = await this.feeService.upsertOverride({
       scope: FeeOverrideScope.SELLER,
       scopeId: seller.user_id,
-      buyerFeePct: dto.buyerFeePct,
       buyerFeeEnabled: dto.buyerFeeEnabled,
-      sellerFeePct: dto.sellerFeePct,
       sellerFeeEnabled: dto.sellerFeeEnabled,
-      vatPct: dto.vatPct,
-      vatBase: (dto.vatBase ?? undefined) as VatBase | undefined,
     });
     return { success: true, message: 'Fee preferences saved', data };
   }
@@ -570,8 +569,9 @@ export class SellerController {
   async updateDocument(
     @Param('id') id: string,
     @Body() updateDto: UpdateDocumentDto,
+    @CurrentSeller() seller: Seller,
   ) {
-    const document = await this.documentService.update(id, updateDto);
+    const document = await this.documentService.update(id, updateDto, seller.id);
 
     return {
       success: true,
@@ -587,8 +587,8 @@ export class SellerController {
   @ApiOperation({ summary: 'Delete document' })
   @ApiParam({ name: 'id', description: 'Document ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Document deleted successfully' })
-  async deleteDocument(@Param('id') id: string) {
-    await this.documentService.remove(id);
+  async deleteDocument(@Param('id') id: string, @CurrentSeller() seller: Seller) {
+    await this.documentService.remove(id, seller.id);
 
     return {
       success: true,
@@ -814,12 +814,18 @@ export class SellerController {
     };
   }
 
+  // Integrity: an anonymous caller used to be able to pump helpful_count in a
+  // loop. Authentication + per-user throttle bound the abuse; votes stay
+  // unauthenticated-safe only in the sense that any signed-in user may vote.
   @Post('reviews/:id/helpful')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Mark review as helpful' })
   @ApiParam({ name: 'id', description: 'Review ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Review marked as helpful' })
-  async markHelpful(@Param('id') id: string) {
-    const review = await this.reviewService.markHelpful(id);
+  async markHelpful(@Param('id') id: string, @CurrentUser() user: any) {
+    const review = await this.reviewService.markHelpful(id, user.id);
 
     return {
       success: true,

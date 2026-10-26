@@ -1,14 +1,19 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InvoiceSettlementService } from './invoice-settlement.service';
+import { AdvisoryLockService } from '../common/advisory-lock.service';
 
 @Injectable()
 export class InvoiceCronService implements OnModuleInit {
+  private static readonly LOCK_KEY = 'grey:settlement';
   private readonly logger = new Logger(InvoiceCronService.name);
   /** Overlap guard: a slow settlement must not run concurrently with the next. */
   private running = false;
 
-  constructor(private readonly settlement: InvoiceSettlementService) {}
+  constructor(
+    private readonly settlement: InvoiceSettlementService,
+    private readonly advisoryLock: AdvisoryLockService,
+  ) {}
 
   onModuleInit(): void {
     this.logger.log('Invoice cron service initialized — auctions settle every 5 minutes');
@@ -25,7 +30,15 @@ export class InvoiceCronService implements OnModuleInit {
     }
     this.running = true;
     try {
-      await this.runSettlement();
+      // Cross-instance guard (5.4): with two app instances, only one settles;
+      // the other skips the tick. The in-process flag above stays as the
+      // first line of defence.
+      const ran = await this.advisoryLock.tryRun(InvoiceCronService.LOCK_KEY, () =>
+        this.runSettlement(),
+      );
+      if (ran === null) {
+        this.logger.log('Another instance holds the settlement lock — skipping this tick');
+      }
     } finally {
       this.running = false;
     }

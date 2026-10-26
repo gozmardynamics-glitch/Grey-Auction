@@ -6,9 +6,10 @@ import { EscrowController } from './escrow.controller';
 import { EscrowAutoReleaseService } from './escrow-auto-release.service';
 import { WalletModule } from '../wallet/wallet.module';
 import { Invoice } from '../invoices/invoice.entity';
+import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EscrowHold, Invoice]), WalletModule],
+  imports: [TypeOrmModule.forFeature([EscrowHold, Invoice]), WalletModule, CommonModule],
   controllers: [EscrowController],
   providers: [EscrowService, EscrowAutoReleaseService],
   exports: [EscrowService],

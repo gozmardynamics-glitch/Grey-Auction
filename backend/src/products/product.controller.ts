@@ -7,6 +7,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { ProductApiResponseDto } from './dto/product-response.dto';
 import { ProductService } from './product.service';
+import { InvoiceSettlementService } from '../invoices/invoice-settlement.service';
 import { csvToObjects, parseCsv } from './csv-parser';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto, ApproveProductDto, RejectProductDto } from './dto/product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,7 +19,10 @@ import { AdminRole } from '../admin/entities/admin.entity';
 @ApiTags('Products')
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly settlementService: InvoiceSettlementService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -111,13 +115,21 @@ export class ProductController {
   @ApiOperation({
     summary: "Listings owned by the authenticated account holder (any status)",
   })
-  async findMine(@CurrentUser() user: any) {
+  async findMine(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '50',
+  ) {
     // Ownership is an account-holder property, not a separate seller identity:
     // any authenticated user can list (see POST /products), so their own
     // listings must be reachable without a Seller KYC record. The seller-facing
     // GET /sellers/me/products stays for the onboarding/payout flows.
-    const data = await this.productService.findMine(user.id);
-    return { success: true, data: { items: data, total: data.length } };
+    const { items, total } = await this.productService.findMine(
+      user.id,
+      Number(page) || 1,
+      Number(limit) || 50,
+    );
+    return { success: true, data: { items, total } };
   }
 
   @Get(':id')
@@ -155,6 +167,26 @@ export class ProductController {
   async approve(@Param('id') id: string, @Body() dto: ApproveProductDto, @CurrentUser() admin: any) {
     const product = await this.productService.approve(id, dto, admin.id);
     return { success: true, message: 'Product approved', data: product };
+  }
+
+  // Decision 3b — seller verdict on a winning bid (lot parked in
+  // awaiting_seller_approval). Ownership is enforced in the service.
+  @Post(':id/approve-sale')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Accept the winning bid (seller, Decision 3b)' })
+  async approveSale(@Param('id') id: string, @CurrentUser() user: any) {
+    const product = await this.settlementService.decideSale(id, user.id, 'accept');
+    return { success: true, message: 'Sale approved — invoice issued to the winning bidder', data: product };
+  }
+
+  @Post(':id/decline-sale')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Decline the winning bid (seller, Decision 3b)' })
+  async declineSale(@Param('id') id: string, @CurrentUser() user: any) {
+    const product = await this.settlementService.decideSale(id, user.id, 'decline');
+    return { success: true, message: 'Sale declined — lot closed unsold', data: product };
   }
 
   @Post(':id/reject')

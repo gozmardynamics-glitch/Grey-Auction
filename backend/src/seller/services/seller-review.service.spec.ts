@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ForbiddenException } from '@nestjs/common';
 import { SellerReviewService } from './seller-review.service';
 import { SellerReview } from '../entities/seller-review.entity';
 import { Seller } from '../entities/seller.entity';
@@ -56,5 +57,41 @@ describe('SellerReviewService', () => {
     expect(reviewRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ is_verified_purchase: false }),
     );
+  });
+
+  it('blocks a seller from reviewing their own profile', async () => {
+    (sellerRepo.findOne as jest.Mock).mockResolvedValue({ id: 's1', user_id: 'u1' });
+
+    await expect(service.create('s1', 'u1', { rating: 5 } as any)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(reviewRepo.save).not.toHaveBeenCalled();
+  });
+
+  describe('helpful votes', () => {
+    const review = () => ({
+      id: 'r1',
+      seller_id: 's1',
+      helpful_count: 0,
+      markHelpful: function () { this.helpful_count += 1; },
+    });
+
+    it('blocks the profile owner from voting on their own reviews', async () => {
+      (reviewRepo.findOne as jest.Mock).mockResolvedValue(review());
+      (sellerRepo.findOne as jest.Mock).mockResolvedValue({ id: 's1', user_id: 'owner' });
+
+      await expect(service.markHelpful('r1', 'owner')).rejects.toThrow(ForbiddenException);
+      expect(reviewRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('records a vote from any other signed-in user', async () => {
+      const r = review();
+      (reviewRepo.findOne as jest.Mock).mockResolvedValue(r);
+      (sellerRepo.findOne as jest.Mock).mockResolvedValue({ id: 's1', user_id: 'owner' });
+      (reviewRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      const res = await service.markHelpful('r1', 'voter');
+      expect(res.helpful_count).toBe(1);
+    });
   });
 });

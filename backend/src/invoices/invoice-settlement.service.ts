@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
+import { Injectable, Inject, Logger, Optional, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationService } from '../notification/notification.service';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, LessThan, In, Repository } from 'typeorm';
@@ -18,6 +18,16 @@ export interface SettlementResult {
 type SettlementOutcome =
   | {
       kind: 'settled';
+      detail: string;
+      buyerId: string;
+      sellerId: string;
+      title: string;
+      slug: string | null;
+      id: string;
+      hammerPrice: number;
+    }
+  | {
+      kind: 'awaiting-seller-approval';
       detail: string;
       buyerId: string;
       sellerId: string;
@@ -139,6 +149,20 @@ export class InvoiceSettlementService {
         })
         .catch(() => undefined);
     }
+
+    // Decision 3b — the lot closed below the seller's approval threshold (or
+    // with approval required and no threshold): ask the seller to accept or
+    // decline. The buyer hears nothing until the seller decides.
+    if (outcome.kind === 'awaiting-seller-approval' && this.notifications) {
+      void this.notifications
+        .notifySellerApprovalRequested(outcome.sellerId, {
+          auctionTitle: outcome.title ?? 'the auction',
+          auctionId: outcome.id,
+          hammerPrice: outcome.hammerPrice,
+          link: '/seller/auctions',
+        })
+        .catch(() => undefined);
+    }
   }
 
   /**
@@ -210,6 +234,34 @@ export class InvoiceSettlementService {
         };
       }
 
+      // Decision 3b — "final bid subject to seller approval". When the lot is
+      // flagged, a winning bid below approvalThreshold (or any winning bid when
+      // no threshold is set) waits for the seller instead of auto-invoicing.
+      const threshold = Number(locked.approvalThreshold);
+      const needsApproval =
+        locked.requiresSellerApproval === true &&
+        (!Number.isFinite(threshold) || Number(winningBid.amount) < threshold);
+      if (needsApproval) {
+        locked.status = ProductStatus.AWAITING_SELLER_APPROVAL;
+        await productRepo.save(locked);
+        return {
+          kind: 'awaiting-seller-approval',
+          detail:
+            locked.title +
+            ': winning bid ' +
+            winningBid.amount +
+            ' awaits seller approval (threshold ' +
+            (Number.isFinite(threshold) ? threshold : 'none') +
+            ')',
+          buyerId: winningBid.bidderId,
+          sellerId: locked.sellerId,
+          title: locked.title,
+          slug: locked.slug ?? null,
+          id: locked.id,
+          hammerPrice: Number(winningBid.amount),
+        };
+      }
+
       await this.invoiceService.createInvoice(manager, {
         auctionId: locked.id,
         productId: locked.id,
@@ -239,6 +291,109 @@ export class InvoiceSettlementService {
         id: locked.id,
         hammerPrice: Number(winningBid.amount),
       };
+    });
+  }
+
+  /**
+   * Decision 3b — the seller accepts or declines the winning bid of a lot that
+   * closed in AWAITING_SELLER_APPROVAL.
+   *
+   * Accept  → re-resolve fees at decision time and issue the invoice (the same
+   *           settlement tail as an auto-settled lot), then notify the buyer.
+   * Decline → close the lot unsold and tell the buyer no payment is owed.
+   *
+   * Ownership is verified against products.sellerId (the owner's user id); a
+   * lot that is not awaiting approval is rejected rather than guessed about.
+   */
+  async decideSale(
+    productId: string,
+    sellerUserId: string,
+    decision: 'accept' | 'decline',
+  ): Promise<Product> {
+    return this.dataSource.transaction(async (manager) => {
+      const productRepo = manager.getRepository(Product);
+      const locked = await productRepo.findOne({
+        where: { id: productId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!locked) throw new NotFoundException('Lot not found');
+      if (locked.sellerId !== sellerUserId) {
+        throw new ForbiddenException('Not your lot');
+      }
+      if (locked.status !== ProductStatus.AWAITING_SELLER_APPROVAL) {
+        throw new BadRequestException(
+          'This lot is not awaiting seller approval (status: ' + locked.status + ')',
+        );
+      }
+
+      const winningBid = await manager.getRepository(Bid).findOne({
+        where: { productId: locked.id, isWinningBid: true },
+      });
+      if (!winningBid) {
+        // Should not happen (settlement parks the lot only with a winner), but
+        // never leave a lot stuck: close it.
+        locked.status = ProductStatus.CLOSED;
+        await productRepo.save(locked);
+        throw new BadRequestException('No winning bid found — lot closed');
+      }
+
+      if (decision === 'decline') {
+        locked.status = ProductStatus.CLOSED;
+        await productRepo.save(locked);
+        if (this.notifications) {
+          void this.notifications
+            .notifySaleDeclined(winningBid.bidderId, {
+              auctionTitle: locked.title,
+              auctionId: locked.id,
+              hammerPrice: Number(winningBid.amount),
+              link: locked.slug ? '/auctions/' + locked.slug : '/auctions/' + locked.id,
+            })
+            .catch(() => undefined);
+        }
+        return locked;
+      }
+
+      const breakdown = await this.feeService.resolveAndCompute(
+        Number(winningBid.amount),
+        {
+          category: locked.category,
+          sellerId: locked.sellerId,
+          productId: locked.id,
+          buyerId: winningBid.bidderId,
+        },
+      );
+
+      await this.invoiceService.createInvoice(manager, {
+        auctionId: locked.id,
+        productId: locked.id,
+        buyerId: winningBid.bidderId,
+        sellerId: locked.sellerId,
+        hammerPrice: Number(winningBid.amount),
+        commission: breakdown.buyerFee,
+        vat: breakdown.vatOnBid + breakdown.vatOnBuyerFee,
+        fixedFee: breakdown.fixedFee,
+        otherCharges: breakdown.otherCharges,
+        sellerFee: breakdown.sellerFee,
+        feeSource: breakdown.source,
+        vatBase: breakdown.vatBase,
+        escrowWindowHours: locked.escrowReleaseHours ?? 72,
+      });
+
+      locked.status = ProductStatus.SOLD;
+      await productRepo.save(locked);
+
+      if (this.notifications) {
+        const link = locked.slug ? '/auctions/' + locked.slug : '/auctions/' + locked.id;
+        void this.notifications
+          .notifyAuctionWon(winningBid.bidderId, {
+            auctionTitle: locked.title,
+            auctionId: locked.id,
+            hammerPrice: Number(winningBid.amount),
+            link,
+          })
+          .catch(() => undefined);
+      }
+      return locked;
     });
   }
 }

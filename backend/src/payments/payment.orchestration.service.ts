@@ -174,6 +174,16 @@ export class PaymentOrchestrationService {
     }
 
     if (hook.status === PaymentStatus.FAILED) {
+      // Out-of-order webhook: the provider sometimes reports a failure after
+      // the success event has already settled (network retries). The payment
+      // is terminal at SUCCEEDED — acknowledge so the provider stops
+      // retrying, but do not touch the state.
+      if (payment.status === PaymentStatus.SUCCEEDED) {
+        this.logger.warn(
+          `Late failure webhook for settled payment ${payment.reference} — ignored, settlement stands`,
+        );
+        return { success: true, payment, message: 'Payment already settled — failure report ignored' };
+      }
       return { success: true, payment: await this.paymentService.updateStatus(payment.id, PaymentStatus.FAILED) };
     }
 
@@ -208,6 +218,15 @@ export class PaymentOrchestrationService {
     }
 
     if (result.status === PaymentStatus.FAILED) {
+      // The app says settled but the provider says failed: that is an
+      // inconsistency for a human, not an automatic transition. Surface it
+      // and leave the payment exactly as it is.
+      if (payment.status === PaymentStatus.SUCCEEDED) {
+        this.logger.warn(
+          `INCONSISTENCY: provider reports FAILED for settled payment ${payment.reference} — keeping SUCCEEDED, needs manual review`,
+        );
+        return payment;
+      }
       return this.paymentService.updateStatus(payment.id, PaymentStatus.FAILED);
     }
 

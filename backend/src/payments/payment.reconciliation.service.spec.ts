@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentReconciliationService } from './payment.reconciliation.service';
 import { PaymentService } from './payment.service';
 import { PaymentOrchestrationService } from './payment.orchestration.service';
+import { AdvisoryLockService } from '../common/advisory-lock.service';
 
 describe('PaymentReconciliationService', () => {
   let service: PaymentReconciliationService;
   const paymentService = { findPending: jest.fn() };
   const orchestration = { reconcilePayment: jest.fn() };
+  const advisoryLock = { tryRun: jest.fn((_key: string, fn: () => Promise<any>) => fn()) };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -15,6 +17,7 @@ describe('PaymentReconciliationService', () => {
         PaymentReconciliationService,
         { provide: PaymentService, useValue: paymentService },
         { provide: PaymentOrchestrationService, useValue: orchestration },
+        { provide: AdvisoryLockService, useValue: advisoryLock },
       ],
     }).compile();
     service = module.get<PaymentReconciliationService>(PaymentReconciliationService);

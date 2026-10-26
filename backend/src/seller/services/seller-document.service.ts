@@ -112,11 +112,17 @@ export class SellerDocumentService {
   }
 
   /**
-   * Find document by ID
+   * Find document by ID.
+   *
+   * When `sellerId` is supplied the lookup is scoped to that seller, so a
+   * caller can never read/update/delete another seller's document by id —
+   * the bare-id variant is for admin paths only.
    */
-  async findById(id: string): Promise<SellerDocument> {
+  async findById(id: string, sellerId?: string): Promise<SellerDocument> {
     const document = await this.documentRepository.findOne({
-      where: { id, deleted_at: null },
+      where: sellerId
+        ? { id, deleted_at: null, seller_id: sellerId }
+        : { id, deleted_at: null },
       relations: ['seller'],
     });
 
@@ -128,13 +134,14 @@ export class SellerDocumentService {
   }
 
   /**
-   * Update document metadata
+   * Update document metadata (owner-scoped)
    */
   async update(
     id: string,
     updateDto: UpdateDocumentDto,
+    sellerId?: string,
   ): Promise<SellerDocument> {
-    const document = await this.findById(id);
+    const document = await this.findById(id, sellerId);
 
     // Only allow updates for pending or rejected documents
     if (
@@ -156,10 +163,10 @@ export class SellerDocumentService {
   }
 
   /**
-   * Delete document (soft delete)
+   * Delete document (soft delete, owner-scoped)
    */
-  async remove(id: string): Promise<void> {
-    const document = await this.findById(id);
+  async remove(id: string, sellerId?: string): Promise<void> {
+    const document = await this.findById(id, sellerId);
 
     // Cannot delete approved documents
     if (

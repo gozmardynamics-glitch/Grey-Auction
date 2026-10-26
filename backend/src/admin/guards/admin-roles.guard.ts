@@ -32,26 +32,37 @@ export class AdminRolesGuard implements CanActivate {
       throw new ForbiddenException('Access denied');
     }
 
-    // Resolve actual admin role from the admins table (users.role is 'bidder'|'seller'|'admin')
-    let effectiveRole: string = user.role;
-    if (user.email) {
-      try {
-        const admin = await this.dataSource.getRepository(Admin).findOne({
-          where: { email: user.email },
-        });
-        if (admin) {
-          if (!admin.isActive) {
-            throw new ForbiddenException('Admin account is inactive');
-          }
-          effectiveRole = admin.role;
-          request.user.adminRole = admin.role;
-        }
-      } catch {
-        // DB unavailable — fall back to JWT role
-      }
+    // Privileged resolution requires a verified account — an unverified
+    // registration must never reach admin surface area.
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException('Verify your email address before accessing admin endpoints');
     }
 
-    if (!requiredRoles.includes(effectiveRole as AdminRole)) {
+    // Authority comes from the admins row LINKED to this user id (admins.user_id).
+    // The old email-string match let any user who set users.email to an admin
+    // address inherit that admin's role. No link = no authority, full stop.
+    let admin: Admin | null = null;
+    try {
+      admin = await this.dataSource.getRepository(Admin).findOne({
+        where: { userId: user.id },
+      });
+    } catch {
+      // DB unavailable — fail closed rather than falling back to the JWT role.
+      throw new ForbiddenException('Admin authorization is unavailable');
+    }
+
+    if (!admin) {
+      throw new ForbiddenException('Access denied');
+    }
+    if (!admin.isActive) {
+      // Explicit rejection (the old code threw inside try/catch and the
+      // deactivation was silently swallowed).
+      throw new ForbiddenException('Admin account is deactivated');
+    }
+
+    request.user.adminRole = admin.role;
+
+    if (!requiredRoles.includes(admin.role)) {
       throw new ForbiddenException('Insufficient admin permissions');
     }
 

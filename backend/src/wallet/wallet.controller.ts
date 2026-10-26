@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WalletApiResponseDto, WalletTransactionsApiResponseDto, DepositApiResponseDto } from './dto/wallet-response.dto';
+import { DepositDto, WithdrawDto, SetPinDto } from './dto/wallet.dto';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -29,19 +30,19 @@ export class WalletController {
   @Post('deposit')
   @ApiOperation({ summary: 'Deposit funds (mock settlement)' })
   @ApiResponse({ status: 201, description: 'Deposit result', type: DepositApiResponseDto })
-  async deposit(@CurrentUser() user: any, @Body() dto: { amount: number; reference?: string }) {
+  async deposit(@CurrentUser() user: any, @Body() dto: DepositDto) {
     return { success: true, data: await this.walletService.deposit(user.id, dto) };
   }
 
   @Post('withdraw')
   @ApiOperation({ summary: 'Withdraw funds' })
-  async withdraw(@CurrentUser() user: any, @Body() dto: { amount: number; pin?: string }) {
+  async withdraw(@CurrentUser() user: any, @Body() dto: WithdrawDto) {
     return { success: true, data: await this.walletService.withdraw(user.id, dto) };
   }
 
   @Post('pin')
   @ApiOperation({ summary: 'Set or change the wallet PIN' })
-  async setPin(@CurrentUser() user: any, @Body() dto: { pin: string }) {
+  async setPin(@CurrentUser() user: any, @Body() dto: SetPinDto) {
     return { success: true, data: await this.walletService.setPin(user.id, dto.pin) };
   }
 }

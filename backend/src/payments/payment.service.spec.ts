@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { Payment, PaymentStatus, PaymentType, PaymentProvider } from './entities/payment.entity';
 
@@ -57,6 +57,37 @@ describe('PaymentService', () => {
   it('updateStatus throws NotFound for an unknown payment', async () => {
     (repo.findOne as jest.Mock).mockResolvedValue(null);
     await expect(service.updateStatus('nope', PaymentStatus.SUCCEEDED)).rejects.toThrow(NotFoundException);
+  });
+
+  describe('status transition table', () => {
+    const payment = (status: PaymentStatus) => ({ id: 'p1', status, reference: 'REF-1' });
+
+    it('allows PENDING -> SUCCEEDED', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue(payment(PaymentStatus.PENDING));
+      (repo.save as jest.Mock).mockImplementation(async (p: any) => p);
+
+      const res = await service.updateStatus('p1', PaymentStatus.SUCCEEDED);
+      expect(res.status).toBe(PaymentStatus.SUCCEEDED);
+    });
+
+    it('refuses SUCCEEDED -> FAILED: settlement stands once money moved', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue(payment(PaymentStatus.SUCCEEDED));
+      await expect(service.updateStatus('p1', PaymentStatus.FAILED)).rejects.toThrow(ConflictException);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('refuses FAILED -> SUCCEEDED: retries open a new payment', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue(payment(PaymentStatus.FAILED));
+      await expect(service.updateStatus('p1', PaymentStatus.SUCCEEDED)).rejects.toThrow(ConflictException);
+    });
+
+    it('allows a same-status write so metadata can attach to a live payment', async () => {
+      (repo.findOne as jest.Mock).mockResolvedValue(payment(PaymentStatus.PENDING));
+      (repo.save as jest.Mock).mockImplementation(async (p: any) => p);
+
+      const res = await service.updateStatus('p1', PaymentStatus.PENDING, { providerReference: 'PS-1' });
+      expect(res.providerReference).toBe('PS-1');
+    });
   });
 
   it('listByUser returns payments newest-first', async () => {

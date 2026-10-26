@@ -88,6 +88,19 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0)
   escrowReleaseHours?: number;
+
+  /** Decision 3b: winning bid is subject to the seller's approval after close. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  requiresSellerApproval?: boolean;
+
+  /** Decision 3b: bids at or above this settle automatically; only lower bids need approval. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  approvalThreshold?: number;
 }
 
 export class UpdateProductDto {
@@ -104,6 +117,19 @@ export class UpdateProductDto {
   @IsNumber()
   @Min(0)
   escrowReleaseHours?: number;
+
+  /** Decision 3b: winning bid is subject to the seller's approval after close. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  requiresSellerApproval?: boolean;
+
+  /** Decision 3b: bids at or above this settle automatically; only lower bids need approval. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  approvalThreshold?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()

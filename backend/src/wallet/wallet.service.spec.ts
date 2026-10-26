@@ -76,6 +76,36 @@ describe('WalletService', () => {
     await expect(service.withdraw('u1', { amount: 100, pin: '0000' })).rejects.toThrow(BadRequestException);
   });
 
+  it('a retried withdraw with the same reference returns the original transaction', async () => {
+    const original = { id: 't0', type: WalletTransactionType.WITHDRAW, amount: 400, reference: 'wd-1' };
+    (txRepo.findOne as jest.Mock).mockResolvedValue(original);
+    (walletRepo.findOne as jest.Mock).mockResolvedValue({ id: 'w1', userId: 'u1', balance: 600, hasPin: false, pinHash: null });
+
+    const res: any = await service.withdraw('u1', { amount: 400, reference: 'wd-1' });
+
+    expect(res.idempotent).toBe(true);
+    expect(res.transaction).toBe(original);
+    expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+
+  it('a lost reference race returns the winner without a balance change', async () => {
+    // First findOne (dedupe check) misses; the transaction then fails on the
+    // unique reference index; the re-fetch finds the concurrent winner.
+    const original = { id: 't0', type: WalletTransactionType.WITHDRAW, amount: 400, reference: 'wd-2' };
+    let dedupeCalls = 0;
+    (txRepo.findOne as jest.Mock).mockImplementation(async () => {
+      dedupeCalls += 1;
+      return dedupeCalls >= 2 ? original : null;
+    });
+    (walletRepo.findOne as jest.Mock).mockResolvedValue({ id: 'w1', userId: 'u1', balance: 600, hasPin: false, pinHash: null });
+    (dataSource.transaction as jest.Mock).mockRejectedValue({ code: '23505' });
+
+    const res: any = await service.withdraw('u1', { amount: 400, reference: 'wd-2' });
+
+    expect(res.idempotent).toBe(true);
+    expect(res.transaction).toBe(original);
+  });
+
   it('rejects non-numeric PINs', async () => {
     (walletRepo.findOne as jest.Mock).mockResolvedValue(null);
     await expect(service.setPin('u1', 'abcd')).rejects.toThrow(BadRequestException);

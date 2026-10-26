@@ -128,4 +128,30 @@ export class NotificationService {
       link: data.link ?? `/room/${data.roomId}`,
     });
   }
+
+  /** Decision 3b — ask the seller to accept or decline the winning bid. */
+  async notifySellerApprovalRequested(
+    userId: string,
+    data: { auctionTitle: string; auctionId: string; hammerPrice: number; link?: string },
+  ): Promise<Notification> {
+    return this.create(userId, {
+      type: NotificationType.SALE_APPROVAL_REQUESTED,
+      title: 'Approve the winning bid',
+      body: `“${data.auctionTitle}” closed at ${data.hammerPrice.toLocaleString()} NGN. You chose to approve final bids — accept or decline in your seller dashboard.`,
+      link: data.link ?? `/auctions/${data.auctionId}`,
+    });
+  }
+
+  /** Decision 3b — tell the buyer the seller declined; the sale will not proceed. */
+  async notifySaleDeclined(
+    userId: string,
+    data: { auctionTitle: string; auctionId: string; hammerPrice?: number; link?: string },
+  ): Promise<Notification> {
+    return this.create(userId, {
+      type: NotificationType.SALE_DECLINED,
+      title: 'Your bid was not approved',
+      body: `The seller of “${data.auctionTitle}” declined the winning bid. No payment is owed.`,
+      link: data.link ?? `/auctions/${data.auctionId}`,
+    });
+  }
 }

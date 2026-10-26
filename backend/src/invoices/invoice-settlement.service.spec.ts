@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { InvoiceSettlementService } from './invoice-settlement.service';
 import { InvoiceService } from './invoice.service';
@@ -14,7 +15,12 @@ describe('InvoiceSettlementService', () => {
   const bidRepo = { findOne: jest.fn() };
   const feeService = { getBreakdown: jest.fn(), resolveAndCompute: jest.fn() };
   const invoiceService = { createInvoice: jest.fn() };
-  const notifications = { notifyAuctionWon: jest.fn().mockResolvedValue(undefined), notifyAuctionEnded: jest.fn().mockResolvedValue(undefined) };
+  const notifications = {
+    notifyAuctionWon: jest.fn().mockResolvedValue(undefined),
+    notifyAuctionEnded: jest.fn().mockResolvedValue(undefined),
+    notifySellerApprovalRequested: jest.fn().mockResolvedValue(undefined),
+    notifySaleDeclined: jest.fn().mockResolvedValue(undefined),
+  };
   const manager = {
     getRepository: jest.fn((entity) => (entity === Product ? productRepo : bidRepo)),
   };
@@ -111,5 +117,116 @@ describe('InvoiceSettlementService', () => {
     expect(res.settled).toBe(0);
     expect(res.skipped).toBe(1);
     expect(invoiceService.createInvoice).not.toHaveBeenCalled();
+  });
+
+  describe('Decision 3b — winning bid subject to seller approval', () => {
+    const breakdown = {
+      bidAmount: 100000, buyerFee: 5000, sellerFee: 5000,
+      vatOnBid: 7500, vatOnBuyerFee: 375, otherCharges: 0, fixedFee: 0,
+      total: 112875, sellerNet: 95000, vatBase: 'hammer_and_fees', source: 'default',
+    };
+    const mockInvoice = () => {
+      (feeService.resolveAndCompute as jest.Mock).mockResolvedValue(breakdown);
+      (invoiceService.createInvoice as jest.Mock).mockResolvedValue({ id: 'inv9' });
+      (productRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
+    };
+
+    it('parks a below-threshold winner in AWAITING_SELLER_APPROVAL and asks the seller', async () => {
+      const ended = {
+        id: 'p4', title: 'Vase', slug: 'vase', category: 'art', sellerId: 's4',
+        status: ProductStatus.ACTIVE,
+        requiresSellerApproval: true, approvalThreshold: 50000,
+      };
+      (productRepo.find as jest.Mock).mockResolvedValue([ended]);
+      (productRepo.findOne as jest.Mock).mockResolvedValue(ended);
+      (bidRepo.findOne as jest.Mock).mockResolvedValue({ bidderId: 'b4', amount: 40000 });
+
+      const res = await service.settleEndedAuctions();
+
+      expect(res.settled).toBe(0);
+      expect(res.skipped).toBe(1);
+      expect(productRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: ProductStatus.AWAITING_SELLER_APPROVAL }),
+      );
+      expect(invoiceService.createInvoice).not.toHaveBeenCalled();
+      expect(notifications.notifySellerApprovalRequested).toHaveBeenCalledWith(
+        's4', expect.objectContaining({ auctionId: 'p4', hammerPrice: 40000 }),
+      );
+      expect(notifications.notifyAuctionWon).not.toHaveBeenCalled();
+    });
+
+    it('auto-settles a winner at or above the approval threshold', async () => {
+      const ended = {
+        id: 'p5', title: 'Ring', slug: 'ring', category: 'luxury', sellerId: 's5',
+        status: ProductStatus.ACTIVE,
+        requiresSellerApproval: true, approvalThreshold: 50000,
+      };
+      (productRepo.find as jest.Mock).mockResolvedValue([ended]);
+      (productRepo.findOne as jest.Mock).mockResolvedValue(ended);
+      (bidRepo.findOne as jest.Mock).mockResolvedValue({ bidderId: 'b5', amount: 60000 });
+      mockInvoice();
+
+      const res = await service.settleEndedAuctions();
+
+      expect(res.settled).toBe(1);
+      expect(productRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: ProductStatus.SOLD }),
+      );
+      expect(invoiceService.createInvoice).toHaveBeenCalled();
+    });
+
+    it('accept issues the invoice at decision time and marks the lot SOLD', async () => {
+      const parked = {
+        id: 'p6', title: 'Map', slug: 'map', category: 'art', sellerId: 'owner-1',
+        status: ProductStatus.AWAITING_SELLER_APPROVAL, escrowReleaseHours: 72,
+      };
+      (productRepo.findOne as jest.Mock).mockResolvedValue(parked);
+      (bidRepo.findOne as jest.Mock).mockResolvedValue({ bidderId: 'b6', amount: 42000 });
+      mockInvoice();
+
+      const res = await service.decideSale('p6', 'owner-1', 'accept');
+
+      expect(res.status).toBe(ProductStatus.SOLD);
+      expect(invoiceService.createInvoice).toHaveBeenCalledWith(
+        manager,
+        expect.objectContaining({ buyerId: 'b6', hammerPrice: 42000 }),
+      );
+      expect(notifications.notifyAuctionWon).toHaveBeenCalledWith(
+        'b6', expect.objectContaining({ auctionId: 'p6' }),
+      );
+    });
+
+    it('decline closes the lot unsold and tells the buyer no payment is owed', async () => {
+      const parked = {
+        id: 'p7', title: 'Clock', slug: 'clock', category: 'antiques', sellerId: 'owner-1',
+        status: ProductStatus.AWAITING_SELLER_APPROVAL,
+      };
+      (productRepo.findOne as jest.Mock).mockResolvedValue(parked);
+      (bidRepo.findOne as jest.Mock).mockResolvedValue({ bidderId: 'b7', amount: 30000 });
+      (productRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
+
+      const res = await service.decideSale('p7', 'owner-1', 'decline');
+
+      expect(res.status).toBe(ProductStatus.CLOSED);
+      expect(invoiceService.createInvoice).not.toHaveBeenCalled();
+      expect(notifications.notifySaleDeclined).toHaveBeenCalledWith(
+        'b7', expect.objectContaining({ auctionId: 'p7' }),
+      );
+    });
+
+    it('refuses a decision from anyone but the owner', async () => {
+      (productRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'p8', sellerId: 'real-owner', status: ProductStatus.AWAITING_SELLER_APPROVAL,
+      });
+      await expect(service.decideSale('p8', 'impostor', 'accept')).rejects.toThrow(ForbiddenException);
+      expect(invoiceService.createInvoice).not.toHaveBeenCalled();
+    });
+
+    it('refuses a decision on a lot that is not awaiting approval', async () => {
+      (productRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'p9', sellerId: 'owner-1', status: ProductStatus.ACTIVE,
+      });
+      await expect(service.decideSale('p9', 'owner-1', 'accept')).rejects.toThrow(BadRequestException);
+    });
   });
 });

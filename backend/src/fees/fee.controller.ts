@@ -30,7 +30,10 @@ export class FeeController {
   }
 
   @Get('overrides')
-  @ApiOperation({ summary: 'List per-seller / per-product fee overrides (U5)' })
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List per-seller / per-product fee overrides (Admin, U5)' })
   async listOverrides(@Query('scope') scope?: FeeOverrideScope) {
     const data = await this.feeService.listOverrides(scope);
     return { success: true, data };

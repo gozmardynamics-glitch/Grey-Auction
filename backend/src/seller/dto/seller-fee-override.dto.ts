@@ -1,44 +1,24 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsBoolean, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 
 /**
- * U5 answer #1 — per-seller fee override payload (seller self-service).
- * Every field is optional; sending null clears the override (inherit).
+ * U5 answer #1 + Decision 3a — what a seller may self-serve about fees.
+ *
+ * Platform commission is fixed by the admin: `buyerFeePct`, `sellerFeePct`,
+ * `vatPct` and `vatBase` are platform revenue or statutory and are NOT
+ * accepted here (the global ValidationPipe rejects them outright). A seller
+ * may only toggle whether the buyer premium and the seller commission apply
+ * to their lots. Percentages are set via the admin fee endpoints
+ * (`PUT /fees`, `PUT /fees/overrides`).
  */
-export class SellerFeeOverrideDto {
-  @ApiPropertyOptional({ type: Number, nullable: true })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  buyerFeePct?: number | null;
-
+export class SellerFeeSelfServiceDto {
   @ApiPropertyOptional({ type: Boolean, nullable: true })
   @IsOptional()
   @IsBoolean()
   buyerFeeEnabled?: boolean | null;
 
-  @ApiPropertyOptional({ type: Number, nullable: true })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  sellerFeePct?: number | null;
-
   @ApiPropertyOptional({ type: Boolean, nullable: true })
   @IsOptional()
   @IsBoolean()
   sellerFeeEnabled?: boolean | null;
-
-  @ApiPropertyOptional({ type: Number, nullable: true })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  vatPct?: number | null;
-
-  @ApiPropertyOptional({ enum: ['fees_only', 'hammer_and_fees'], nullable: true })
-  @IsOptional()
-  @IsIn(['fees_only', 'hammer_and_fees'])
-  vatBase?: 'fees_only' | 'hammer_and_fees' | null;
 }

@@ -22,6 +22,8 @@ export interface DepositDto {
 export interface WithdrawDto {
   amount: number;
   pin?: string;
+  /** Client idempotency key (5.9) — retries return the original withdrawal. */
+  reference?: string;
 }
 
 /** Input for a wallet credit performed within an existing transaction. */
@@ -165,40 +167,71 @@ export class WalletService {
     if (!dto.amount || dto.amount <= 0) {
       throw new BadRequestException('Amount must be a positive number');
     }
-    return this.dataSource.transaction(async (manager) => {
-      const wallet = await this.getOrCreateLocked(manager, userId);
 
-      if (wallet.hasPin && wallet.pinHash) {
-        if (!dto.pin || !(await bcrypt.compare(dto.pin, wallet.pinHash))) {
-          throw new BadRequestException('Invalid PIN');
+    // Idempotency (5.9): a client retry with the same reference returns the
+    // original withdrawal rather than debiting twice. The balance lock
+    // prevents overdraft, not duplicate intent — dedupe lives here.
+    if (dto.reference) {
+      const existing = await this.txRepo.findOne({
+        where: { reference: dto.reference, type: WalletTransactionType.WITHDRAW },
+      });
+      if (existing) {
+        const wallet = await this.getOrCreate(userId);
+        return { balance: Number(wallet.balance), transaction: existing, idempotent: true };
+      }
+    }
+
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const wallet = await this.getOrCreateLocked(manager, userId);
+
+        if (wallet.hasPin && wallet.pinHash) {
+          if (!dto.pin || !(await bcrypt.compare(dto.pin, wallet.pinHash))) {
+            throw new BadRequestException('Invalid PIN');
+          }
+        }
+
+        const amount = toMoney(dto.amount);
+        const balance = toMoney(wallet.balance);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          throw new BadRequestException('Amount must be a positive number');
+        }
+        if (amount > balance) {
+          throw new BadRequestException('Insufficient balance');
+        }
+
+        const newBalance = roundMoney(balance - amount);
+        const txRepo = manager.getRepository(WalletTransaction);
+        await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
+
+        const tx = await txRepo.save(
+          txRepo.create({
+            walletId: wallet.id,
+            type: WalletTransactionType.WITHDRAW,
+            amount,
+            reference: dto.reference || null,
+            status: WalletTransactionStatus.COMPLETED,
+            balanceAfter: newBalance,
+          }),
+        );
+
+        return { balance: newBalance, transaction: tx };
+      });
+    } catch (err: any) {
+      // Two concurrent withdrawals carrying the same reference: the unique
+      // index on reference rejects the second insert and the whole transaction
+      // (including the balance change) rolls back. Return the winner.
+      if (dto.reference && isUniqueViolation(err)) {
+        const raced = await this.txRepo.findOne({
+          where: { reference: dto.reference, type: WalletTransactionType.WITHDRAW },
+        });
+        if (raced) {
+          const wallet = await this.getOrCreate(userId);
+          return { balance: Number(wallet.balance), transaction: raced, idempotent: true };
         }
       }
-
-      const amount = toMoney(dto.amount);
-      const balance = toMoney(wallet.balance);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        throw new BadRequestException('Amount must be a positive number');
-      }
-      if (amount > balance) {
-        throw new BadRequestException('Insufficient balance');
-      }
-
-      const newBalance = roundMoney(balance - amount);
-      const txRepo = manager.getRepository(WalletTransaction);
-      await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
-
-      const tx = await txRepo.save(
-        txRepo.create({
-          walletId: wallet.id,
-          type: WalletTransactionType.WITHDRAW,
-          amount,
-          status: WalletTransactionStatus.COMPLETED,
-          balanceAfter: newBalance,
-        }),
-      );
-
-      return { balance: newBalance, transaction: tx };
-    });
+      throw err;
+    }
   }
 
   /**

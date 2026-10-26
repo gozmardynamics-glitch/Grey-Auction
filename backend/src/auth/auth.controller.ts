@@ -3,7 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthApiResponseDto } from './dto/auth-response.dto';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, OauthGoogleDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, OauthGoogleDto, ForgotPasswordDto, ResetPasswordDto, CompleteProfileDto, ChangePasswordDto, SendOtpDto, VerifyOtpDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 
@@ -78,7 +78,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change password' })
   async changePassword(
-    @Body() dto: { currentPassword: string; newPassword: string },
+    @Body() dto: ChangePasswordDto,
     @CurrentUser() user: any,
   ) {
     const result = await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
@@ -98,7 +98,7 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('send-otp')
   @ApiOperation({ summary: 'Send email verification OTP' })
-  async sendOtp(@Body() dto: { email: string }) {
+  async sendOtp(@Body() dto: SendOtpDto) {
     const result = await this.authService.sendOtp(dto.email);
     return { success: true, message: 'OTP sent', data: result };
   }
@@ -107,7 +107,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify email OTP' })
-  async verifyOtp(@Body() dto: { email: string; otp: string }) {
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
     const result = await this.authService.verifyOtp(dto.email, dto.otp);
     return { success: true, message: 'Email verified', data: result };
   }

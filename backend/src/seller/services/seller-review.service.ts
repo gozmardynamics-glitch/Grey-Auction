@@ -51,6 +51,12 @@ export class SellerReviewService {
       throw new NotFoundException('Seller not found');
     }
 
+    // Self-review block: the seller's own user account may never review (or
+    // vote on) their own profile.
+    if (seller.user_id === bidderId) {
+      throw new ForbiddenException('You cannot review your own seller profile');
+    }
+
     // Check if bidder already reviewed this seller for this auction/product
     if (createDto.auction_id || createDto.product_id) {
       const existing = await this.reviewRepository.findOne({
@@ -317,10 +323,23 @@ export class SellerReviewService {
   // ==========================================
 
   /**
-   * Mark review as helpful
+   * Mark review as helpful.
+   *
+   * `userId` (when supplied) is refused a vote on the reviewed seller's own
+   * profile — the seller pumping their own helpful_count. Route-level auth +
+   * throttle bound anonymous abuse.
    */
-  async markHelpful(id: string): Promise<SellerReview> {
+  async markHelpful(id: string, userId?: string): Promise<SellerReview> {
     const review = await this.findById(id);
+    if (userId) {
+      const seller = await this.sellerRepository.findOne({
+        where: { id: review.seller_id },
+        select: ['id', 'user_id'],
+      });
+      if (seller && seller.user_id === userId) {
+        throw new ForbiddenException('You cannot vote on reviews of your own seller profile');
+      }
+    }
     review.markHelpful();
     return this.reviewRepository.save(review);
   }

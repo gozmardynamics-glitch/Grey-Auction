@@ -357,11 +357,11 @@ Week 5   Phase 4 item 4.3 (needs upload endpoint) · Phase 1 items 1.7, 1.8, 1.1
 
 ---
 
-## 9. Delivery status (2026-10-24)
+## 9. Delivery status (2026-10-24, pass 3)
 
-Verified locally: backend **48 suites / 352 tests**, 0 lint errors; frontend `tsc` clean.
+Verified locally: backend **49 suites / 377 tests**, 0 lint errors; frontend `tsc` clean, **18 files / 85 tests**. Every item below was also exercised against the running API (`:3001`), not only in jest.
 
-### Done
+### Done — pass 2 (money, KYC, security)
 
 | Phase | Item | Result |
 |---|---|---|
@@ -384,30 +384,66 @@ Verified locally: backend **48 suites / 352 tests**, 0 lint errors; frontend `ts
 - Buyer bill reconciles: bid 100,000 → premium 10,000 + VAT 8,250 = **total 118,250**; **sellerNet 95,000**; **platformShare 15,000**; and `95,000 + 15,000 + 8,250 = 118,250`.
 - KYC gate: approving a lot returned **403 "Awaiting admin approval to publish"**; after `POST /admin/kyc/sellers/:id/publish {approved:true}` the same call succeeded and the lot went `active`.
 
+### Done — pass 3 (this arc)
+
+| Phase | Item | Result |
+|---|---|---|
+| 1 | **1.3 duplicate escrow hold** | `holdInManager` catches the `23505` unique-violation from `UQ_escrow_open_per_invoice` and returns `null` — the racing webhook gets the same "already held" outcome as the locked SELECT. Tests: race + rethrow. |
+| 1 | **1.6 payment status transitions** | Transition table on `PaymentService.updateStatus`: `PENDING → succeeded/failed/cancelled` only; `SUCCEEDED` is terminal (same-status metadata writes stay legal). Webhook receives late `FAILED` reports for settled payments as a clean no-op ack; reconciliation logs an explicit `INCONSISTENCY` when the provider contradicts a settled payment instead of touching it. Tests: 4. |
+| 2 | **2.2 seller-document IDOR** | `SellerDocumentService.update/remove/findById` accept the caller's `sellerId` and scope the lookup; controller passes `seller.id`. A seller touching another's document now gets 404. |
+| 2 | **2.3 admin-by-email** | `admins.user_id` (unique) links the JWT account; `AdminRolesGuard` resolves authority **only** through that link (email match removed), requires `isEmailVerified`, fails closed when the DB is unreachable, and deactivation is an explicit rejection (was swallowed by try/catch). `createAdmin` links automatically; the seed backfills legacy rows. Live-verified: the linked-but-unverified `admin@test.com` gets **403 "Verify your email address…"** on `/admin/audit`. Tests: 8. |
+| 2 | **2.4 / Decision 3a — fee policy** | `PUT /sellers/settings/fees` now accepts **only** the two toggles (`buyerFeeEnabled`, `sellerFeeEnabled`). `buyerFeePct`/`sellerFeePct`/`vatPct`/`vatBase` are rejected by the DTO whitelist (live-verified 400) and live exclusively behind the admin fee endpoints. `GET /fees/overrides` is admin-guarded (was public). |
+| 2 | **2.6 public `status` filter** | `ProductService.findAll` forces `ACTIVE`; the DTO still accepts `status` so old clients don't 400, but it is ignored. Live-verified: `?status=draft` returns active rows only. |
+| 2 | **2.9 untyped `@Body()`** | DTOs with class-validator rules for `auth/change-password`, `auth/send-otp` (6-digit), `auth/verify-otp`, `wallet/deposit`, `wallet/withdraw` (4–6 digit PIN), `wallet/pin`; global ValidationPipe enforces them. |
+| 2 | **2.10 review integrity** | `POST reviews/:id/helpful` requires JWT + per-user throttle; a seller cannot review their own profile or vote helpful on reviews of it. Tests: 3. |
+| 3 | **Decision 3b — winner subject to seller approval** | `Product.requiresSellerApproval` + optional `approvalThreshold` (bids ≥ threshold auto-settle). Settlement parks such lots in the new `AWAITING_SELLER_APPROVAL` state and notifies the seller; `POST /products/:id/approve-sale` re-resolves fees and issues the invoice at decision time, `…/decline-sale` closes the lot unsold and notifies the buyer. Ownership enforced; 6 new settlement tests. |
+| 3 | Frontend wiring (Phase 3) | New `shared/utils/api-client.ts` (`apiFetch` + `ApiError`); migrated the money screens (purchases, sales, invoices view, wallet, checkout) and ~20 admin surfaces (settings modules, AI islands, agents dashboard, FAQ/banner/seller/category actions) that were calling guarded endpoints with **no Authorization header** — they all 401'd silently. Invoice-PDF downloads now authenticated. Checkout posts exactly `CreateOrderDto { invoiceId }` (the full form payload was 400ing on the whitelist) and redirects with `?invoiceId=` to match the payment page. |
+| 3 | Demo data removed on money screens | Purchases table, seller payments accounts, buyer wallet (₦20M dummy balance and dummy payments gone — real balance, real ledger rows, honest empty states), admin audit logs now render the real `GET /admin/audit` feed. `NEXT_PUBLIC_USE_MOCK_FALLBACK` mock fallbacks are now **opt-in** env with a loud warning when enabled (was: on in every non-production run). |
+| 3 | Bid history wired | `useGetAuctionBidsQuery` feeds `bidding.bidHistory` (new `setBidHistory` action); "Total Bids" and the history table show real bids instead of 0. |
+| 3 | Seller listings mapped | `/seller/auctions` maps `/products/mine` rows → `Listing` (lot id, title, image, reserve, bids, date, time left, status incl. "Ending Soon") instead of a blind cast that rendered blanks. |
+| 3 | Filters/sorts | Country + price-range filters and `newest`/`ending-soon` sorts now apply; the fake Brands filter (no brand concept exists end-to-end) was removed rather than left lying; homepage category links fixed (`subcategory` casing). RTK `getAuctions` params mapped to the real `ProductQueryDto`. |
+| 3 | Status mapping / gallery / links (5.12–5.14) | `normalizeAuction` maps every real backend status (new `ended` bucket for closed/expired/awaiting-approval — dead `live` branch is reachable, non-public states never render as active); lot gallery uses `auction.images` + the lot's real `specifications` table (was static mock art/details); direct-sales cards link to `/auctions/[slug]` (was a nonexistent `/<slug>` route). |
+| 5 | **5.1 migration baseline** | All 5 pre-existing migrations recorded in the `migrations` table (the schema they describe is live via synchronize); new `MoneyBackfillAndFts1790000000000` migration adds every column/index from this arc and **ran for real** (`npm run migration:run` green). |
+| 5 | **5.3 search GIN index** | `IDX_products_fts` expression index mirroring the exact `to_tsvector` predicate in `ProductService.findAll`. |
+| 5 | **5.5 money backfill** | Legacy invoices recomputed (`seller_net`, `platform_share`) and escrow holds inherit the invoice split — live-verified `INV-2026-000002` now reports net 250,000 instead of 0. Already-released holds were overpaid gross; the row data is corrected but clawback stays a business decision. |
+| 5 | **5.4 cron advisory locks** | New `AdvisoryLockService` (Postgres session advisory lock held on one pooled connection) wired into settlement, escrow auto-release and payment-reconciliation crons — two app instances no longer double-run the sweeps. |
+| 5 | **5.8 `/products/mine` pagination** | `page`/`limit` (default 50, cap 200), response `{ items, total }`. |
+| 5 | **5.9 withdraw idempotency** | Client `reference` on withdrawals: pre-check + unique-index race fallback return the original transaction (`idempotent: true`); a retry can no longer debit twice. Tests: 2. |
+| 5 | **5.11 refund unwinds the sale** | Escrow refund cancels the invoice and any order and flips a still-SOLD lot to CLOSED in the same transaction (guarded so a relisted re-sale is untouched). |
+
+### Verified end-to-end (live, :3001)
+
+- Public grid ignores `?status=draft` — only `active` rows return.
+- `PUT /sellers/settings/fees { buyerFeePct }` → **400** `property buyerFeePct should not exist`; `{ buyerFeeEnabled }` → 200.
+- `GET /fees/overrides` anonymous → 401, admin → 200.
+- `POST /reviews/:id/helpful` anonymous → 401.
+- Withdraw with the same client reference twice → one debit, second call `idempotent: true` with the original transaction id.
+- Linked-but-unverified admin (minted JWT for `admin@test.com`) → **403 "Verify your email address before accessing admin endpoints"** on `/admin/audit`.
+- Backfilled invoice: `INV-2026-000002` → hammer 250,000 / **seller_net 250,000** / platform_share 25,000.
+- Migration run: 6 migrations recorded, `IDX_products_fts`, both partial unique indexes and `UQ_admin_user` present.
+
 ### Not done — and why
 
 | Item | State |
 |---|---|
-| 1.3 duplicate escrow hold | Index added; the `23505` catch in `holdInManager` still to add. |
-| 1.6 status regressions | Not started. Needs a transition table on `PaymentService.updateStatus`. |
-| 2.2 seller-document IDOR | Not started. Needs the caller's `seller_id` threaded into `update`/`remove`. |
-| 2.3 admin-by-email | Not started. Needs `admins.user_id` and an email-verification requirement. |
-| 2.4 / **Decision 3a** fixed commission + bounded seller fees | Not started. |
-| 2.6 public `status` filter | Not started (one-line: force `ACTIVE`). |
-| 2.9 untyped `@Body()` | Not started. |
-| 2.10 review integrity | Not started. |
-| **Decision 3b** "final bid subject to seller approval" | Not started. Needs a product flag, a settlement branch and seller accept/decline endpoints. |
-| Phase 3 frontend wiring | Only the data helpers landed; the authenticated-fetch migration is untouched. |
-| Phase 5 latent risks | Untouched, including the migration baseline — which matters more now, because the new columns and both partial unique indexes were applied by `synchronize`, not by a migration. |
+| 5.2 CI has never completed a run | Still queued/broken upstream — needs repo admin to re-run; every other gate is green locally. |
+| 5.6 `accessToken` in the NextAuth session | Unchanged (needs the server-side proxy or scoped tokens — a design task, not a patch). |
+| 5.10 Redis alerting | Not started; the advisory locks remove the double-run risk but queue-unavailable still only logs. |
+| 4.3 KYC upload endpoint | Not started (storage-backed upload still missing). |
+| 4.4 KYC attribution / 4.5 seller audience / 4.6 chat notifications | Not started. |
+| Sales-view "Export" button | Still a stub (client-side CSV would duplicate the PDF flow; needs a format decision). |
+| Withdraw idempotency adoption | The API accepts `reference` but the withdraw modal does not send one yet. |
+| Approval expiry | `AWAITING_SELLER_APPROVAL` lots wait indefinitely if the seller never decides — no auto-decline cron yet. |
 
 ### Dev-data changed while testing
 
-- Seller `70bd6713…` (user = the admin, owner of the seeded lots) had `publish_approved` set to **true** so the gate could be proven open.
-- Lot `bfe1f6de…` was moved `pending_approval` → **`active`** by that test.
+- Admin user (`d1dd9a27…`) has `publish_approved = true`; lot `bfe1f6de…` moved `pending_approval → active` (pass 2).
+- All 5 `admins` rows now carry `user_id` (backfill); fee toggles for the admin seller were switched on/off during verification and left `enabled`.
+- A 5,000 dev wallet deposit + 1,000 withdraw (reference `verify-wd-1`) were made on the admin seller's wallet to prove withdrawal idempotency.
 
 ### Backfill needed before this reaches real data
 
-Existing `invoices` rows have `seller_net = 0` and `platform_share = 0`, and existing `escrow_holds` have no split — they predate the columns. Until a backfill runs, `/sellers/me/earnings` reports `net = 0` for historical lots (visible in testing on `INV-2026-000002`). Escrow release already falls back safely rather than paying the gross, but the numbers need recomputing from the stored components.
+**Done** in migration `MoneyBackfillAndFts1790000000000` (see pass-3 table). Remaining clawback decision for overpaid released holds is recorded above.
 
 ---
 

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class LoginDto {
@@ -52,6 +52,30 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(6)
   newPassword: string;
+}
+
+export class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
+export class SendOtpDto {
+  @IsEmail()
+  email: string;
+}
+
+export class VerifyOtpDto {
+  @IsEmail()
+  email: string;
+
+  // OTPs are 6-digit numeric (randomInt(100000, 1000000)).
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'otp must be a 6-digit code' })
+  otp: string;
 }
 
 export class CompleteProfileDto {

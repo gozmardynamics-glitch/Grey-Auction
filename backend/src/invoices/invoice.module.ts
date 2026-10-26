@@ -15,6 +15,7 @@ import { Bid } from '../bids/entities/bid.entity';
 import { EmailModule } from '../common/email/email.module';
 import { FeeModule } from '../fees/fee.module';
 import { NotificationModule } from '../notification/notification.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { NotificationModule } from '../notification/notification.module';
     EmailModule,
     FeeModule,
     NotificationModule,
+    CommonModule,
   ],
   controllers: [InvoiceController],
   providers: [

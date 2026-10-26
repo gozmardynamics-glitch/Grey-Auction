@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Payment, PaymentStatus, PaymentType, PaymentProvider } from './entities/payment.entity';
@@ -69,6 +69,19 @@ export class PaymentService {
     return this.repo.findOne({ where: { reference } });
   }
 
+  /**
+   * Legal status transitions. PENDING is the only live state; SUCCEEDED is
+   * terminal (money moved — a later "failed" webhook must never un-settle it),
+   * and FAILED/CANCELLED cannot resurrect: a retry opens a NEW payment with a
+   * new reference, it does not flip the dead one.
+   */
+  private static readonly ALLOWED_TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
+    [PaymentStatus.PENDING]: [PaymentStatus.SUCCEEDED, PaymentStatus.FAILED, PaymentStatus.CANCELLED],
+    [PaymentStatus.SUCCEEDED]: [],
+    [PaymentStatus.FAILED]: [],
+    [PaymentStatus.CANCELLED]: [],
+  };
+
   async updateStatus(
     id: string,
     status: PaymentStatus,
@@ -76,6 +89,15 @@ export class PaymentService {
   ): Promise<Payment> {
     const payment = await this.repo.findOne({ where: { id } });
     if (!payment) throw new NotFoundException('Payment not found');
+    // Same-status writes stay legal: orchestration attaches the provider
+    // reference to a still-PENDING payment, and webhook replays repeat the
+    // settled status. Only a change of state is governed by the table.
+    if (payment.status !== status &&
+        !PaymentService.ALLOWED_TRANSITIONS[payment.status].includes(status)) {
+      throw new ConflictException(
+        `Illegal payment status transition ${payment.status} -> ${status}`,
+      );
+    }
     payment.status = status;
     Object.assign(payment, extra);
     return this.repo.save(payment);

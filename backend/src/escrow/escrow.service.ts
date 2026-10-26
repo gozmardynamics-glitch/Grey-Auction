@@ -7,6 +7,8 @@ import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
+import { Order, OrderStatus } from '../orders/order.entity';
+import { Product, ProductStatus } from '../products/entities/product.entity';
 import { toMoney } from '../common/transformers/decimal.transformer';
 
 const OPEN_STATUSES = [EscrowStatus.HELD, EscrowStatus.DISPUTED];
@@ -93,17 +95,26 @@ export class EscrowService {
     const platformShare = invoice ? toMoney(invoice.platform_share) : 0;
     const vatAmount = invoice ? toMoney(invoice.vat) : 0;
 
-    return repo.save(repo.create({
-      invoiceId: input.invoiceId,
-      amount: buyerTotal,
-      sellerNet,
-      platformShare,
-      vatAmount,
-      buyerId: input.buyerId,
-      sellerId: input.sellerId,
-      status: EscrowStatus.HELD,
-      autoReleaseAt: releaseAt,
-    }));
+    try {
+      return await repo.save(repo.create({
+        invoiceId: input.invoiceId,
+        amount: buyerTotal,
+        sellerNet,
+        platformShare,
+        vatAmount,
+        buyerId: input.buyerId,
+        sellerId: input.sellerId,
+        status: EscrowStatus.HELD,
+        autoReleaseAt: releaseAt,
+      }));
+    } catch (error: any) {
+      // Two racing webhooks can both slip past the locked SELECT (one commits
+      // between the other's SELECT and INSERT). The partial unique index
+      // UQ_escrow_open_per_invoice is the final gate: treat its violation as
+      // "already held", the same outcome the SELECT produced.
+      if (error?.code === '23505') return null;
+      throw error;
+    }
   }
 
   async getForInvoice(invoiceId: string, viewerId?: string): Promise<EscrowHold[]> {
@@ -172,6 +183,29 @@ export class EscrowService {
         description: 'Escrow refund for invoice ' + hold.invoiceId,
         type: WalletTransactionType.ESCROW_REFUND,
       });
+      // 5.11 — a refund must unwind the sale, not just move the money.
+      // Cancel the invoice and any order, and reopen the lot so it can be
+      // relisted. Guarded product reset: if the seller already relisted and
+      // the lot sold again, the refund of the OLD invoice must not touch the
+      // new sale.
+      await manager.getRepository(Invoice).update(
+        { id: hold.invoiceId },
+        { status: InvoiceStatus.CANCELLED },
+      );
+      await manager.getRepository(Order).update(
+        { invoiceId: hold.invoiceId },
+        { status: OrderStatus.CANCELLED },
+      );
+      const invoice = await manager.getRepository(Invoice).findOne({
+        where: { id: hold.invoiceId },
+      });
+      if (invoice?.product_id) {
+        // Only flip a still-SOLD lot; a relisted/re-sold lot keeps its state.
+        await manager.getRepository(Product).update(
+          { id: invoice.product_id, status: ProductStatus.SOLD },
+          { status: ProductStatus.CLOSED },
+        );
+      }
       return saved;
     });
   }

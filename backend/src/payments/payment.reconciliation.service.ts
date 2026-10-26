@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PaymentService } from './payment.service';
 import { PaymentOrchestrationService } from './payment.orchestration.service';
+import { AdvisoryLockService } from '../common/advisory-lock.service';
 
 /**
  * Reconciliation sweep: payments that never delivered a webhook (e.g. the
@@ -11,6 +12,7 @@ import { PaymentOrchestrationService } from './payment.orchestration.service';
  */
 @Injectable()
 export class PaymentReconciliationService {
+  private static readonly LOCK_KEY = 'grey:payment-reconciliation';
   private readonly logger = new Logger(PaymentReconciliationService.name);
   private readonly staleMs = 10 * 60 * 1000;
   private readonly batchSize = 25;
@@ -20,6 +22,7 @@ export class PaymentReconciliationService {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly orchestration: PaymentOrchestrationService,
+    private readonly advisoryLock: AdvisoryLockService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -27,7 +30,13 @@ export class PaymentReconciliationService {
     if (this.running) return; // previous tick still in flight
     this.running = true;
     try {
-      await this.runSweep();
+      // Cross-instance guard (5.4): double reconciliation would settle twice.
+      const ran = await this.advisoryLock.tryRun(PaymentReconciliationService.LOCK_KEY, () =>
+        this.runSweep(),
+      );
+      if (ran === null) {
+        this.logger.log('Another instance holds the reconciliation lock — skipping this tick');
+      }
     } finally {
       this.running = false;
     }

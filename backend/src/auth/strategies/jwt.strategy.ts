@@ -35,6 +35,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    return { id: user.id, email: user.email, role: user.role };
+    // isEmailVerified feeds privileged resolution (AdminRolesGuard): admin
+    // authority requires a verified account, so the flag must ride on
+    // request.user.
+    return { id: user.id, email: user.email, role: user.role, isEmailVerified: user.isEmailVerified };
   }
 }

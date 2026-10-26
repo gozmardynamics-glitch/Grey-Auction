@@ -50,8 +50,32 @@ export class AdminService {
       role: dto.role || AdminRole.PLATFORM_ADMIN,
     });
     const saved = await this.adminRepo.save(admin);
+    // Link the JWT login account when one already exists for this address —
+    // AdminRolesGuard grants authority only through admins.user_id.
+    await this.linkUser(saved);
     const { passwordHash: _ph, ...result } = saved;
     return result;
+  }
+
+  /** Attach admins.user_id for the users row sharing this admin's email (idempotent). */
+  private async linkUser(admin: Admin): Promise<void> {
+    if (admin.userId) return;
+    const user = await this.userRepo.findOne({ where: { email: admin.email } });
+    if (!user) return;
+    admin.userId = user.id;
+    await this.adminRepo.save(admin);
+  }
+
+  /** Backfill the user link for legacy admins created before the link column. */
+  async backfillUserLinks(): Promise<number> {
+    const unlinked = await this.adminRepo.find({ where: { userId: null as any } });
+    let linked = 0;
+    for (const admin of unlinked) {
+      const before = admin.userId;
+      await this.linkUser(admin);
+      if (admin.userId && admin.userId !== before) linked++;
+    }
+    return linked;
   }
 
   async updateAdmin(id: string, dto: { name?: string; role?: AdminRole; isActive?: boolean }) {

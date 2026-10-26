@@ -5,17 +5,25 @@ import { DataSource } from 'typeorm';
 import { EscrowService } from './escrow.service';
 import { EscrowHold, EscrowStatus } from './entities/escrow-hold.entity';
 import { Invoice } from '../invoices/invoice.entity';
+import { Order } from '../orders/order.entity';
+import { Product } from '../products/entities/product.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 
 describe('EscrowService', () => {
   let service: EscrowService;
   const holds = { findOne: jest.fn(), find: jest.fn(), create: jest.fn(), save: jest.fn() };
-  const invoiceRepo = { findOne: jest.fn().mockResolvedValue(null) };
+  const invoiceRepo = { findOne: jest.fn().mockResolvedValue(null), update: jest.fn() };
+  const orderRepo = { update: jest.fn() };
+  const productRepo = { update: jest.fn() };
   // dataSource.transaction runs its callback with a manager whose getRepository
   // returns the mocked repository, so the transaction path is exercised.
   const manager = {
-    getRepository: jest.fn((entity: any) => (entity === Invoice ? invoiceRepo : holds)),
+    getRepository: jest.fn((entity: any) =>
+      entity === Invoice ? invoiceRepo :
+      entity === Order ? orderRepo :
+      entity === Product ? productRepo :
+      holds),
   };
   const dataSource = {
     transaction: jest.fn(async (cb: any) => cb(manager)),
@@ -66,6 +74,24 @@ describe('EscrowService', () => {
   it('rejects a second hold while funds are already in escrow', async () => {
     (holds.findOne as jest.Mock).mockResolvedValue({ id: 'h1', status: EscrowStatus.HELD });
     await expect(service.hold(input)).rejects.toThrow(ConflictException);
+  });
+
+  it('treats a 23505 unique-violation race as already-held', async () => {
+    // Both webhooks pass the locked SELECT, one INSERTs and commits; the other
+    // hits the partial unique index. The catch must convert it to `null`.
+    (holds.findOne as jest.Mock).mockResolvedValue(null);
+    (holds.create as jest.Mock).mockImplementation((x) => x);
+    (holds.save as jest.Mock).mockRejectedValue({ code: '23505' });
+
+    await expect(service.holdInManager(manager as any, input)).resolves.toBeNull();
+  });
+
+  it('rethrows non-23505 save errors from the hold path', async () => {
+    (holds.findOne as jest.Mock).mockResolvedValue(null);
+    (holds.create as jest.Mock).mockImplementation((x) => x);
+    (holds.save as jest.Mock).mockRejectedValue(new Error('connection reset'));
+
+    await expect(service.holdInManager(manager as any, input)).rejects.toThrow('connection reset');
   });
 
   it('releases funds once and credits the seller wallet atomically', async () => {

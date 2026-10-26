@@ -29,6 +29,10 @@ async function bootstrap() {
 
   console.log('🌱 Seeding admin accounts...');
 
+  // Legacy rows created before admins.user_id existed get their JWT link here.
+  const linked = await adminService.backfillUserLinks();
+  if (linked > 0) console.log(`  🔗 linked ${linked} legacy admin row(s) to their user accounts`);
+
   const admins = [
     {
       email: process.env.ADMIN_SEED_EMAIL || 'admin@greyauction.com',

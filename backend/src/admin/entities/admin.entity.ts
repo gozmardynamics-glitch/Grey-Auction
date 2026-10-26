@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum AdminRole {
   SUPER_ADMIN = 'super_admin',
@@ -20,6 +20,15 @@ export class Admin {
 
   @Column()
   name: string;
+
+  // The admins row that carries authority MUST be linked to the users row that
+  // authenticates. Email-string matching (the old scheme) let any user who
+  // set their users.email to an admin address inherit that admin's power.
+  // Unique + nullable: legacy rows backfill via the seed script; null means
+  // "no JWT authority yet".
+  @Column({ type: 'uuid', nullable: true })
+  @Index('UQ_admin_user', ['userId'], { unique: true })
+  userId: string | null;
 
   @Column({
     type: 'enum',

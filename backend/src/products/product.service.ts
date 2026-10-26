@@ -40,12 +40,13 @@ export class ProductService {
   }
 
   async findAll(query: ProductQueryDto) {
-    // Public listing defaults to ACTIVE auctions unless a status is requested
-    const { status, category, subCategory, search, country, minPrice, maxPrice, sortBy = ProductSortBy.NEWEST, page = 1, limit = 20, auctionType, allowBuyNow } = query;
+    // Public listing: ALWAYS active lots. `status` used to be honoured from the
+    // query, so ?status=DRAFT leaked unapproved lots to the street. The DTO
+    // still accepts the field (old clients keep validating) but it is ignored.
+    const { category, subCategory, search, country, minPrice, maxPrice, sortBy = ProductSortBy.NEWEST, page = 1, limit = 20, auctionType, allowBuyNow } = query;
     const where: any = {};
 
-    if (status) where.status = status;
-    else where.status = ProductStatus.ACTIVE;
+    where.status = ProductStatus.ACTIVE;
     if (category) where.category = category;
     if (subCategory) where.subCategory = subCategory;
     if (country) where.country = country;
@@ -170,12 +171,17 @@ export class ProductService {
    * account (a User) — there is no separate seller identity. Any authenticated
    * account holder can list, so this needs no Seller KYC record.
    */
-  async findMine(userId: string): Promise<Product[]> {
-    return this.repo.find({
+  /** Owner-scoped listing feed, paginated (5.8): a big seller must not pull
+    * every row they own in one response. */
+  async findMine(userId: string, page = 1, limit = 50): Promise<{ items: Product[]; total: number }> {
+    const [items, total] = await this.repo.findAndCount({
       where: { sellerId: userId },
       relations: ['seller'],
       order: { createdAt: 'DESC' },
+      take: Math.min(Math.max(limit, 1), 200),
+      skip: (Math.max(page, 1) - 1) * Math.min(Math.max(limit, 1), 200),
     });
+    return { items, total };
   }
 
   async findByIdWithLock(id: string, manager?: EntityManager): Promise<Product> {

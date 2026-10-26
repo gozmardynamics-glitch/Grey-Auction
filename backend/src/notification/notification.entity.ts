@@ -13,6 +13,10 @@ export enum NotificationType {
   INVITE_APPROVED = 'invite_approved',
   ROOM_STARTED = 'room_started',
   SYSTEM = 'system',
+  /** Decision 3b — seller must accept/decline the winning bid. */
+  SALE_APPROVAL_REQUESTED = 'sale_approval_requested',
+  /** Decision 3b — seller declined the winning bid. */
+  SALE_DECLINED = 'sale_declined',
 }
 
 @Entity('notifications')

@@ -12,6 +12,8 @@ export enum ProductStatus {
   EXPIRED = 'expired',
   CLOSED = 'closed',
   WITHDRAWN = 'withdrawn',
+  /** Decision 3b — auction closed, winner pending the seller's accept/decline. */
+  AWAITING_SELLER_APPROVAL = 'awaiting_seller_approval',
 }
 
 export enum AuctionType {
@@ -119,6 +121,18 @@ export class Product {
   // 0 = immediate release on payment (buyer assumed to have inspected and agreed).
   @Column({ type: 'int', default: 72 })
   escrowReleaseHours: number;
+
+  // Decision 3b — "final bid subject to my approval". When set, settlement does
+  // not invoice the winner automatically: the lot parks in
+  // AWAITING_SELLER_APPROVAL until the seller accepts or declines.
+  @Column({ default: false })
+  requiresSellerApproval: boolean;
+
+  // Decision 3b — optional floor: winning bids at or above this amount settle
+  // automatically; only bids below it wait for the seller. null = every
+  // winning bid needs approval while the flag is on.
+  @Column({ type: 'decimal', precision: 18, scale: 2, nullable: true, transformer: decimalTransformer })
+  approvalThreshold: number;
 
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.DRAFT })
   status: ProductStatus;
