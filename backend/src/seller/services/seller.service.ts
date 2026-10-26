@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import {
   Seller,
   SellerVerificationStatus,
@@ -23,6 +23,7 @@ import {
   SellerQueryDto,
 } from '../dto';
 import { EscrowHold } from '../../escrow/entities/escrow-hold.entity';
+import { SellerPayout, PayoutStatus } from '../entities/seller-payout.entity';
 import { toMoney } from '../../common/transformers/decimal.transformer';
 
 /**
@@ -39,6 +40,8 @@ export class SellerService {
     private readonly invoiceRepo: Repository<Invoice>,
     @InjectRepository(EscrowHold)
     private readonly escrowRepo: Repository<EscrowHold>,
+    @InjectRepository(SellerPayout)
+    private readonly payoutRepository: Repository<SellerPayout>,
   ) {}
 
   // ==========================================
@@ -329,6 +332,30 @@ export class SellerService {
       const existingEmail = await this.findByEmail(updateDto.email);
       if (existingEmail) {
         throw new ConflictException('Email already in use');
+      }
+    }
+
+    // A payout account change is the highest-risk edit on this record: diverting
+    // funds to a freshly typed account is the classic payout fraud. Stamp it so
+    // payouts can rest (PAYOUT_BANK_HOLD_HOURS), and refuse the change while a
+    // payout is already in flight.
+    const nextBank = (updateDto as { bank_account_details?: unknown }).bank_account_details;
+    if (nextBank !== undefined) {
+      const before = JSON.stringify(seller.bank_account_details ?? null);
+      const after = JSON.stringify(nextBank ?? null);
+      if (before !== after) {
+        const inFlight = await this.payoutRepository.count({
+          where: {
+            seller_id: seller.id,
+            status: In([PayoutStatus.PENDING, PayoutStatus.PROCESSING]),
+          },
+        });
+        if (inFlight > 0) {
+          throw new BadRequestException(
+            'You cannot change your payout account while a payout is in progress. Cancel it first.',
+          );
+        }
+        seller.bank_changed_at = new Date();
       }
     }
 

@@ -235,6 +235,59 @@ export class WalletService {
   }
 
   /**
+   * Debit a wallet within the caller's transaction.
+   *
+   * Used by seller payouts: the money leaves the spendable balance the moment a
+   * payout is requested (a two-phase hold), so a second request cannot overspend
+   * it even under concurrency, and a failed payout can be credited back.
+   */
+  async debitInManager(
+    manager: EntityManager,
+    userId: string,
+    input: WalletCreditInput,
+  ) {
+    const amount = toMoney(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+    const wallet = await this.getOrCreateLocked(manager, userId);
+    const txRepo = manager.getRepository(WalletTransaction);
+
+    if (input.reference) {
+      const existing = await txRepo.findOne({
+        where: { reference: input.reference, type: input.type },
+      });
+      if (existing) {
+        return { balance: toMoney(wallet.balance), transaction: existing, idempotent: true };
+      }
+    }
+
+    const balance = toMoney(wallet.balance);
+    if (amount > balance) {
+      throw new BadRequestException(
+        'Insufficient balance. Available: ' + balance,
+      );
+    }
+
+    const newBalance = roundMoney(balance - amount);
+    await manager.getRepository(Wallet).update(wallet.id, { balance: newBalance });
+
+    const tx = await txRepo.save(
+      txRepo.create({
+        walletId: wallet.id,
+        type: input.type,
+        amount,
+        reference: input.reference || null,
+        description: input.description || null,
+        status: WalletTransactionStatus.COMPLETED,
+        balanceAfter: newBalance,
+      }),
+    );
+
+    return { balance: newBalance, transaction: tx };
+  }
+
+  /**
    * Credit a wallet within a caller-supplied transaction (escrow payout, payment
    * capture). The ledger row commits or rolls back with the caller's transaction.
    */

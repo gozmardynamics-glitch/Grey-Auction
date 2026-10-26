@@ -1864,10 +1864,38 @@ export async function getSellerListings() {
   return [];
 }
 
+/**
+ * A seller's payout requests, mapped onto the payments table's columns.
+ * The rows are SellerPayout records; casting them straight to AdminPayment left
+ * every cell blank.
+ */
 export async function getSellerPayments() {
   const data = await apiFetch('/sellers/payouts/me');
   const list = unwrapList(data);
-  return (list ?? []) as AdminPayment[];
+  if (!Array.isArray(list)) return [] as AdminPayment[];
+
+  const STATUS_LABEL: Record<string, string> = {
+    PENDING: 'Pending',
+    PROCESSING: 'Pending',
+    COMPLETED: 'Completed',
+    FAILED: 'Failed',
+    CANCELLED: 'Failed',
+    REVERSED: 'Failed',
+  };
+
+  return (list as Array<Record<string, unknown>>).map(
+    (row) =>
+      ({
+        id: String(row.id ?? ''),
+        item: 'Payout ' + String(row.id ?? '').slice(0, 8),
+        buyer: '—',
+        seller: '—',
+        amount: Number(row.net_amount ?? row.gross_amount ?? 0),
+        method: String(row.payout_method ?? '—'),
+        date: String(row.requested_at ?? row.created_at ?? ''),
+        status: STATUS_LABEL[String(row.status ?? '').toUpperCase()] ?? 'Pending',
+      }) as unknown as AdminPayment,
+  );
 }
 
 export async function getSellerSales() {

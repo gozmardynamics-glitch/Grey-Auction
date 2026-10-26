@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/shared/components/common';
+import { toast } from 'sonner';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import AmountStep from './steps/amount_step';
 import PinStep from './steps/pin_step';
 import ForgotPinStep from './steps/forgot_pin_step';
@@ -23,6 +25,8 @@ interface WithdrawModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   availableBalance: number;
+  /** Fired after a payout request is accepted, so the caller can refresh. */
+  onPayoutRequested?: () => void;
 }
 
 // ---------- Helpers ----------
@@ -43,8 +47,10 @@ export default function WithdrawModal({
   open,
   onOpenChange,
   availableBalance,
+  onPayoutRequested,
 }: WithdrawModalProps) {
   const [step, setStep] = useState<WithdrawStep>('amount');
+  const [submitting, setSubmitting] = useState(false);
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
   const [forgotCode, setForgotCode] = useState('');
@@ -79,6 +85,29 @@ export default function WithdrawModal({
   };
 
   // ---------- Render ----------
+
+  /**
+   * Actually request the payout. The server debits the wallet immediately (a
+   * two-phase hold), verifies the PIN and refuses a freshly changed bank
+   * account — this dialog used to just close.
+   */
+  const submitPayout = async () => {
+    setSubmitting(true);
+    try {
+      await apiFetch('sellers/payouts/request', {
+        method: 'POST',
+        body: { amount: numericAmount, currency: 'NGN', pin },
+      });
+      setStep('withdrawal-review');
+      onPayoutRequested?.();
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : 'Could not request the payout. Please try again.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -115,7 +144,7 @@ export default function WithdrawModal({
               setStep('forgot-pin');
             }}
             onCancel={() => setStep('amount')}
-            onConfirm={() => setStep('withdrawal-review')}
+            onConfirm={() => void submitPayout()}
           />
         )}
 
@@ -153,7 +182,12 @@ export default function WithdrawModal({
         )}
 
         {step === 'withdrawal-review' && (
-          <WithdrawalReviewStep onGoToPayment={() => handleClose(false)} />
+          <WithdrawalReviewStep
+            onGoToPayment={() => {
+              onPayoutRequested?.();
+              handleClose(false);
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>

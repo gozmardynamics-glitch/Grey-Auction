@@ -4,11 +4,13 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository, Between, In } from 'typeorm';
 import { SellerPayout, PayoutStatus } from '../entities/seller-payout.entity';
 import { Seller, SellerStatus } from '../entities/seller.entity';
 import { Invoice, InvoiceStatus } from '../../invoices/invoice.entity';
+import { WalletService } from '../../wallet/wallet.service';
+import { WalletTransactionType } from '../../wallet/wallet-transaction.entity';
 import {
   RequestPayoutDto,
   ProcessPayoutDto,
@@ -28,7 +30,16 @@ export class SellerPayoutService {
     private readonly sellerRepository: Repository<Seller>,
     @InjectRepository(Invoice)
     private readonly invoiceRepository: Repository<Invoice>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly walletService: WalletService,
   ) {}
+
+  /** Hours a newly changed payout account must rest before money can leave. */
+  private get bankHoldHours(): number {
+    const configured = Number(process.env.PAYOUT_BANK_HOLD_HOURS ?? 48);
+    return Number.isFinite(configured) && configured >= 0 ? configured : 48;
+  }
 
   // ==========================================
   // PAYOUT REQUESTS
@@ -37,27 +48,33 @@ export class SellerPayoutService {
   /**
    * Request a payout
    */
+  /**
+   * Request a payout.
+   *
+   * Accounting model: the seller's released proceeds already sit in their
+   * wallet (escrow release credits `seller_net`). A payout therefore DRAWS DOWN
+   * that ledger instead of recomputing a balance from invoice rows, which had
+   * two defects — it counted unpaid invoices as available, and it deducted
+   * commission a second time on money the invoice had already netted.
+   *
+   * The amount is debited at request time (a two-phase hold), so an in-flight
+   * payout cannot be requested twice, and a failed or cancelled payout is
+   * credited back.
+   */
   async requestPayout(
     sellerId: string,
     requestDto: RequestPayoutDto,
   ): Promise<SellerPayout> {
-    // Get seller
     const seller = await this.sellerRepository.findOne({
       where: { id: sellerId, deleted_at: null },
     });
-
-    if (!seller) {
-      throw new NotFoundException('Seller not found');
-    }
-
-    // Validate seller can receive payouts
+    if (!seller) throw new NotFoundException('Seller not found');
     if (!seller.canReceivePayouts()) {
       throw new BadRequestException(
         'Seller must be active and have payout method configured',
       );
     }
 
-    // Check minimum payout amount (e.g., 1000 NGN)
     const MIN_PAYOUT = 1000;
     if (requestDto.amount < MIN_PAYOUT) {
       throw new BadRequestException(
@@ -65,88 +82,85 @@ export class SellerPayoutService {
       );
     }
 
-    // Check if seller has sufficient balance (real, invoice-derived).
-    // Earned = gross sales on non-cancelled invoices; withdrawn = gross amounts
-    // already requested in live/fulfilled payouts.
-    const invoices = await this.invoiceRepository.find({
-      where: { seller_id: sellerId },
-    });
-    const grossEarned = invoices
-      .filter((inv) => inv.status !== InvoiceStatus.CANCELLED)
-      .reduce((sum, inv) => sum + Number(inv.hammer_price), 0);
-
-    const payouts = await this.payoutRepository.find({
-      where: {
-        seller_id: sellerId,
-        status: In([
-          PayoutStatus.PENDING,
-          PayoutStatus.PROCESSING,
-          PayoutStatus.COMPLETED,
-        ]),
-      },
-    });
-    const grossWithdrawn = payouts.reduce(
-      (sum, payout) => sum + Number(payout.gross_amount),
-      0,
-    );
-
-    const availableBalance = grossEarned - grossWithdrawn;
-    if (requestDto.amount > availableBalance) {
-      throw new BadRequestException(
-        'Insufficient balance. Available: ' + availableBalance,
-      );
+    // A changed payout account must rest: diverting funds to a freshly edited
+    // bank account is the classic payout-fraud path.
+    if (seller.bank_changed_at) {
+      const restMs = this.bankHoldHours * 60 * 60 * 1000;
+      const readyAt = new Date(new Date(seller.bank_changed_at).getTime() + restMs);
+      if (Date.now() < readyAt.getTime()) {
+        throw new BadRequestException(
+          `Your payout account was changed recently. Payouts open again on ${readyAt.toISOString()}.`,
+        );
+      }
     }
 
-    // Check for pending payouts (max 1 pending at a time)
-    const pendingPayout = await this.payoutRepository.findOne({
-      where: {
-        seller_id: sellerId,
-        status: PayoutStatus.PENDING,
-      },
-    });
-
-    if (pendingPayout) {
-      throw new BadRequestException(
-        'You already have a pending payout request',
-      );
+    // The wallet PIN is the account holder's second factor for money leaving.
+    const pinOk = await this.walletService.verifyPin(seller.user_id, requestDto.pin ?? '');
+    if (!pinOk) {
+      throw new BadRequestException('Invalid wallet PIN');
     }
 
-    // Calculate commission
-    const commission_amount = SellerPayout.calculateCommission(
-      requestDto.amount,
-      seller.commission_rate,
-    );
-    const net_amount = SellerPayout.calculateNetAmount(
-      requestDto.amount,
-      seller.commission_rate,
-    );
+    return this.dataSource.transaction(async (manager) => {
+      const payoutRepo = manager.getRepository(SellerPayout);
 
-    // Use seller's default payout details or provided ones
-    const payout_details = requestDto.payout_details || {
-      ...seller.bank_account_details,
-      payout_method: seller.payout_method,
-    };
+      const pendingPayout = await payoutRepo.findOne({
+        where: {
+          seller_id: sellerId,
+          status: In([PayoutStatus.PENDING, PayoutStatus.PROCESSING]),
+        },
+      });
+      if (pendingPayout) {
+        throw new BadRequestException('You already have a payout in progress');
+      }
 
-    // Create payout
-    const payout = this.payoutRepository.create({
-      seller_id: sellerId,
-      gross_amount: requestDto.amount,
-      commission_amount,
-      net_amount,
-      currency: requestDto.currency || seller.currency,
-      commission_rate: seller.commission_rate,
-      status: PayoutStatus.PENDING,
-      payout_method: seller.payout_method,
-      payout_details,
-      reference_number: SellerPayout.generateReferenceNumber(),
+      // Read for a helpful message; debitInManager re-checks under the row lock.
+      const walletView = await this.walletService.getWallet(seller.user_id);
+      const available = Number(walletView?.balance ?? 0);
+      if (requestDto.amount > available) {
+        throw new BadRequestException(
+          'Insufficient available balance. Cleared funds: ' + available,
+        );
+      }
+
+      const payout_details = requestDto.payout_details || {
+        ...seller.bank_account_details,
+        payout_method: seller.payout_method,
+      };
+
+      const payout = await payoutRepo.save(
+        payoutRepo.create({
+          seller_id: sellerId,
+          // NOT NULL + unique: a payout without a human-quotable reference is
+          // useless to finance anyway.
+          reference_number:
+            'PO-' + Date.now().toString(36).toUpperCase() + '-' +
+            Math.random().toString(36).slice(2, 6).toUpperCase(),
+          gross_amount: requestDto.amount,
+          // Commission was charged on the invoice when it settled; charging it
+          // again here took it twice.
+          commission_amount: 0,
+          net_amount: requestDto.amount,
+          currency: (requestDto.currency || seller.currency || 'NGN').toUpperCase(),
+          commission_rate: Number(seller.commission_rate) || 0,
+          payout_method: String(payout_details?.payout_method ?? seller.payout_method ?? 'BANK_TRANSFER'),
+          payout_details,
+          processing_notes: requestDto.notes ?? null,
+          status: PayoutStatus.PENDING,
+        }),
+      );
+
+      // Hold the money now: the debit is what makes a second request impossible.
+      await this.walletService.debitInManager(manager, seller.user_id, {
+        amount: requestDto.amount,
+        reference: 'payout_request:' + payout.id,
+        description: 'Payout request ' + payout.id.slice(0, 8),
+        type: WalletTransactionType.WITHDRAW,
+      });
+
+      return payout;
     });
-
-    return this.payoutRepository.save(payout);
   }
 
-  /**
-   * Find all payouts with filtering
-   */
   async findAll(query: PayoutQueryDto): Promise<{
     data: SellerPayout[];
     total: number;
@@ -243,6 +257,49 @@ export class SellerPayoutService {
   /**
    * Process payout (admin)
    */
+
+  /**
+   * Return a held payout amount to the seller's wallet.
+   *
+   * The request debits the wallet immediately (two-phase hold), so a payout that
+   * fails or is cancelled must credit it back — otherwise the seller's money
+   * disappears into a failed transfer. The reference makes the reversal
+   * idempotent.
+   */
+  private async releaseHold(
+    manager: import('typeorm').EntityManager,
+    payout: SellerPayout,
+  ): Promise<void> {
+    const seller = await manager.getRepository(Seller).findOne({
+      where: { id: payout.seller_id },
+    });
+    if (!seller) return;
+    await this.walletService.creditInManager(manager, seller.user_id, {
+      amount: Number(payout.net_amount),
+      reference: 'payout_reversal:' + payout.id,
+      description:
+        'Payout ' + payout.id.slice(0, 8) + ' returned to your balance',
+      type: WalletTransactionType.DEPOSIT,
+    });
+  }
+
+  /** Re-take the hold when a failed payout is retried. */
+  private async retakeHold(
+    manager: import('typeorm').EntityManager,
+    payout: SellerPayout,
+  ): Promise<void> {
+    const seller = await manager.getRepository(Seller).findOne({
+      where: { id: payout.seller_id },
+    });
+    if (!seller) return;
+    await this.walletService.debitInManager(manager, seller.user_id, {
+      amount: Number(payout.net_amount),
+      reference: 'payout_retry:' + payout.id + ':' + payout.retry_count,
+      description: 'Payout ' + payout.id.slice(0, 8) + ' retry hold',
+      type: WalletTransactionType.WITHDRAW,
+    });
+  }
+
   async process(
     id: string,
     processDto: ProcessPayoutDto,
@@ -282,7 +339,14 @@ export class SellerPayoutService {
       payout.failed_at = now;
     }
 
-    return this.payoutRepository.save(payout);
+    return this.dataSource.transaction(async (manager) => {
+      const saved = await manager.getRepository(SellerPayout).save(payout);
+      if (saved.status === PayoutStatus.FAILED) {
+        // The transfer failed: put the held money back in the seller's balance.
+        await this.releaseHold(manager, saved);
+      }
+      return saved;
+    });
   }
 
   /**
@@ -317,7 +381,12 @@ export class SellerPayoutService {
       ? `${payout.processing_notes}\n\nCancellation reason: ${cancelDto.cancellation_reason}`
       : `Cancellation reason: ${cancelDto.cancellation_reason}`;
 
-    return this.payoutRepository.save(payout);
+    return this.dataSource.transaction(async (manager) => {
+      const saved = await manager.getRepository(SellerPayout).save(payout);
+      // Cancelling releases the hold: the money is the seller's again.
+      await this.releaseHold(manager, saved);
+      return saved;
+    });
   }
 
   /**

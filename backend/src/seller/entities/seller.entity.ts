@@ -213,6 +213,12 @@ export class Seller {
   })
   payout_method: SellerPayoutMethod;
 
+  // When the payout account last changed. Money cannot leave the account
+  // until it has rested (PAYOUT_BANK_HOLD_HOURS) — the control against
+  // payout fraud via a bank-detail change.
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  bank_changed_at: Date | null;
+
   @Column({ type: 'jsonb', nullable: true })
   bank_account_details: {
     bank_name?: string;

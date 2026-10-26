@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { apiFetch } from '@/shared/utils/api-client';
 
 import SellerBalanceCard from '../payment/components/seller_balance_card';
 import { useSellerWallet } from '@/lib/hooks/wallet.hooks';
@@ -16,14 +17,29 @@ interface PaymentActionsProps {
   payments: Payment[];
 }
 
-export default function PaymentActions({ payments }: PaymentActionsProps) {
+export default function PaymentActions({ payments: _payments }: PaymentActionsProps) {
   const sellerWallet = useSellerWallet();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
 
-  const currentBalance = payments.filter(
-    (p) => p.status === 'Completed'
-  ).reduce((sum, p) => sum + p.amount, 0);
+  // The wallet ledger is the authority on what a seller can withdraw: escrow
+  // release credits sellerNet there, and an in-flight payout is already
+  // debited. Deriving a balance from a status string read ₦0 forever.
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const loadBalance = useCallback(async () => {
+    try {
+      const json = await apiFetch<{ data?: { balance?: number } }>('wallet');
+      setCurrentBalance(Number(json?.data?.balance ?? 0));
+    } catch {
+      setCurrentBalance(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBalance();
+  }, [loadBalance, refreshKey]);
 
   return (
     <>
@@ -36,8 +52,12 @@ export default function PaymentActions({ payments }: PaymentActionsProps) {
 
       <WithdrawModal
         open={withdrawOpen}
-        onOpenChange={setWithdrawOpen}
+        onOpenChange={(open) => {
+          setWithdrawOpen(open);
+          if (!open) setRefreshKey((k) => k + 1);
+        }}
         availableBalance={currentBalance}
+        onPayoutRequested={() => setRefreshKey((k) => k + 1)}
       />
 
       <AddAccountModal open={addAccountOpen} onOpenChange={setAddAccountOpen} />

@@ -23,13 +23,12 @@ are grouped by what breaks if left alone.
 | 1 | **Overpaid escrow holds** | Holds released before the payout split existed were paid the buyer's gross amount. Row data is corrected; the money has moved. | `backend/src/escrow/escrow.service.ts` | Finance decision: absorb, offset a future payout, or invoice. Then optionally an admin report listing holds whose components do not reconcile. |
 | 2 | **OPay webhook signature** | OPay cannot settle. Fails closed, so nothing can be forged. | `backend/src/payments/providers/opay.provider.ts:26` | Confirm the header name from OPay's docs, implement, replay a sample payload in a test. |
 | 3 | **Interswitch IPN signature** | Same for Interswitch. | `backend/src/payments/providers/interswitch.provider.ts:27` | Confirm the signing scheme, implement, test. |
-| 4 | **Bank-account name resolution** | The withdraw add-account step saves what was typed and says it cannot verify the name. | `frontend/shared/components/add_account_steps/add_account_step.tsx` | Needs a name-enquiry provider + key; wire behind an env flag, keep the honest wording otherwise. |
+| 4 | **Bank-account name enquiry** | The *controls* now exist (a changed account must rest `PAYOUT_BANK_HOLD_HOURS`, and it cannot be changed while a payout is in flight), but nothing verifies that the account name matches the seller. | `frontend/shared/components/add_account_steps/add_account_step.tsx` | Needs a name-enquiry provider + key (Paystack/Flutterwave resolve-account); store asserted vs returned name and only clear the rest early when they match. |
 
 ### P2 — money and trust flows that still do not work
 
 | # | Item | Why it matters | Where |
 |---|---|---|---|
-| 5 | **Seller payout withdrawal is theatre** | The 6-step dialog never calls `POST /sellers/payouts/request`, the PIN is not verified, and the review step only closes. `payment_actions.tsx` computes the balance from `status === 'Completed'` against lowercase payout rows, so it reads ₦0 and blocks withdrawal anyway. `getSellerPayments()` also casts raw payout rows to `AdminPayment`, leaving the table columns blank. | `seller/payment/components/withdraw_modal.tsx`, `seller/_islands/payment_actions.tsx`, `lib/server/data.ts` (`getSellerPayments`) |
 | 6 | **Admin "Add seller" makes the ADMIN a seller** | `POST /sellers/register` attaches the profile to the *caller*, and there is no admin route to create a seller for another account. The form now sends a valid body, so it succeeds — with the wrong owner. | `frontend/app/[locale]/(domain)/admin/_islands/add_seller_action.tsx`, needs a backend admin endpoint |
 | 7 | **Buyers cannot see invitations they received** | `GET /invites/pending` returns invites *created by* the caller. Nothing exposes invitations *received*; they only arrive as email links. The invitations module now lists the caller's own sent invites instead of every private room (which it used to leak). | backend `invites` module needs a received-invitations route |
 | 8 | **Seller bidding room: create + invite** | `create_room.tsx` omits required `startTime`/`endTime`; `invite_bidder_modal.tsx` fabricates a `/invite/demo-…` link when the call fails; `getSellerBiddingRooms()` casts raw `Room` rows to `BiddingRoom` so the table is blank. `GET /rooms` is also public and returns every tenant's rooms. | `seller/bidding-room/**`, `lib/server/data.ts`, backend `rooms` controller |
@@ -52,6 +51,17 @@ are grouped by what breaks if left alone.
 | 20 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
 
 ### Fixed in the role-wiring pass (for context, no action needed)
+
+**Payouts are now ledger-backed (verified 14/14 against the API).** A payout
+draws down the seller's wallet — where escrow release credits `seller_net` —
+instead of recomputing a balance from invoice rows, and the amount is debited
+the moment it is requested (a two-phase hold), so a second request cannot
+overspend it. Commission is no longer deducted a second time at payout, the
+wallet PIN is verified server-side, a cancelled or failed payout returns the
+money, a payout account cannot be changed while one is in flight, and a changed
+account must rest before money can leave it. The seller payment screen reads the
+ledger balance (it derived ₦0 from a status string) and the withdraw dialog
+actually posts `sellers/payouts/request`.
 
 Onboarding was broken end to end and is now verified working: organization
 registration sent a `categories` field the DTO rejects, an invalid `COMPANY`
@@ -115,7 +125,8 @@ unique indexes · cron advisory locks.
 See `frontend/.env.example`.
 
 **Environment (backend).** `SELLER_APPROVAL_WINDOW_HOURS` (default 72),
-`QUEUE_REQUIRED` (on by default in production), `DB_*`, `JWT_SECRET`.
+`QUEUE_REQUIRED` (on by default in production), `PAYOUT_BANK_HOLD_HOURS`
+(default 48; how long a changed payout account must rest), `DB_*`, `JWT_SECRET`.
 Optional: Redis (`REDIS_URL`) — without it settlement runs inline and
 `settlement_queue_available` reports 0.
 

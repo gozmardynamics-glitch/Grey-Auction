@@ -8,6 +8,7 @@ import {
   Min,
   MaxLength,
   IsDateString,
+  Matches,
 } from 'class-validator';
 import { PayoutStatus } from '../entities/seller-payout.entity';
 
@@ -15,6 +16,13 @@ import { PayoutStatus } from '../entities/seller-payout.entity';
  * DTO for requesting a payout
  */
 export class RequestPayoutDto {
+  /** Wallet PIN. Required when one is set — a payout is money leaving the account. */
+  @ApiProperty({ example: '1234', required: false })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4,6}$/, { message: 'pin must be 4 to 6 digits' })
+  pin?: string;
+
   @ApiProperty({ example: 50000.0, description: 'Amount to withdraw' })
   @IsNumber()
   @Min(1)

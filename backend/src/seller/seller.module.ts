@@ -22,6 +22,7 @@ import { Invoice } from '../invoices/invoice.entity';
 import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { FeeModule } from '../fees/fee.module';
 import { ChatModule } from '../chat/chat.module';
+import { WalletModule } from '../wallet/wallet.module';
 import {
   SellerGuard,
   VerifiedSellerGuard,
@@ -44,6 +45,7 @@ import {
     EmailModule,
     FeeModule,
     ChatModule,
+    WalletModule,
   ],
   controllers: [SellerController],
   providers: [

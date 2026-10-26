@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { SellerPayout } from '../entities/seller-payout.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SellerService } from './seller.service';
 import { Seller } from '../entities/seller.entity';
@@ -21,6 +22,7 @@ describe('SellerService', () => {
         { provide: getRepositoryToken(Product), useValue: productRepo },
         { provide: getRepositoryToken(Invoice), useValue: invoiceRepo },
         { provide: getRepositoryToken(EscrowHold), useValue: { find: jest.fn().mockResolvedValue([]) } },
+        { provide: getRepositoryToken(SellerPayout), useValue: { count: jest.fn().mockResolvedValue(0) } },
       ],
     }).compile();
     service = module.get<SellerService>(SellerService);
