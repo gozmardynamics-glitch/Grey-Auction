@@ -35,6 +35,8 @@ import {
 
 import { formatCurrency } from '@/shared/utils/helpers';
 import { getErrorMessage } from '@/shared/utils/error_utils';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 import {
   CheckoutFormValues,
   checkoutSchema,
@@ -51,6 +53,7 @@ interface CheckoutFormProps {
 
 export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
   const router = useRouter();
+  const authToken = useAppSelector((state) => state.auth.token);
   const [isLoading, setIsLoading] = useState(false);
 
   const total = orderItems.reduce((sum, item) => sum + item.price, 0);
@@ -87,7 +90,11 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
   const onSubmit = async (data: CheckoutFormValues) => {
     setIsLoading(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      if (!authToken) {
+        toast.error('Please sign in to check out.');
+        router.push('/sign-in');
+        return;
+      }
 
       // Checkout is driven by a won-auction invoice. The invoice id arrives in
       // the URL (?invoice=...) from the invoice/bid flow — there is no
@@ -102,20 +109,22 @@ export default function CheckoutForm({ orderItems }: CheckoutFormProps) {
         return;
       }
 
-      const res = await fetch(`${apiBase}/orders`, {
+      // POST /orders accepts exactly CreateOrderDto { invoiceId }. The server
+      // whitelist rejects everything else, and the order inherits the buyer
+      // identity from the token — never from the body.
+      await apiFetch('orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoiceId, ...data }),
+        token: authToken,
+        body: { invoiceId },
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Could not create the order');
-      }
-
-      router.push(`/checkout/payment?invoice=${encodeURIComponent(invoiceId)}`);
+      // The payment page reads `invoiceId` from the query string.
+      router.push(`/checkout/payment?invoiceId=${encodeURIComponent(invoiceId)}`);
     } catch (error) {
-      toast.error(getErrorMessage(error) || 'Could not create the order. Please try again.');
+      const detail = error instanceof ApiError && error.status === 401
+        ? 'Your session has expired — please sign in again.'
+        : getErrorMessage(error);
+      toast.error(detail || 'Could not create the order. Please try again.');
     } finally {
       setIsLoading(false);
     }

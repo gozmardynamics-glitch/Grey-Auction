@@ -101,7 +101,9 @@ type WithdrawStep =
   | 'reset-pin-success';
 type WalletPaymentStatus = 'Completed' | 'Pending' | 'Failed';
 type WalletPaymentType = 'Deposit' | 'Withdraw';
-type WalletPaymentMethod = 'Card' | 'Wema' | 'Bank Transfer';
+// 'Wallet' = an internal wallet ledger movement (deposit/withdraw), which has
+// no external payment method attached.
+type WalletPaymentMethod = 'Card' | 'Wema' | 'Bank Transfer' | 'Wallet';
 type ReceiptStatus = 'Completed' | 'Pending' | 'Failed';
 type ReceiptType = 'Deposit' | 'Withdraw';
 

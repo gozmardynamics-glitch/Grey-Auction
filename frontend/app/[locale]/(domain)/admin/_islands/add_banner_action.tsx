@@ -4,10 +4,13 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus } from 'lucide-react';
 import { Button } from '@/shared/components/common';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 const AddBannerDialog = dynamic(() => import('../banners/components/add_banner_dialog'));
 
 export default function AddBannerAction() {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [addBannerOpen, setAddBannerOpen] = useState(false);
 
   return (
@@ -21,11 +24,10 @@ export default function AddBannerAction() {
         onOpenChange={setAddBannerOpen}
         onSubmit={async (data) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/banners`, {
+            await apiFetch('admin/banners', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data),
+              token: authToken,
+              body: data,
             });
           } catch (error) {
             console.error('Failed to add banner:', error);

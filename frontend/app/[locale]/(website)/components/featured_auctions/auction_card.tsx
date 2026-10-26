@@ -63,6 +63,7 @@ function StatusBadge({ status }: { status: Auction['status'] }) {
     live:   { bg: 'bg-red-600',     ring: 'ring-red-500/30',     text: 'Live Now', dot: 'bg-red-300 animate-pulse' },
     new:    { bg: 'bg-blue-600',    ring: 'ring-blue-500/30',    text: 'New', dot: 'bg-blue-300' },
     sold:   { bg: 'bg-gray-600',    ring: 'ring-gray-500/30',    text: 'Sold', dot: 'bg-gray-300' },
+    ended:  { bg: 'bg-gray-500',    ring: 'ring-gray-400/30',    text: 'Ended', dot: 'bg-gray-300' },
   };
   const c = config[status];
   return (
@@ -293,7 +294,7 @@ export function AuctionCard({
           <Button variant="default" size="sm" className="flex-1 h-9 text-xs rounded-lg font-semibold" onClick={(e) => { e.stopPropagation(); onBidClick?.(auction.id); }}>
             Bid Now
           </Button>
-        ) : auction.status === 'sold' ? (
+        ) : auction.status === 'sold' || auction.status === 'ended' ? (
           <Button variant="outline" size="sm" className="flex-1 h-9 text-xs rounded-lg font-medium" onClick={(e) => { e.stopPropagation(); onBidClick?.(auction.id); }}>
             View Details
           </Button>

@@ -10,8 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/co
 import { MiniSpinner } from '@/shared/components/common/spinner';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { downloadInvoicePdf } from '@/shared/utils/invoice';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 interface InvoiceRow {
   id: string;
@@ -33,16 +33,16 @@ const shortId = (value: string) =>
   value ? `${value.slice(0, 8)}…` : '—';
 
 export default function InvoicesView() {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInvoices = useCallback(() => {
-    fetch(`${API_URL}/invoices`, { cache: 'no-store' })
-      .then((res) => res.json())
+    apiFetch<{ data: InvoiceRow[] }>('invoices', { token: authToken })
       .then((json) => setInvoices(json.data || []))
       .catch(() => toast.error('Failed to load invoices'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [authToken]);
 
   useEffect(() => {
     fetchInvoices();
@@ -50,7 +50,7 @@ export default function InvoicesView() {
 
   const handleDownload = async (id: string) => {
     try {
-      await downloadInvoicePdf(id);
+      await downloadInvoicePdf(id, authToken);
     } catch {
       toast.error('Failed to download PDF');
     }

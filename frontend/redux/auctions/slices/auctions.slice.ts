@@ -20,7 +20,6 @@ const initialState: AuctionsState = {
     categories: [],
     subCategory: '',
     countries: [],
-    brands: [],
     priceRange: [0, 50000000],
     sortBy: 'default',
   },
@@ -66,7 +65,6 @@ const auctionsSlice = createSlice({
         categories: [],
         subCategory: '',
         countries: [],
-        brands: [],
         priceRange: [0, 50000000],
         sortBy: 'default',
       };

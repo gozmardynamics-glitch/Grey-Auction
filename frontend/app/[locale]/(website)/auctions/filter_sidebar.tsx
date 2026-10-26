@@ -8,9 +8,8 @@ import {
   Separator,
   Slider,
 } from '@/shared/components/common';
-import { ChevronLeft, Search } from 'lucide-react';
-import { BRANDS, CATEGORIES, COUNTRIES } from '../models/data';
-import { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { CATEGORIES, COUNTRIES } from '../models/data';
 import { useAppDispatch, useAppSelector } from '@/redux/store';
 import {
   setFilters,
@@ -22,16 +21,14 @@ import ADsCard from '../components/ads_card';
 export default function FilterSidebar() {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((state) => state.auctions.filters);
-  const [brandSearch, setBrandSearch] = useState('');
 
   const activeFilterCount =
     filters.categories.length +
     filters.countries.length +
-    filters.brands.length +
     (filters.priceRange[0] > 0 || filters.priceRange[1] < 50000000 ? 1 : 0);
 
   const toggleFilter = (
-    key: 'categories' | 'countries' | 'brands',
+    key: 'categories' | 'countries',
     value: string
   ) => {
     const current = filters[key];
@@ -47,9 +44,6 @@ export default function FilterSidebar() {
     dispatch(setCurrentPage(1));
   };
 
-  const filteredBrands = BRANDS.filter((b) =>
-    b.toLowerCase().includes(brandSearch.toLowerCase())
-  );
   return (
     <div className="space-y-6">
       {/* Active Filters */}
@@ -111,39 +105,6 @@ export default function FilterSidebar() {
                 className="cursor-pointer text-sm font-normal text-muted-foreground"
               >
                 {country}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Brands */}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold text-foreground">Brands</h3>
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search for brand"
-            value={brandSearch}
-            onChange={(e) => setBrandSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <div className="space-y-2.5">
-          {filteredBrands.map((brand) => (
-            <div key={brand} className="flex items-center gap-2.5">
-              <Checkbox
-                id={`brand-${brand}`}
-                checked={filters.brands.includes(brand)}
-                onCheckedChange={() => toggleFilter('brands', brand)}
-              />
-              <Label
-                htmlFor={`brand-${brand}`}
-                className="cursor-pointer text-sm font-normal text-muted-foreground"
-              >
-                {brand}
               </Label>
             </div>
           ))}

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { Button, Label, Switch } from '@/shared/components/common';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 interface NotificationItem {
   key: string;
@@ -41,6 +43,7 @@ const defaultNotifications: NotificationItem[] = [
 
 export default function NotificationsSettings() {
   const t = useTranslations('admin.settings.notifications');
+  const authToken = useAppSelector((state) => state.auth.token);
   const [notifications, setNotifications] =
     useState<NotificationItem[]>(defaultNotifications);
 
@@ -52,11 +55,10 @@ export default function NotificationsSettings() {
 
   const onSave = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/notifications`, {
+      await apiFetch('settings/notifications', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notifications }),
+        token: authToken,
+        body: { notifications },
       });
       toast.success(t('saved'));
     } catch (error) {

@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 import { getAuctionBySlug, getSellerReviews, getProductDocuments, getFeeBreakdown } from '@/lib/server/data';
-import { images, auctionDetails } from '../../models/data';
 import ProductDetailsClient from './product_details_client';
 import { AuctionSchema } from '@/shared/components/common/structured_data';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://greyauction.com';
+
+/** The lot's real specification table — no more static mock details. */
+const auctionDetailsFrom = (auction: { specifications?: Record<string, string> | null }) =>
+  Object.entries(auction.specifications ?? {}).map(([label, value]) => ({ label, value }));
 
 interface ProductDetailsPageProps {
   params: Promise<{ slug: string }>;
@@ -79,8 +82,8 @@ export default async function ProductDetailsPage({
       />
       <ProductDetailsClient
         auction={auction}
-        images={images}
-        auctionDetails={auctionDetails}
+        images={auction.images?.length ? auction.images : [auction.imageUrl || '/placeholder.svg']}
+        auctionDetails={auctionDetailsFrom(auction)}
         reviews={reviews}
         documents={documents}
         feeBreakdown={feeBreakdown}

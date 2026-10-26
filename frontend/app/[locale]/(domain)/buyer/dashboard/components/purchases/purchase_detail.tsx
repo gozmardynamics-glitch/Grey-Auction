@@ -37,7 +37,7 @@ export default function PurchaseDetail({
       return;
     }
     try {
-      await downloadInvoicePdf(invoice.id);
+      await downloadInvoicePdf(invoice.id, authToken);
     } catch {
       toast.error('Failed to download invoice. Please try again.');
     }

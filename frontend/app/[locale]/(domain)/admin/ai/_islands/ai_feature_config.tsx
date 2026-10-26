@@ -8,10 +8,11 @@ import { Switch } from '@/shared/components/common/switch';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import type { AIFeatureConfig, LLMModel } from '../../models';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function AIFeatureConfig({ feature, allModels }: { feature: AIFeatureConfig; allModels: LLMModel[] }) {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [form, setForm] = useState<{
     displayName: string;
     description: string;
@@ -53,22 +54,18 @@ export default function AIFeatureConfig({ feature, allModels }: { feature: AIFea
       payload.rateLimitPerMinute = Number(form.rateLimitPerMinute);
       payload.rateLimitPerDay = Number(form.rateLimitPerDay);
 
-      const res = await fetch(`${API_URL}/admin/ai/features/${feature.id}`, {
+      await apiFetch(`admin/ai/features/${feature.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        token: authToken,
+        body: payload,
       });
-      if (res.ok) {
-        toast.success('Feature config updated');
-      } else {
-        toast.error('Failed to update');
-      }
+      toast.success('Feature config updated');
     } catch {
       toast.error('Failed to update');
     } finally {
       setSaving(false);
     }
-  }, [form, feature.id]);
+  }, [form, feature.id, authToken]);
 
   const modelOptions = allModels.map((m) => (
     <option key={m.id} value={m.id}>{m.displayName} ({m.modelId})</option>

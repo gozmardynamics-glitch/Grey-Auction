@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 const ENV_HINTS: Record<string, string> = {
   paystack: 'PAYSTACK_SECRET_KEY',
@@ -11,23 +13,30 @@ const ENV_HINTS: Record<string, string> = {
   opay: 'OPAY_MERCHANT_ID / OPAY_SECRET_KEY',
 };
 
-/** Live provider status from GET /payments/providers, with env placeholders. */
+/** Live provider status from GET /payments/providers (JWT-guarded), with env placeholders. */
 export function PaymentProvidersStatus() {
   const t = useTranslations('admin.settings.paymentProviders');
+  const authToken = useAppSelector((state) => state.auth.token);
   const [providers, setProviders] = useState<{ provider: string; configured: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(apiBase + '/payments/providers')
-      .then((r) => r.json())
+    let cancelled = false;
+    apiFetch<{ data: { provider: string; configured: boolean }[] }>('payments/providers', {
+      token: authToken,
+    })
       .then((j) => {
         const data = j?.data ?? [];
-        if (Array.isArray(data)) setProviders(data);
+        if (!cancelled && Array.isArray(data)) setProviders(data);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken]);
 
   return (
     <Card>

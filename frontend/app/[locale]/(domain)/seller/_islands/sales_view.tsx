@@ -14,6 +14,7 @@ import { Sale } from '../models';
 import { useAppSelector } from '@/redux/store';
 import { formatCurrency } from '@/shared/utils/helpers';
 import { downloadInvoicePdf } from '@/shared/utils/invoice';
+import { apiFetch } from '@/shared/utils/api-client';
 
 const ReceiptModal = dynamic(() => import('../sales/components/receipt_modal'));
 import { createColumns } from '../sales/components/sales_column';
@@ -42,25 +43,32 @@ export default function SalesView({ sales }: SalesViewProps) {
   const [invoices, setInvoices] = useState<SellerInvoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const authUser = useAppSelector((state) => state.auth.user);
+  const authToken = useAppSelector((state) => state.auth.token);
 
   useEffect(() => {
+    if (!authToken) {
+      setLoadingInvoices(false);
+      return;
+    }
+    let cancelled = false;
     const loadInvoices = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${apiBase}/invoices?sellerId=${authUser?.id ?? ''}`, {
-          cache: 'no-store',
+        // Server-scoped: a non-admin caller always sees their own invoices.
+        const json = await apiFetch<{ data: SellerInvoice[] }>('invoices', {
+          token: authToken,
         });
-        if (!res.ok) throw new Error('Failed');
-        const json = await res.json();
-        setInvoices(json.data || []);
+        if (!cancelled) setInvoices(json.data || []);
       } catch {
-        setInvoices([]);
+        if (!cancelled) setInvoices([]);
       } finally {
-        setLoadingInvoices(false);
+        if (!cancelled) setLoadingInvoices(false);
       }
     };
     loadInvoices();
-  }, [authUser?.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken]);
 
   const handleViewReceipt = (sale: Sale) => {
     setSelectedSale(sale);
@@ -164,7 +172,7 @@ export default function SalesView({ sales }: SalesViewProps) {
                           variant="outline"
                           size="sm"
                           className="gap-1.5 h-7 text-xs"
-                          onClick={() => downloadInvoicePdf(inv.id)}
+                          onClick={() => downloadInvoicePdf(inv.id, authToken)}
                         >
                           <Download className="h-3 w-3" />
                           PDF

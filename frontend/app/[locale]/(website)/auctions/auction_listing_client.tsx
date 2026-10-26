@@ -20,6 +20,7 @@ import type { BreadcrumbItemData } from '@/shared/components/common/breadcrumbs'
 import { LayoutGrid, List, Funnel, X } from 'lucide-react';
 
 import FilterSidebar from './filter_sidebar';
+import type { AuctionFilters } from '@/redux/auctions/models';
 import { AuctionCard } from '../components/featured_auctions/auction_card';
 import {
   setFilters,
@@ -77,11 +78,28 @@ export default function AuctionListingClient({
     if (activeCategory && filters.subCategory) {
       result = result.filter((a) => (a.subCategory || '') === filters.subCategory);
     }
+    if (filters.countries.length > 0) {
+      result = result.filter((a) =>
+        filters.countries.includes(a.location?.country || ''),
+      );
+    }
+    const [minPrice, maxPrice] = filters.priceRange;
+    if (minPrice > 0 || maxPrice < 50000000) {
+      result = result.filter(
+        (a) => a.currentBid >= minPrice && a.currentBid <= maxPrice,
+      );
+    }
     if (filters.sortBy === 'price-asc') {
       result.sort((a, b) => a.currentBid - b.currentBid);
     } else if (filters.sortBy === 'price-desc') {
       result.sort((a, b) => b.currentBid - a.currentBid);
+    } else if (filters.sortBy === 'ending-soon') {
+      // Soonest closing first; lots that already ended sink to the bottom.
+      const t = (a: (typeof result)[number]) =>
+        new Date(a.endTime).getTime() || Number.MAX_SAFE_INTEGER;
+      result.sort((a, b) => t(a) - t(b));
     }
+    // 'default' and 'newest' keep the server order (createdAt DESC).
     return result;
   }, [auctions, filters]);
 
@@ -89,7 +107,6 @@ export default function AuctionListingClient({
     () =>
       filters.categories.length +
       filters.countries.length +
-      filters.brands.length +
       (filters.priceRange[0] > 0 || filters.priceRange[1] < 50000000 ? 1 : 0),
     [filters]
   );
@@ -343,7 +360,7 @@ export default function AuctionListingClient({
                     dispatch(
                       setFilters({
                         ...filters,
-                        sortBy: value as 'default' | 'price-asc' | 'price-desc',
+                        sortBy: value as AuctionFilters['sortBy'],
                       })
                     )
                   }

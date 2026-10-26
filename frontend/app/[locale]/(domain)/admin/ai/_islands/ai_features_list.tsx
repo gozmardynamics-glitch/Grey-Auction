@@ -8,29 +8,26 @@ import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 import type { AIFeatureConfig } from '../../models';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function AIFeaturesList({ data }: { data: AIFeatureConfig[] }) {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [features, setFeatures] = useState<AIFeatureConfig[]>(data);
 
   const toggleFeature = useCallback(async (feature: AIFeatureConfig) => {
     try {
-      const res = await fetch(`${API_URL}/admin/ai/features/${feature.id}`, {
+      await apiFetch(`admin/ai/features/${feature.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isEnabled: !feature.isEnabled }),
+        token: authToken,
+        body: { isEnabled: !feature.isEnabled },
       });
-      if (res.ok) {
-        toast.success(`${feature.displayName} ${feature.isEnabled ? 'disabled' : 'enabled'}`);
-        setFeatures((prev) => prev.map((f) => f.id === feature.id ? { ...f, isEnabled: !f.isEnabled } : f));
-      } else {
-        toast.error('Failed to toggle feature');
-      }
+      toast.success(`${feature.displayName} ${feature.isEnabled ? 'disabled' : 'enabled'}`);
+      setFeatures((prev) => prev.map((f) => f.id === feature.id ? { ...f, isEnabled: !f.isEnabled } : f));
     } catch {
       toast.error('Failed to toggle feature');
     }
-  }, []);
+  }, [authToken]);
 
   const columns: ColumnDef<AIFeatureConfig>[] = [
     {

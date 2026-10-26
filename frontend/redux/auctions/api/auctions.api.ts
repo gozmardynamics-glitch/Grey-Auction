@@ -8,12 +8,22 @@ const auctionsApi = api.injectEndpoints({
         url: '/products',
         params: filters
           ? {
-              categories: filters.categories.join(','),
-              countries: filters.countries.join(','),
-              brands: filters.brands.join(','),
-              priceMin: filters.priceRange[0],
-              priceMax: filters.priceRange[1],
-              sortBy: filters.sortBy,
+              category: filters.categories.length === 1 ? filters.categories[0] : undefined,
+              subCategory: filters.subCategory || undefined,
+              country: filters.countries.length === 1 ? filters.countries[0] : undefined,
+              minPrice: filters.priceRange[0] > 0 ? filters.priceRange[0] : undefined,
+              maxPrice:
+                filters.priceRange[1] < 50000000 ? filters.priceRange[1] : undefined,
+              sortBy:
+                filters.sortBy === 'ending-soon'
+                  ? 'ending_soon'
+                  : filters.sortBy === 'price-asc'
+                    ? 'price_asc'
+                    : filters.sortBy === 'price-desc'
+                      ? 'price_desc'
+                      : filters.sortBy === 'newest'
+                        ? 'newest'
+                        : undefined,
             }
           : undefined,
       }),

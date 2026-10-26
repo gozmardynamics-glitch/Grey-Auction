@@ -7,27 +7,30 @@ import { Input } from '@/shared/components/common/input';
 import { MiniSpinner } from '@/shared/components/common/spinner';
 import { ColumnDef } from '@tanstack/react-table';
 import type { AIUsageLog } from '../../models';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function AIUsageLogs() {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [logs, setLogs] = useState<AIUsageLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ feature: '', dateFrom: '', dateTo: '' });
 
   const fetchLogs = useCallback(() => {
-    const params = new URLSearchParams();
-    if (filters.feature) params.set('feature', filters.feature);
-    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
-    if (filters.dateTo) params.set('dateTo', filters.dateTo);
-    fetch(`${API_URL}/admin/ai/usage?${params}`)
-      .then((res) => res.json())
+    apiFetch<{ data?: AIUsageLog[] }>('admin/ai/usage', {
+      token: authToken,
+      query: {
+        feature: filters.feature || undefined,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+      },
+    })
       .then((json) => setLogs(json.data || []))
       .catch(() => {
         // ignore
       })
       .finally(() => setLoading(false));
-  }, [filters]);
+  }, [filters, authToken]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 

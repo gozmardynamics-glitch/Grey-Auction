@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';
 import { RefreshCw, AlertTriangle, Zap } from 'lucide-react';
 import { getAgentDashboard, runGapAnalysis, discoverCapabilities } from './agents-api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 interface AgentDashboardData {
   totalAgents: number; activeAgents: number; agentsByCategory: Record<string, number>;
@@ -39,6 +41,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function AgentDashboard() {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [data, setData] = useState<AgentDashboardData | null>(null);
   const [agents, setAgents] = useState<AgentInstance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +50,8 @@ export default function AgentDashboard() {
 
   const fetchData = useCallback(() => {
     Promise.all([
-      getAgentDashboard(),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/admin/agents/instances`).then((r) => r.json()),
+      getAgentDashboard(authToken),
+      apiFetch<{ data?: AgentInstance[] }>('admin/agents/instances', { token: authToken }),
     ])
       .then(([dash, agts]) => {
         setData(dash);
@@ -56,14 +59,14 @@ export default function AgentDashboard() {
       })
       .catch(() => toast.error('Failed to load dashboard'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [authToken]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
-      const result = (await runGapAnalysis()) as GapAnalysisResult;
+      const result = (await runGapAnalysis(authToken)) as GapAnalysisResult;
       setGapResult(result);
       toast.success(`Analysis complete: ${result.totalGaps} gaps found (${result.estimatedEffort})`);
     } catch { toast.error('Analysis failed'); } finally { setAnalyzing(false); }
@@ -71,7 +74,7 @@ export default function AgentDashboard() {
 
   const handleDiscover = async () => {
     try {
-      const result = await discoverCapabilities();
+      const result = await discoverCapabilities(authToken);
       toast.success(`Discovered ${result.suggestions?.length || 0} optimization opportunities`);
     } catch { toast.error('Discovery failed'); }
   };

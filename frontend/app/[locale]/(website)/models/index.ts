@@ -38,7 +38,7 @@ interface Auction {
   subCategory?: string;
   sellerId: string;
   sellerName: string;
-  status: 'active' | 'live' | 'new' | 'sold';
+  status: 'active' | 'live' | 'new' | 'sold' | 'ended';
   trending?: boolean;
   featured?: boolean;
   // New fields
@@ -50,7 +50,10 @@ interface Auction {
   };
   auctionType: 'bid' | 'buy';
   specs?: string;
+  specifications?: Record<string, string>;
   watchersCount?: number;
+  hasReservePrice?: boolean;
+  reservePrice?: number;
   year?: number | null;
   mileage?: number | null;
   engineVolume?: number | null;

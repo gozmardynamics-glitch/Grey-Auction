@@ -10,7 +10,8 @@ import { useTranslations } from 'next-intl';
 
 import WalletBalanceCard from '../components/wallet/wallet_balance_card';
 import WalletPaymentsTable from '../components/wallet/wallet_payments_table';
-import { DUMMY_WALLET_PAYMENTS } from '../../models/data';
+import type { WalletPayment } from '../../models';
+import { apiFetch } from '@/shared/utils/api-client';
 
 const DepositModal = dynamic(() => import('../components/wallet/deposit_modal'));
 const WithdrawModal = dynamic(() => import('../components/wallet/withdraw_modal'));
@@ -37,36 +38,47 @@ export default function BuyerWalletModule() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const authToken = useAppSelector((state) => state.auth.token);
 
-  // Defaults render when the wallet API is unavailable
-  const [walletBalance, setWalletBalance] = useState(20000000);
+  // Honest start: ₦0 until the API answers. No demo balance.
+  const [walletBalance, setWalletBalance] = useState(0);
   const [hasPin, setHasPin] = useState(false);
-  const [, setApiData] = useState<WalletApiData['transactions'] | null>(null);
+  const [transactions, setTransactions] = useState<WalletPayment[]>([]);
 
-  // Load the live wallet when available; keep defaults on failure
+  // Load the live wallet when available
   useEffect(() => {
     if (!authToken) return;
     let cancelled = false;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
     const load = async () => {
       try {
-        const [walletRes, txRes] = await Promise.all([
-          fetch(apiBase + '/wallet', { headers: { Authorization: 'Bearer ' + authToken }, cache: 'no-store' }),
-          fetch(apiBase + '/wallet/transactions', { headers: { Authorization: 'Bearer ' + authToken }, cache: 'no-store' }),
+        const [walletJson, txJson] = await Promise.all([
+          apiFetch<{ data: { balance: number; hasPin: boolean } }>('wallet', { token: authToken }),
+          apiFetch<{ data: WalletApiData['transactions'] }>('wallet/transactions', { token: authToken }),
         ]);
-        if (!cancelled && walletRes.ok) {
-          const wallet = (await walletRes.json()).data;
-          if (wallet && typeof wallet.balance === 'number') {
-            setWalletBalance(wallet.balance);
-            setHasPin(Boolean(wallet.hasPin));
-          }
+        if (cancelled) return;
+        const wallet = walletJson.data;
+        if (wallet && typeof wallet.balance === 'number') {
+          setWalletBalance(Number(wallet.balance));
+          setHasPin(Boolean(wallet.hasPin));
         }
-        if (!cancelled && txRes.ok) {
-          const txs = (await txRes.json()).data;
-          if (Array.isArray(txs)) setApiData(txs);
+        const txs = txJson.data;
+        if (Array.isArray(txs)) {
+          setTransactions(
+            txs.map((tx) => ({
+              referenceId: tx.reference || tx.id,
+              paymentName: tx.description || (tx.type === 'deposit' ? 'Wallet top-up' : 'Withdrawal'),
+              type: tx.type === 'deposit' ? 'Deposit' : 'Withdraw',
+              method: 'Wallet',
+              amount: Number(tx.amount),
+              date: tx.createdAt ? new Date(tx.createdAt).toISOString().slice(0, 10) : '—',
+              status:
+                tx.status === 'completed' ? 'Completed' :
+                tx.status === 'pending' ? 'Pending' :
+                tx.status === 'failed' ? 'Failed' : 'Completed',
+            })),
+          );
         }
       } catch {
-        // Keep the defaults — the wallet UI still renders empty states
+        // Leave the honest zero/empty state — the UI renders empty tables.
       }
     };
     load();
@@ -116,7 +128,7 @@ export default function BuyerWalletModule() {
         </div>
 
         <WalletPaymentsTable
-          data={DUMMY_WALLET_PAYMENTS}
+          data={transactions}
           globalFilter={searchQuery}
         />
       </div>

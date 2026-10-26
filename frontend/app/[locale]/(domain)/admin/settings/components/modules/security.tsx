@@ -28,9 +28,12 @@ import {
   type AuthenticationValues,
   type SecurityAdvancedValues,
 } from '../../../models/schema';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function SecuritySettings() {
   const t = useTranslations('admin.settings.security');
+  const authToken = useAppSelector((state) => state.auth.token);
   // ─── Authentication Form ───────────────────────────────────────────
   const authForm = useForm<AuthenticationValues>({
     resolver: zodResolver(authenticationSchema),
@@ -46,11 +49,10 @@ export default function SecuritySettings() {
 
   const onSaveAuth = async (data: AuthenticationValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/security`, {
+      await apiFetch('settings/security', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'authentication', ...data }),
+        token: authToken,
+        body: { section: 'authentication', ...data },
       });
       toast.success(t('authSaved'));
     } catch (error) {
@@ -71,11 +73,10 @@ export default function SecuritySettings() {
 
   const onSaveAdvanced = async (data: SecurityAdvancedValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/security`, {
+      await apiFetch('settings/security', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'advanced', ...data }),
+        token: authToken,
+        body: { section: 'advanced', ...data },
       });
       toast.success(t('advancedSaved'));
     } catch (error) {

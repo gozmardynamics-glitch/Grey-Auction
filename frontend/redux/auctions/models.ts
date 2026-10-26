@@ -15,7 +15,7 @@ export interface Auction {
   subCategory?: string;
   sellerId: string;
   sellerName: string;
-  status: 'active' | 'live' | 'new' | 'sold';
+  status: 'active' | 'live' | 'new' | 'sold' | 'ended';
   trending?: boolean;
   featured?: boolean;
   // New fields from website model
@@ -29,6 +29,7 @@ export interface Auction {
   specs?: string;
   watchersCount?: number;
   hasReservePrice?: boolean;
+  reservePrice?: number;
   createdAt?: Date | string;
 }
 
@@ -46,9 +47,8 @@ export interface AuctionFilters {
   categories: string[];
   subCategory?: string;
   countries: string[];
-  brands: string[];
   priceRange: [number, number];
-  sortBy?: 'default' | 'price-asc' | 'price-desc';
+  sortBy?: 'default' | 'price-asc' | 'price-desc' | 'newest' | 'ending-soon';
 }
 
 export interface CreateAuctionData {

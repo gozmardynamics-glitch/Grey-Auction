@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Receipt } from 'lucide-react';
 
 import { DataTable, Skeleton } from '@/shared/components/common';
+import { apiFetch } from '@/shared/utils/api-client';
 
 import { purchasesColumns } from './purchases_column';
-import { purchases_data } from '../../../models/data';
 import { PurchaseInvoice } from '../../../models';
 import { useAppSelector } from '@/redux/store';
 
@@ -37,23 +37,21 @@ const statusMap: Record<string, PurchaseInvoice['status']> = {
 
 export default function PurchasesTable({ onViewInvoice }: PurchasesTableProps) {
   const authUser = useAppSelector((state) => state.auth.user);
+  const authToken = useAppSelector((state) => state.auth.token);
   const [invoices, setInvoices] = useState<PurchaseInvoice[] | null>(null);
 
   useEffect(() => {
+    if (!authUser?.id) return;
+    let cancelled = false;
     const loadInvoices = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${apiBase}/invoices?buyerId=${authUser?.id ?? ''}`, {
-          cache: 'no-store',
+        // The server scopes the list to the caller — no buyerId param needed
+        // (and a non-admin cannot override it anyway).
+        const json = await apiFetch<{ data: BackendInvoice[] }>('invoices', {
+          token: authToken,
         });
-        if (!res.ok) throw new Error('Failed to load invoices');
-        const json = await res.json();
+        if (cancelled) return;
         const data: BackendInvoice[] = json.data || [];
-
-        if (data.length === 0) {
-          setInvoices(purchases_data);
-          return;
-        }
 
         const mapped: PurchaseInvoice[] = data.map((inv) => ({
           id: inv.id,
@@ -67,11 +65,14 @@ export default function PurchasesTable({ onViewInvoice }: PurchasesTableProps) {
         }));
         setInvoices(mapped);
       } catch {
-        // Fallback to demo data when backend is unreachable
-        setInvoices(purchases_data);
+        // No demo data on money screens — show the real (possibly empty) state.
+        if (!cancelled) setInvoices([]);
       }
     };
     loadInvoices();
+    return () => {
+      cancelled = true;
+    };
   }, [authUser?.id]);
 
   const columns = useMemo(

@@ -36,9 +36,12 @@ import {
   type LanguageValues,
   type CountryValues,
 } from '../../../models/schema';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function GeneralSettings() {
   const t = useTranslations('admin.settings.general');
+  const authToken = useAppSelector((state) => state.auth.token);
   // ─── Site Configuration Form ────────────────────────────────────────
   const siteForm = useForm<SiteConfigValues>({
     resolver: zodResolver(siteConfigSchema),
@@ -56,11 +59,10 @@ export default function GeneralSettings() {
 
   const onSaveSiteConfig = async (data: SiteConfigValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/general`, {
+      await apiFetch('settings/general', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'siteConfig', ...data }),
+        token: authToken,
+        body: { section: 'siteConfig', ...data },
       });
       toast.success(t('siteConfigSaved'));
     } catch (error) {
@@ -81,11 +83,10 @@ export default function GeneralSettings() {
 
   const onSaveTimezone = async (data: TimezoneFormatValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/general`, {
+      await apiFetch('settings/general', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'timezone', ...data }),
+        token: authToken,
+        body: { section: 'timezone', ...data },
       });
       toast.success(t('timezoneSaved'));
     } catch (error) {
@@ -105,11 +106,10 @@ export default function GeneralSettings() {
 
   const onSaveLanguage = async (data: LanguageValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/general`, {
+      await apiFetch('settings/general', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'language', ...data }),
+        token: authToken,
+        body: { section: 'language', ...data },
       });
       toast.success(t('languageSaved'));
     } catch (error) {
@@ -129,11 +129,10 @@ export default function GeneralSettings() {
 
   const onSaveCountry = async (data: CountryValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/general`, {
+      await apiFetch('settings/general', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'country', ...data }),
+        token: authToken,
+        body: { section: 'country', ...data },
       });
       toast.success(t('countrySaved'));
     } catch (error) {

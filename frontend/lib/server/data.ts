@@ -111,6 +111,8 @@ interface RawAuction {
   sellerId?: string;
   auctionType?: string;
   watchersCount?: number;
+  hasReservePrice?: boolean;
+  reservePrice?: number | string;
   specifications?: Record<string, unknown>;
   seller?: {
     business_name?: string;
@@ -123,8 +125,23 @@ interface RawAuction {
 function normalizeAuction(p: unknown): Auction {
   const raw = p as RawAuction;
   const images = Array.isArray(raw?.images) && raw.images.length ? raw.images : ['/placeholder.svg'];
-  const status: Auction['status'] =
-    raw?.status === 'sold' ? 'sold' : 'active';
+  // Map the real backend status through (5.12) instead of collapsing
+  // everything to sold|active, which made the card's live/new branches dead.
+  const STATUS_MAP: Record<string, Auction['status']> = {
+    active: 'active',
+    approved: 'new',
+    sold: 'sold',
+    closed: 'ended',
+    expired: 'ended',
+    awaiting_seller_approval: 'ended',
+    // Non-public states should never reach a public grid; if legacy data
+    // leaks one in, it is not bid-able — never render it as active.
+    draft: 'ended',
+    pending_approval: 'ended',
+    rejected: 'ended',
+    withdrawn: 'ended',
+  };
+  const status: Auction['status'] = STATUS_MAP[raw?.status ?? ''] ?? 'ended';
   return {
     id: raw?.id || '',
     slug: raw?.slug || raw?.id,
@@ -153,6 +170,16 @@ function normalizeAuction(p: unknown): Auction {
           .join(' · ')
       : undefined,
     watchersCount: Number(raw?.watchersCount ?? 0),
+    hasReservePrice: Boolean(raw?.hasReservePrice),
+    reservePrice:
+      raw?.reservePrice != null && Number.isFinite(Number(raw.reservePrice))
+        ? Number(raw.reservePrice)
+        : undefined,
+    specifications: raw?.specifications
+      ? Object.fromEntries(
+          Object.entries(raw.specifications).map(([k, v]) => [k, String(v)]),
+        )
+      : undefined,
     rating: Number(raw?.seller?.rating ?? 0),
     reviewCount: Number(raw?.seller?.reviewCount ?? 0),
   };
@@ -924,9 +951,16 @@ const mockFaqCategories = [
   },
 ];
 
-// F16: never fabricate data in production — mock fallbacks are dev-only so a
-// failed API in prod renders an honest empty/error state instead of fake lots.
-const USE_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
+// F16 + 5.7: mock fallbacks are now OPT-IN. A broken API renders an honest
+// empty state unless the developer explicitly turns the escape hatch on with
+// NEXT_PUBLIC_USE_MOCK_FALLBACK=true — and when it is on, say so loudly,
+// because plausible fake data is exactly how wiring bugs go unnoticed.
+const USE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_USE_MOCK_FALLBACK === 'true';
+if (USE_MOCK_FALLBACK && process.env.NODE_ENV !== 'production') {
+  console.warn(
+    '[data.ts] NEXT_PUBLIC_USE_MOCK_FALLBACK=true — mock fallbacks ENABLED: API failures will render mock lots/categories/banners instead of empty states',
+  );
+}
 
 // ─── Website ─────────────────────────────────────────────────────────────
 

@@ -27,9 +27,12 @@ import {
   type SmtpConfigValues,
   type MailingConfigValues,
 } from '../../../models/schema';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function EmailSettings() {
   const t = useTranslations('admin.settings.email');
+  const authToken = useAppSelector((state) => state.auth.token);
   // ─── SMTP Form ──────────────────────────────────────────────────────
   const smtpForm = useForm<SmtpConfigValues>({
     resolver: zodResolver(smtpConfigSchema),
@@ -44,11 +47,10 @@ export default function EmailSettings() {
 
   const onSaveSmtp = async (data: SmtpConfigValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/email`, {
+      await apiFetch('settings/email', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'smtp', ...data }),
+        token: authToken,
+        body: { section: 'smtp', ...data },
       });
       toast.success(t('smtpSaved'));
     } catch (error) {
@@ -68,11 +70,10 @@ export default function EmailSettings() {
 
   const onSaveMailing = async (data: MailingConfigValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/settings/email`, {
+      await apiFetch('settings/email', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'mailing', ...data }),
+        token: authToken,
+        body: { section: 'mailing', ...data },
       });
       toast.success(t('mailingSaved'));
     } catch (error) {

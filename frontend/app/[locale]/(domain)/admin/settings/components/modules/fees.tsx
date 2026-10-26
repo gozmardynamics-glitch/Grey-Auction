@@ -157,7 +157,9 @@ export default function FeesSettings() {
 
   const loadOverrides = useCallback(() => {
     setOvLoading(true);
-    fetch(`${API_BASE}/fees/overrides`)
+    fetch(`${API_BASE}/fees/overrides`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
       .then((res) => res.json())
       .then((json) => {
         const data: FeeOverrideRow[] =
@@ -166,7 +168,7 @@ export default function FeesSettings() {
       })
       .catch(() => toast.error(t('loadOverridesFailed')))
       .finally(() => setOvLoading(false));
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     loadOverrides();

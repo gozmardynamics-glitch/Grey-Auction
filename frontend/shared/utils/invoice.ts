@@ -1,7 +1,17 @@
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { getApiBase } from '@/shared/utils/api-client';
 
-export async function downloadInvoicePdf(invoiceId: string): Promise<void> {
-  const res = await fetch(`${apiBase}/invoices/${invoiceId}/pdf`);
+/**
+ * Download a buyer-authorized invoice PDF.
+ *
+ * `GET /invoices/:id/pdf` sits behind JwtAuthGuard, so the caller must pass
+ * the session token — the old unauthenticated fetch always 401'd and the
+ * download silently produced an error page instead of a PDF.
+ */
+export async function downloadInvoicePdf(invoiceId: string, token?: string | null): Promise<void> {
+  const res = await fetch(`${getApiBase()}/invoices/${invoiceId}/pdf`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    cache: 'no-store',
+  });
 
   if (!res.ok) {
     throw new Error(`Failed to download invoice PDF (${res.status})`);

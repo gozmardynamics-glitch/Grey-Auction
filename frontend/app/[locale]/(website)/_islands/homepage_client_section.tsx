@@ -56,7 +56,7 @@ export default function HomepageClientSection({
     categorySlug: string,
     subCategorySlug: string
   ) => {
-    router.push(`/auctions?category=${categorySlug}&subCategory=${subCategorySlug}`);
+    router.push(`/auctions?category=${categorySlug}&subcategory=${subCategorySlug}`);
   };
 
   return (

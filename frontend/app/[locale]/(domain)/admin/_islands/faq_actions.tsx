@@ -4,6 +4,8 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus } from 'lucide-react';
 import { Button } from '@/shared/components/common';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 const AddFaqDialog = dynamic(() => import('../faqs/components/add_faq_dialog'));
 const AddCategoryDialog = dynamic(
@@ -11,6 +13,7 @@ const AddCategoryDialog = dynamic(
 );
 
 export default function FaqActions() {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [addFaqOpen, setAddFaqOpen] = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
 
@@ -33,11 +36,10 @@ export default function FaqActions() {
         onOpenChange={setAddFaqOpen}
         onSubmit={async (data) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/faqs`, {
+            await apiFetch('admin/faqs', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data),
+              token: authToken,
+              body: data,
             });
           } catch (error) {
             console.error('Failed to add FAQ:', error);
@@ -49,11 +51,10 @@ export default function FaqActions() {
         onOpenChange={setAddCategoryOpen}
         onSubmit={async (data) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/faqs`, {
+            await apiFetch('admin/faqs', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...data, type: 'category' }),
+              token: authToken,
+              body: { ...data, type: 'category' },
             });
           } catch (error) {
             console.error('Failed to add category:', error);

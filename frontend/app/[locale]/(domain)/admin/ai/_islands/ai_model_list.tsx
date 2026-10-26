@@ -12,8 +12,8 @@ import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Trash2, Edit } from 'lucide-react';
 import type { LLMModel } from '../../models';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 interface AIModelListProps {
   models: LLMModel[];
@@ -22,6 +22,7 @@ interface AIModelListProps {
 }
 
 export default function AIModelList({ models: initialModels, providerId, providerName }: AIModelListProps) {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [models, setModels] = useState<LLMModel[]>(initialModels);
   const [open, setOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<LLMModel | null>(null);
@@ -34,17 +35,16 @@ export default function AIModelList({ models: initialModels, providerId, provide
   const [submitting, setSubmitting] = useState(false);
 
   const fetchModels = useCallback(async () => {
-    const res = await fetch(`${API_URL}/admin/ai/providers/${providerId}/models`);
-    const json = await res.json();
+    const json = await apiFetch<{ data?: LLMModel[] }>(`admin/ai/providers/${providerId}/models`, { token: authToken });
     setModels(json.data || []);
-  }, [providerId]);
+  }, [providerId, authToken]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
-      const url = editingModel
-        ? `${API_URL}/admin/ai/providers/${providerId}/models/${editingModel.id}`
-        : `${API_URL}/admin/ai/providers/${providerId}/models`;
+      const path = editingModel
+        ? `admin/ai/providers/${providerId}/models/${editingModel.id}`
+        : `admin/ai/providers/${providerId}/models`;
       const method = editingModel ? 'PATCH' : 'POST';
       const payload = {
         displayName: form.displayName,
@@ -56,36 +56,28 @@ export default function AIModelList({ models: initialModels, providerId, provide
         maxOutputTokens: Number(form.maxOutputTokens),
         isActive: form.isActive,
       };
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        toast.success(editingModel ? 'Model updated' : 'Model created');
-        setOpen(false);
-        setEditingModel(null);
-        setForm({ modelId: '', displayName: '', capabilities: '', inputPricePerMillion: '0', outputPricePerMillion: '0', contextWindow: '4096', maxOutputTokens: '2048', isActive: true });
-        await fetchModels();
-      } else {
-        toast.error('Failed to save model');
-      }
+      await apiFetch(path, { method, token: authToken, body: payload });
+      toast.success(editingModel ? 'Model updated' : 'Model created');
+      setOpen(false);
+      setEditingModel(null);
+      setForm({ modelId: '', displayName: '', capabilities: '', inputPricePerMillion: '0', outputPricePerMillion: '0', contextWindow: '4096', maxOutputTokens: '2048', isActive: true });
+      await fetchModels();
     } catch {
       toast.error('Failed to save model');
     } finally {
       setSubmitting(false);
     }
-  }, [form, editingModel, providerId, fetchModels]);
+  }, [form, editingModel, providerId, authToken, fetchModels]);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      await fetch(`${API_URL}/admin/ai/providers/${providerId}/models/${id}`, { method: 'DELETE' });
+      await apiFetch(`admin/ai/providers/${providerId}/models/${id}`, { method: 'DELETE', token: authToken });
       toast.success('Model deleted');
       await fetchModels();
     } catch {
       toast.error('Failed to delete model');
     }
-  }, [providerId, fetchModels]);
+  }, [providerId, authToken, fetchModels]);
 
   const openEdit = (model: LLMModel) => {
     setEditingModel(model);

@@ -8,10 +8,11 @@ import { Switch } from '@/shared/components/common/switch';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import type { LLMProvider } from '../../models';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 export default function AIProviderForm({ provider }: { provider: LLMProvider }) {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [form, setForm] = useState<{
     displayName: string;
     name: string;
@@ -32,22 +33,18 @@ export default function AIProviderForm({ provider }: { provider: LLMProvider }) 
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/admin/ai/providers/${provider.id}`, {
+      await apiFetch(`admin/ai/providers/${provider.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        token: authToken,
+        body: form,
       });
-      if (res.ok) {
-        toast.success('Provider updated');
-      } else {
-        toast.error('Failed to update provider');
-      }
+      toast.success('Provider updated');
     } catch {
       toast.error('Failed to update provider');
     } finally {
       setSaving(false);
     }
-  }, [form, provider.id]);
+  }, [form, provider.id, authToken]);
 
   return (
     <div className="space-y-6">

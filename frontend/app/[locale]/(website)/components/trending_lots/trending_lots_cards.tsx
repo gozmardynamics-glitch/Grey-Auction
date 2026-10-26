@@ -41,6 +41,7 @@ function StatusBadge({ status }: { status: Auction['status'] }) {
     live: { bg: 'bg-red-700', text: 'Live Now' },
     new: { bg: 'bg-blue-700', text: 'New' },
     sold: { bg: 'bg-gray-700', text: 'Sold' },
+    ended: { bg: 'bg-gray-500', text: 'Ended' },
   };
   const c = config[status];
   return (

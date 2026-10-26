@@ -13,8 +13,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Trash2, Edit, Wifi } from 'lucide-react';
 import type { LLMProvider } from '../../models';
 import Link from 'next/link';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 type HealthStatus = 'unknown' | 'healthy' | 'degraded' | 'down';
 
@@ -52,6 +52,7 @@ function formatRelativeTime(iso: string): string {
 }
 
 export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [providers, setProviders] = useState<ProviderWithHealth[]>(data);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -67,55 +68,51 @@ export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
   const [presets, setPresets] = useState<ProviderPreset[]>([]);
 
   const fetchProviders = useCallback(async () => {
-    const res = await fetch(`${API_URL}/admin/ai/providers`);
-    const json = await res.json();
+    const json = await apiFetch<{ data?: ProviderWithHealth[] }>('admin/ai/providers', { token: authToken });
     setProviders(json.data || []);
-  }, []);
+  }, [authToken]);
 
   useEffect(() => {
-    fetch(`${API_URL}/admin/ai/providers/presets`)
-      .then((res) => res.json())
+    apiFetch<{ data?: ProviderPreset[] }>('admin/ai/providers/presets', { token: authToken })
       .then((json) => setPresets(json.data || []))
       .catch(() => {});
-  }, []);
+  }, [authToken]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/admin/ai/providers`, {
+      await apiFetch('admin/ai/providers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        token: authToken,
+        body: form,
       });
-      if (res.ok) {
-        toast.success('Provider created');
-        setOpen(false);
-        setForm({ name: '', displayName: '', baseUrl: '', apiKey: '', tier: 'production', providerType: 'openai' });
-        await fetchProviders();
-      } else {
-        toast.error('Failed to create provider');
-      }
+      toast.success('Provider created');
+      setOpen(false);
+      setForm({ name: '', displayName: '', baseUrl: '', apiKey: '', tier: 'production', providerType: 'openai' });
+      await fetchProviders();
     } catch {
       toast.error('Failed to create provider');
     } finally {
       setSubmitting(false);
     }
-  }, [form, fetchProviders]);
+  }, [form, authToken, fetchProviders]);
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      await fetch(`${API_URL}/admin/ai/providers/${id}`, { method: 'DELETE' });
+      await apiFetch(`admin/ai/providers/${id}`, { method: 'DELETE', token: authToken });
       toast.success('Provider deleted');
       await fetchProviders();
     } catch {
       toast.error('Failed to delete provider');
     }
-  }, [fetchProviders]);
+  }, [authToken, fetchProviders]);
 
   const handleHealthCheck = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/admin/ai/providers/${id}/health`, { method: 'POST' });
-      const json = await res.json();
+      const json = await apiFetch<{ success?: boolean; data?: { modelCount?: number } | null; message?: string }>(
+        `admin/ai/providers/${id}/health`,
+        { method: 'POST', token: authToken },
+      );
       if (json.success) {
         toast.success(`Connected! ${json.data?.modelCount || 0} models found`);
       } else {
@@ -126,13 +123,13 @@ export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
     } finally {
       await fetchProviders();
     }
-  }, [fetchProviders]);
+  }, [authToken, fetchProviders]);
 
   const handleCheckAll = useCallback(async () => {
     setCheckingAll(true);
     try {
       const results = await Promise.allSettled(
-        providers.map((p) => fetch(`${API_URL}/admin/ai/providers/${p.id}/health`, { method: 'POST' })),
+        providers.map((p) => apiFetch(`admin/ai/providers/${p.id}/health`, { method: 'POST', token: authToken })),
       );
       const ok = results.filter((r) => r.status === 'fulfilled').length;
       toast.success(`Checked ${ok}/${providers.length} providers`);
@@ -142,7 +139,7 @@ export default function AIProvidersList({ data }: { data: LLMProvider[] }) {
       setCheckingAll(false);
       await fetchProviders();
     }
-  }, [providers, fetchProviders]);
+  }, [providers, authToken, fetchProviders]);
 
   const handlePresetSelect = useCallback((value: string) => {
     const preset = presets.find((p) => p.name === value);

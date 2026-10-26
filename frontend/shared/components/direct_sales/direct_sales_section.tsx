@@ -50,7 +50,8 @@ export function DirectSalesSection({ limit = 8 }: { limit?: number }) {
       {items.map((it) => {
         const price = it.buyNowPrice ?? it.startingBid ?? 0;
         const image = it.images && it.images.length ? it.images[0] : '/placeholder.svg';
-        const href = '/' + (it.slug || it.id);
+        // Lot detail lives at /auctions/[slug] — a bare /<slug> route does not exist.
+        const href = `/auctions/${it.slug || it.id}`;
         return (
           <a key={it.id} href={href} data-testid="direct-sale-card" className="group">
             <Card className="overflow-hidden transition group-hover:shadow-md">

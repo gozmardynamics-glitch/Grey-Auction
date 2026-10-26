@@ -38,12 +38,14 @@ import {
   setCurrentAuction,
   setCurrentBid,
   placeBid,
+  setBidHistory,
   setBidding,
   setBidError,
   setTimeLeft,
   decrementTimeLeft,
   setAutoBid,
 } from '@/redux/slices/bidding.slice';
+import { useGetAuctionBidsQuery } from '@/redux/auctions/api/auctions.api';
 import type { Auction, AuctionDetail } from '../../models';
 import type { BreadcrumbItemData } from '@/shared/components/common/breadcrumbs';
 import { Breadcrumbs } from '@/shared/components/common/breadcrumbs';
@@ -99,6 +101,27 @@ export default function ProductDetailsClient({
 
   const auctionId = auction.id;
   const auctionStatus = auction.status;
+
+  // Real bid history (GET /auctions/:id/bids) — the slice used to stay empty
+  // so "Total Bids" and the history table always showed 0.
+  const { data: serverBids } = useGetAuctionBidsQuery(auctionId, {
+    skip: !auctionId,
+  });
+  useEffect(() => {
+    if (!serverBids) return;
+    dispatch(
+      setBidHistory(
+        serverBids.map((b: any) => ({
+          id: b.id,
+          amount: Number(b.amount),
+          auctionId,
+          timestamp: b.createdAt,
+          bidderId: b.bidderId,
+          bidderName: b.bidder?.name || 'Bidder',
+        })),
+      ),
+    );
+  }, [dispatch, serverBids, auctionId]);
 
   // Initialize auction state
   useEffect(() => {

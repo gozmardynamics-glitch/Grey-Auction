@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from '@/shared/components/common';
 import AddAccountModal from '@/shared/components/add_account_steps/add_account_modal';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 interface BankAccount {
   id: string;
@@ -25,30 +27,25 @@ interface BankAccount {
   isDefault: boolean;
 }
 
-const DUMMY_ACCOUNTS: BankAccount[] = [
-  {
-    id: 'bank-1',
-    bankName: 'Wema Bank Plc',
-    bankLogo: '🟣',
-    accountHolder: 'Jayden Nicholas',
-    accountNumber: '0123456789',
-    addedOn: '21 January, 2026',
-    isDefault: true,
-  },
-  {
-    id: 'bank-2',
-    bankName: 'GTCO',
-    bankLogo: '🟠',
-    accountHolder: 'Jayden Nicholas',
-    accountNumber: '0123456789',
-    addedOn: '15 February, 2026',
-    isDefault: false,
-  },
-];
+interface SellerProfileResponse {
+  success: boolean;
+  data: {
+    id: string;
+    bank_account_details?: {
+      bank_name?: string;
+      account_number?: string;
+      account_name?: string;
+    } | null;
+    created_at?: string;
+    updatedAt?: string;
+  };
+}
 
 export default function SellerPaymentSettings() {
   const t = useTranslations('seller.settings.payments');
-  const [accounts, setAccounts] = useState<BankAccount[]>(DUMMY_ACCOUNTS);
+  const authToken = useAppSelector((state) => state.auth.token);
+  // The API stores ONE payout account per seller (sellers.bank_account_details).
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -56,23 +53,44 @@ export default function SellerPaymentSettings() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
+    if (!authToken) return;
+    let cancelled = false;
     const fetchAccounts = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${apiBase}/sellers/payment-accounts`);
-        if (res.ok) {
-          const json = await res.json();
-          const data = json.data ?? json;
-          if (Array.isArray(data)) {
-            setAccounts(data);
-          }
+        // /sellers/payment-accounts does not exist; the payout account lives on
+        // the seller profile as bank_account_details (0..1 accounts).
+        const json = await apiFetch<SellerProfileResponse>('sellers/profile/me', {
+          token: authToken,
+        });
+        if (cancelled) return;
+        const details = json.data?.bank_account_details;
+        if (details && details.account_number) {
+          setAccounts([
+            {
+              id: json.data.id,
+              bankName: details.bank_name || 'Bank account',
+              bankLogo: '🏦',
+              accountHolder: details.account_name || '',
+              accountNumber: details.account_number,
+              addedOn: json.data.updatedAt
+                ? new Date(json.data.updatedAt).toLocaleDateString('en-GB')
+                : '—',
+              isDefault: true,
+            },
+          ]);
+        } else {
+          setAccounts([]);
         }
       } catch (error) {
-        console.error('[API] Failed to fetch payment accounts:', error);
+        console.error('[API] Failed to fetch payout account:', error);
+        if (!cancelled) setAccounts([]);
       }
     };
     fetchAccounts();
-  }, [refreshKey]);
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey, authToken]);
 
   const handleSelectAccount = (account: BankAccount) => {
     setSelectedAccount(account);
@@ -84,9 +102,19 @@ export default function SellerPaymentSettings() {
     setShowRemoveConfirm(true);
   };
 
-  const handleConfirmRemove = () => {
+  const handleConfirmRemove = async () => {
     if (selectedAccount) {
-      setAccounts((prev) => prev.filter((a) => a.id !== selectedAccount.id));
+      // Persist the removal: PATCH the profile to clear the payout account.
+      try {
+        await apiFetch('sellers/profile/me', {
+          method: 'PATCH',
+          token: authToken,
+          body: { bank_account_details: null },
+        });
+        setAccounts((prev) => prev.filter((a) => a.id !== selectedAccount.id));
+      } catch (error) {
+        console.error('[API] Failed to remove payout account:', error);
+      }
     }
     setShowRemoveConfirm(false);
     setSelectedAccount(null);

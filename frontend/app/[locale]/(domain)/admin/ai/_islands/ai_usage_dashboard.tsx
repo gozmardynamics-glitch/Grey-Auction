@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common/card';
 import { MiniSpinner } from '@/shared/components/common/spinner';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch } from '@/shared/utils/api-client';
+import { useAppSelector } from '@/redux/store';
 
 interface UsageSummary {
   totalTokens: number;
@@ -13,18 +13,18 @@ interface UsageSummary {
 }
 
 export default function AIUsageDashboard() {
+  const authToken = useAppSelector((state) => state.auth.token);
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSummary = useCallback(() => {
-    fetch(`${API_URL}/admin/ai/usage/summary`)
-      .then((res) => res.json())
-      .then((json) => setSummary(json.data))
+    apiFetch<{ data?: UsageSummary }>('admin/ai/usage/summary', { token: authToken })
+      .then((json) => setSummary(json.data ?? null))
       .catch(() => {
         // ignore
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [authToken]);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
 

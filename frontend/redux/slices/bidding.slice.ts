@@ -60,6 +60,9 @@ const biddingSlice = createSlice({
       state.bidHistory.unshift(bid);
       state.currentBid = action.payload.amount;
     },
+    setBidHistory: (state, action: PayloadAction<Bid[]>) => {
+      state.bidHistory = action.payload;
+    },
     setBidding: (state, action: PayloadAction<boolean>) => {
       state.isBidding = action.payload;
     },
@@ -95,6 +98,7 @@ export const {
   setCurrentAuction,
   setCurrentBid,
   placeBid,
+  setBidHistory,
   setBidding,
   setBidError,
   setTimeLeft,
