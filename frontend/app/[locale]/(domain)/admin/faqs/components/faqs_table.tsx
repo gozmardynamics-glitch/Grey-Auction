@@ -1,6 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { apiFetch } from '@/shared/utils/api-client';
 import { CircleHelp } from 'lucide-react';
 
 import { DataTable, type TabFilter } from '@/shared/components/common';
@@ -25,6 +28,24 @@ export default function FaqsTable({
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteFaq, setDeleteFaq] = useState<Faq | null>(null);
+  const router = useRouter();
+
+  const toggleStatus = useCallback(
+    async (faq: Faq) => {
+      const nextActive = faq.status === 'Inactive';
+      try {
+        await apiFetch(`admin/faqs/${faq.id}`, {
+          method: 'PATCH',
+          body: { isActive: nextActive },
+        });
+        toast.success(nextActive ? 'FAQ activated' : 'FAQ deactivated');
+        router.refresh();
+      } catch {
+        toast.error('Could not update the FAQ');
+      }
+    },
+    [router],
+  );
 
   const columns = useMemo(
     () =>
@@ -39,9 +60,10 @@ export default function FaqsTable({
         (faq) => {
           setDeleteFaq(faq);
           setDeleteOpen(true);
-        }
+        },
+        toggleStatus
       ),
-    []
+    [toggleStatus]
   );
 
   return (

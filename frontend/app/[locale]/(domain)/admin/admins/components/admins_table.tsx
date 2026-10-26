@@ -1,6 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { apiFetch } from '@/shared/utils/api-client';
 import { Users } from 'lucide-react';
 
 import { DataTable, DeleteDialog, type TabFilter } from '@/shared/components/common';
@@ -23,6 +26,25 @@ export default function AdminsTable({
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const router = useRouter();
+
+  const toggleStatus = useCallback(
+    async (admin: Admin) => {
+      const nextActive = admin.status === 'Suspended';
+      try {
+        await apiFetch(`admin/admins/${admin.id}`, {
+          method: 'PATCH',
+          body: { isActive: nextActive },
+        });
+        toast.success(nextActive ? 'Admin activated' : 'Admin suspended');
+        router.refresh();
+      } catch {
+        toast.error('Could not update the admin');
+      }
+    },
+    [router],
+  );
   const [deleteAdmin, setDeleteAdmin] = useState<Admin | null>(null);
 
   const columns = useMemo(
@@ -38,9 +60,10 @@ export default function AdminsTable({
         (admin) => {
           setDeleteAdmin(admin);
           setDeleteOpen(true);
-        }
+        },
+        toggleStatus
       ),
-    []
+    [toggleStatus]
   );
 
   return (

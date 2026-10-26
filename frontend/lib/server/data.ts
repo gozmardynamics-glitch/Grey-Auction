@@ -1266,7 +1266,7 @@ export async function getAdminSellers() {
 export async function getAdminAdmins() {
   const data = await apiFetch('/admin/admins');
   const list = unwrapList(data);
-  return (list ?? []) as AdminUser[];
+  return ((list ?? []) as RawAdminRow[]).map(toAdminRow);
 }
 
 export async function getAdminCategories() {
@@ -1276,17 +1276,87 @@ export async function getAdminCategories() {
   return (USE_MOCK_FALLBACK ? mockCategories : []) as unknown as AdminCategory[];
 }
 
+/**
+ * The admin content tables render a 'status' string, but the API returns an
+ * `isActive` boolean — casting straight across left `status` undefined, so
+ * every row looked active and the Enable/Disable label was always wrong.
+ */
+interface RawBannerRow {
+  id: string;
+  title?: string;
+  imageUrl?: string;
+  link?: string | null;
+  type?: string | null;
+  position?: number;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+interface RawFaqRow {
+  id: string;
+  question?: string;
+  answer?: string;
+  category?: string;
+  order?: number;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+interface RawAdminRow {
+  id: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+const toBannerRow = (raw: RawBannerRow): AdminBanner =>
+  ({
+    id: raw.id,
+    title: raw.title || '',
+    image: raw.imageUrl || '',
+    link: raw.link || '',
+    type: raw.type || '',
+    visibility: raw.isActive === false ? 'Hidden' : 'Visible',
+    createdAt: raw.createdAt || '',
+    status: raw.isActive === false ? 'Inactive' : 'Active',
+  }) as unknown as AdminBanner;
+
+const toFaqRow = (raw: RawFaqRow): AdminFaq =>
+  ({
+    id: raw.id,
+    question: raw.question || '',
+    answer: raw.answer || '',
+    category: raw.category || '',
+    order: raw.order ?? 0,
+    createdAt: raw.createdAt || '',
+    status: raw.isActive === false ? 'Inactive' : 'Active',
+  }) as unknown as AdminFaq;
+
+const toAdminRow = (raw: RawAdminRow): AdminUser =>
+  ({
+    id: raw.id,
+    name: raw.name || '',
+    email: raw.email || '',
+    phone: '',
+    role: raw.role || 'platform_admin',
+    lastLogin: '',
+    joinDate: raw.createdAt || '',
+    status: raw.isActive === false ? 'Suspended' : 'Active',
+  }) as unknown as AdminUser;
+
 export async function getAdminBanners() {
   const data = await apiFetch('/admin/banners');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list as AdminBanner[];
+  if (list && list.length > 0) return (list as RawBannerRow[]).map(toBannerRow);
   return (USE_MOCK_FALLBACK ? mockBanners : []) as unknown as AdminBanner[];
 }
 
 export async function getAdminFaqs() {
   const data = await apiFetch('/admin/faqs');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list as AdminFaq[];
+  if (list && list.length > 0) return (list as RawFaqRow[]).map(toFaqRow);
   return (USE_MOCK_FALLBACK ? mockFaqs : []) as unknown as AdminFaq[];
 }
 

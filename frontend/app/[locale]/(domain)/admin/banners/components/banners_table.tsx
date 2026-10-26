@@ -1,6 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { apiFetch } from '@/shared/utils/api-client';
 import { ImageIcon } from 'lucide-react';
 
 import { DataTable, type TabFilter } from '@/shared/components/common';
@@ -27,6 +30,24 @@ export default function BannersTable({
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBanner, setDeleteBanner] = useState<Banner | null>(null);
+  const router = useRouter();
+
+  const toggleStatus = useCallback(
+    async (banner: Banner) => {
+      const nextActive = banner.status === 'Inactive';
+      try {
+        await apiFetch(`admin/banners/${banner.id}`, {
+          method: 'PATCH',
+          body: { isActive: nextActive },
+        });
+        toast.success(nextActive ? 'Banner enabled' : 'Banner disabled');
+        router.refresh();
+      } catch {
+        toast.error('Could not update the banner');
+      }
+    },
+    [router],
+  );
 
   const columns = useMemo(
     () =>
@@ -41,9 +62,10 @@ export default function BannersTable({
         (banner) => {
           setDeleteBanner(banner);
           setDeleteOpen(true);
-        }
+        },
+        toggleStatus
       ),
-    []
+    [toggleStatus]
   );
 
   return (

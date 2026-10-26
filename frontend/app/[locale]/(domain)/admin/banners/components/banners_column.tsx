@@ -17,7 +17,8 @@ import { statusStyles } from '@/shared/utils/helpers';
 
 export const Columns = (
   onViewDetails: (banner: Banner) => void,
-  onDelete: (banner: Banner) => void
+  onDelete: (banner: Banner) => void,
+  onToggleStatus: (banner: Banner) => void
 ): ColumnDef<Banner>[] => [
   {
     id: 'select',
@@ -115,9 +116,14 @@ export const Columns = (
               View details
             </DropdownMenuItem>
             {isInactive ? (
-              <DropdownMenuItem onClick={() => {}}>Enable</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleStatus(banner)}>
+                Enable
+              </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem className="text-destructive" onClick={() => {}}>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => onToggleStatus(banner)}
+              >
                 Disable
               </DropdownMenuItem>
             )}

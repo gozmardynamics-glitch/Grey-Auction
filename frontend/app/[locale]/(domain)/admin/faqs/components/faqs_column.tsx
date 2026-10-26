@@ -16,7 +16,8 @@ import { statusStyles } from '@/shared/utils/helpers';
 
 export const Columns = (
   onViewDetails: (faq: Faq) => void,
-  onDelete: (faq: Faq) => void
+  onDelete: (faq: Faq) => void,
+  onToggleStatus: (faq: Faq) => void
 ): ColumnDef<Faq>[] => [
   {
     id: 'select',
@@ -102,9 +103,13 @@ export const Columns = (
               View details
             </DropdownMenuItem>
             {isInactive ? (
-              <DropdownMenuItem onClick={() => {}}>Activate</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleStatus(faq)}>
+                Activate
+              </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => {}}>Deactivate</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleStatus(faq)}>
+                Deactivate
+              </DropdownMenuItem>
             )}
             <DropdownMenuItem
               className="text-destructive"
