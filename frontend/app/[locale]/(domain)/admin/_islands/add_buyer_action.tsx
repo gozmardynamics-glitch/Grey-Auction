@@ -2,17 +2,19 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import { useAppSelector } from '@/redux/store';
-import { getErrorMessage } from '@/shared/utils/error_utils';
 
 const AddUserDialog = dynamic(() => import('../buyers/components/add_user_dialog'));
 
 export default function AddBuyerAction() {
+  const router = useRouter();
+  const authToken = useAppSelector((state) => state.auth.token);
   const [addUserOpen, setAddUserOpen] = useState(false);
-  const token = useAppSelector((state) => state.auth.token);
 
   return (
     <>
@@ -25,23 +27,24 @@ export default function AddBuyerAction() {
         onOpenChange={setAddUserOpen}
         onSubmit={async (data) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            const res = await fetch(`${apiBase}/admin/users`, {
+            await apiFetch('admin/users', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              token: authToken,
+              body: {
+                email: data.email.trim(),
+                password: data.password,
+                name: `${data.firstName.trim()} ${data.lastName.trim()}`.trim(),
+                role: 'bidder',
               },
-              body: JSON.stringify({ ...data, role: 'bidder' }),
             });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              throw new Error(err.message || 'Failed to create user');
-            }
             toast.success('User created');
-            setAddUserOpen(false);
+            router.refresh();
           } catch (error) {
-            toast.error(getErrorMessage(error) || 'Failed to add buyer');
+            toast.error(
+              error instanceof ApiError
+                ? error.message
+                : 'Could not create the user',
+            );
           }
         }}
       />

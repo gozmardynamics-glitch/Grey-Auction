@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -28,73 +29,190 @@ import {
   type ProfileInfoValues,
   type ProfileAddressValues,
 } from '../../../models/schema';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
+
+/** `country` on the seller profile is ISO 3166-1 alpha-2 (Length(2,2) in the DTO). */
+const COUNTRY_OPTIONS: Record<string, string> = {
+  NG: 'Nigeria',
+  US: 'United States',
+  GB: 'United Kingdom',
+  BE: 'Belgium',
+  CM: 'Cameroon',
+};
+
+const PHONE_CODES = ['+234', '+1', '+44', '+32'];
+const STATES = ['Lagos', 'Abuja', 'Rivers', 'Oyo'];
+const CITIES = ['Lekki', 'Victoria Island', 'Ikeja', 'Ikoyi'];
+
+/** Keeps a stored value selectable even when it is not one of the canned options. */
+const withCurrent = (options: string[], current?: string | null): string[] =>
+  current && !options.includes(current) ? [current, ...options] : options;
+
+const countryLabel = (code: string): string => COUNTRY_OPTIONS[code] ?? code;
+
+const toIsoCountry = (value?: string | null): string => {
+  const raw = (value ?? '').trim();
+  if (!raw) return '';
+  if (raw.length === 2) return raw.toUpperCase();
+  const match = Object.entries(COUNTRY_OPTIONS).find(
+    ([, label]) => label.toLowerCase() === raw.toLowerCase(),
+  );
+  return match ? match[0] : raw;
+};
+
+const splitPhone = (raw?: string | null): { phoneCode: string; phone: string } => {
+  const value = (raw ?? '').trim();
+  if (!value) return { phoneCode: '+234', phone: '' };
+  const code = PHONE_CODES.find((candidate) => value.startsWith(candidate));
+  if (!code) return { phoneCode: '+234', phone: value.replace(/^\+/, '') };
+  return { phoneCode: code, phone: value.slice(code.length) };
+};
+
+interface SellerProfile {
+  business_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address_line1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+}
 
 export default function MyProfileSettings() {
   const t = useTranslations('seller.settings.myProfile');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
 
   // ─── Profile Info Form ────────────────────────────────────────────
   const profileForm = useForm<ProfileInfoValues>({
     resolver: zodResolver(profileInfoSchema),
     defaultValues: {
-      shopName: 'Jayden Auto',
-      firstName: 'Jayden',
-      lastName: 'Nicholas',
-      email: 'jaydennicholas@gmail.com',
+      shopName: '',
+      firstName: '',
+      lastName: '',
+      email: '',
       phoneCode: '+234',
-      phone: '08143601064',
+      phone: '',
     },
   });
-
-  const onSaveProfile = async (data: ProfileInfoValues) => {
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${apiBase}/auth/profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `${data.firstName} ${data.lastName}`.trim(),
-          email: data.email,
-          phone: `${data.phoneCode}${data.phone}`,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed');
-    } catch {}
-    toast.success(t('profileSaved'));
-  };
 
   // ─── Address Form ────────────────────────────────────────────────
   const addressForm = useForm<ProfileAddressValues>({
     resolver: zodResolver(profileAddressSchema),
     defaultValues: {
-      country: 'Nigeria',
-      streetAddress: 'Victoria Crest Estate',
-      state: 'Lagos',
-      city: 'Lekki',
+      country: 'NG',
+      streetAddress: '',
+      state: '',
+      city: '',
     },
   });
 
-  const onSaveAddress = async (data: ProfileAddressValues) => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const json = await apiFetch<{ data?: SellerProfile }>('sellers/profile/me');
+        const profile = json?.data;
+        if (cancelled || !profile) return;
+        const { phoneCode, phone } = splitPhone(profile.phone);
+        profileForm.reset({
+          ...profileForm.getValues(),
+          shopName: profile.business_name ?? '',
+          email: profile.email ?? '',
+          phoneCode,
+          phone,
+        });
+        addressForm.reset({
+          country: profile.country ?? 'NG',
+          streetAddress: profile.address_line1 ?? '',
+          state: profile.state ?? '',
+          city: profile.city ?? '',
+        });
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(err instanceof ApiError ? err.message : 'Could not load your profile');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profileForm, addressForm]);
+
+  const onSaveProfile = async (data: ProfileInfoValues) => {
+    // Only fields UpdateSellerDto accepts: the global ValidationPipe rejects
+    // anything else with a 400, so empty values are dropped rather than sent.
+    const body: Record<string, string> = {};
+    const businessName = (data.shopName ?? '').trim();
+    const email = (data.email ?? '').trim();
+    const phoneDigits = (data.phone ?? '').replace(/\D/g, '');
+    if (businessName) body.business_name = businessName;
+    if (email) body.email = email;
+    if (phoneDigits) {
+      const code = (data.phoneCode ?? '').trim();
+      body.phone = `${code.startsWith('+') ? code : `+${code}`}${phoneDigits}`;
+    }
+    // The seller record has no first/last name; the account holder's display
+    // name is a user-level field, so it is saved through auth/profile.
+    const name = [(data.firstName ?? '').trim(), (data.lastName ?? '').trim()]
+      .filter(Boolean)
+      .join(' ');
+
+    if (!Object.keys(body).length && !name) {
+      toast.error('There is nothing to save yet');
+      return;
+    }
+
+    setSavingProfile(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/auth/profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address_line1: data.streetAddress,
-          city: data.city,
-          state: data.state,
-          country: data.country,
-        }),
-      });
-    } catch {}
-    toast.success(t('addressSaved'));
+      if (Object.keys(body).length) {
+        await apiFetch('sellers/profile/me', { method: 'PATCH', body });
+      }
+      if (name) {
+        await apiFetch('auth/profile', { method: 'POST', body: { name } });
+      }
+      toast.success(t('profileSaved'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const onSaveAddress = async (data: ProfileAddressValues) => {
+    const body: Record<string, string> = {};
+    const street = (data.streetAddress ?? '').trim();
+    const city = (data.city ?? '').trim();
+    const state = (data.state ?? '').trim();
+    const country = toIsoCountry(data.country);
+    if (street) body.address_line1 = street;
+    if (city) body.city = city;
+    if (state) body.state = state;
+    if (country) body.country = country;
+
+    if (!Object.keys(body).length) {
+      toast.error('There is nothing to save yet');
+      return;
+    }
+
+    setSavingAddress(true);
+    try {
+      await apiFetch('sellers/profile/me', { method: 'PATCH', body });
+      toast.success(t('addressSaved'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save');
+    } finally {
+      setSavingAddress(false);
+    }
   };
 
   const firstName = useWatch({ control: profileForm.control, name: 'firstName' }) || '';
   const lastName = useWatch({ control: profileForm.control, name: 'lastName' }) || '';
   const email = useWatch({ control: profileForm.control, name: 'email' }) || '';
-  const shopName = useWatch({ control: profileForm.control, name: 'shopName' });
-  const initials = `${firstName[0] || ''}${lastName[0] || ''}`;
+  const shopName = useWatch({ control: profileForm.control, name: 'shopName' }) || '';
+  const initials =
+    `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase() ||
+    (shopName[0] || '').toUpperCase();
 
   return (
     <div className="space-y-8 p-6">
@@ -261,7 +379,9 @@ export default function MyProfileSettings() {
             />
           </div>
 
-          <Button type="submit">{t('saveChanges')}</Button>
+          <Button type="submit" disabled={savingProfile}>
+            {t('saveChanges')}
+          </Button>
         </form>
       </Form>
 
@@ -300,15 +420,13 @@ export default function MyProfileSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Nigeria">Nigeria</SelectItem>
-                        <SelectItem value="United States">
-                          United States
-                        </SelectItem>
-                        <SelectItem value="United Kingdom">
-                          United Kingdom
-                        </SelectItem>
-                        <SelectItem value="Belgium">Belgium</SelectItem>
-                        <SelectItem value="Cameroon">Cameroon</SelectItem>
+                        {withCurrent(Object.keys(COUNTRY_OPTIONS), field.value).map(
+                          (code) => (
+                            <SelectItem key={code} value={code}>
+                              {countryLabel(code)}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -362,10 +480,11 @@ export default function MyProfileSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Lagos">Lagos</SelectItem>
-                        <SelectItem value="Abuja">Abuja</SelectItem>
-                        <SelectItem value="Rivers">Rivers</SelectItem>
-                        <SelectItem value="Oyo">Oyo</SelectItem>
+                        {withCurrent(STATES, field.value).map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -396,12 +515,11 @@ export default function MyProfileSettings() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Lekki">Lekki</SelectItem>
-                        <SelectItem value="Victoria Island">
-                          Victoria Island
-                        </SelectItem>
-                        <SelectItem value="Ikeja">Ikeja</SelectItem>
-                        <SelectItem value="Ikoyi">Ikoyi</SelectItem>
+                        {withCurrent(CITIES, field.value).map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -411,7 +529,9 @@ export default function MyProfileSettings() {
             />
           </div>
 
-          <Button type="submit">{t('saveChanges')}</Button>
+          <Button type="submit" disabled={savingAddress}>
+            {t('saveChanges')}
+          </Button>
         </form>
       </Form>
     </div>

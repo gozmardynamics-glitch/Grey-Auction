@@ -8,6 +8,8 @@ const PAGE_SIZE = 10;
 type ListingStatus = 'Active' | 'Pending' | 'Ending Soon' | 'Closed';
 
 interface Listing {
+  /** Real product id, used to load documents and bid history. */
+  id?: string;
   lotId: string;
   item: string;
   itemImage?: string;

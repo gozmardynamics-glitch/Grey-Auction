@@ -7,6 +7,7 @@ import type { Auction } from '@/app/[locale]/(website)/models';
 // consumers (admin/seller/website pages) render with.
 import type {
   Admin as AdminUser,
+  Auction as AdminAuction,
   Banner as AdminBanner,
   Bid as AdminBid,
   BiddingRoom as AdminBiddingRoom,
@@ -232,7 +233,14 @@ async function attachSellerBadges(auctions: Auction[]): Promise<Auction[]> {
   });
 }
 
-/** Unwrap the many list shapes the API returns into a plain array. */
+/**
+ * Unwrap the many list shapes the API returns into a plain array.
+ *
+ * The API uses at least three: a bare array, `{ data: [...] }`, and the
+ * paginated `{ success, data: { items: [...], total } }`. Only the first two
+ * were handled, so every nested list (a seller's own lots among them) came back
+ * empty while the endpoint was returning rows.
+ */
 function unwrapList(data: unknown): unknown[] | null {
   if (!data) return null;
   if (Array.isArray(data)) return data;
@@ -240,6 +248,11 @@ function unwrapList(data: unknown): unknown[] | null {
     const record = data as { items?: unknown; data?: unknown };
     if (Array.isArray(record.items)) return record.items;
     if (Array.isArray(record.data)) return record.data;
+    if (record.data && typeof record.data === 'object') {
+      const nested = record.data as { items?: unknown; data?: unknown };
+      if (Array.isArray(nested.items)) return nested.items;
+      if (Array.isArray(nested.data)) return nested.data;
+    }
   }
   return null;
 }
@@ -1245,29 +1258,191 @@ export async function getWishlistItems() {
 
 // ─── Admin ──────────────────────────────────────────────────────────────
 
+/**
+ * Display helpers for the admin table rows.
+ *
+ * Every admin table declares its own render keys (`item`, `amount`, `joinDate`
+ * ...) while the API answers with entity field names (`invoice_number`, `total`,
+ * `created_at`). Casting one to the other left every unshared key `undefined`,
+ * which TanStack renders as an empty cell and `payments_stats_card` turned into
+ * NaN when it summed `p.amount`. Each `to*Row` below is that missing bridge.
+ */
+const toDisplayDate = (value?: string | Date | null): string => {
+  if (!value) return '—';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '—';
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const toCount = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Backend ProductStatus → the admin table's AuctionStatus (tab filter values). */
+const ADMIN_AUCTION_STATUS: Record<string, AdminAuction['status']> = {
+  active: 'Active',
+  approved: 'Active',
+  pending_approval: 'Pending',
+  draft: 'Pending',
+  rejected: 'Rejected',
+  withdrawn: 'Rejected',
+  sold: 'Completed',
+  closed: 'Completed',
+  expired: 'Completed',
+  awaiting_seller_approval: 'Completed',
+};
+
+const toAuctionRow = (raw: unknown): AdminAuction => {
+  const auction = normalizeAuction(raw);
+  const rawStatus = String((raw as { status?: unknown })?.status ?? '').toLowerCase();
+  return {
+    id: auction.id,
+    item: auction.title || '—',
+    itemImage: auction.imageUrl,
+    seller: auction.sellerName || '—',
+    category: auction.category || '—',
+    startingBid: toCount(auction.startingBid),
+    currentBid: toCount(auction.currentBid),
+    bids: toCount(auction.totalBids),
+    endDate: toDisplayDate(auction.endTimeIso),
+    status: ADMIN_AUCTION_STATUS[rawStatus] ?? 'Completed',
+  };
+};
+
+interface RawBidRow {
+  id: string;
+  amount?: number | string | null;
+  createdAt?: string | null;
+  isWinningBid?: boolean;
+  product?: {
+    title?: string | null;
+    category?: string | null;
+    startingBid?: number | string | null;
+    seller?: { business_name?: string | null; name?: string | null } | null;
+  } | null;
+  bidder?: { name?: string | null; email?: string | null } | null;
+}
+
+const toBidRow = (raw: RawBidRow): AdminBid =>
+  ({
+    id: raw.id,
+    item: raw.product?.title || '—',
+    seller:
+      raw.product?.seller?.business_name || raw.product?.seller?.name || '—',
+    category: raw.product?.category || '—',
+    startingBid: toCount(raw.product?.startingBid),
+    currentBid: toCount(raw.amount),
+    bids: 1,
+    endDate: toDisplayDate(raw.createdAt),
+    // A bid is only live while it is the winning one; the table's tabs filter
+    // on exactly Active / Ending / Completed.
+    status: raw.isWinningBid === false ? 'Completed' : 'Active',
+    bidder: raw.bidder?.name || raw.bidder?.email || '—',
+    bidType: 'Manual',
+    bidAmount: toCount(raw.amount),
+    bidDate: toDisplayDate(raw.createdAt),
+  }) as unknown as AdminBid;
+
+interface RawBuyerRow {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
+  createdAt?: string | null;
+}
+
+const toBuyerRow = (raw: RawBuyerRow): AdminBuyer =>
+  ({
+    id: raw.id,
+    name: raw.name || raw.email || '—',
+    email: raw.email || '—',
+    verified: Boolean(raw.isEmailVerified),
+    phone: '—',
+    location: '—',
+    // Bid/win/spend aggregates are not part of the buyer list payload.
+    totalBids: 0,
+    totalWins: 0,
+    totalSpent: 0,
+    joinDate: toDisplayDate(raw.createdAt),
+    status: raw.isActive === false ? 'Suspended' : 'Active',
+  }) as unknown as AdminBuyer;
+
+interface RawSellerRow {
+  id: string;
+  user_id?: string | null;
+  business_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  status?: string | null;
+  total_products?: number | string | null;
+  total_orders?: number | string | null;
+  total_sales?: number | string | null;
+  created_at?: string | null;
+}
+
+/** SELLER enum (ACTIVE/INACTIVE/SUSPENDED/BANNED) → the UI's SellerStatus. */
+const toSellerStatus = (value?: string | null): AdminSeller['status'] => {
+  switch ((value || '').toUpperCase()) {
+    case 'ACTIVE':
+      return 'Active';
+    case 'INACTIVE':
+      return 'Inactive';
+    case 'SUSPENDED':
+    case 'BANNED':
+      return 'Suspended';
+    default:
+      return 'Inactive';
+  }
+};
+
+const toSellerRow = (raw: RawSellerRow): AdminSeller => {
+  const location = [raw.city, raw.country].filter(Boolean).join(', ');
+  return {
+    id: raw.id,
+    name: raw.business_name || raw.email || '—',
+    email: raw.email || '—',
+    phone: raw.phone || '—',
+    location: location || '—',
+    totalListings: toCount(raw.total_products),
+    totalSales: toCount(raw.total_orders),
+    totalRevenue: toCount(raw.total_sales),
+    joinDate: toDisplayDate(raw.created_at),
+    status: toSellerStatus(raw.status),
+  } as unknown as AdminSeller;
+};
+
 export async function getAdminAuctions() {
   const data = await apiFetch('/admin/auctions');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list.map(normalizeAuction);
-  return USE_MOCK_FALLBACK ? mockAuctions : [];
+  if (list && list.length > 0) return list.map(toAuctionRow);
+  return (USE_MOCK_FALLBACK ? mockAuctions : []).map(toAuctionRow);
 }
 
 export async function getAdminBids() {
   const data = await apiFetch('/admin/bids');
   const list = unwrapList(data);
-  return (list ?? []) as AdminBid[];
+  return ((list ?? []) as RawBidRow[]).map(toBidRow);
 }
 
 export async function getAdminBuyers() {
   const data = await apiFetch('/admin/buyers');
   const list = unwrapList(data);
-  return (list ?? []) as AdminBuyer[];
+  return ((list ?? []) as RawBuyerRow[]).map(toBuyerRow);
 }
 
 export async function getAdminSellers() {
   const data = await apiFetch('/admin/sellers');
   const list = unwrapList(data);
-  return (list ?? []) as AdminSeller[];
+  return ((list ?? []) as RawSellerRow[]).map(toSellerRow);
 }
 
 export async function getAdminAdmins() {
@@ -1276,11 +1451,39 @@ export async function getAdminAdmins() {
   return ((list ?? []) as RawAdminRow[]).map(toAdminRow);
 }
 
+interface RawCategoryRow {
+  id: string;
+  name?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  productCount?: number | string | null;
+  isActive?: boolean;
+  createdAt?: string | null;
+}
+
+const toCategoryRow = (raw: RawCategoryRow): AdminCategory =>
+  ({
+    id: raw.id,
+    // The categories entity calls it `name`; the table renders `category`.
+    category: raw.name || '—',
+    icon: raw.imageUrl || undefined,
+    // Categories are flat on the backend — there is no parent to show.
+    parentCategory: '—',
+    slug: raw.slug || '—',
+    listings: toCount(raw.productCount),
+    createdAt: toDisplayDate(raw.createdAt),
+    status: raw.isActive === false ? 'Inactive' : 'Active',
+    description: raw.description || '',
+  }) as unknown as AdminCategory;
+
 export async function getAdminCategories() {
   const data = await apiFetch('/categories');
   const list = unwrapList(data);
-  if (list && list.length > 0) return list as AdminCategory[];
-  return (USE_MOCK_FALLBACK ? mockCategories : []) as unknown as AdminCategory[];
+  if (list && list.length > 0) return (list as RawCategoryRow[]).map(toCategoryRow);
+  return (USE_MOCK_FALLBACK ? mockCategories : []).map((category) =>
+    toCategoryRow(category as RawCategoryRow),
+  );
 }
 
 /**
@@ -1367,10 +1570,41 @@ export async function getAdminFaqs() {
   return (USE_MOCK_FALLBACK ? mockFaqs : []) as unknown as AdminFaq[];
 }
 
+/** InvoiceStatus (issued/paid/cancelled) → the UI's PaymentStatus. */
+const INVOICE_STATUS_TO_PAYMENT: Record<string, AdminPayment['status']> = {
+  paid: 'Completed',
+  issued: 'Pending',
+  cancelled: 'Failed',
+};
+
+interface RawInvoiceRow {
+  id: string;
+  invoice_number?: string | null;
+  total?: number | string | null;
+  payment_method?: string | null;
+  issued_at?: string | null;
+  status?: string | null;
+}
+
+const toPaymentRow = (raw: RawInvoiceRow): AdminPayment =>
+  ({
+    id: raw.id,
+    item: raw.invoice_number || '—',
+    // Party names are ids on the invoice payload; only the totals are readable.
+    buyer: '—',
+    seller: '—',
+    amount: toCount(raw.total),
+    // Free-form in the DB (paystack, transfer, ...) — narrower union in the UI.
+    method: raw.payment_method || '—',
+    date: toDisplayDate(raw.issued_at),
+    status:
+      INVOICE_STATUS_TO_PAYMENT[String(raw.status ?? '').toLowerCase()] ?? 'Pending',
+  }) as unknown as AdminPayment;
+
 export async function getAdminPayments() {
   const data = await apiFetch('/admin/payments');
   const list = unwrapList(data);
-  return (list ?? []) as AdminPayment[];
+  return ((list ?? []) as RawInvoiceRow[]).map(toPaymentRow);
 }
 
 export async function getAdminBiddingRooms() {
@@ -1379,10 +1613,70 @@ export async function getAdminBiddingRooms() {
   return (list ?? []) as AdminBiddingRoom[];
 }
 
+interface RawTicketRow {
+  id: string;
+  subject?: string | null;
+  description?: string | null;
+  status?: string | null;
+  userId?: string | null;
+  userName?: string | null;
+  userEmail?: string | null;
+  messages?: Array<{
+    senderId?: string | null;
+    content?: string | null;
+    timestamp?: string | null;
+  }> | null;
+  createdAt?: string | null;
+}
+
+/**
+ * The tickets table renders a conversation object (`contact`, `lastMessage`),
+ * but `/tickets` returns the flat entity, so `ticket.contact.name.toLowerCase()`
+ * threw as soon as a ticket existed.
+ */
+const toTicketRow = (raw: RawTicketRow): AdminTicket => {
+  const messages = (Array.isArray(raw.messages) ? raw.messages : []).map(
+    (message, index) => ({
+      id: `${raw.id}-msg-${index}`,
+      senderId: message?.senderId || '',
+      content: message?.content || '',
+      timestamp: message?.timestamp || '',
+      type: 'text' as const,
+    }),
+  );
+  const last = messages[messages.length - 1];
+  const body = raw.description || raw.subject || '';
+  // Tickets opened before the messages table get their body as the first turn.
+  if (messages.length === 0 && body) {
+    messages.push({
+      id: `${raw.id}-msg-0`,
+      senderId: raw.userId || '',
+      content: body,
+      timestamp: raw.createdAt || '',
+      type: 'text',
+    });
+  }
+  return {
+    id: raw.id,
+    contact: {
+      name: raw.userName || raw.userEmail || 'Unknown contact',
+      avatar: '',
+      email: raw.userEmail || '',
+      phone: '—',
+      sellerId: raw.userId || '—',
+    },
+    lastMessage: last?.content || body || raw.subject || '',
+    lastMessageTime: toDisplayDate(last?.timestamp || raw.createdAt),
+    unread: false,
+    messages,
+    sharedMedia: [],
+  } as unknown as AdminTicket;
+};
+
 export async function getAdminTickets() {
   const data = await apiFetch('/tickets');
   const list = unwrapList(data);
-  return (list ?? []) as AdminTicket[];
+  return ((list ?? []) as RawTicketRow[]).map(toTicketRow);
 }
 
 // ─── Seller ─────────────────────────────────────────────────────────────
@@ -1577,11 +1871,17 @@ export async function getSellerPayments() {
 }
 
 export async function getSellerSales() {
+  // GET /sellers/me/sales answers { success, data: { products, invoices } };
+  // this used to look for `products` at the top level, so the Sales table was
+  // permanently empty.
   const data = await apiFetch('/sellers/me/sales');
-  if (data && typeof data === 'object' && Array.isArray((data as { products?: unknown }).products)) {
-    return (data as { products: unknown[] }).products as SellerSale[];
-  }
-  return [];
+  const payload = data as
+    | { products?: unknown; data?: unknown }
+    | null;
+  // Shape today: { success, data: { products, invoices, totalRevenue } }.
+  const nested = payload?.data as { products?: unknown } | unknown[] | undefined;
+  const products = Array.isArray(nested) ? nested : nested?.products ?? payload?.products;
+  return Array.isArray(products) ? (products as SellerSale[]) : [];
 }
 
 export async function getSellerBiddingRooms() {

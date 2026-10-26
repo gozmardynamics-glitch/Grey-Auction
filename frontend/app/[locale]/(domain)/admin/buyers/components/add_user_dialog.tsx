@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
 
 import {
   Button,
@@ -16,7 +15,13 @@ import {
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { firstName: string; lastName: string; email: string }) => void;
+  // POST admin/users needs email + password + name + role.
+  onSubmit: (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }) => void;
 }
 
 export default function AddUserDialog({
@@ -24,71 +29,83 @@ export default function AddUserDialog({
   onOpenChange,
   onSubmit,
 }: AddUserDialogProps) {
-  const t = useTranslations('admin.buyers.dialogs.add');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleOpenChange = (value: boolean) => {
     if (!value) {
       setFirstName('');
       setLastName('');
       setEmail('');
+      setPassword('');
     }
     onOpenChange(value);
   };
 
   const handleSubmit = () => {
-    onSubmit({ firstName, lastName, email });
+    onSubmit({ firstName, lastName, email, password });
     handleOpenChange(false);
   };
 
-  const isValid = firstName.trim() && lastName.trim() && email.trim();
+  const isValid =
+    firstName.trim() && lastName.trim() && email.trim() && password.length >= 8;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
-            {t('title')}
+            Add User
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label className="text-sm">{t('firstName')}</Label>
+            <Label className="text-sm">First Name</Label>
             <Input
-              placeholder={t('firstName')}
+              placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm">{t('lastName')}</Label>
+            <Label className="text-sm">Last Name</Label>
             <Input
-              placeholder={t('lastName')}
+              placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm">{t('email')}</Label>
+            <Label className="text-sm">Email Address</Label>
             <Input
               type="email"
-              placeholder={t('email')}
+              placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
+          <div className="space-y-2">
+            <Label className="text-sm">Temporary Password</Label>
+            <Input
+              type="password"
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              {t('cancel')}
+              Cancel
             </Button>
             <Button disabled={!isValid} onClick={handleSubmit}>
-              {t('submit')}
+              Add User
             </Button>
           </div>
         </div>

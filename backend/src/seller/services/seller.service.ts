@@ -192,6 +192,9 @@ export class SellerService {
     const seller = this.sellerRepository.create({
       user_id: userId,
       ...registerDto,
+      // The column is NOT NULL and no registration form collects a postal code,
+      // so an omitted value would violate the constraint (it 500'd).
+      postal_code: registerDto.postal_code ?? '',
       verification_status: SellerVerificationStatus.PENDING,
       status: SellerStatus.INACTIVE, // Inactive until verified
       commission_rate: 10.0, // Default 10%

@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import * as z from 'zod';
 import {
   Button,
   Form,
@@ -15,19 +17,34 @@ import {
   FormMessage,
   Input,
   Separator,
-  Switch,
 } from '@/shared/components/common';
 import {
   changePasswordSchema,
-  withdrawalPinSchema,
-  securityOptionsSchema,
   type ChangePasswordValues,
-  type WithdrawalPinValues,
-  type SecurityOptionsValues,
 } from '../../../models/schema';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
+
+/**
+ * POST wallet/pin takes the new PIN alone (`SetPinDto.pin`, 4-6 digits) — the
+ * wallet has no endpoint that verifies the previous PIN, so the form does not
+ * ask for one.
+ */
+const withdrawalPinSchema = z
+  .object({
+    newPin: z.string().regex(/^\d{4,6}$/, 'PIN must be 4 to 6 digits'),
+    confirmPin: z.string().min(1, 'Re-enter your new PIN'),
+  })
+  .refine((data) => data.newPin === data.confirmPin, {
+    message: 'PINs do not match',
+    path: ['confirmPin'],
+  });
+
+type WithdrawalPinValues = z.infer<typeof withdrawalPinSchema>;
 
 export default function SellerSecuritySettings() {
   const t = useTranslations('seller.settings.security');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [savingPin, setSavingPin] = useState(false);
 
   // ─── Change Password Form ────────────────────────────────────────
   const passwordForm = useForm<ChangePasswordValues>({
@@ -40,24 +57,21 @@ export default function SellerSecuritySettings() {
   });
 
   const onSavePassword = async (data: ChangePasswordValues) => {
+    setSavingPassword(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${apiBase}/auth/change-password`, {
+      await apiFetch('auth/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           currentPassword: data.currentPassword,
           newPassword: data.newPassword,
-        }),
+        },
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || t('passwordChangeFailedShort'));
-      }
       toast.success(t('passwordChanged'));
       passwordForm.reset();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('passwordChangeFailed'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save');
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -65,29 +79,22 @@ export default function SellerSecuritySettings() {
   const pinForm = useForm<WithdrawalPinValues>({
     resolver: zodResolver(withdrawalPinSchema),
     defaultValues: {
-      currentPin: '',
       newPin: '',
       confirmPin: '',
     },
   });
 
-  const onSavePin = () => {
-    
-    toast.success(t('pinChanged'));
-    pinForm.reset();
-  };
-
-  // ─── Security Options Form ───────────────────────────────────────
-  const securityForm = useForm<SecurityOptionsValues>({
-    resolver: zodResolver(securityOptionsSchema),
-    defaultValues: {
-      twoFactorAuth: false,
-    },
-  });
-
-  const onSaveSecurity = () => {
-    
-    toast.success(t('securitySaved'));
+  const onSavePin = async (data: WithdrawalPinValues) => {
+    setSavingPin(true);
+    try {
+      await apiFetch('wallet/pin', { method: 'POST', body: { pin: data.newPin } });
+      toast.success(t('pinChanged'));
+      pinForm.reset();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save');
+    } finally {
+      setSavingPin(false);
+    }
   };
 
   return (
@@ -186,7 +193,9 @@ export default function SellerSecuritySettings() {
             />
           </div>
 
-          <Button type="submit">{t('changePasswordSubmit')}</Button>
+          <Button type="submit" disabled={savingPassword}>
+            {t('changePasswordSubmit')}
+          </Button>
         </form>
       </Form>
 
@@ -201,35 +210,6 @@ export default function SellerSecuritySettings() {
           <h3 className="text-base font-semibold">{t('changePin')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
-            <FormField
-              control={pinForm.control}
-              name="currentPin"
-              render={({ field }) => (
-                <>
-                  <div>
-                    <FormLabel className="text-sm font-medium">
-                      {t('currentPin')}
-                    </FormLabel>
-                    <FormDescription className="text-xs">
-                      {t('currentPinDesc')}
-                    </FormDescription>
-                  </div>
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        className="bg-background"
-                        type="password"
-                        maxLength={4}
-                        placeholder="••••"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                </>
-              )}
-            />
-
             <FormField
               control={pinForm.control}
               name="newPin"
@@ -248,7 +228,8 @@ export default function SellerSecuritySettings() {
                       <Input
                         className="bg-background"
                         type="password"
-                        maxLength={4}
+                        inputMode="numeric"
+                        maxLength={6}
                         placeholder="••••"
                         {...field}
                       />
@@ -277,7 +258,8 @@ export default function SellerSecuritySettings() {
                       <Input
                         className="bg-background"
                         type="password"
-                        maxLength={4}
+                        inputMode="numeric"
+                        maxLength={6}
                         placeholder="••••"
                         {...field}
                       />
@@ -289,56 +271,27 @@ export default function SellerSecuritySettings() {
             />
           </div>
 
-          <Button type="submit">{t('changePinSubmit')}</Button>
+          <Button type="submit" disabled={savingPin}>
+            {t('changePinSubmit')}
+          </Button>
         </form>
       </Form>
 
       <Separator />
 
       {/* ─── Security Options ────────────────────────────────────── */}
-      <Form {...securityForm}>
-        <form
-          onSubmit={securityForm.handleSubmit(onSaveSecurity)}
-          className="space-y-6"
-        >
-          <h3 className="text-base font-semibold">{t('securityOptions')}</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-3 md:gap-y-5">
-            <FormField
-              control={securityForm.control}
-              name="twoFactorAuth"
-              render={({ field }) => (
-                <>
-                  <div>
-                    <FormLabel className="text-sm font-medium">
-                      {t('twoFactor')}
-                    </FormLabel>
-                    <FormDescription className="text-xs">
-                      {t('twoFactorDesc')}
-                    </FormDescription>
-                  </div>
-                  <FormItem>
-                    <div className="flex items-center gap-2">
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <span className="text-sm text-muted-foreground">
-                        {t('enable')}
-                      </span>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                </>
-              )}
-            />
+      <div className="space-y-2">
+        <h3 className="text-base font-semibold">{t('securityOptions')}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] items-start gap-x-8 gap-y-1">
+          <p className="text-sm font-medium">{t('twoFactor')}</p>
+          <div>
+            <p className="text-xs text-muted-foreground">{t('twoFactorDesc')}</p>
+            <p className="text-xs text-muted-foreground">
+              Two-factor authentication is not configurable from seller settings.
+            </p>
           </div>
-
-          <Button type="submit">{t('saveChanges')}</Button>
-        </form>
-      </Form>
+        </div>
+      </div>
 
       <Separator />
 

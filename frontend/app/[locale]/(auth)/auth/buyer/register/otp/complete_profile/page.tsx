@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -49,15 +51,26 @@ export default function CompleteProfilePage() {
   const onSubmit = async (data: CompleteProfileFormValues) => {
     _setIsLoading(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/auth/profile`, {
+      // CompleteProfileDto accepts name/phone/address only; the whitelist
+      // rejects anything else (country/state/city used to 400 every submit) and
+      // the old code showed the success screen regardless.
+      const extras = data as Partial<CompleteProfileFormValues> & {
+        name?: string;
+        address?: string;
+      };
+      await apiFetch('auth/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: {
+          name: extras.name,
+          phone: data.phone,
+          address: data.address ?? extras.address,
+        },
       });
       setShowSuccess(true);
-    } catch {
-      setShowSuccess(true);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : 'Could not save your profile. Please try again.',
+      );
     } finally {
       _setIsLoading(false);
     }

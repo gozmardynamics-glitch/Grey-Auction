@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,16 +37,33 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/auth/forgot-password`, {
+      // The API answers { success, data: { devOtp?/token? } } and this used to
+      // navigate to the reset page with NO token, so every reset submitted an
+      // empty string and failed. Only continue when a token came back; the
+      // email path (production) tells the user to open their inbox instead.
+      const json = await apiFetch<{ data?: { token?: string } }>('auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email }),
+        body: { email: data.email },
       });
 
-      router.push('/auth/login/forgot_password/reset_password');
-    } catch {
-      form.setError('root', { message: 'Failed to send reset link. Please try again.' });
+      const token = json?.data?.token;
+      if (token) {
+        router.push(
+          '/auth/login/forgot_password/reset_password?token=' + encodeURIComponent(token),
+        );
+        return;
+      }
+
+      form.setError('root', {
+        message: 'If that email exists, a reset link is on its way. Open it to finish.',
+      });
+    } catch (err) {
+      form.setError('root', {
+        message:
+          err instanceof ApiError
+            ? err.message
+            : 'Failed to send reset link. Please try again.',
+      });
     } finally {
       setIsLoading(false);
     }

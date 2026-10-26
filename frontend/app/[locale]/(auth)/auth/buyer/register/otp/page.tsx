@@ -7,44 +7,66 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/shared/components/common';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 
-interface OTPVerificationProps {
-  email: string;
-  length?: number;
-  onVerify: (code: string) => Promise<void>;
-  onResend: () => Promise<void>;
-  title?: string;
-  description?: string;
-}
-
-export default function BuyerOTPVerification({
-  email,
-  length = 6,
-  onResend,
-  title = 'Verify Account',
-  description,
-}: OTPVerificationProps) {
+/**
+ * Email OTP step.
+ *
+ * A Next.js page cannot take required props, and this one never called the API:
+ * it just navigated on. It now verifies against POST /auth/verify-otp (and can
+ * resend via POST /auth/send-otp) using the email passed from registration in
+ * the query string or sessionStorage.
+ */
+export default function BuyerOTPVerification() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const email =
+    searchParams.get('email') ||
+    (typeof window !== 'undefined'
+      ? window.sessionStorage.getItem('greyauction:pendingEmail') || ''
+      : '');
 
   const handleVerify = async () => {
-    if (otp.length !== length) {
+    if (otp.length !== 6) return;
+    if (!email) {
+      setError('We lost track of your email. Please sign in to verify.');
       return;
     }
-    router.push('/auth/buyer/register/otp/complete_profile');
+
     setIsVerifying(true);
+    setError(null);
+    try {
+      await apiFetch('auth/verify-otp', { method: 'POST', body: { email, otp } });
+      router.push('/auth/buyer/register/otp/complete_profile');
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'That code did not work. Please try again.',
+      );
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleResend = async () => {
+    if (!email) {
+      setError('We lost track of your email. Please sign in to verify.');
+      return;
+    }
     setIsResending(true);
+    setError(null);
     try {
-      await onResend();
+      await apiFetch('auth/send-otp', { method: 'POST', body: { email } });
       setOtp('');
-    } catch (error) {
-      console.error('Resend error:', error);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Could not resend the code. Please try again.',
+      );
     } finally {
       setIsResending(false);
     }
@@ -60,10 +82,10 @@ export default function BuyerOTPVerification({
       {/* Header */}
       <div className="mb-8">
         <h2 className="md:text-2xl text-lg font-bold text-foreground">
-          {title}
+          Verify Account
         </h2>
         <p className="text-xs md:text-base text-muted-foreground">
-          {description || `Enter the ${length}-digit code sent to ${email}`}
+          {`Enter the 6-digit code sent to ${email || 'your email'}`}
         </p>
       </div>
 

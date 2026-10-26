@@ -2,73 +2,68 @@
 
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/components/common';
-import { useAppSelector } from '@/redux/store';
 import { useTranslations } from 'next-intl';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 
-interface AuctionPaymentSettings {
-  invoice_payment_due_days: number;
-  require_minimum_bid_deposit: boolean;
-  minimum_bid_deposit: number | null;
+interface SellerPaymentProfile {
+  invoice_payment_due_days?: number | null;
+  require_minimum_bid_deposit?: boolean | null;
+  minimum_bid_deposit?: number | string | null;
 }
 
 export default function AuctionPaymentSettings() {
   const t = useTranslations('seller.settings.auctionPayment');
-  const token = useAppSelector((state) => state.auth.token);
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
   const [days, setDays] = useState(7);
   const [requireDeposit, setRequireDeposit] = useState(false);
   const [minDeposit, setMinDeposit] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const load = async () => {
-      if (!token) return;
-      setLoading(true);
+    let cancelled = false;
+    (async () => {
       try {
-        const res = await fetch(apiBase + '/sellers/profile/me', {
-          headers: { Authorization: 'Bearer ' + token },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const p = json?.data ?? json;
-          setDays(p?.invoice_payment_due_days ?? 7);
-          setRequireDeposit(Boolean(p?.require_minimum_bid_deposit));
-          setMinDeposit(p?.minimum_bid_deposit != null ? String(p.minimum_bid_deposit) : '');
+        const json = await apiFetch<{ data?: SellerPaymentProfile }>('sellers/profile/me');
+        const profile = json?.data;
+        if (cancelled || !profile) return;
+        setDays(profile.invoice_payment_due_days ?? 7);
+        setRequireDeposit(Boolean(profile.require_minimum_bid_deposit));
+        setMinDeposit(
+          profile.minimum_bid_deposit != null ? String(profile.minimum_bid_deposit) : '',
+        );
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(err instanceof ApiError ? err.message : 'Could not load the settings');
         }
-      } catch {
-        // ignore
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    load();
-  }, [token, apiBase]);
+  }, []);
 
   const save = async () => {
-    if (!token) return;
     setSaving(true);
-    setMessage('');
     try {
-      const res = await fetch(apiBase + '/sellers/profile/me', {
+      await apiFetch('sellers/profile/me', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({
+        body: {
           invoice_payment_due_days: Number(days) || 7,
           require_minimum_bid_deposit: requireDeposit,
-          minimum_bid_deposit: requireDeposit && minDeposit ? Number(minDeposit) : null,
-        }),
+          minimum_bid_deposit:
+            requireDeposit && minDeposit !== '' && Number.isFinite(Number(minDeposit))
+              ? Number(minDeposit)
+              : null,
+        },
       });
-      if (res.ok) {
-        setMessage(t('saved'));
-      } else {
-        setMessage(t('saveFailed'));
-      }
-    } catch {
-      setMessage(t('saveFailed'));
+      toast.success(t('saved'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save');
     } finally {
       setSaving(false);
     }
@@ -132,8 +127,6 @@ export default function AuctionPaymentSettings() {
               />
             </div>
           )}
-
-          {message && <p className="text-xs text-muted-foreground">{message}</p>}
 
           <Button onClick={save} disabled={loading || saving} className="gap-2">
             <Save className="h-4 w-4" />

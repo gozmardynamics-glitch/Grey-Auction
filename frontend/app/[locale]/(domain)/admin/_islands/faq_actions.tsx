@@ -2,31 +2,22 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
-import { apiFetch } from '@/shared/utils/api-client';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import { useAppSelector } from '@/redux/store';
 
 const AddFaqDialog = dynamic(() => import('../faqs/components/add_faq_dialog'));
-const AddCategoryDialog = dynamic(
-  () => import('../faqs/components/add_category_dialog')
-);
 
 export default function FaqActions() {
+  const router = useRouter();
   const authToken = useAppSelector((state) => state.auth.token);
   const [addFaqOpen, setAddFaqOpen] = useState(false);
-  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="bg-background"
-        onClick={() => setAddCategoryOpen(true)}
-      >
-        <Plus className="h-4 w-4" />
-        Add Category
-      </Button>
       <Button onClick={() => setAddFaqOpen(true)}>
         <Plus className="h-4 w-4" />
         Add FAQ
@@ -36,28 +27,27 @@ export default function FaqActions() {
         onOpenChange={setAddFaqOpen}
         onSubmit={async (data) => {
           try {
+            // CreateFaqDto: category, question, answer, order?, isActive?.
+            // FAQ categories are derived from the FAQ rows themselves — there
+            // is no category endpoint to post to.
             await apiFetch('admin/faqs', {
               method: 'POST',
               token: authToken,
-              body: data,
+              body: {
+                category: data.category,
+                question: data.question,
+                answer: data.answer,
+                isActive: data.isActive,
+              },
             });
+            toast.success('FAQ created');
+            router.refresh();
           } catch (error) {
-            console.error('Failed to add FAQ:', error);
-          }
-        }}
-      />
-      <AddCategoryDialog
-        open={addCategoryOpen}
-        onOpenChange={setAddCategoryOpen}
-        onSubmit={async (data) => {
-          try {
-            await apiFetch('admin/faqs', {
-              method: 'POST',
-              token: authToken,
-              body: { ...data, type: 'category' },
-            });
-          } catch (error) {
-            console.error('Failed to add category:', error);
+            toast.error(
+              error instanceof ApiError
+                ? error.message
+                : 'Could not create the FAQ',
+            );
           }
         }}
       />

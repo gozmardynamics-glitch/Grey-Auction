@@ -187,9 +187,9 @@ export class RegisterSellerDto {
 
   @ApiProperty({ example: '100001' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(20)
-  postal_code: string;
+  postal_code?: string;
 
   @ApiProperty({ example: 'NG', description: 'ISO 3166-1 alpha-2 country code' })
   @IsString()

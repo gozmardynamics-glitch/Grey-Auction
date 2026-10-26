@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import { useAppSelector } from '@/redux/store';
 import {
   Badge,
   Button,
@@ -22,17 +21,16 @@ import {
   Skeleton,
   Switch,
 } from '@/shared/components/common';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 
 interface FeeOverride {
   scope: 'seller' | 'product';
   scopeId: string;
-  buyerFeePct: number | null;
+  buyerFeePct: number | string | null;
   buyerFeeEnabled: boolean | null;
-  sellerFeePct: number | null;
+  sellerFeePct: number | string | null;
   sellerFeeEnabled: boolean | null;
-  vatPct: number | null;
+  vatPct: number | string | null;
   vatBase: 'fees_only' | 'hammer_and_fees' | null;
 }
 
@@ -40,60 +38,52 @@ const PAYOUT_FREQUENCIES = ['instant', 'daily', 'weekly', 'monthly'] as const;
 
 export default function FeesPayoutsSettings() {
   const t = useTranslations('seller.settings.feesPayouts');
-  const token = useAppSelector((state) => state.auth.token);
-  const authed = useCallback(
-    (init: RequestInit = {}): RequestInit => ({
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...init.headers,
-      },
-    }),
-    [token],
-  );
 
   const [loading, setLoading] = useState(true);
   const [savingFees, setSavingFees] = useState(false);
   const [savingPayout, setSavingPayout] = useState(false);
 
-  // U5 #1 — per-seller fee overrides
+  // Percentages and VAT are platform revenue / statutory: the admin fixes them,
+  // so they are displayed read-only. Only the two toggles are seller-editable
+  // (SellerFeeSelfServiceDto rejects anything else with a 400).
   const [buyerFeePct, setBuyerFeePct] = useState('');
   const [buyerFeeEnabled, setBuyerFeeEnabled] = useState(true);
   const [sellerFeePct, setSellerFeePct] = useState('');
   const [sellerFeeEnabled, setSellerFeeEnabled] = useState(true);
   const [vatPct, setVatPct] = useState('');
-  const [vatBase, setVatBase] = useState<'fees_only' | 'hammer_and_fees'>(
-    'hammer_and_fees',
-  );
+  const [vatBase, setVatBase] = useState<'fees_only' | 'hammer_and_fees' | ''>('');
 
   // U5 #3 — payout schedule
   const [frequency, setFrequency] = useState<string>('weekly');
+
+  // A string dependency keeps the one-shot load stable (t itself is recreated
+  // on every render by mocked translators).
+  const loadFailedMessage = t('loadFailed');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [overrideRes, meRes] = await Promise.all([
-          fetch(`${API_BASE}/sellers/settings/fees`, { cache: 'no-store' }),
-          fetch(`${API_BASE}/sellers/profile/me`, { cache: 'no-store' }),
+        const [overrideJson, meJson] = await Promise.all([
+          apiFetch<{ data?: FeeOverride | null }>('sellers/settings/fees'),
+          apiFetch<{ data?: { payout_frequency?: string | null } }>('sellers/profile/me'),
         ]);
-        const overrideJson = await overrideRes.json();
-        const meJson = await meRes.json();
         if (cancelled) return;
-        const mine: FeeOverride | undefined = overrideJson?.data ?? undefined;
+        const mine = overrideJson?.data;
         if (mine) {
           setBuyerFeePct(mine.buyerFeePct != null ? String(mine.buyerFeePct) : '');
           setBuyerFeeEnabled(mine.buyerFeeEnabled ?? true);
           setSellerFeePct(mine.sellerFeePct != null ? String(mine.sellerFeePct) : '');
           setSellerFeeEnabled(mine.sellerFeeEnabled ?? true);
           setVatPct(mine.vatPct != null ? String(mine.vatPct) : '');
-          setVatBase(mine.vatBase ?? 'hammer_and_fees');
+          setVatBase(mine.vatBase ?? '');
         }
-        const seller = meJson?.data;
-        if (seller?.payout_frequency) setFrequency(seller.payout_frequency);
-      } catch {
-        if (!cancelled) toast.error(t('loadFailed'));
+        const storedFrequency = meJson?.data?.payout_frequency;
+        if (storedFrequency) setFrequency(storedFrequency);
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(err instanceof ApiError ? err.message : loadFailedMessage);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -101,27 +91,18 @@ export default function FeesPayoutsSettings() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadFailedMessage]);
 
   const saveFees = async () => {
     setSavingFees(true);
     try {
-      const res = await fetch(`${API_BASE}/sellers/settings/fees`, authed({
+      await apiFetch('sellers/settings/fees', {
         method: 'PUT',
-        body: JSON.stringify({
-          buyerFeePct: buyerFeePct === '' ? null : Number(buyerFeePct),
-          buyerFeeEnabled,
-          sellerFeePct: sellerFeePct === '' ? null : Number(sellerFeePct),
-          sellerFeeEnabled,
-          vatPct: vatPct === '' ? null : Number(vatPct),
-          vatBase,
-        }),
-      }));
-      const json = await res.json();
-      if (!res.ok || json?.success === false) throw new Error('save failed');
+        body: { buyerFeeEnabled, sellerFeeEnabled },
+      });
       toast.success(t('feesSaved'));
-    } catch {
-      toast.error(t('feesSaveFailed'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('feesSaveFailed'));
     } finally {
       setSavingFees(false);
     }
@@ -130,15 +111,13 @@ export default function FeesPayoutsSettings() {
   const savePayout = async () => {
     setSavingPayout(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/sellers/settings/payout-frequency`,
-        authed({ method: 'PATCH', body: JSON.stringify({ frequency }) }),
-      );
-      const json = await res.json();
-      if (!res.ok || json?.success === false) throw new Error('save failed');
+      await apiFetch('sellers/settings/payout-frequency', {
+        method: 'PATCH',
+        body: { frequency },
+      });
       toast.success(t('payoutSaved'));
-    } catch {
-      toast.error(t('payoutSaveFailed'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('payoutSaveFailed'));
     } finally {
       setSavingPayout(false);
     }
@@ -159,16 +138,18 @@ export default function FeesPayoutsSettings() {
       <div className="space-y-1">
         <h3 className="text-base font-semibold">{t('title')}</h3>
         <p className="text-sm text-muted-foreground">
-          {t('description')}
+          Your fee preferences apply to your listings unless a specific product
+          overrides them.
         </p>
       </div>
 
-      {/* ─── U5 #1: per-seller fee overrides ─────────────────── */}
+      {/* ─── U5 #1: per-seller fee toggles ────────────────────── */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{t('feeRatesTitle')}</CardTitle>
           <CardDescription>
-            {t('feeRatesDesc')}
+            Buyer fee and seller commission rates are set by the platform admin.
+            You can choose whether each one applies to your lots.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -178,12 +159,10 @@ export default function FeesPayoutsSettings() {
               <div className="flex items-center gap-3">
                 <Input
                   type="number"
-                  min={0}
-                  step="0.01"
                   value={buyerFeePct}
-                  onChange={(e) => setBuyerFeePct(e.target.value)}
-                  placeholder={t('inherit')}
-                  className="max-w-[140px]"
+                  placeholder="—"
+                  readOnly
+                  className="max-w-[140px] bg-muted"
                 />
                 <div className="flex items-center gap-2">
                   <Switch
@@ -201,12 +180,10 @@ export default function FeesPayoutsSettings() {
               <div className="flex items-center gap-3">
                 <Input
                   type="number"
-                  min={0}
-                  step="0.01"
                   value={sellerFeePct}
-                  onChange={(e) => setSellerFeePct(e.target.value)}
-                  placeholder={t('inherit')}
-                  className="max-w-[140px]"
+                  placeholder="—"
+                  readOnly
+                  className="max-w-[140px] bg-muted"
                 />
                 <div className="flex items-center gap-2">
                   <Switch
@@ -223,27 +200,27 @@ export default function FeesPayoutsSettings() {
               <Label className="text-sm">{t('vatRate')}</Label>
               <Input
                 type="number"
-                min={0}
-                step="0.01"
                 value={vatPct}
-                onChange={(e) => setVatPct(e.target.value)}
-                placeholder={t('inherit')}
-                className="max-w-[140px]"
+                placeholder="—"
+                readOnly
+                className="max-w-[140px] bg-muted"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">{t('vatBase')}</Label>
-              <Select value={vatBase} onValueChange={(v) => setVatBase(v as 'fees_only' | 'hammer_and_fees')}>
-                <SelectTrigger className="max-w-[260px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fees_only">{t('vatBaseFeesOnly')}</SelectItem>
-                  <SelectItem value="hammer_and_fees">{t('vatBaseHammerAndFees')}</SelectItem>
-                </SelectContent>
-              </Select>
+              <p className="flex h-9 items-center text-sm">
+                {vatBase === 'fees_only'
+                  ? t('vatBaseFeesOnly')
+                  : vatBase === 'hammer_and_fees'
+                    ? t('vatBaseHammerAndFees')
+                    : '—'}
+              </p>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Percentages and VAT are set by the platform admin and cannot be edited
+            here.
+          </p>
           <Button onClick={saveFees} disabled={savingFees}>
             {savingFees ? t('saving') : t('saveFeePreferences')}
           </Button>

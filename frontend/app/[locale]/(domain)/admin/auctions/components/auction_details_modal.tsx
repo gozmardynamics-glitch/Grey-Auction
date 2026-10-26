@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
+
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 
 import {
   ActionSuccessDialog,
@@ -38,17 +42,67 @@ export default function AuctionDetailsModal({
 }: AuctionDetailsModalProps) {
   const t = useTranslations('admin.auctions.details');
   const tAdmin = useTranslations('admin');
+  const router = useRouter();
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [successVariant, setSuccessVariant] = useState<
     'approved' | 'rejected' | null
   >(null);
 
   if (!auction) return null;
 
-  const isPending = auction.status === 'Pending' || auction.status === 'Active';
-  const isCompleted = auction.status === 'Completed';
-  const isRejected = auction.status === 'Rejected';
+  // Moderation runs against the products controller: POST products/:id/approve
+  // and POST products/:id/reject (ApproveProductDto / RejectProductDto). The
+  // dialog only closes once the call resolved — no optimistic success.
+  const moderate = async (
+    action: 'approve' | 'reject',
+    body: Record<string, unknown>,
+    failureMessage: string,
+  ) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await apiFetch(`products/${auction.id}/${action}`, {
+        method: 'POST',
+        body,
+      });
+      if (action === 'approve') {
+        setApproveOpen(false);
+        setSuccessVariant('approved');
+      } else {
+        setRejectOpen(false);
+        setSuccessVariant('rejected');
+      }
+      onOpenChange(false);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : failureMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Rows reach this modal in two shapes: the admin listing labels
+  // ('Pending', 'Active', …) and the API statuses ('pending_approval',
+  // 'active', 'sold', …) when real products are loaded. Match both, otherwise
+  // moderation is unreachable on live data.
+  const status = String(auction.status ?? '').toLowerCase();
+  const moderatable = [
+    'pending',
+    'pending_approval',
+    'active',
+    'approved',
+    'new',
+  ].includes(status);
+  const isCompleted = [
+    'completed',
+    'sold',
+    'closed',
+    'awaiting_seller_approval',
+  ].includes(status);
+  const isRejected = ['rejected', 'withdrawn'].includes(status);
+  const isFlagged = status === 'flagged' || status === 'draft';
 
   return (
     <>
@@ -59,7 +113,7 @@ export default function AuctionDetailsModal({
               <DialogTitle className="text-lg font-semibold">
                 {t('title')}
               </DialogTitle>
-              {isPending && (
+              {moderatable && (
                 <div className="flex items-center gap-2">
                   <Button
                     variant="destructive"
@@ -212,12 +266,10 @@ export default function AuctionDetailsModal({
 
             {/* ====== RIGHT COLUMN (status-dependent) ====== */}
             <div className="space-y-5">
-              {isPending && <PendingRightColumn auction={auction} />}
+              {moderatable && <PendingRightColumn auction={auction} />}
               {isCompleted && <CompletedRightColumn auction={auction} />}
               {isRejected && <RejectedRightColumn auction={auction} />}
-              {auction.status === 'Flagged' && (
-                <CompletedRightColumn auction={auction} />
-              )}
+              {isFlagged && <CompletedRightColumn auction={auction} />}
             </div>
           </div>
         </DialogContent>
@@ -238,9 +290,7 @@ export default function AuctionDetailsModal({
         checkboxLabel={t('approveConfirm.checkboxLabel')}
         confirmLabel={t('approveConfirm.confirm')}
         onConfirm={() => {
-          setApproveOpen(false);
-          onOpenChange(false);
-          setSuccessVariant('approved');
+          void moderate('approve', {}, 'Could not approve the auction');
         }}
       />
 
@@ -258,10 +308,12 @@ export default function AuctionDetailsModal({
         ]}
         textareaPlaceholder={t('rejectConfirm.placeholder')}
         confirmLabel={t('rejectConfirm.confirm')}
-        onConfirm={() => {
-          setRejectOpen(false);
-          onOpenChange(false);
-          setSuccessVariant('rejected');
+        onConfirm={(reason) => {
+          void moderate(
+            'reject',
+            { rejectionReason: reason.trim() },
+            'Could not reject the auction',
+          );
         }}
       />
 

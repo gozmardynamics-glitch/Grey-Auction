@@ -31,7 +31,16 @@ async function forward(req: NextRequest, method: Method) {
   const headers = new Headers();
   const contentType = req.headers.get('content-type');
   if (contentType) headers.set('content-type', contentType);
-  if (token) headers.set('authorization', `Bearer ${token}`);
+
+  if (token) {
+    headers.set('authorization', `Bearer ${token}`);
+  } else {
+    // No session yet (registration, onboarding, pre-login calls): pass the
+    // caller's own bearer through. Without this the proxy silently stripped the
+    // credential a just-registered user was given, so onboarding 401'd.
+    const incoming = req.headers.get('authorization');
+    if (incoming) headers.set('authorization', incoming);
+  }
 
   const hasBody = method !== 'GET';
   const body = hasBody ? Buffer.from(await req.arrayBuffer()) : undefined;

@@ -2,17 +2,29 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/shared/components/common';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import { useAppSelector } from '@/redux/store';
-import { getErrorMessage } from '@/shared/utils/error_utils';
+import { type AdminRole } from '../models';
 
 const AddAdminDialog = dynamic(() => import('../admins/components/add_admin_dialog'));
 
+// The dialog shows product-facing role labels; the API stores AdminRole enum
+// values, so translate before sending.
+const API_ROLE: Record<AdminRole, string> = {
+  'Super Admin': 'super_admin',
+  Admin: 'platform_admin',
+  Moderator: 'support_admin',
+  Support: 'support_admin',
+};
+
 export default function AddAdminAction() {
+  const router = useRouter();
+  const authToken = useAppSelector((state) => state.auth.token);
   const [addAdminOpen, setAddAdminOpen] = useState(false);
-  const token = useAppSelector((state) => state.auth.token);
 
   return (
     <>
@@ -25,23 +37,24 @@ export default function AddAdminAction() {
         onOpenChange={setAddAdminOpen}
         onSubmit={async (data) => {
           try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            const res = await fetch(`${apiBase}/admin/admins`, {
+            await apiFetch('admin/admins', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              token: authToken,
+              body: {
+                email: data.email.trim(),
+                password: data.password,
+                name: `${data.firstName.trim()} ${data.lastName.trim()}`.trim(),
+                role: API_ROLE[data.role],
               },
-              body: JSON.stringify({ ...data, role: 'platform_admin' }),
             });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              throw new Error(err.message || 'Failed to create admin');
-            }
             toast.success('Admin created');
-            setAddAdminOpen(false);
+            router.refresh();
           } catch (error) {
-            toast.error(getErrorMessage(error) || 'Failed to add admin');
+            toast.error(
+              error instanceof ApiError
+                ? error.message
+                : 'Could not create the admin',
+            );
           }
         }}
       />

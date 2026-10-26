@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 import {
   Button,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -16,7 +15,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Switch,
 } from '@/shared/components/common';
 import { AdminRole } from '../../models';
 import { ROLES } from '../../models/data';
@@ -24,16 +22,16 @@ import { ROLES } from '../../models/data';
 interface AddAdminDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // POST admin/admins needs email + password + name; the form keeps the name
+  // split in two fields and the action joins them.
   onSubmit: (data: {
     firstName: string;
     lastName: string;
     email: string;
+    password: string;
     role: AdminRole;
-    sendInviteEmail: boolean;
-    isActive: boolean;
   }) => void;
 }
-
 
 export default function AddAdminDialog({
   open,
@@ -43,17 +41,15 @@ export default function AddAdminDialog({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<AdminRole | ''>('');
-  const [sendInviteEmail, setSendInviteEmail] = useState(false);
-  const [isActive, setIsActive] = useState(false);
 
   const reset = () => {
     setFirstName('');
     setLastName('');
     setEmail('');
+    setPassword('');
     setRole('');
-    setSendInviteEmail(false);
-    setIsActive(false);
   };
 
   const handleOpenChange = (value: boolean) => {
@@ -63,12 +59,16 @@ export default function AddAdminDialog({
 
   const handleSubmit = () => {
     if (!role) return;
-    onSubmit({ firstName, lastName, email, role, sendInviteEmail, isActive });
+    onSubmit({ firstName, lastName, email, password, role });
     handleOpenChange(false);
   };
 
   const isValid =
-    firstName.trim() && lastName.trim() && email.trim() && role;
+    firstName.trim() &&
+    lastName.trim() &&
+    email.trim() &&
+    password.length >= 8 &&
+    role;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -111,6 +111,17 @@ export default function AddAdminDialog({
             />
           </div>
 
+          {/* Temporary password */}
+          <div className="space-y-2">
+            <Label className="text-sm">Temporary Password</Label>
+            <Input
+              type="password"
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
           {/* Role */}
           <div className="space-y-2">
             <Label className="text-sm">Role</Label>
@@ -129,23 +140,6 @@ export default function AddAdminDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Send Invite Email + Activate Admin */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={sendInviteEmail}
-                onCheckedChange={(checked) =>
-                  setSendInviteEmail(checked === true)
-                }
-              />
-              <Label className="text-sm">Send Invite Email</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Activate Admin</Label>
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
-            </div>
           </div>
 
           {/* Actions */}

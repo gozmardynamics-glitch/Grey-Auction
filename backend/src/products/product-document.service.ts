@@ -33,6 +33,21 @@ export class ProductDocumentService {
     });
   }
 
+  /**
+   * True when the caller may see this lot's UNVERIFIED documents: the owning
+   * seller, or an admin. Verified documents are public; unverified ones are
+   * not, and the public route used to honour `includeUnverified` for anyone.
+   */
+  async canSeeUnverified(
+    productId: string,
+    user?: { id?: string; role?: string } | null,
+  ): Promise<boolean> {
+    if (!user?.id) return false;
+    if (user.role === 'admin') return true;
+    const product = await this.products.findOne({ where: { id: productId } });
+    return product?.sellerId === user.id;
+  }
+
   async findOne(id: string): Promise<ProductDocument> {
     const document = await this.documents.findOne({ where: { id } });
     if (!document) throw new NotFoundException('Document not found');

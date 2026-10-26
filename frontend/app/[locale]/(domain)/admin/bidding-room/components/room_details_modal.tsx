@@ -5,14 +5,12 @@ import Image from 'next/image';
 import { MapPin, Phone, Home, AlertTriangle } from 'lucide-react';
 
 import {
-  ActionSuccessDialog,
   Avatar,
   AvatarFallback,
   AvatarImage,
   Badge,
   Button,
   Card,
-  ConfirmActionDialog,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -220,12 +218,7 @@ export default function RoomDetailsModal({
   onOpenChange,
   room,
 }: RoomDetailsModalProps) {
-  const [approveOpen, setApproveOpen] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
-  const [successVariant, setSuccessVariant] = useState<
-    'approved' | 'rejected' | null
-  >(null);
 
   if (!room) return null;
 
@@ -243,31 +236,15 @@ export default function RoomDetailsModal({
               <DialogTitle className="text-lg font-semibold">
                 Room Details
               </DialogTitle>
-              {isPending && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setRejectOpen(true)}
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-primary-foreground"
-                    onClick={() => setApproveOpen(true)}
-                  >
-                    Approve Room
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onOpenChange(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 
@@ -351,71 +328,11 @@ export default function RoomDetailsModal({
         </DialogContent>
       </Dialog>
 
-      <ConfirmActionDialog
-        variant="approve"
-        open={approveOpen}
-        onOpenChange={setApproveOpen}
-        title="Are you sure you want to approve this bidding room?"
-        consequenceLabel="Once approved:"
-        consequences={[
-          'The bidding room will go live immediately',
-          'All listed auctions will become active',
-          'Registered bidders will be notified',
-          'This action cannot be undone',
-        ]}
-        checkboxLabel="Please confirm that all room details and auction listings have been reviewed and meet platform requirements"
-        confirmLabel="Approve Room"
-        onConfirm={() => {
-          setApproveOpen(false);
-          onOpenChange(false);
-          setSuccessVariant('approved');
-        }}
-      />
-
-      <ConfirmActionDialog
-        variant="reject"
-        open={rejectOpen}
-        onOpenChange={setRejectOpen}
-        title="Are you sure you want to reject this bidding room?"
-        consequenceLabel="This action will:"
-        consequences={[
-          'The bidding room will not go live',
-          'The seller will be notified with the rejection reason',
-          'The seller can resubmit after corrections',
-          'This action cannot be undone',
-        ]}
-        textareaPlaceholder="e.g., Incomplete room details, policy violation, unverified seller..."
-        confirmLabel="Reject Room"
-        onConfirm={() => {
-          setRejectOpen(false);
-          onOpenChange(false);
-          setSuccessVariant('rejected');
-        }}
-      />
-
       <ParticipantsModal
         open={participantsOpen}
         onOpenChange={setParticipantsOpen}
         participants={room.participants || []}
       />
-
-      {successVariant && (
-        <ActionSuccessDialog
-          open={!!successVariant}
-          onOpenChange={() => setSuccessVariant(null)}
-          variant={successVariant === 'approved' ? 'success' : 'error'}
-          title={
-            successVariant === 'approved'
-              ? 'Bidding Room Approved'
-              : 'Bidding Room Rejected'
-          }
-          message={
-            successVariant === 'approved'
-              ? 'The bidding room has been successfully approved and is now live. All listed auctions are active and registered bidders have been notified.'
-              : 'The bidding room has been rejected. The seller has been notified with the reason for rejection and can resubmit after making corrections.'
-          }
-        />
-      )}
     </>
   );
 }

@@ -26,6 +26,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentAdmin } from '../admin/decorators/current-admin.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { AdminRole } from '../admin/entities/admin.entity';
@@ -42,17 +43,23 @@ export class ProductDocumentController {
   ) {}
 
   @Get(':productId/documents')
-  @ApiOperation({ summary: 'Get documents for a product (public, only verified)' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get documents for a product (verified are public; unverified only for the owner/admin)',
+  })
   @ApiParam({ name: 'productId' })
   @ApiQuery({ name: 'includeUnverified', required: false, type: Boolean })
   async findByProduct(
     @Param('productId') productId: string,
+    @CurrentUser() user: any,
     @Query('includeUnverified') includeUnverified?: string,
   ) {
-    const data = await this.service.findByProduct(
-      productId,
-      includeUnverified === 'true',
-    );
+    // `includeUnverified` is only honoured for the owning seller or an admin;
+    // otherwise this public route would list documents nobody has approved.
+    const wantsUnverified =
+      includeUnverified === 'true' && (await this.service.canSeeUnverified(productId, user));
+
+    const data = await this.service.findByProduct(productId, wantsUnverified);
     return { success: true, data };
   }
 

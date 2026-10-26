@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -31,7 +33,9 @@ import { cn } from '@/lib/utils';
 // ---------------------------------------------------------------------------
 
 type OrgTypeId = 'company' | 'firm' | 'government' | 'embassy' | 'ngo';
-type BusinessType = 'AGENCY' | 'GOVERNMENT' | 'EMBASSY' | 'NGO' | 'COMPANY';
+// Must match the backend SellerBusinessType enum exactly ('COMPANY' is not a
+// value there — it is CORPORATION), or registration is rejected.
+type BusinessType = 'AGENCY' | 'GOVERNMENT' | 'EMBASSY' | 'NGO' | 'CORPORATION';
 type Visibility = 'public' | 'private';
 
 interface OrgTypeOption {
@@ -81,7 +85,7 @@ const ORG_TYPES: OrgTypeOption[] = [
   {
     id: 'company',
     label: 'Company',
-    businessType: 'COMPANY',
+    businessType: 'CORPORATION',
     icon: Building2,
     description: 'Private limited or public company',
   },
@@ -204,7 +208,6 @@ export default function OrganizationRegisterPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [demoNote, setDemoNote] = useState(false);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -294,50 +297,48 @@ export default function OrganizationRegisterPage() {
       city: form.city,
       state: form.state,
       country: 'NG',
-      postal_code: '',
       auction_visibility: form.auctionVisibility,
       consultant_listing: form.consultantListing,
-      consultant_notes: form.consultantListing ? form.consultantNotes : '',
-      categories: form.categories,
+      consultant_notes: form.consultantListing ? form.consultantNotes : undefined,
+      // `categories` is not part of RegisterSellerDto; the API rejects unknown
+      // properties, which used to fail every organization registration.
     };
 
-    const apiBase =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
-    let isDemo = false;
+    let failure: string | null = null;
 
     // 1. Create the platform account (seller role) — returns a JWT
     let token = '';
     try {
-      const accountRes = await fetch(apiBase + '/auth/register', {
+      const accountJson = await apiFetch<{ data?: { token?: string } }>('auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           name: form.contactPerson || form.agencyName,
           email: form.email,
           password: form.password,
           role: 'seller',
-        }),
+        },
       });
-      const accountJson = await accountRes.json().catch(() => ({}));
       token = accountJson?.data?.token || '';
-    } catch {
-      isDemo = true;
+      if (!token) failure = 'The account could not be created. Please try a different email.';
+    } catch (err) {
+      failure = err instanceof ApiError ? err.message : 'Registration failed. Please try again.';
     }
 
-    // 2. Create the seller/organization profile
-    try {
-      const res = await fetch(apiBase + '/sellers/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer ' + token } : {}),
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) isDemo = true;
-    } catch {
-      isDemo = true;
+    // 2. Create the seller/organization profile (bearer from step 1; the proxy
+    //    forwards it for a not-yet-signed-in caller).
+    if (!failure && token) {
+      try {
+        await apiFetch('sellers/register', {
+          method: 'POST',
+          token,
+          body,
+        });
+      } catch (err) {
+        failure =
+          err instanceof ApiError
+            ? `Profile could not be created: ${err.message}`
+            : 'Profile could not be created. Please try again.';
+      }
     }
 
     // 3. Start the Auth.js session so the org rep is signed in (best-effort)
@@ -355,7 +356,12 @@ export default function OrganizationRegisterPage() {
     }
 
     setSubmitting(false);
-    setDemoNote(isDemo);
+
+    if (failure) {
+      toast.error(failure);
+      return;
+    }
+
     setSubmitted(true);
   };
 
@@ -376,11 +382,6 @@ export default function OrganizationRegisterPage() {
             Thank you, <span className="font-semibold text-foreground">{form.agencyName}</span>. We
             have received your organization registration request.
           </p>
-          {demoNote && (
-            <p className="mt-3 rounded-lg bg-muted px-4 py-2 text-xs text-muted-foreground">
-              Registration received — our team will reach out to confirm.
-            </p>
-          )}
         </div>
 
         <div className="mt-8 space-y-3">

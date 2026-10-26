@@ -6,6 +6,7 @@ import { KycDocument } from './entities/kyc-document.entity';
 import { User } from '../auth/entities/user.entity';
 import { Seller } from '../seller/entities/seller.entity';
 import { StorageModule } from '../common/storage/storage.module';
+import { NotificationModule } from '../notification/notification.module';
 import { KycController } from './kyc.controller';
 import { KycAdminController } from './kyc-admin.controller';
 import { KycService } from './kyc.service';
@@ -15,6 +16,7 @@ import { KycRiskService } from './kyc-risk.service';
   imports: [
     TypeOrmModule.forFeature([KycDocumentRequirement, KycDocument, User, Seller]),
     StorageModule,
+    NotificationModule,
   ],
   controllers: [KycController, KycAdminController],
   providers: [KycService, KycRiskService],

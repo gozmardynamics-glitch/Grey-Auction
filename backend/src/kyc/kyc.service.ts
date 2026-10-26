@@ -15,6 +15,8 @@ import {
 import { KycDocument, KycDocumentStatus } from './entities/kyc-document.entity';
 import { Seller } from '../seller/entities/seller.entity';
 import { StorageService } from '../common/storage/storage.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/notification.entity';
 import {
   CreateKycRequirementDto,
   ReviewKycDocumentDto,
@@ -73,6 +75,7 @@ export class KycService {
     @InjectRepository(Seller)
     private readonly sellers: Repository<Seller>,
     private readonly storage: StorageService,
+    private readonly notifications: NotificationService,
   ) {}
 
   // ── Admin: document requirements ───────────────────────────────────────
@@ -456,6 +459,24 @@ export class KycService {
     this.logger.log(
       `KYC document ${doc.id} (user ${doc.userId}) ${dto.status} by admin ${adminId}`,
     );
+
+    // Tell the applicant instead of making them poll the page. A notification
+    // failure must never fail the review that already committed.
+    void this.notifications
+      .create(doc.userId, {
+        type: NotificationType.SYSTEM,
+        title:
+          dto.status === KycDocumentStatus.APPROVED
+            ? 'Your document was approved'
+            : 'Your document needs attention',
+        body:
+          dto.status === KycDocumentStatus.APPROVED
+            ? 'A document you submitted has been approved.'
+            : `A document you submitted was rejected: ${dto.reviewNotes?.trim() ?? 'see the review notes'}`,
+        link: '/buyer/dashboard?module=verification',
+      })
+      .catch(() => undefined);
+
     return saved;
   }
 }

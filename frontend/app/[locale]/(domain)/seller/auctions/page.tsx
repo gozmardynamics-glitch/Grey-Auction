@@ -46,7 +46,9 @@ function toListing(a: Auction): Listing {
         ? 'Ended'
         : '—';
   return {
-    lotId: a.id ? '#' + a.id.slice(0, 8).toUpperCase() : '—',
+    id: a.id,
+    // Consumers render the '#' themselves; including it here printed '##XXXX'.
+    lotId: a.id ? a.id.slice(0, 8).toUpperCase() : '—',
     item: a.title,
     itemImage: a.imageUrl,
     reservePrice: a.hasReservePrice

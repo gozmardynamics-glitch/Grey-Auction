@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { DataTable, type TabFilter } from '@/shared/components/common';
 import { useTranslations } from 'next-intl';
@@ -10,6 +11,7 @@ import { useBuyersColumns } from './buyers_column';
 import BuyerDetailsModal from './buyer_details_modal';
 import SuspendUserDialog from './suspend_user_dialog';
 import ActivateUserDialog from './activate_user_dialog';
+import { apiFetch } from '@/shared/utils/api-client';
 
 interface BuyersTableProps {
   data: Buyer[];
@@ -48,6 +50,26 @@ export default function BuyersTable({
         }
   );
 
+  // Both routes are POST; the dialogs close first and report the outcome, so a
+  // rejected call is visible instead of being swallowed by an empty catch.
+  const setBuyerStatus = async (buyer: Buyer | null, action: 'suspend' | 'activate') => {
+    if (!buyer) return;
+    setSuspendOpen(false);
+    setActivateOpen(false);
+    try {
+      await apiFetch(`admin/buyers/${encodeURIComponent(buyer.id)}/${action}`, {
+        method: 'POST',
+      });
+      toast.success(`${buyer.name} ${action === 'suspend' ? 'suspended' : 'activated'}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to ${action} ${buyer.name}`,
+      );
+    }
+  };
+
   return (
     <>
       <DataTable
@@ -69,33 +91,13 @@ export default function BuyersTable({
       <SuspendUserDialog
         open={suspendOpen}
         onOpenChange={setSuspendOpen}
-        onConfirm={async () => {
-          try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/buyers/${actionBuyer?.id}/suspend`, {
-              method: 'PATCH',
-            });
-          } catch (error) {
-            console.error('Failed to suspend buyer:', error);
-          }
-          setSuspendOpen(false);
-        }}
+        onConfirm={() => setBuyerStatus(actionBuyer, 'suspend')}
       />
 
       <ActivateUserDialog
         open={activateOpen}
         onOpenChange={setActivateOpen}
-        onConfirm={async () => {
-          try {
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            await fetch(`${apiBase}/admin/buyers/${actionBuyer?.id}/activate`, {
-              method: 'PATCH',
-            });
-          } catch (error) {
-            console.error('Failed to activate buyer:', error);
-          }
-          setActivateOpen(false);
-        }}
+        onConfirm={() => setBuyerStatus(actionBuyer, 'activate')}
       />
     </>
   );

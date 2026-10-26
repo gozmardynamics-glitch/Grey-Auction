@@ -3,12 +3,9 @@ import AuctionTable from './components/auction_table';
 import { DatePickerSimple } from '@/shared/components/common/date_picker';
 import { AUCTION_TAB_FILTERS } from '../models/data';
 import { getAdminAuctions } from '@/lib/server/data';
-import type { Auction as AdminAuction } from '../models';
 
 export default async function AuctionManagement() {
-  // data.ts normalizes to the shared website Auction shape; the table
-  // declares its own structurally-identical Auction type.
-  const auctions = (await getAdminAuctions()) as unknown as AdminAuction[];
+  const auctions = await getAdminAuctions();
   const t = await getTranslations('admin.auctions.page');
 
   return (

@@ -14,6 +14,7 @@ import {
 import { KycDocument, KycDocumentStatus } from './entities/kyc-document.entity';
 import { Seller } from '../seller/entities/seller.entity';
 import { StorageService } from '../common/storage/storage.service';
+import { NotificationService } from '../notification/notification.service';
 
 describe('KycService', () => {
   let service: KycService;
@@ -77,6 +78,10 @@ describe('KycService', () => {
         { provide: getRepositoryToken(KycDocument), useValue: documents },
         { provide: getRepositoryToken(Seller), useValue: sellers },
         { provide: StorageService, useValue: storage },
+        {
+          provide: NotificationService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
     service = module.get<KycService>(KycService);

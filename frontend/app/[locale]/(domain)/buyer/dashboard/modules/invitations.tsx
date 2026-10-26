@@ -2,127 +2,113 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Lock,
-  Clock,
-  Users,
-  Shield,
-  ArrowRight,
-  Mail,
-  Sparkles,
-} from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { Clock, Mail, Shield } from 'lucide-react';
 import { Button, Card, Skeleton } from '@/shared/components/common';
-import { useAppSelector } from '@/redux/store';
+import { ApiError, apiFetch } from '@/shared/utils/api-client';
 
-interface InvitationRoom {
-  id: string;
-  roomId?: string;
-  productIds?: string[];
-  productId?: string;
-  name: string;
-  description?: string;
-  startTime: string;
-  endTime: string;
-  type: 'public' | 'private';
-  requiresDeposit: boolean;
-  depositAmount?: number;
-  status: string;
-}
-
-interface Invitation {
+/** Wire shape of GET /invites/pending (backend/src/invites/invite.entity). */
+interface PendingInvite {
   id: string;
   token: string;
   roomId: string;
   productId: string;
-  roomName: string;
-  roomDescription?: string;
-  startTime: string;
-  endTime: string;
-  type: 'public' | 'private';
-  requiresDeposit: boolean;
-  depositAmount?: number;
-  status: 'scheduled' | 'live' | 'closed';
+  mode: string;
+  response: string;
+  inviteeName?: string | null;
+  inviteeEmail?: string | null;
   expiresAt: string;
-  invitedByName?: string;
-  participantCount: number;
+  createdAt: string;
+  isActive: boolean;
+}
+
+interface InvitationRow {
+  id: string;
+  invitee: string;
+  expiresAt: string;
+  createdAt: string;
+  roomRef: string;
+  active: boolean;
+}
+
+function toRow(invite: PendingInvite): InvitationRow {
+  return {
+    id: invite.id,
+    invitee: invite.inviteeName || invite.inviteeEmail || 'Unnamed invitee',
+    expiresAt: invite.expiresAt,
+    createdAt: invite.createdAt,
+    roomRef: invite.roomId,
+    active: invite.isActive,
+  };
+}
+
+function formatDate(value: string): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 export default function InvitationsModule() {
   const router = useRouter();
-  const authToken = useAppSelector((state) => state.auth.token);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const userId = session?.user?.id;
+  const [invitations, setInvitations] = useState<InvitationRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
 
-  const loadInvitations = useCallback(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    // Fetch rooms where user is invited
-    fetch(`${apiBase}/rooms`, {
-      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load invitations');
-        return res.json();
-      })
-      .then((json) => {
-        const data = json.data ?? json;
-        const rooms = Array.isArray(data) ? data : data?.rooms ?? [];
-        // Filter to private rooms where user is in invited list
-        // (In production this should be a dedicated endpoint)
-        const invited = rooms
-          .filter((room: InvitationRoom) => room.type === 'private')
-          .map((room: InvitationRoom) => ({
-            id: room.id,
-            token: '',
-            roomId: room.id,
-            productId: room.productIds?.[0] || '',
-            roomName: room.name,
-            roomDescription: room.description,
-            startTime: room.startTime,
-            endTime: room.endTime,
-            type: room.type,
-            requiresDeposit: room.requiresDeposit,
-            depositAmount: room.depositAmount,
-            status: room.status,
-            expiresAt: room.endTime,
-            participantCount: 0,
-          }));
-        setInvitations(invited);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      })
-      .finally(() => setLoading(false));
-  }, [authToken]);
+  const loadInvitations = useCallback(async () => {
+    // GET /rooms is public and lists every private room platform-wide, so it
+    // must never back this list. /invites/pending is the caller's own
+    // request-mode invites (owner-scoped by the service).
+    const json = await apiFetch<PendingInvite[] | { data?: PendingInvite[] }>(
+      'invites/pending'
+    );
+    const rows = Array.isArray(json) ? json : json.data ?? [];
+    return rows.map(toRow);
+  }, []);
 
   useEffect(() => {
-    loadInvitations();
-  }, [loadInvitations]);
+    if (status === 'loading') return;
+    let cancelled = false;
+    loadInvitations()
+      .then((rows) => {
+        if (cancelled) return;
+        setInvitations(rows);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setInvitations([]);
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : 'Invitations could not be loaded right now.'
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+    // userId is a dependency so a session change refetches the right rows.
+  }, [status, userId, loadInvitations]);
 
-  const handleJoinRoom = useCallback(
-    async (roomId: string) => {
-      setJoiningRoomId(roomId);
-      try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${apiBase}/rooms/${roomId}/join`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          body: JSON.stringify({}),
-        });
-        if (!res.ok) throw new Error('Failed to join room');
-        router.push(`/room/${roomId}`);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      } finally {
-        setJoiningRoomId(null);
-      }
-    },
-    [authToken, router]
-  );
+  const loading = invitations === null;
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="p-6">
+        <Card className="p-8 text-center">
+          <Mail className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Sign in to see your invitations.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -134,34 +120,31 @@ export default function InvitationsModule() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card className="p-8 text-center">
-          <Mail className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-xl font-bold tracking-tight">My Invitations</h2>
         <p className="text-sm text-muted-foreground">
-          Private auction rooms you&apos;ve been invited to join
+          Private room invitations you have created and that are still awaiting a
+          response.
         </p>
       </div>
+
+      {error && (
+        <Card className="p-4 text-center">
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </Card>
+      )}
 
       {invitations.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
             <Mail className="h-7 w-7 text-muted-foreground" />
           </div>
-          <h3 className="mb-1 text-lg font-semibold">No Invitations Yet</h3>
+          <h3 className="mb-1 text-lg font-semibold">No Pending Invitations</h3>
           <p className="mb-4 text-sm text-muted-foreground">
-            When a seller invites you to a private auction, it will appear here.
+            Invitations sent to you arrive as an email link, and they are not
+            listed here.
           </p>
           <Button variant="outline" onClick={() => router.push('/auctions')}>
             Browse Public Auctions
@@ -169,90 +152,44 @@ export default function InvitationsModule() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {invitations.map((inv) => {
-            const isLive = inv.status === 'live';
-            const isClosed = inv.status === 'closed';
-            return (
-              <Card key={inv.id} className="overflow-hidden">
-                <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    {/* Badges */}
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-                        <Lock className="h-3 w-3" />
-                        Private
+          {invitations.map((inv) => (
+            <Card key={inv.id} className="overflow-hidden">
+              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1 space-y-2">
+                  {/* Badges */}
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                      <Shield className="h-3 w-3" />
+                      Awaiting response
+                    </span>
+                    {!inv.active && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        Inactive
                       </span>
-                      {isLive && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-600">
-                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
-                          Live Now
-                        </span>
-                      )}
-                      {inv.requiresDeposit && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
-                          <Shield className="h-3 w-3" />
-                          Deposit Required
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Room name */}
-                    <h3 className="text-lg font-bold line-clamp-1">{inv.roomName}</h3>
-                    {inv.roomDescription && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {inv.roomDescription}
-                      </p>
                     )}
-
-                    {/* Meta */}
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {new Date(inv.startTime).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}{' '}
-                        —{' '}
-                        {new Date(inv.endTime).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" />
-                        {inv.participantCount} participants
-                      </span>
-                      {inv.invitedByName && (
-                        <span className="flex items-center gap-1">
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Invited by {inv.invitedByName}
-                        </span>
-                      )}
-                    </div>
                   </div>
 
-                  {/* Action */}
-                  <div className="shrink-0">
-                    {isClosed ? (
-                      <Button variant="outline" size="sm" disabled>
-                        Ended
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => handleJoinRoom(inv.roomId)}
-                        disabled={joiningRoomId === inv.roomId}
-                      >
-                        {isLive ? 'Enter Live Room' : 'View Room'}
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                  {/* Invitee */}
+                  <h3 className="text-lg font-bold line-clamp-1">
+                    {inv.invitee}
+                  </h3>
+
+                  {/* Meta */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      Expires {formatDate(inv.expiresAt)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3.5 w-3.5" />
+                      Sent {formatDate(inv.createdAt)}
+                    </span>
+                    <span className="truncate">Room {inv.roomRef.slice(0, 8)}</span>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
+              </div>
+            </Card>
+          ))}
         </div>
       )}
     </div>

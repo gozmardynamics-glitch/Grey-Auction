@@ -1,69 +1,84 @@
 'use client';
 
-import { useState } from 'react';
-import { Camera } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import { Button, Input, Label } from '@/shared/components/common';
+import { Button, Input, Label, Textarea } from '@/shared/components/common';
 import Image from 'next/image';
+import { apiFetch, ApiError } from '@/shared/utils/api-client';
+
+interface SellerProfile {
+  business_name?: string | null;
+  business_description?: string | null;
+}
 
 export default function StoreSettings() {
   const t = useTranslations('seller.settings.store');
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [shopName, setShopName] = useState('Jayden Auto');
-  const [facebook, setFacebook] = useState('');
-  const [instagram, setInstagram] = useState('');
-  const [twitter, setTwitter] = useState('');
+  const [shopName, setShopName] = useState('');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const storeUrl = `https://www.greyauction/store/${shopName.toLowerCase().replace(/\s+/g, '')}`;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const json = await apiFetch<{ data?: SellerProfile }>('sellers/profile/me');
+        const profile = json?.data;
+        if (cancelled || !profile) return;
+        setShopName(profile.business_name ?? '');
+        setDescription(profile.business_description ?? '');
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(err instanceof ApiError ? err.message : 'Could not load your store');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setBannerPreview(reader.result as string);
-      reader.readAsDataURL(file);
+  const storeUrl = shopName.trim()
+    ? `/store/${shopName.toLowerCase().replace(/\s+/g, '')}`
+    : '';
+
+  const handleSave = async () => {
+    // Only fields UpdateSellerDto accepts; the API 400s on anything else.
+    const body: Record<string, string> = {};
+    const name = shopName.trim();
+    const about = description.trim();
+    if (name) body.business_name = name;
+    if (about) body.business_description = about;
+
+    if (!Object.keys(body).length) {
+      toast.error('There is nothing to save yet');
+      return;
     }
-  };
 
-  const handleSave = () => {
-    
-    toast.success(t('saved'));
+    setSaving(true);
+    try {
+      await apiFetch('sellers/profile/me', { method: 'PATCH', body });
+      toast.success(t('saved'));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not save');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="space-y-6 p-6">
-      {/* Shop Banner */}
+      {/* Shop Banner — display only: there is no banner upload endpoint. */}
       <div className="space-y-2">
         <Label>{t('shopBanner')}</Label>
-        <label className="relative block h-48 w-full max-w-lg cursor-pointer overflow-hidden rounded-lg border bg-muted">
-          {bannerPreview ? (
-            <Image
-              src={bannerPreview}
-              alt={t('shopBannerAlt')}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <Image
-              src="/brushes.svg"
-              alt={t('defaultBannerAlt')}
-              fill
-              className="object-cover"
-            />
-          )}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity hover:opacity-100">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80">
-              <Camera className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleBannerChange}
+        <div className="relative block h-48 w-full max-w-lg overflow-hidden rounded-lg border bg-muted">
+          <Image
+            src="/brushes.svg"
+            alt={t('defaultBannerAlt')}
+            fill
+            className="object-cover"
           />
-        </label>
+        </div>
       </div>
 
       {/* Shop Name */}
@@ -74,44 +89,29 @@ export default function StoreSettings() {
           onChange={(e) => setShopName(e.target.value)}
           className="bg-background max-w-lg"
         />
-        <p className="text-xs text-muted-foreground">{storeUrl}</p>
+        {storeUrl && (
+          <p className="text-xs text-muted-foreground">{storeUrl}</p>
+        )}
       </div>
 
-      {/* Social Media Links */}
-      <div className="space-y-4">
-        <p className="text-sm font-semibold">{t('socialMediaLinks')}</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-w-lg">
-          <div className="space-y-2">
-            <Label>Facebook</Label>
-            <Input
-              placeholder="https://www."
-              value={facebook}
-              onChange={(e) => setFacebook(e.target.value)}
-              className="bg-background"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Instagram</Label>
-            <Input
-              placeholder="https://www."
-              value={instagram}
-              onChange={(e) => setInstagram(e.target.value)}
-              className="bg-background"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Twitter</Label>
-            <Input
-              placeholder="https://www."
-              value={twitter}
-              onChange={(e) => setTwitter(e.target.value)}
-              className="bg-background"
-            />
-          </div>
-        </div>
+      {/* Store Description */}
+      <div className="space-y-2">
+        <Label htmlFor="store-description">Store Description</Label>
+        <Textarea
+          id="store-description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          className="bg-background max-w-lg"
+        />
+        <p className="text-xs text-muted-foreground">
+          Shown on your public seller profile.
+        </p>
       </div>
 
-      <Button onClick={handleSave}>{t('save')}</Button>
+      <Button onClick={handleSave} disabled={saving}>
+        {t('save')}
+      </Button>
     </div>
   );
 }
