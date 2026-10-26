@@ -21,6 +21,7 @@ import { Product } from '../products/entities/product.entity';
 import { Invoice } from '../invoices/invoice.entity';
 import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { FeeModule } from '../fees/fee.module';
+import { ChatModule } from '../chat/chat.module';
 import {
   SellerGuard,
   VerifiedSellerGuard,
@@ -42,6 +43,7 @@ import {
     StorageModule,
     EmailModule,
     FeeModule,
+    ChatModule,
   ],
   controllers: [SellerController],
   providers: [

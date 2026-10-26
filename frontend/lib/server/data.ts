@@ -1513,10 +1513,47 @@ export async function getSellerBiddingRooms() {
   return (list ?? []) as SellerBiddingRoom[];
 }
 
-export async function getSellerConversations() {
+/** Backend conversation row from GET /sellers/me/conversations. */
+interface RawConversation {
+  id: string;
+  lastMessageAt?: string | null;
+  otherParticipant?: { id: string; name?: string | null; email?: string | null } | null;
+  lastMessage?: { id: string; content: string | null; createdAt: string } | null;
+  unreadCount?: number;
+}
+
+/**
+ * Map the chat module's conversation row onto the seller UI model.
+ *
+ * The old code cast the payload straight to `Conversation`, which is a
+ * different shape (contact/lastMessage/unread) — so even once the API returned
+ * data, the panel would have rendered blanks.
+ */
+function mapSellerConversation(raw: RawConversation): SellerConversation {
+  const name = raw.otherParticipant?.name || raw.otherParticipant?.email || 'Conversation';
+  return {
+    id: raw.id,
+    contact: {
+      name,
+      avatar: '/placeholder.svg',
+      email: raw.otherParticipant?.email || '',
+      phone: '',
+      location: '',
+    },
+    lastMessage: raw.lastMessage?.content || 'No messages yet',
+    lastMessageTime: raw.lastMessageAt || raw.lastMessage?.createdAt || '',
+    unread: (raw.unreadCount ?? 0) > 0,
+    // The thread is fetched per conversation by the chat view.
+    messages: [],
+    sharedMedia: [],
+  };
+}
+
+export async function getSellerConversations(): Promise<SellerConversation[]> {
   const data = await apiFetch('/sellers/me/conversations');
   const list = unwrapList(data);
-  return (list ?? []) as SellerConversation[];
+  if (!Array.isArray(list)) return [];
+  return (list as RawConversation[]).map(mapSellerConversation);
 }
 
 /** Product document as returned by the public GET /products/:id/documents route. */

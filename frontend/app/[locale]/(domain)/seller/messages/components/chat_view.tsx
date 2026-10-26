@@ -1,37 +1,101 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MoreVertical, Phone, Plus, Send, Video } from 'lucide-react';
 import { Button, Input, ScrollArea } from '@/shared/components/common';
 import { cn } from '@/lib/utils';
-import { Conversation, CURRENT_USER_ID } from '../../models';
+import { Conversation } from '../../models';
+import { apiFetch } from '@/shared/utils/api-client';
 import Image from 'next/image';
 
 interface ChatViewProps {
   conversation: Conversation;
+  /** Signed-in account id — decides which bubbles are "mine". */
+  currentUserId: string;
   onOpenContactInfo: () => void;
   onImageClick: (imageUrl: string) => void;
 }
 
+interface RawChatMessage {
+  id: string;
+  senderId: string;
+  content: string | null;
+  type: string;
+  fileUrl?: string | null;
+  createdAt: string;
+}
+
+const toMessage = (raw: RawChatMessage): Conversation['messages'][number] => ({
+  id: raw.id,
+  senderId: raw.senderId,
+  content: raw.content ?? '',
+  timestamp: raw.createdAt,
+  type: raw.type === 'image' ? 'image' : 'text',
+  imageUrl: raw.fileUrl ?? undefined,
+});
+
 export default function ChatView({
   conversation,
+  currentUserId,
   onOpenContactInfo,
   onImageClick,
 }: ChatViewProps) {
   const [messageInput, setMessageInput] = useState('');
+  const [messages, setMessages] = useState<Conversation['messages']>(
+    conversation.messages ?? [],
+  );
 
-  const handleSend = () => {
-    if (!messageInput.trim()) return;
+  // Load the thread for the selected conversation (newest last for display).
+  useEffect(() => {
+    let cancelled = false;
+    setMessages(conversation.messages ?? []);
+    apiFetch<{ data?: { messages?: RawChatMessage[] } }>(
+      `conversations/${conversation.id}/messages`,
+    )
+      .then((json) => {
+        if (cancelled) return;
+        const rows = json?.data?.messages;
+        if (Array.isArray(rows)) setMessages(rows.map(toMessage));
+      })
+      .catch(() => {
+        /* keep whatever we have — an empty thread is not an error state */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.id, conversation.messages]);
+
+  const handleSend = useCallback(async () => {
     const content = messageInput.trim();
+    if (!content) return;
     setMessageInput('');
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${apiBase}/conversations/${conversation.id}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    }).catch(() => {});
-  };
+    // Optimistic bubble, replaced by the server's row when it answers.
+    const optimistic: Conversation['messages'][number] = {
+      id: 'pending-' + Date.now(),
+      senderId: currentUserId,
+      content,
+      timestamp: new Date().toISOString(),
+      type: 'text',
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const json = await apiFetch<{ data?: RawChatMessage }>(
+        `conversations/${conversation.id}/messages`,
+        { method: 'POST', body: { content } },
+      );
+      const saved = json?.data;
+      if (saved) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimistic.id ? toMessage(saved) : m)),
+        );
+      }
+    } catch {
+      // Roll the bubble back rather than pretend it was delivered.
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+    }
+  }, [messageInput, conversation.id, currentUserId]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -79,8 +143,8 @@ export default function ChatView({
       {/* Messages area */}
       <ScrollArea className="flex-1 p-4 bg-background">
         <div className="space-y-4">
-          {conversation.messages.map((message) => {
-            const isOwn = message.senderId === CURRENT_USER_ID;
+          {messages.map((message) => {
+            const isOwn = message.senderId === currentUserId;
 
             return (
               <div

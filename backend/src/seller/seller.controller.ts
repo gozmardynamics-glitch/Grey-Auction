@@ -31,6 +31,7 @@ import { SellerDocumentService } from './services/seller-document.service';
 import { SellerPayoutService } from './services/seller-payout.service';
 import { SellerReviewService } from './services/seller-review.service';
 import { SellerStatisticsService } from './services/seller-statistics.service';
+import { ChatService } from '../chat/chat.service';
 import {
   RegisterSellerDto,
   UpdateSellerDto,
@@ -89,6 +90,7 @@ export class SellerController {
     private readonly storageService: StorageService,
     private readonly emailService: EmailService,
     private readonly feeService: FeeService,
+    private readonly chatService: ChatService,
   ) {}
 
   // ==========================================
@@ -182,9 +184,19 @@ export class SellerController {
   @SellerOnly()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current seller conversations' })
-  async getMyConversations() {
-    // Chat is client-side for now; the API contract returns an empty list
-    return { success: true, data: [] };
+  async getMyConversations(
+    @CurrentSeller() seller: Seller,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    // The chat module owns the data; this route used to return a hardcoded
+    // empty list, so the seller Messages page was permanently blank.
+    const result = await this.chatService.listConversations(
+      seller.user_id,
+      Number(page) || 1,
+      Number(limit) || 20,
+    );
+    return { success: true, ...result };
   }
 
   @Patch('profile/me')

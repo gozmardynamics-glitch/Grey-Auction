@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import MessagesEmptyState from '../messages/components/message_empty_state';
 import ConversationList from '../messages/components/conversation_list';
 import ChatView from '../messages/components/chat_view';
+import { useSession } from 'next-auth/react';
 import ContactInfoPanel from '../messages/components/contact_info_sheet';
 import ImageLightbox from '../messages/components/image_lightbox';
 import { Conversation } from '../models';
@@ -15,6 +16,8 @@ interface MessagesPanelProps {
 }
 
 export default function MessagesPanel({ conversations }: MessagesPanelProps) {
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id ?? '';
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +72,7 @@ export default function MessagesPanel({ conversations }: MessagesPanelProps) {
             {selectedConversation ? (
               <ChatView
                 conversation={selectedConversation}
+                currentUserId={currentUserId}
                 onOpenContactInfo={() => setContactPanelOpen(true)}
                 onImageClick={handleImageClick}
               />
