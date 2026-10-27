@@ -179,11 +179,13 @@ until their webhook signatures are implemented**), `DB_*`, `JWT_SECRET`.
 Optional: Redis (`REDIS_URL`) — without it settlement runs inline and
 `settlement_queue_available` reports 0.
 
-**Audit endpoint sweep.** `node .git/probe_all.js` (kept out of git) walks every
-route in the live OpenAPI document with an anonymous, buyer, seller and admin
-token and reports crashes, auth bypasses and guards that disagree with the spec.
-Run it after touching guards or DTOs: it is how the crashed dashboard, the
-unscoped invite listings and the mismatched `@ApiBearerAuth()` were caught.
+**Audit endpoint sweep.** `node tools/audit/probe-all.js` walks every route in the
+live OpenAPI document with an anonymous, buyer, seller and admin token and
+reports crashes, auth bypasses and guards that disagree with the spec; it exits
+non-zero when it finds something. Run it after touching guards or DTOs: it is how
+the crashed dashboard, the unscoped invite listings and the mismatched
+`@ApiBearerAuth()` were caught. Needs a running API with Swagger enabled, so run
+it against dev or staging.
 
 **Verify before shipping.**
 ```

@@ -497,10 +497,12 @@ production dump — never first-run a migration in production.
 
 Run in this order; do not skip 4.
 
-1. `[ ]` **Endpoint sweep** — `node .git/probe_all.js` (kept out of git; it walks
-   the live OpenAPI document with anonymous/buyer/seller/admin tokens). Expect
-   **0 crashes, 0 auth bypasses**. This is how the crashed dashboard and the
-   unscoped invite listings were found.
+1. `[ ]` **Endpoint sweep** — `node tools/audit/probe-all.js` against the deployed
+   staging API (it walks every operation in the live OpenAPI document with
+   anonymous, buyer, seller and admin tokens; writes are probed anonymously only,
+   so nothing mutates). **Exit code 0 = clean.** This is how the crashed admin
+   dashboard and the unscoped invite listings were found. Point it at staging,
+   not production: `/api/docs-json` is disabled in production.
 2. `[ ]` **Automated gates** — `cd backend && npm run build && npx jest &&
    npm run lint` (53 suites / 432 tests, 0 errors) and `cd frontend && npx tsc
    --noEmit && npm run lint && npm test && npm run build` (85 tests).
