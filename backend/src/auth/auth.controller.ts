@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthApiResponseDto } from './dto/auth-response.dto';
@@ -62,6 +62,22 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.authService.resetPassword(dto.token, dto.newPassword);
     return { success: true, message: 'Password reset successful', data: result };
+  }
+
+  /**
+   * The signed-in account's own profile.
+   *
+   * Without this, the only way to read back a saved phone or address was to log
+   * in again: the screens that edit them had nowhere to load current values from
+   * and fell back to hardcoded demo data.
+   */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my profile' })
+  async me(@CurrentUser() user: any) {
+    const data = await this.authService.findProfile(user.id);
+    return { success: true, data };
   }
 
   @Post('profile')

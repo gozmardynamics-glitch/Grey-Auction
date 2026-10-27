@@ -386,12 +386,37 @@ export class InviteService {
     });
   }
 
-  async findByProduct(productId: string): Promise<Invite[]> {
-    return this.repo.find({ where: { productId }, order: { createdAt: 'DESC' }, take: 100 });
+  async findByProduct(
+    productId: string,
+    viewer?: { id: string; role?: string },
+  ): Promise<Invite[]> {
+    return this.repo.find({
+      where: { productId, ...this.ownerScope(viewer) },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
   }
 
-  async findByRoom(roomId: string): Promise<Invite[]> {
-    return this.repo.find({ where: { roomId }, order: { createdAt: 'DESC' }, take: 100 });
+  async findByRoom(
+    roomId: string,
+    viewer?: { id: string; role?: string },
+  ): Promise<Invite[]> {
+    return this.repo.find({
+      where: { roomId, ...this.ownerScope(viewer) },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+  }
+
+  /**
+   * Row filter for invite listings: an invitation row carries the token, so it
+   * is a credential. Only its creator may read it; admins may read all.
+   */
+  private ownerScope(viewer?: { id: string; role?: string }): { createdBy?: string } {
+    if (!viewer?.id) {
+      throw new BadRequestException('Sign in to list invitations');
+    }
+    return viewer.role === 'admin' ? {} : { createdBy: viewer.id };
   }
 
   async deactivate(id: string, userId: string): Promise<void> {

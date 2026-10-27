@@ -99,6 +99,9 @@ export class SellerController {
 
   @Post('register')
   @UseGuards(JwtAuthGuard)
+  // The profile is attached to the calling account, so this is authenticated;
+  // without the annotation the generated API types advertised it as public.
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Register as a seller' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Seller registered successfully' })
   async register(

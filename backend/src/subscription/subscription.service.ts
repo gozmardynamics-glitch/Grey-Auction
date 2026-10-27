@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
@@ -50,9 +50,16 @@ export class SubscriptionService {
 
   /** Confirm a subscription from the double opt-in link. */
   async confirm(token: string): Promise<EmailSubscription> {
+    // The link is clicked from an email, so a missing token is a malformed
+    // request rather than a server fault: `findOne({ token: undefined })` threw
+    // a 500 before this guard existed.
+    if (!token || typeof token !== 'string') {
+      throw new BadRequestException('A confirmation token is required');
+    }
+
     const sub = await this.repo.findOne({ where: { token } });
     if (!sub || sub.status === SubscriptionStatus.UNSUBSCRIBED) {
-      throw new Error('Invalid or expired confirmation token');
+      throw new BadRequestException('Invalid or expired confirmation token');
     }
     if (sub.status === SubscriptionStatus.CONFIRMED) {
       return sub;

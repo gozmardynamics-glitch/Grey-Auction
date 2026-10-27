@@ -78,14 +78,28 @@ export class InviteController {
     return this.inviteService.pendingRequests(req.user.id);
   }
 
+  /**
+   * Invites for a lot or a room.
+   *
+   * These were public, which meant an anonymous caller could enumerate an
+   * invite token (and the invitee's email) for any product or room id and then
+   * redeem it to walk into a private auction. Only the seller who created the
+   * invitations — or an admin — may list them.
+   */
   @Get('product/:productId')
-  findByProduct(@Param('productId') productId: string) {
-    return this.inviteService.findByProduct(productId);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Invitations I created for a lot' })
+  findByProduct(@Req() req: any, @Param('productId') productId: string) {
+    return this.inviteService.findByProduct(productId, req.user);
   }
 
   @Get('room/:roomId')
-  findByRoom(@Param('roomId') roomId: string) {
-    return this.inviteService.findByRoom(roomId);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Invitations I created for a room' })
+  findByRoom(@Req() req: any, @Param('roomId') roomId: string) {
+    return this.inviteService.findByRoom(roomId, req.user);
   }
 
   @Post('deactivate/:id')

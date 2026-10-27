@@ -97,17 +97,21 @@ export class RoomService {
    * A room for a viewer who may be anonymous.
    *
    * A public room is readable by anyone. A private one is readable only by its
-   * owner and its participants — otherwise the access check in `joinRoom` is
-   * decorative, since anyone holding the id could read the join code here.
+   * owner, its participants and platform administrators — otherwise the access
+   * check in `joinRoom` is decorative, since anyone holding the id could read
+   * the join code here.
    */
-  async findForViewer(id: string, viewerId?: string): Promise<PublicRoom> {
+  async findForViewer(
+    id: string,
+    viewer?: { id: string; role?: string },
+  ): Promise<PublicRoom> {
     const room = await this.findById(id);
 
-    if (room.type === RoomType.PRIVATE && !(await this.canEnter(room, viewerId))) {
+    if (room.type === RoomType.PRIVATE && !(await this.canEnter(room, viewer))) {
       throw new ForbiddenException('This bidding room is private');
     }
 
-    return this.sanitize(room, viewerId);
+    return this.sanitize(room, viewer?.id);
   }
 
   async joinRoom(
@@ -117,7 +121,7 @@ export class RoomService {
   ): Promise<RoomParticipant> {
     const room = await this.findById(roomId);
 
-    if (room.type === RoomType.PRIVATE && !(await this.canEnter(room, user.id))) {
+    if (room.type === RoomType.PRIVATE && !(await this.canEnter(room, user))) {
       // An invite token is the credential a private room hands out; a join code
       // is the weaker one the seller may also enable.
       if (dto.inviteToken) {
@@ -146,9 +150,12 @@ export class RoomService {
     return this.participantRepo.save(participant);
   }
 
-  async getParticipants(roomId: string, viewerId?: string): Promise<RoomParticipant[]> {
+  async getParticipants(
+    roomId: string,
+    viewer?: { id: string; role?: string },
+  ): Promise<RoomParticipant[]> {
     const room = await this.findById(roomId);
-    if (room.type === RoomType.PRIVATE && !(await this.canEnter(room, viewerId))) {
+    if (room.type === RoomType.PRIVATE && !(await this.canEnter(room, viewer))) {
       throw new ForbiddenException('This bidding room is private');
     }
 
@@ -167,14 +174,20 @@ export class RoomService {
     await this.repo.update(id, { status });
   }
 
-  /** Owner, invited bidder, or joined participant. */
-  private async canEnter(room: Room, userId?: string): Promise<boolean> {
-    if (!userId) return false;
-    if (room.createdById === userId) return true;
-    if (room.invitedUserIds?.includes(userId)) return true;
+  /** Owner, invited bidder, joined participant — or a platform administrator. */
+  private async canEnter(
+    room: Room,
+    viewer?: { id: string; role?: string },
+  ): Promise<boolean> {
+    if (!viewer?.id) return false;
+    // Oversight is part of an administrator's job; they must be able to inspect
+    // a private room without joining it.
+    if (viewer.role === 'admin') return true;
+    if (room.createdById === viewer.id) return true;
+    if (room.invitedUserIds?.includes(viewer.id)) return true;
 
     const participant = await this.participantRepo.findOne({
-      where: { roomId: room.id, userId },
+      where: { roomId: room.id, userId: viewer.id },
     });
     return !!participant;
   }

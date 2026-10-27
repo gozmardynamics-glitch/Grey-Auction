@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { EmailSubscription, SubscriptionStatus } from './subscription.entity';
 import { EmailService } from '../common/email/email.service';
@@ -43,6 +44,21 @@ describe('SubscriptionService', () => {
     const res = await service.confirm('tok');
 
     expect(res.status).toBe(SubscriptionStatus.CONFIRMED);
+  });
+
+  it('rejects a confirmation link with no token as a bad request, not a crash', async () => {
+    // The opt-in link is opened by hand or by a mail scanner; a missing token
+    // used to reach findOne({ token: undefined }) and answer 500.
+    await expect(service.confirm(undefined as unknown as string)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(repo.findOne).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unknown confirmation token with a 4xx', async () => {
+    (repo.findOne as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.confirm('nope')).rejects.toThrow(BadRequestException);
   });
 
   it('unsubscribes an email', async () => {

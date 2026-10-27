@@ -154,16 +154,17 @@ export class AgentsService {
     ]);
 
     const [metricAgg, recentMetrics] = await Promise.all([
+      // `agent_metrics` has one row per event and no execution counter of its
+      // own; summing a non-existent column made the whole dashboard 500.
       this.metricRepo
         .createQueryBuilder('m')
         .select('COUNT(m.id)', 'totalMetrics')
         .addSelect('SUM(CASE WHEN m.success = true THEN 1 ELSE 0 END)', 'successCount')
-        .addSelect('SUM(m.totalExecutions)', 'totalExecutions')
         .getRawOne(),
       this.metricRepo.find({ order: { createdAt: 'DESC' }, take: 50 }),
     ]);
 
-    const totalExecutions = agents.reduce((s, a) => s + Number(a.totalExecutions), 0);
+    const totalExecutions = agents.reduce((s, a) => s + (Number(a.totalExecutions) || 0), 0);
 
     return {
       totalAgents: agents.length,

@@ -22,6 +22,23 @@ export class CategoryController {
     return { success: true, data };
   }
 
+  /**
+   * Every category, inactive ones included.
+   *
+   * The public list filters `isActive`, which back the admin table too — so
+   * deactivating a category made it vanish from the screen an admin would use
+   * to re-activate it. Declared before `:slug` so the literal segment wins.
+   */
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.SUPPORT_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all categories, inactive included (Admin)' })
+  async findAllForAdmin() {
+    const data = await this.categoryService.findAllAdmin();
+    return { success: true, data };
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Get category by slug' })
   async findBySlug(@Param('slug') slug: string) {

@@ -46,7 +46,7 @@ export class RoomController {
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get room by ID (private rooms are member-only)' })
   async findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    const room = await this.roomService.findForViewer(id, user?.id);
+    const room = await this.roomService.findForViewer(id, user);
     return { success: true, data: room };
   }
 
@@ -63,7 +63,7 @@ export class RoomController {
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get room participants' })
   async getParticipants(@Param('id') id: string, @CurrentUser() user: any) {
-    const participants = await this.roomService.getParticipants(id, user?.id);
+    const participants = await this.roomService.getParticipants(id, user);
     return { success: true, data: participants };
   }
 }

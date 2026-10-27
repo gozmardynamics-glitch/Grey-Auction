@@ -1,9 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
+import { ApiError, apiFetch } from '@/shared/utils/api-client';
 
 import {
   Button,
@@ -32,57 +35,90 @@ import {
   type BuyerAddressValues,
 } from '../../../models/schema';
 
+interface MyProfile {
+  email: string;
+  name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+function splitName(name?: string | null): { firstName: string; lastName: string } {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return { firstName: '', lastName: '' };
+  const [firstName, ...rest] = trimmed.split(/\s+/);
+  return { firstName, lastName: rest.join(' ') };
+}
+
+function splitPhone(phone?: string | null): { phoneCode: string; phone: string } {
+  const value = (phone || '').trim();
+  const match = value.match(/^(\+\d{1,4})(.*)$/);
+  if (!match) return { phoneCode: '+234', phone: value };
+  return { phoneCode: match[1], phone: match[2].trim() };
+}
+
 export default function SettingsProfile() {
   const t = useTranslations('buyer.settings.profile');
+  const { status } = useSession();
 
   const profileForm = useForm<BuyerProfileValues>({
     resolver: zodResolver(buyerProfileSchema),
-    defaultValues: {
-      firstName: 'Jayden',
-      lastName: 'Nicholas',
-      email: 'jaydennicholas@gmail.com',
-      phoneCode: '+234',
-      phone: '08143601064',
-    },
+    defaultValues: { firstName: '', lastName: '', email: '', phoneCode: '+234', phone: '' },
   });
 
   const addressForm = useForm<BuyerAddressValues>({
     resolver: zodResolver(buyerAddressSchema),
-    defaultValues: {
-      country: 'Nigeria',
-      streetAddress: 'Victoria Crest Estate',
-      state: 'Lagos',
-      city: 'Lekki',
-    },
+    defaultValues: { country: '', streetAddress: '', state: '', city: '' },
   });
+
+  // Load the account's real values. These forms were pre-filled with a made-up
+  // customer and their saves were rejected (the payload sent form keys the API
+  // does not accept) while still toasting success.
+  useEffect(() => {
+    if (status === 'loading') return;
+    let cancelled = false;
+    apiFetch<{ data?: MyProfile }>('auth/me')
+      .then((json) => {
+        const me = json?.data;
+        if (cancelled || !me) return;
+        const { firstName, lastName } = splitName(me.name);
+        const { phoneCode, phone } = splitPhone(me.phone);
+        profileForm.reset({ firstName, lastName, email: me.email || '', phoneCode, phone });
+        addressForm.reset({ country: '', state: '', city: '', streetAddress: me.address || '' });
+      })
+      .catch(() => {
+        /* leave the forms empty rather than inventing values */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [status, profileForm, addressForm]);
 
   const onSaveProfile = async (data: BuyerProfileValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/auth/profile`, {
+      // Only DTO fields: the email identifies the account and is not editable here.
+      await apiFetch('auth/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: {
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          phone: `${data.phoneCode}${data.phone}`,
+        },
       });
       toast.success(t('profileSaved'));
-    } catch (error) {
-      console.error('Failed to save profile:', error);
-      toast.error(t('profileSaveFailed'));
+    } catch (err: unknown) {
+      toast.error(err instanceof ApiError ? err.message : t('profileSaveFailed'));
     }
   };
 
   const onSaveAddress = async (data: BuyerAddressValues) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      await fetch(`${apiBase}/auth/profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: data }),
-      });
+      const address = [data.streetAddress, data.city, data.state, data.country]
+        .map((part) => (part || '').trim())
+        .filter(Boolean)
+        .join(', ');
+      await apiFetch('auth/profile', { method: 'POST', body: { address } });
       toast.success(t('addressSaved'));
-    } catch (error) {
-      console.error('Failed to save address:', error);
-      toast.error(t('addressSaveFailed'));
+    } catch (err: unknown) {
+      toast.error(err instanceof ApiError ? err.message : t('addressSaveFailed'));
     }
   };
 

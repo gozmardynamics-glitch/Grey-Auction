@@ -249,4 +249,35 @@ describe('InviteService request-mode approvals', () => {
       ).rejects.toThrow(/different room/);
     });
   });
+
+  describe('invite listings are owner-scoped', () => {
+    it('filters by the creator so a token is never handed to a stranger', () => {
+      (repo.find as jest.Mock).mockResolvedValue([]);
+
+      void service.findByRoom('r1', { id: 'seller-1', role: 'seller' });
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { roomId: 'r1', createdBy: 'seller-1' } }),
+      );
+    });
+
+    it('lets an admin read every invite for oversight', () => {
+      (repo.find as jest.Mock).mockResolvedValue([]);
+
+      void service.findByProduct('p1', { id: 'admin-1', role: 'admin' });
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { productId: 'p1' } }),
+      );
+    });
+
+    it('refuses a listing with no viewer instead of returning every row', async () => {
+      // These routes were public: an anonymous caller could enumerate invite
+      // tokens for any room and then redeem one.
+      await expect(service.findByRoom('r1', undefined)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repo.find).not.toHaveBeenCalled();
+    });
+  });
 });

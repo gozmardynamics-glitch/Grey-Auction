@@ -1478,7 +1478,9 @@ const toCategoryRow = (raw: RawCategoryRow): AdminCategory =>
   }) as unknown as AdminCategory;
 
 export async function getAdminCategories() {
-  const data = await apiFetch('/categories');
+  // Active-only view: an admin must still see a category they deactivated, or
+  // there is no way back.
+  const data = await apiFetch('/categories/admin/all');
   const list = unwrapList(data);
   if (list && list.length > 0) return (list as RawCategoryRow[]).map(toCategoryRow);
   return (USE_MOCK_FALLBACK ? mockCategories : []).map((category) =>

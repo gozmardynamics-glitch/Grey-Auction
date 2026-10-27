@@ -393,8 +393,12 @@ export class ProductService {
     // create and edit listings — this only blocks the public step.
     const gate = await this.kycRisk.canPublish(product.sellerId);
     if (!gate.allowed) {
+      // Say which control clears this, otherwise the admin sees a wall and has to
+      // guess between "verify the KYC documents" and "grant publishing consent".
       throw new ForbiddenException(
-        `Lot cannot be published: ${gate.reason}`,
+        `Lot cannot be published: ${gate.reason}. ` +
+          'Approve the seller\u2019s KYC documents and grant publishing consent ' +
+          '(Admin \u2192 KYC \u2192 publish decision) first.',
       );
     }
 

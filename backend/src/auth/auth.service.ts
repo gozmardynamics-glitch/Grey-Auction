@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -166,6 +166,13 @@ export class AuthService {
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.save(user);
     return { user: this.sanitizeUser(user) };
+  }
+
+  /** The caller's own profile, in the same shape login returns. */
+  async findProfile(userId: string) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return this.sanitizeUser(user);
   }
 
   async completeProfile(userId: string, dto: CompleteProfileDto) {

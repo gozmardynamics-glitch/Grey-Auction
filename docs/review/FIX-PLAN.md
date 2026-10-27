@@ -37,16 +37,62 @@ are grouped by what breaks if left alone.
 | 10 | **Admin settings fake-save** | `auctions.tsx`, `preferences.tsx`, `payments.tsx` "Save changes" are empty handlers that toast success (no endpoint exists for those sections). | `admin/settings/components/modules/*` |
 | 11 | **Agent studio sub-pages are stubs** | `agents/instances`, `agents/tools[/:id]`, `agents/workflows[/:id]` are one-line placeholders; only the settings editor for a single agent is real. | `admin/agents/**` |
 | 12 | **Room counts are placeholders** | `bidders` is 0 in both room tables (participants are not aggregated) and `auctions` is `productIds.length`, not live lot counts. | `frontend/lib/server/data.ts` room mappers |
+| 13 | **No category rows and no admin form** | `categories` is empty, so the public category navigation and the admin table show nothing; `POST /categories` exists but no screen calls it (the old "Add Category" button was removed when the endpoint was missing). | `admin/categories/**`, seed the table from the `products.category` strings |
+| 14 | **An admin cannot delete another seller's lot** | `DELETE /products/:id` answers "Not your product" for an admin, so an abandoned or fraudulent lot can only be rejected, never removed. | `backend/src/products/product.service.ts` `remove()` |
+| 15 | **Lots publish without photos** | The wizard hardcodes `images: []` and never uploads, so every listing created through the UI has no photograph. | `seller/auctions/create_listing/page.tsx`, needs an upload endpoint |
+| 16 | **Double opt-in confirms on GET** | `/subscriptions/confirm` changes state on a GET, so a mail scanner that prefetches links confirms the subscription without the reader clicking. | make the page POST the token after a click |
 
 ### P3 — accepted, low value
 
 | # | Item | Note |
 |---|---|---|
-| 13 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
-| 14 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
-| 15 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
-| 16 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
-| 17 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
+| 17 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
+| 18 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
+| 19 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
+| 20 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
+| 21 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
+
+### Fixed in the end-to-end audit (2026-10-27, no action needed)
+
+**An anonymous caller could enumerate invitation tokens.** `GET
+/invites/product/:productId` and `/invites/room/:roomId` had no guard and
+returned full invite rows — including the `token` and the invitee's email — for
+any id, so anyone could pull a working credential for a private auction. Both
+are now authenticated and scoped to the invite's creator (admins see all); a
+listing with no viewer is refused rather than answered with every row.
+
+**Two endpoints crashed for everyone.** `GET /admin/agents/dashboard` answered
+500 because its metric aggregate selected `agent_metrics.totalExecutions`, a
+column that does not exist; `GET /subscriptions/confirm` answered 500 when the
+email link arrived without a token (`findOne({ token: undefined })`) and turned
+an unknown token into a 500 too. Both now answer correctly, and the confirm
+path returns 400 with a message.
+
+**The buyer's account settings could not save anything and said it did.** Both
+forms (`buyer/dashboard/modules/account.tsx`,
+`buyer/dashboard/components/settings/settings_profile.tsx`) were pre-filled with
+a fictitious customer's name, email and phone, posted field names the API does
+not accept (`email`, `address_line1`, `city`, …), and — because `fetch` resolves
+on a 400 and the catch block re-toasted success — reported "saved" every time.
+The API also had no way to *read* the profile back, so nothing could populate
+those fields honestly. `GET /auth/me` now returns the caller's own profile; both
+screens load from it, save only `{name, phone}` and a composed `address`, and
+surface the real error.
+
+**An administrator could not open a private bidding room.** The
+member-only check applied to admins too, so oversight of a private sale was
+impossible (403). Admins may now read a private room and its participants, still
+without seeing the join code.
+
+**Category management had no admin view.** The admin category table was backed
+by the public, active-only list, so a deactivated category disappeared from the
+screen used to re-activate it, and `findAllAdmin()` was never wired to a route.
+`GET /categories/admin/all` (guarded, declared before `:slug`) fixes both.
+
+**The API contract disagreed with the code.** `POST /sellers/register` was
+guarded but not marked `@ApiBearerAuth()`, so the generated client types
+advertised it as public; approving a lot answered 403 without saying which
+control clears the gate. Both corrected.
 
 ### Fixed in the payments / invoice / invitation pass (for context, no action needed)
 
@@ -133,9 +179,15 @@ until their webhook signatures are implemented**), `DB_*`, `JWT_SECRET`.
 Optional: Redis (`REDIS_URL`) — without it settlement runs inline and
 `settlement_queue_available` reports 0.
 
+**Audit endpoint sweep.** `node .git/probe_all.js` (kept out of git) walks every
+route in the live OpenAPI document with an anonymous, buyer, seller and admin
+token and reports crashes, auth bypasses and guards that disagree with the spec.
+Run it after touching guards or DTOs: it is how the crashed dashboard, the
+unscoped invite listings and the mismatched `@ApiBearerAuth()` were caught.
+
 **Verify before shipping.**
 ```
-cd backend  && npm run build && npx jest && npm run lint   # 51 suites / 415 tests, 0 lint errors
+cd backend  && npm run build && npx jest && npm run lint   # 53 suites / 432 tests, 0 lint errors
 cd frontend && npx tsc --noEmit && npm run lint && npm test && npm run build
 ```
 CI runs the same steps on `main`; all three jobs (Backend, Frontend, Lighthouse)
