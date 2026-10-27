@@ -32,6 +32,18 @@ async function forward(req: NextRequest, method: Method) {
   const contentType = req.headers.get('content-type');
   if (contentType) headers.set('content-type', contentType);
 
+  // Forward the client address and correlation id.
+  //
+  // Without this the backend sees this container's IP for every proxied call,
+  // so its per-IP rate limiter keys every visitor into one bucket and the audit
+  // trail records the proxy. Cloudflare (when present) sets and sanitises
+  // x-forwarded-for; the backend trusts exactly one hop (TRUST_PROXY), so a
+  // forged client-supplied header is not believed.
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) headers.set('x-forwarded-for', forwardedFor);
+  const requestId = req.headers.get('x-request-id');
+  if (requestId) headers.set('x-request-id', requestId);
+
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   } else {

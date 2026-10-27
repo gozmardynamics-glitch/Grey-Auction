@@ -23,6 +23,29 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(compression());
+
+  /**
+   * Proxy awareness.
+   *
+   * In production this app always sits behind something that terminates TLS
+   * (Cloudflare, a load balancer, Coolify's Traefik). Express then reports the
+   * *proxy's* address as `req.ip`, which would (a) give every visitor the same
+   * rate-limit bucket — one noisy client starves everyone — and (b) write the
+   * proxy into the audit trail instead of the caller.
+   *
+   * TRUST_PROXY accepts Express's forms: a hop count ("1", "2"), "true"/"false",
+   * or a comma-separated subnet list. Production defaults to one hop; set
+   * TRUST_PROXY=2 when Cloudflare sits in front of another load balancer.
+   */
+  const trustProxy = process.env.TRUST_PROXY ?? (process.env.NODE_ENV === 'production' ? '1' : '');
+  if (trustProxy && trustProxy !== 'false') {
+    const value = /^\d+$/.test(trustProxy)
+      ? Number(trustProxy)
+      : trustProxy === 'true'
+        ? 1
+        : trustProxy;
+    app.set('trust proxy', value);
+  }
   // Capture the raw body for webhook signature verification (Paystack, Flutterwave, etc.)
   app.use(
     json({
