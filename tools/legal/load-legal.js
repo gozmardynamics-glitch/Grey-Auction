@@ -16,6 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { adminLogin } = require('../lib/mfa');
 
 const ROOT = path.join(__dirname, '..', '..');
 const LEGAL_DIR = path.join(ROOT, 'content', 'legal');
@@ -77,12 +78,13 @@ async function main() {
     process.exit(1);
   }
 
-  const login = await call('/api/auth/login', { method: 'POST', body: ADMIN });
-  if (!login.ok) {
-    console.error(`admin login failed: HTTP ${login.status} ${login.message}`);
+  let token;
+  try {
+    token = await adminLogin(call, ADMIN.email, ADMIN.password);
+  } catch (error) {
+    console.error(error.message);
     process.exit(2);
   }
-  const token = login.json.data.token;
 
   let published = 0;
   const failures = [];

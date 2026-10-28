@@ -32,6 +32,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
+    /**
+     * A machine-readable reason, when the thrower supplied one.
+     *
+     * `{ code: 'MFA_REQUIRED' }` used to be swallowed here, leaving the client
+     * with a human sentence to pattern-match on. Codes are additive and only
+     * forwarded when present, so no existing client changes.
+     */
+    let code: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -40,6 +48,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         typeof body === 'string'
           ? body
           : ((body as Record<string, unknown>).message as string | string[]) || message;
+      if (typeof body === 'object' && body !== null) {
+        const candidate = (body as Record<string, unknown>).code;
+        if (typeof candidate === 'string') code = candidate;
+      }
     } else {
       const err = exception as Error;
       this.logger.error(
@@ -61,6 +73,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       success: false,
       statusCode: status,
       requestId,
+      ...(code ? { code } : {}),
       message,
       path: req.url,
     });

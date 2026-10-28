@@ -5,8 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { MfaController } from './mfa.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailModule } from '../common/email/email.module';
+import { AdminMfaModule } from '../admin-mfa/admin-mfa.module';
 
 // Fail fast instead of silently signing with a known secret (S4).
 const jwtSecret = process.env.JWT_SECRET;
@@ -26,8 +28,11 @@ const effectiveJwtSecret = jwtSecret || 'dev-secret';
       signOptions: { expiresIn: (process.env.JWT_EXPIRATION || '24h') as any },
     }),
     EmailModule,
+    // Administrator sign-in is a two-step exchange; the gate and the challenge
+    // token live there.
+    AdminMfaModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, MfaController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService, JwtModule, PassportModule],
 })

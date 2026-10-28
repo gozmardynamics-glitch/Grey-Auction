@@ -18,6 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { adminLogin } = require('../lib/mfa');
 
 const ROOT = path.join(__dirname, '..', '..');
 const CONTENT = path.join(ROOT, 'content', 'faqs.json');
@@ -56,9 +57,9 @@ async function call(routePath, { method = 'GET', token, body } = {}) {
 }
 
 async function login() {
-  const res = await call('/api/auth/login', { method: 'POST', body: ADMIN });
-  if (!res.ok) throw new Error(`admin login failed: HTTP ${res.status} ${res.message}`);
-  return res.json.data.token;
+  // Administrators need a second factor; tools/lib/mfa.js answers it from
+  // ADMIN_MFA_SECRET or the local .admin-mfa-secret file.
+  return adminLogin(call, ADMIN.email, ADMIN.password);
 }
 
 const rows = (json) => {

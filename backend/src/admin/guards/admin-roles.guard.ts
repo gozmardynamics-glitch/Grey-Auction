@@ -4,6 +4,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Admin, AdminRole } from '../entities/admin.entity';
 import { ADMIN_ROLES_KEY } from '../decorators/admin-roles.decorator';
+import { AdminMfaService } from '../../admin-mfa/admin-mfa.service';
 
 @Injectable()
 export class AdminRolesGuard implements CanActivate {
@@ -11,6 +12,7 @@ export class AdminRolesGuard implements CanActivate {
     private reflector: Reflector,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly mfa: AdminMfaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -68,6 +70,25 @@ export class AdminRolesGuard implements CanActivate {
 
     if (!requiredRoles.includes(admin.role)) {
       throw new ForbiddenException('Insufficient admin permissions');
+    }
+
+    /**
+     * Second factor, enforced here as well as at login.
+     *
+     * Login refuses to issue a token to an MFA-required admin who has not
+     * enrolled, so normally nobody reaching this point is unenrolled. This check
+     * covers the other cases: a session minted before the policy was switched on,
+     * and a policy tightened while a session is live. Every admin route goes
+     * through this guard, so there is no surface that can be reached without it.
+     */
+    const requirement = await this.mfa.requirementFor(admin);
+    if (requirement.required && !admin.mfaEnabled) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        code: 'MFA_ENROLMENT_REQUIRED',
+        message:
+          'Administrators must set up two-factor authentication. Sign in again to enrol — no admin action is available until then.',
+      });
     }
 
     return true;

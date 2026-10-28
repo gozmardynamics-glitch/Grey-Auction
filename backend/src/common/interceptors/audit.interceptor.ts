@@ -35,7 +35,17 @@ export class AuditInterceptor implements NestInterceptor {
     const method: string = request.method ?? '';
     const path: string = request.path ?? '';
 
-    if (!MUTATING.has(method) || !path.includes('/admin/')) {
+    /**
+     * Audit the actions that move money or change a person's standing, wherever
+     * they live. Restricting this to `/admin/` meant an escrow refund or release
+     * — the most consequential writes in the platform — left no audit trail,
+     * because those routes live under `/escrow/`.
+     */
+    const MONEY_OR_STATUS_PATHS = ['/escrow/', '/disputes/', '/invoices/', '/settings/'];
+    const auditable =
+      path.includes('/admin/') ||
+      MONEY_OR_STATUS_PATHS.some((prefix) => path.startsWith(prefix));
+    if (!MUTATING.has(method) || !auditable) {
       return next.handle();
     }
 

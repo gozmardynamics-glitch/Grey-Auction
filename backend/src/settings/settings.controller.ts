@@ -19,6 +19,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { AdminRole } from '../admin/entities/admin.entity';
+import { RequireStepUp } from '../admin-mfa/decorators/require-step-up.decorator';
 
 @ApiTags('Settings')
 @Controller('settings')
@@ -49,7 +50,7 @@ export class SettingsController {
    * used to be stored silently.
    */
   @Put(':section')
-  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)
   @ApiBearerAuth()
   async set(@Param('section') section: string, @Body() dto: UpdateSettingsDto) {

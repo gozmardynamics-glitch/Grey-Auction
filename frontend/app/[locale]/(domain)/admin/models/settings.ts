@@ -9,6 +9,8 @@ import {
   Activity,
   Bell,
   Percent,
+  KeyRound,
+  HeartHandshake,
 } from 'lucide-react';
 import { SlidersHorizontal } from 'lucide-react';
 
@@ -26,6 +28,11 @@ export const SETTINGS_MODULES = [
   { key: 'notifications', label: 'notifications', icon: Bell },
   { key: 'preferences', label: 'preferences', icon: SlidersHorizontal },
   { key: 'security', label: 'security', icon: Lock },
+  // Enforced second factor, kept apart from the general security switches
+  // because it is a live control and not a preference.
+  { key: 'two-factor', label: 'twoFactor', icon: KeyRound },
+  // The remedy a complaint handler reaches for, with its own ceiling.
+  { key: 'goodwill', label: 'goodwill', icon: HeartHandshake },
   { key: 'audit-logs', label: 'auditLogs', icon: FileText },
   { key: 'system-status', label: 'systemStatus', icon: Activity },
 ] as const;

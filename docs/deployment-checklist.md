@@ -212,6 +212,9 @@ needs a restart (frontend `NEXT_PUBLIC_*` need a **rebuild**, they are inlined).
 | `NEXT_PUBLIC_API_URL` | `/api/proxy` | **must stay the relative path** — the BFF attaches the token; pointing it at the backend origin leaks the token to JS |
 | `API_URL` | `http://backend:3001/api` | server-side only (proxy + server components) |
 | `NEXT_PUBLIC_REALTIME_URL` | `https://api.greyauction.com` | sockets cannot ride the same-origin proxy; auth is a short-lived ticket |
+| `ADMIN_MFA_KEY` | `openssl rand -hex 32` | Encrypts every administrator's TOTP secret at rest. Without it the key is derived from `JWT_SECRET`, so rotating the JWT secret silently invalidates every admin authenticator. Set it. |
+| `ADMIN_MFA_SECRET` | **not in production** | Only for the local tooling (`tools/legal`, `tools/faq`, `tools/audit`, `testdata`). It is a shared second factor; production administrators use their own device. |
+| `MFA_ALLOW_DISABLE` | **do not set** | The only way to switch administrator two-factor off in production. Setting it is a deliberate, temporary exception, not a configuration. |
 
 ### 5.2 Storage (R2) — see §6
 
@@ -504,7 +507,7 @@ Run in this order; do not skip 4.
    dashboard and the unscoped invite listings were found. Point it at staging,
    not production: `/api/docs-json` is disabled in production.
 2. `[ ]` **Automated gates** — `cd backend && npm run build && npx jest &&
-   npm run lint` (53 suites / 432 tests, 0 errors) and `cd frontend && npx tsc
+   npm run lint` (56 suites / 490 tests, 0 errors) and `cd frontend && npx tsc
    --noEmit && npm run lint && npm test && npm run build` (85 tests).
 3. `[ ]` **Load** — `k6 run -e VUS=200 -e DURATION=3m loadtest/k6/browse.js`
    (p95 < 600 ms) and `k6 run -e BIDDERS=200 loadtest/k6/bidding.js`
@@ -525,7 +528,12 @@ Run in this order; do not skip 4.
 9. `[ ]` **Observability** — `GET /api/health` (DB-free liveness) wired to an
    external uptime check; `/api/metrics` scrapeable with `METRICS_TOKEN`; a 5xx
    alert; logs arriving in `json`.
-10. `[ ]` **Rollback rehearsed** — know the previous image tag and the exact
+10. `[ ]` **Every administrator has enrolled a second factor** — sign in as each
+    admin account and confirm `GET /api/admin/mfa/status` reports `enabled: true`.
+    An unenrolled administrator is refused every admin route by design, so this is
+    done **before** go-live, not after. Set `ADMIN_MFA_KEY` first, or the secrets
+    are tied to `JWT_SECRET`. See `docs/security/ADMIN-MFA.md`.
+11. `[ ]` **Rollback rehearsed** — know the previous image tag and the exact
     command to redeploy it.
 
 ---

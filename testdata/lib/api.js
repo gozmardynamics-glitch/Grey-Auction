@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { adminLogin } = require('../../tools/lib/mfa');
 
 const API = (process.env.TESTFILL_API || 'http://localhost:3001').replace(/\/+$/, '');
 
@@ -84,6 +85,13 @@ function fileForm(filePath, fields = {}, fieldName = 'file') {
 async function login(role, attempt = 1) {
   const account = ACCOUNTS[role];
   if (!account) throw new Error(`unknown role ${role}`);
+  if (role === 'admin') {
+    // Administrators must answer a second factor; tools/lib/mfa.js supplies it
+    // from ADMIN_MFA_SECRET, or from the local .admin-mfa-secret file.
+    const token = await adminLogin(call, account.email, account.password);
+    const me = await call('/api/auth/me', { token });
+    return { ...(me.json?.data ?? {}), token };
+  }
   const res = await call('/api/auth/login', { method: 'POST', body: account });
   if (res.ok) return { ...res.json.data.user, token: res.json.data.token };
   // /api/auth/login is throttled (5/min per IP); wait it out rather than fail.

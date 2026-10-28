@@ -8,6 +8,33 @@ import { randomInt } from 'crypto';
 import { User, UserRole } from './entities/user.entity';
 import { LoginDto, RegisterDto, CompleteProfileDto } from './dto/auth.dto';
 import { EmailService } from '../common/email/email.service';
+import { AdminMfaService } from '../admin-mfa/admin-mfa.service';
+
+/** The public shape of an account in auth responses. */
+export interface SanitizedUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  isEmailVerified: boolean;
+  isActive: boolean;
+  phone: string | null;
+  address: string | null;
+  clerkId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * What a successful password check yields.
+ *
+ * For an administrator, a password alone raises `MFA_REQUIRED` /
+ * `MFA_ENROLMENT_REQUIRED` instead of returning a session, so "password correct"
+ * can never be exchanged for a working session on its own. The second attempt
+ * carries the code in the same call, which keeps the token server-side: the
+ * browser never holds an unauthenticated-but-privileged credential.
+ */
+export type LoginResult = { user: SanitizedUser; token: string };
 
 @Injectable()
 export class AuthService {
@@ -18,6 +45,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly adminMfa: AdminMfaService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -45,7 +73,7 @@ export class AuthService {
     return { user: this.sanitizeUser(user), token };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<LoginResult> {
     const user = await this.userRepository.findOne({ where: { email: dto.email } });
 
     if (!user) {
@@ -65,8 +93,59 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
+    /**
+     * Administrators must prove a second factor. The password check above is only
+     * half of it: without a code this answers `MFA_REQUIRED` (or
+     * `MFA_ENROLMENT_REQUIRED`) and issues nothing. The client re-submits with the
+     * code, which is verified here — so no intermediate credential ever exists to
+     * be stolen, replayed or skipped.
+     */
+    const gate = await this.adminMfa.gateForUser(user.id);
+    if (gate?.mfaRequired) {
+      if (!dto.code) {
+        throw new UnauthorizedException({
+          code: gate.enrolmentRequired ? 'MFA_ENROLMENT_REQUIRED' : 'MFA_REQUIRED',
+          message: gate.enrolmentRequired
+            ? 'Set up two-factor authentication to continue. Administrators cannot sign in without it.'
+            : 'Enter the 6-digit code from your authenticator app.',
+        });
+      }
+      await this.adminMfa.verifySecondFactor(user.id, dto.code, {
+        allowRecovery: true,
+        // An admin who started enrolment has a pending secret; the first code
+        // from it is what completes the enrolment and signs them in.
+        allowPendingEnrolment: true,
+      });
+    }
+
     const token = this.generateToken(user);
     return { user: this.sanitizeUser(user), token };
+  }
+
+  /**
+   * Re-verify the password for the pre-session enrolment step.
+   *
+   * Enrolment has to happen before there is a session — otherwise the only way
+   * to set up a second factor would be to sign in without one.
+   */
+  async authenticateForEnrolment(email: string, password: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    const isPasswordValid =
+      user?.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
+    if (!user || !isPasswordValid || !user.isActive) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const gate = await this.adminMfa.gateForUser(user.id);
+    if (!gate?.mfaRequired) {
+      // An ordinary account has nothing to enrol here.
+      throw new UnauthorizedException('Two-factor authentication is not required for this account');
+    }
+    if (!gate.enrolmentRequired) {
+      throw new UnauthorizedException(
+        'Two-factor authentication is already set up for this account. Sign in with your code instead.',
+      );
+    }
+    return user;
   }
 
   /**
@@ -270,7 +349,7 @@ export class AuthService {
    * were serialized on the wire in every /auth/* response (2026-09-08
    * regression found during the G-wave verification).
    */
-  private sanitizeUser(user: User) {
+  private sanitizeUser(user: User): SanitizedUser {
     return {
       id: user.id,
       email: user.email,

@@ -3,6 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Not, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { WalletService } from '../wallet/wallet.service';
+import { SettingsService } from '../settings/settings.service';
 import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { Ticket, TicketSeverity, TicketStatus } from '../tickets/ticket.entity';
 import { Admin, AdminRole } from './entities/admin.entity';
@@ -19,6 +20,7 @@ export class AdminService {
     @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly walletService: WalletService,
+    private readonly settings: SettingsService,
   ) {}
 
   // ─── Admins CRUD ────────────────────────────────────────────────
@@ -158,26 +160,66 @@ export class AdminService {
   }
 
   /**
-   * Goodwill credit: the remedy a complaint handler actually needs when the
+   * Goodwill credits — the remedy a complaint handler actually needs when the
    * answer is "we were wrong, here is something back" but no escrow hold is
    * involved (a fee overcharge, a delay, a service failure).
    *
-   * It is a ledger entry, not a balance edit: the reason is required, the
-   * reference is unique so a retry cannot double-credit, and the type is
-   * ADJUSTMENT so it never looks like a customer deposit in reporting.
+   * Two controls, because this is real money leaving the business:
+   *   - the scheme is a setting: off by default is not required, but an admin
+   *     can switch it off entirely, and there is always a per-credit ceiling;
+   *   - every credit is a ledger entry with a required reason and an idempotency
+   *     key, so a double submit pays once.
    */
-  async creditWallet(userId: string, input: { amount: number; reason: string }) {
+  async goodwillPolicy(): Promise<{
+    enabled: boolean;
+    maxAmount: number;
+    maxAmountIsDefault: boolean;
+  }> {
+    const stored = (await this.settings.get('goodwill')) ?? {};
+    const maxAmount = Number(stored.maxAmount);
+    const configured = Number.isFinite(maxAmount) && maxAmount > 0;
+    return {
+      enabled: stored.enabled !== false,
+      // A ceiling always exists: "unlimited" is how a goodwill scheme becomes a
+      // way to move money out of the business.
+      maxAmount: configured ? maxAmount : 250_000,
+      maxAmountIsDefault: !configured,
+    };
+  }
+
+  async creditWallet(
+    userId: string,
+    input: { amount: number; reason: string; idempotencyKey?: string },
+  ) {
     const amount = Math.round(Number(input.amount) * 100) / 100;
     if (!(amount > 0)) throw new BadRequestException('A credit amount is required');
     if (!input.reason || !input.reason.trim()) {
       throw new BadRequestException('A reason is required for a goodwill credit');
     }
 
+    const policy = await this.goodwillPolicy();
+    if (!policy.enabled) {
+      throw new BadRequestException(
+        'Goodwill credits are switched off. An administrator can enable them in settings.',
+      );
+    }
+    if (amount > policy.maxAmount) {
+      throw new BadRequestException(
+        `A goodwill credit cannot exceed ${policy.maxAmount.toLocaleString('en-NG')}. ` +
+          'Raise the ceiling in settings, or handle it as a formal remedy.',
+      );
+    }
+
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Account not found');
 
-    const reference = `goodwill:${randomUUID()}`;
-    await this.dataSource.transaction((manager) =>
+    // A caller-supplied key makes the credit idempotent: the ledger's unique
+    // reference means a double submit cannot pay twice, it just returns the same
+    // reference. Without one, each call is deliberately a new credit.
+    const reference = input.idempotencyKey
+      ? `goodwill:${String(input.idempotencyKey).slice(0, 64)}`
+      : `goodwill:${randomUUID()}`;
+    const result = await this.dataSource.transaction((manager) =>
       this.walletService.creditInManager(manager, userId, {
         amount,
         reference,
@@ -186,7 +228,15 @@ export class AdminService {
       }),
     );
 
-    return { userId, amount, reference, reason: input.reason.trim() };
+    return {
+      userId,
+      amount,
+      reference,
+      reason: input.reason.trim(),
+      balance: result?.balance,
+      // The caller can tell a fresh credit from a replayed one.
+      alreadyApplied: result?.idempotent === true,
+    };
   }
 
   /**

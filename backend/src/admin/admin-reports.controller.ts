@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { EscrowHold, EscrowStatus } from '../escrow/entities/escrow-hold.entity';
 import { SellerPayout, PayoutStatus } from '../seller/entities/seller-payout.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,13 +11,14 @@ import { Invoice } from '../invoices/invoice.entity';
 import { User, UserRole } from '../auth/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Ticket, TicketStatus } from '../tickets/ticket.entity';
-import { SellerReview, ReviewStatus } from '../seller/entities/seller-review.entity';
 import { Dispute } from '../trust/entities/dispute.entity';
+import { SellerReviewService } from '../seller/services/seller-review.service';
 import { USER_PUBLIC_SELECT } from '../common/projections/user-projection';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from './guards/admin-roles.guard';
 import { AdminRoles } from './decorators/admin-roles.decorator';
-import { AdminRole } from './entities/admin.entity';
+import { CurrentAdmin } from './decorators/current-admin.decorator';
+import { Admin, AdminRole } from './entities/admin.entity';
 
 const ALL_ADMIN_ROLES = [
   AdminRole.SUPER_ADMIN,
@@ -46,8 +47,10 @@ export class AdminReportsController {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Room) private readonly roomRepo: Repository<Room>,
     @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
-    @InjectRepository(SellerReview) private readonly reviewRepo: Repository<SellerReview>,
     @InjectRepository(Dispute) private readonly disputeRepo: Repository<Dispute>,
+    // Review moderation lives in one service so every route agrees on what a
+    // report means and refreshes the seller's rating the same way.
+    private readonly reviewService: SellerReviewService,
   ) {}
 
   /**
@@ -87,6 +90,30 @@ export class AdminReportsController {
       where: { status: In([PayoutStatus.PENDING, PayoutStatus.PROCESSING]) },
     });
 
+    /**
+     * Refunds reduce what the platform actually kept.
+     *
+     * An invoice is immutable — correct, it is the record of what was billed —
+     * but a partial refund gives part of the platform share and the VAT back, so
+     * summing invoice columns alone overstates both. The hold breakdowns are the
+     * only place that refund split is stored, so revenue and VAT are reported net
+     * of it, and the refunded total is shown so the two can be reconciled.
+     */
+    const allHolds = await this.escrowRepo.find();
+    const refundedTotals = allHolds.reduce(
+      (acc, hold) => {
+        const breakdown = Array.isArray(hold.refundBreakdown) ? hold.refundBreakdown : [];
+        for (const entry of breakdown) {
+          acc.amount += Number(entry.amount || 0);
+          acc.platformShare += Number(entry.platformShare || 0);
+          acc.vat += Number(entry.vat || 0);
+          acc.sellerNet += Number(entry.sellerNet || 0);
+        }
+        return acc;
+      },
+      { amount: 0, platformShare: 0, vat: 0, sellerNet: 0 },
+    );
+
     // Control: every hold must split exactly into seller + platform + VAT.
     // A non-reconciling hold means money will move to the wrong party.
     const holdsNotReconciling = openHolds.filter((hold) => {
@@ -122,13 +149,18 @@ export class AdminReportsController {
         invoicesPaid: paid.length,
         invoicesTotal: invoices.length,
 
-        // ── Income (platform's own money) ───────────────────────────────
-        platformRevenue: money(sum(paid, (i) => i.platform_share)),
+        // ── Income (platform's own money), net of refunds ────────────────
+        platformRevenue: money(
+          sum(paid, (i) => i.platform_share) - refundedTotals.platformShare,
+        ),
+        refundedTotal: money(refundedTotals.amount),
+        refundedRevenue: money(refundedTotals.platformShare),
         buyerPremium: money(sum(paid, (i) => i.commission)),
         sellerCommission: money(sum(paid, (i) => i.seller_fee)),
 
-        // ── Liability to the tax authority ──────────────────────────────
-        vatCollected: money(sum(paid, (i) => i.vat)),
+        // ── Liability to the tax authority, net of refunds ───────────────
+        vatCollected: money(sum(paid, (i) => i.vat) - refundedTotals.vat),
+        vatRefunded: money(refundedTotals.vat),
 
         // ── What buyers were billed / still owe ─────────────────────────
         buyerBilled: money(sum(paid, (i) => i.total)),
@@ -265,14 +297,9 @@ export class AdminReportsController {
    */
   @Get('reviews/flagged')
   @AdminRoles(...ALL_ADMIN_ROLES)
-  @ApiOperation({ summary: 'Reviews awaiting moderation (admin)' })
+  @ApiOperation({ summary: 'Reviews with an outstanding report (admin)' })
   async flaggedReviews() {
-    const data = await this.reviewRepo.find({
-      where: { status: ReviewStatus.FLAGGED },
-      order: { flagged_at: 'DESC' },
-      take: 200,
-    });
-    return { success: true, data };
+    return { success: true, data: await this.reviewService.reported() };
   }
 
   /**
@@ -283,28 +310,21 @@ export class AdminReportsController {
   @Patch('reviews/:id/decision')
   @AdminRoles(...ALL_ADMIN_ROLES)
   @ApiOperation({ summary: 'Act on a reported review (admin)' })
-  async decideReview(@Param('id') id: string, @Body() body: { action: 'hide' | 'remove' | 'restore' }) {
-    const review = await this.reviewRepo.findOne({ where: { id } });
-    if (!review) throw new NotFoundException('Review not found');
-
+  async decideReview(
+    @Param('id') id: string,
+    @Body() body: { action: 'hide' | 'remove' | 'restore' },
+    @CurrentAdmin() admin: Admin,
+  ) {
     const action = String(body?.action || '').toLowerCase();
     if (!['hide', 'remove', 'restore'].includes(action)) {
       throw new BadRequestException('action must be hide, remove or restore');
     }
-
-    if (action === 'hide') review.status = ReviewStatus.HIDDEN;
-    if (action === 'remove') {
-      review.status = ReviewStatus.REMOVED;
-      review.deleted_at = new Date();
-    }
-    if (action === 'restore') {
-      review.status = ReviewStatus.ACTIVE;
-      review.flag_reason = null;
-      review.flagged_by_id = null;
-      review.flagged_at = null;
-    }
-
-    return { success: true, data: await this.reviewRepo.save(review) };
+    const data = await this.reviewService.decide(
+      id,
+      action as 'hide' | 'remove' | 'restore',
+      admin?.id ?? null,
+    );
+    return { success: true, data };
   }
 
   @Get('auctions')

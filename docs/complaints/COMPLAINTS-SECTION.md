@@ -196,10 +196,10 @@ hour.
 | # | Gap | How it was closed |
 |---|---|---|
 | 5 | Partial refunds impossible | `POST /escrow/holds/:id/partial-refund` refunds part of the buyer's bill and **keeps the hold open** with the remainder, so the rest can still be released. The refund is allocated pro rata across seller / platform / VAT, which is the only split that is neutral between the parties and keeps `sellerNet + platformShare + vat = amount` exactly true; rounding residue goes to VAT. It refuses a refund larger than the remainder, requires a reason, records a breakdown on the hold, and credits the buyer through the ledger (`escrow_partial_refund:<hold>:<n>`). Asking for the full remainder delegates to the existing full refund so the invoice, order and lot unwind as before. |
-| 6 | No goodwill credit | `POST /admin/wallets/:userId/credit` — a required reason, a unique `goodwill:<uuid>` reference, and a new `ADJUSTMENT` ledger type so a discretionary credit never looks like a customer deposit in reporting. |
+| 6 | No goodwill credit | `POST /admin/wallets/:userId/credit` — a required reason, an idempotency key so a double submit pays once, a per-credit ceiling and an on/off switch an administrator sets (Settings → Goodwill credits), and a new `ADJUSTMENT` ledger type so a discretionary credit never looks like a customer deposit in reporting. |
 | 8 | No complaint register | `GET /admin/complaints/register` returns one row per complaint with a summary (total, open, by category, by outcome) and `?format=csv` produces the file for the monthly review or a regulator. |
 | 9 | No appeal on a dispute | `POST /disputes/:id/appeal` — party only, decided disputes only, **once**. It reopens the case for review, records the reason and count, and clears the previous decision so the reviewer is not anchored by it. |
-| 10 | Review flags went nowhere | `POST /sellers/reviews/:id/report` lets any signed-in user report a review (previously only an admin could set the flag, so the published channel did nothing), and `GET /admin/reviews/flagged` + `PATCH /admin/reviews/:id/decision` give it a queue and an outcome. Hiding is the default decision in a dispute, because the review is evidence. |
+| 10 | Review flags went nowhere | `POST /sellers/reviews/:id/report` lets any signed-in user report a review, and `GET /admin/reviews/flagged` + `PATCH /admin/reviews/:id/decision` give it a queue and an outcome. **Reporting never hides anything**: it records the complaint once per person, the review stays counted in the rating, and only an explicit decision changes what the public sees. Nobody can report their own review or a review of their own business. |
 | 11 | Data-protection complaints had no statutory clock | They are classified P1 **and** now carry `statutoryDueAt` / `statutoryDaysLeft` on the SLA view — 30 calendar days from when they were raised — with `dataProtectionOpen` and `dataProtectionOverdue` in the SLA summary so the legal deadline is visible next to the operational one. |
 
 **Closed in the workspace pass** (verified live, 17 checks):
@@ -223,7 +223,7 @@ hour.
 - **The `ADJUSTMENT` ledger type is new.** Reporting that assumes wallet credits are only deposits or escrow releases needs to handle it; the enum was extended rather than reused for exactly that reason.
 - **An appeal clears `resolution`/`resolvedById`.** That is deliberate — the reviewer must not be anchored — but the previous outcome now survives only in the messages and the audit trail, so never rely on the dispute row for the full history.
 - **Notifications can fail after the thing they describe succeeded.** The appeal commits, then the notice is attempted; a delivery failure is now logged rather than hidden, but nothing retries it. If appeals matter enough to guarantee delivery, they need an outbox.
-- **A reported review hides the seller's rating input.** Hiding a review removes it from the average, so a false report briefly distorts the rating until the decision is made. Acceptable, but the queue should be worked promptly.
+- **A moderation decision changes the seller's rating immediately.** Hiding or removing a review re-computes the cached average in the same call, so the profile and the review list never disagree. A report on its own changes nothing.
 
 ## 11. Decisions taken
 

@@ -258,7 +258,12 @@ export class SellerReviewService {
   // ==========================================
 
   /**
-   * Flag review as inappropriate (admin)
+   * Flag a review for moderation attention (admin).
+   *
+   * This records the reason and puts the review at the front of the queue; it
+   * deliberately does NOT change `status`. Suppressing a review is a decision
+   * (`hide`/`remove`) and has to be made as one, so that "we are looking at it"
+   * never looks like "we have taken it down".
    */
   async flag(
     id: string,
@@ -267,16 +272,84 @@ export class SellerReviewService {
   ): Promise<SellerReview> {
     const review = await this.findById(id);
 
-    review.status = ReviewStatus.FLAGGED;
     review.flag_reason = flagDto.flag_reason;
     review.flagged_by_id = adminId;
     review.flagged_at = new Date();
+    review.report_resolved_at = null;
+    review.report_resolution = null;
 
     return this.reviewRepository.save(review);
   }
 
   /**
-   * Hide review (admin)
+   * Record a user's report against a review without changing its visibility.
+   *
+   * Three rules make this fair to everybody involved:
+   *   - a report never hides anything, so reporting cannot be used to scrub a
+   *     rating you disagree with;
+   *   - one report per person per review, so a single aggrieved user cannot
+   *     inflate the signal by repeating;
+   *   - nobody may report their own review, or a review about their own
+   *     business. A seller who believes a review is untrue replies to it
+   *     publicly or complains; they do not get to quietly delete it.
+   */
+  async report(id: string, reason: string, reporterId: string): Promise<SellerReview> {
+    const review = await this.findById(id);
+
+    if (review.status === ReviewStatus.REMOVED) {
+      throw new BadRequestException('This review has been removed and cannot be reported');
+    }
+    if (review.bidder_id === reporterId) {
+      throw new BadRequestException('You cannot report your own review');
+    }
+
+    const sellerUserId = review.seller?.user_id
+      ?? (await this.sellerRepository.findOne({ where: { id: review.seller_id } }))?.user_id;
+    if (sellerUserId && sellerUserId === reporterId) {
+      throw new ForbiddenException(
+        'A seller cannot report a review about their own business. Reply to the review, or raise a complaint if you believe it is false.',
+      );
+    }
+
+    const reporters = Array.isArray(review.reporters) ? review.reporters : [];
+    if (reporters.includes(reporterId)) {
+      // Already counted: answering with the same review keeps a retry harmless
+      // instead of inflating report_count.
+      return review;
+    }
+
+    // A review that was reported, decided, and is now reported again starts a
+    // fresh clock; reporters stay on the record so nobody reports twice.
+    const startingACycle = !review.flagged_at || !!review.report_resolved_at;
+    review.reporters = [...reporters, reporterId];
+    review.report_count = (review.report_count ?? 0) + 1;
+    review.flag_reason = reason;
+    review.flagged_by_id = reporterId;
+    review.flagged_at = startingACycle ? new Date() : review.flagged_at;
+    review.report_resolved_at = null;
+    review.report_resolution = null;
+
+    return this.reviewRepository.save(review);
+  }
+
+  /**
+   * Reviews with an outstanding report, most-reported first — several
+   * independent complaints are a stronger signal than one, and the queue should
+   * reflect that instead of the raw clock.
+   */
+  async reported(limit = 200): Promise<SellerReview[]> {
+    return this.reviewRepository
+      .createQueryBuilder('review')
+      .where('review.flag_reason IS NOT NULL')
+      .andWhere('review.status <> :removed', { removed: ReviewStatus.REMOVED })
+      .orderBy('review.report_count', 'DESC')
+      .addOrderBy('review.flagged_at', 'ASC')
+      .take(limit)
+      .getMany();
+  }
+
+  /**
+   * Hide review (admin) — a decision, so the outstanding report is answered.
    */
   async hide(id: string, adminId: string): Promise<SellerReview> {
     const review = await this.findById(id);
@@ -284,38 +357,70 @@ export class SellerReviewService {
     review.status = ReviewStatus.HIDDEN;
     review.flagged_by_id = adminId;
     review.flagged_at = new Date();
+    review.flag_reason = null;
+    review.report_resolved_at = new Date();
+    review.report_resolution = 'upheld';
 
-    return this.reviewRepository.save(review);
+    const saved = await this.reviewRepository.save(review);
+    // A hidden review leaves the average, so the cached rating has to move with
+    // it — otherwise the profile shows a rating the review list contradicts.
+    await this.updateSellerRating(review.seller_id);
+    return saved;
   }
 
   /**
-   * Restore hidden/flagged review (admin)
+   * Restore a hidden review (admin) — the report was not upheld.
    */
   async restore(id: string): Promise<SellerReview> {
     const review = await this.findById(id);
 
     review.status = ReviewStatus.ACTIVE;
-    review.flag_reason = null;
     review.flagged_by_id = null;
     review.flagged_at = null;
+    review.flag_reason = null;
+    review.report_resolved_at = new Date();
+    review.report_resolution = 'rejected';
 
-    return this.reviewRepository.save(review);
+    const saved = await this.reviewRepository.save(review);
+    await this.updateSellerRating(review.seller_id);
+    return saved;
   }
 
   /**
    * Remove review (admin)
    */
-  async remove(id: string, adminId: string): Promise<void> {
+  async remove(id: string, adminId: string): Promise<SellerReview> {
     const review = await this.findById(id);
 
     review.status = ReviewStatus.REMOVED;
     review.deleted_at = new Date();
     review.flagged_by_id = adminId;
+    review.flag_reason = null;
+    review.report_resolved_at = new Date();
+    review.report_resolution = 'upheld';
 
-    await this.reviewRepository.save(review);
+    const saved = await this.reviewRepository.save(review);
 
     // Update seller rating after removal
     await this.updateSellerRating(review.seller_id);
+
+    return saved;
+  }
+
+  /**
+   * Decide a reported review in one place, so every route that moderates a
+   * review changes status, answers the report and refreshes the seller's cached
+   * rating the same way.
+   */
+  async decide(
+    id: string,
+    action: 'hide' | 'remove' | 'restore',
+    adminId: string,
+  ): Promise<SellerReview> {
+    if (action === 'hide') return this.hide(id, adminId);
+    if (action === 'remove') return this.remove(id, adminId);
+    if (action === 'restore') return this.restore(id);
+    throw new BadRequestException('action must be hide, remove or restore');
   }
 
   // ==========================================

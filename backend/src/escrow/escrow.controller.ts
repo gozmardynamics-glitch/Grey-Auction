@@ -6,6 +6,7 @@ import { AdminRolesGuard } from '../admin/guards/admin-roles.guard';
 import { AdminRoles } from '../admin/decorators/admin-roles.decorator';
 import { AdminRole } from '../admin/entities/admin.entity';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequireStepUp } from '../admin-mfa/decorators/require-step-up.decorator';
 import { CreateHoldDto, RefundDto } from './dto/escrow.dto';
 
 @ApiTags('Escrow')
@@ -46,7 +47,7 @@ export class EscrowController {
   }
 
   @Post('holds/:id/release')
-  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Release escrowed funds to the seller (admin)' })
@@ -61,7 +62,7 @@ export class EscrowController {
    * want.
    */
   @Post('holds/:id/partial-refund')
-  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Refund part of an escrow hold, keeping the rest in escrow (admin)' })
@@ -80,7 +81,7 @@ export class EscrowController {
   }
 
   @Post('holds/:id/refund')
-  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Refund escrowed funds to the buyer (admin)' })

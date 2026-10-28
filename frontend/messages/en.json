@@ -35,8 +35,8 @@
     "support": "Support",
     "faq": "FAQ",
     "privacyPolicy": "Privacy Policy",
-"dataProtection": "Data Protection",
-"complaints": "Complaints",
+    "dataProtection": "Data Protection",
+    "complaints": "Complaints",
     "termsAndConditions": "Terms & Conditions",
     "copyright": "All Rights Reserved",
     "auctions": "Auctions",
@@ -463,7 +463,7 @@
     "profile": "My Profile",
     "notifications": "Notifications",
     "security": "Security",
-      "verification": "Verification",
+    "verification": "Verification",
     "preferences": "Preferences",
     "planPackages": "Plan & Packages",
     "nav": {
@@ -1771,6 +1771,12 @@
         "enterScopeId": "Enter the seller or product ID.",
         "confirmRemoveOverride": "Remove the {scope} override?",
         "confirmDelete": "Delete fee configuration for \"{name}\"?"
+      },
+      "twoFactor": {
+        "title": "Two-factor authentication"
+      },
+      "goodwill": {
+        "title": "Goodwill credits"
       }
     },
     "auditLogs": "Audit Logs",
@@ -1824,7 +1830,9 @@
       "preferences": "Preferences",
       "security": "Security",
       "auditLogs": "Audit Logs",
-      "systemStatus": "System Status"
+      "systemStatus": "System Status",
+      "twoFactor": "Two-factor",
+      "goodwill": "Goodwill"
     }
   },
   "chatbot": {

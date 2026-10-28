@@ -854,21 +854,27 @@ export class SellerController {
    *
    * The Complaints Policy offers "flag the review" as a channel, but only an
    * admin could set the flag — so a buyer who believed a seller's review was
-   * abusive had no way to say so. This is that route: it flags the review and
-   * records who reported it, which puts it in the queue below.
+   * abusive had no way to say so. This is that route.
+   *
+   * Reporting must not change what anyone sees. It used to call `flag()`, which
+   * set the review to FLAGGED — and the rating average only counted ACTIVE
+   * reviews — so any signed-in user could drop a review from a seller's public
+   * rating just by reporting it. A report now records the complaint and leaves
+   * the review visible until an administrator decides.
    */
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('reviews/:id/report')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Report a review for moderation' })
+  @ApiOperation({ summary: 'Report a review for moderation (does not hide it)' })
   async reportReview(
     @Param('id') id: string,
     @Body() body: { reason: string },
     @CurrentUser() user: any,
   ) {
-    const data = await this.reviewService.flag(
+    const data = await this.reviewService.report(
       id,
-      { flag_reason: String(body?.reason || '').slice(0, 500) || 'Reported by a user' } as any,
+      String(body?.reason || '').slice(0, 500) || 'Reported by a user',
       user.id,
     );
     return { success: true, message: 'Review reported for moderation', data };

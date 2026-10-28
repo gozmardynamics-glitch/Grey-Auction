@@ -13,9 +13,12 @@ import { SellerReview } from '../seller/entities/seller-review.entity';
 import { Dispute } from '../trust/entities/dispute.entity';
 import { User } from '../auth/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
+import { SellerReviewService } from '../seller/services/seller-review.service';
+import { AdminMfaService } from '../admin-mfa/admin-mfa.service';
 
 describe('AdminReportsController', () => {
   let controller: AdminReportsController;
+  let reviewService: { reported: jest.Mock; decide: jest.Mock };
   const repos = {
     product: { findAndCount: jest.fn(), count: jest.fn() },
     bid: { findAndCount: jest.fn(), count: jest.fn() },
@@ -45,6 +48,20 @@ describe('AdminReportsController', () => {
         {
           provide: DataSource,
           useValue: { getRepository: jest.fn() },
+        },
+        // The class-level guard resolves admin authority, which now includes the
+        // second-factor requirement.
+        {
+          provide: AdminMfaService,
+          useValue: { requirementFor: jest.fn().mockResolvedValue({ required: true, stepUpMinutes: 10 }) },
+        },
+        // Review moderation is delegated to the seller module's service.
+        {
+          provide: SellerReviewService,
+          useValue: (reviewService = {
+            reported: jest.fn().mockResolvedValue([]),
+            decide: jest.fn().mockResolvedValue({ id: 'r1', status: 'HIDDEN' }),
+          }),
         },
       ],
     }).compile();

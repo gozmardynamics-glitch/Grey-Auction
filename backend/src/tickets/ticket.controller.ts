@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TicketService } from './ticket.service';
@@ -200,9 +201,16 @@ export class TicketController {
   }
 
   /** Owner or admin access to a single ticket (mirrors invoices). */
+  /**
+   * An unknown ticket is a 404, not a 200 with `data: null`.
+   *
+   * Returning early on a missing row made `GET /tickets/:id` answer
+   * `200 { data: null }` for an id that does not exist — indistinguishable from
+   * a real ticket with no fields, and it made the 404 path untestable.
+   */
   private async requireOwnerOrAdmin(id: string, user: any) {
     const ticket = await this.service.findById(id);
-    if (!ticket) return;
+    if (!ticket) throw new NotFoundException('Ticket not found');
     if (user?.role === 'admin') return;
     if (ticket.userId === user?.id) return;
     throw new ForbiddenException('Not your ticket');

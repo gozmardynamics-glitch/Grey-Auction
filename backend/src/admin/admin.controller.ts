@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from './guards/admin-roles.guard';
 import { AdminRoles } from './decorators/admin-roles.decorator';
 import { AdminRole } from './entities/admin.entity';
+import { RequireStepUp } from '../admin-mfa/decorators/require-step-up.decorator';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -32,6 +33,7 @@ export class AdminController {
   }
 
   @Post('admins')
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create admin' })
   async createAdmin(@Body() dto: { email: string; password: string; name: string; role?: AdminRole }) {
@@ -40,6 +42,7 @@ export class AdminController {
   }
 
   @Patch('admins/:id')
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update admin' })
   async updateAdmin(
@@ -51,6 +54,7 @@ export class AdminController {
   }
 
   @Delete('admins/:id')
+  @RequireStepUp()
   @AdminRoles(AdminRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete admin' })
   async removeAdmin(@Param('id') id: string) {
@@ -83,17 +87,25 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Get('wallets/goodwill-policy')
+  @ApiOperation({ summary: 'Goodwill credit policy: enabled and the ceiling (admin)' })
+  async goodwillPolicy() {
+    return { success: true, data: await this.adminService.goodwillPolicy() };
+  }
+
   @Post('wallets/:userId/credit')
+  @RequireStepUp()
   @ApiOperation({ summary: 'Goodwill credit to an account wallet (admin)' })
   async creditWallet(
     @Param('userId') userId: string,
-    @Body() body: { amount: number; reason: string },
+    @Body() body: { amount: number; reason: string; idempotencyKey?: string },
   ) {
     const data = await this.adminService.creditWallet(userId, body);
     return { success: true, message: 'Wallet credited', data };
   }
 
   @Post('buyers/:id/suspend')
+  @RequireStepUp()
   @ApiOperation({
     summary: 'Suspend buyer (refused while a money complaint is open unless force=true)',
   })

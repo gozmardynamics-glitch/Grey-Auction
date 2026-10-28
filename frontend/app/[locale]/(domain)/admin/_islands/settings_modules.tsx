@@ -29,6 +29,8 @@ const MODULE_TITLE_KEYS: Record<SettingsModuleKey, string> = {
   notifications: 'notifications.title',
   preferences: 'preferences.title',
   security: 'security.title',
+  'two-factor': 'twoFactor.title',
+  goodwill: 'goodwill.title',
   'audit-logs': 'auditLogs.title',
   'system-status': 'systemStatus.title',
 };
@@ -43,6 +45,8 @@ const MODULE_MAP: Record<SettingsModuleKey, React.ComponentType> = {
   notifications: dynamic(() => import('../settings/components/modules/notifications'), { loading: settingsLoader }),
   preferences: dynamic(() => import('../settings/components/modules/preferences'), { loading: settingsLoader }),
   security: dynamic(() => import('../settings/components/modules/security'), { loading: settingsLoader }),
+  'two-factor': dynamic(() => import('../settings/components/modules/two_factor'), { loading: settingsLoader }),
+  goodwill: dynamic(() => import('../settings/components/modules/goodwill'), { loading: settingsLoader }),
   'audit-logs': dynamic(() => import('../settings/components/modules/audit_logs'), { loading: settingsLoader }),
   'system-status': dynamic(() => import('../settings/components/modules/system_status'), { loading: settingsLoader }),
 };

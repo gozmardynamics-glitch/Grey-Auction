@@ -35,8 +35,8 @@
     "support": "Ondersteuning",
     "faq": "FAQ",
     "privacyPolicy": "Privacybeleid",
-"dataProtection": "Gegevensbescherming",
-"complaints": "Klachten",
+    "dataProtection": "Gegevensbescherming",
+    "complaints": "Klachten",
     "termsAndConditions": "Algemene voorwaarden",
     "copyright": "Alle rechten voorbehouden",
     "auctions": "Veilingen",
@@ -1769,6 +1769,12 @@
         "enterScopeId": "Voer de verkopers- of product-ID in.",
         "confirmRemoveOverride": "De overschrijving voor {scope} verwijderen?",
         "confirmDelete": "Kostenconfiguratie voor \"{name}\" verwijderen?"
+      },
+      "twoFactor": {
+        "title": "Tweestapsverificatie"
+      },
+      "goodwill": {
+        "title": "Goodwill"
       }
     },
     "auditLogs": "Auditlogboeken",
@@ -1822,7 +1828,9 @@
       "preferences": "Voorkeuren",
       "security": "Beveiliging",
       "auditLogs": "Auditlogboeken",
-      "systemStatus": "Systeemstatus"
+      "systemStatus": "Systeemstatus",
+      "twoFactor": "Tweestapsverificatie",
+      "goodwill": "Goodwill"
     }
   },
   "chatbot": {

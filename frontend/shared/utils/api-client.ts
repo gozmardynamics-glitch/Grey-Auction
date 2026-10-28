@@ -11,6 +11,8 @@
  *   const page = await apiFetch('products', { query: { page: 2, category } });
  */
 
+import { emitStepUpRequired, isStepUpRequired } from './step-up';
+
 export class ApiError extends Error {
   status: number;
   body: unknown;
@@ -109,6 +111,14 @@ export async function apiFetch<T = unknown>(
       : raw
         ? String(raw)
         : `Request failed with status ${res.status}`;
+    // A stale second-factor proof is not a failure the user can read about and
+    // act on — it needs a prompt. Signal it once, here, rather than in every
+    // component that happens to touch a money endpoint.
+    if (res.status === 403 && isStepUpRequired(payload)) {
+      emitStepUpRequired({
+        windowMinutes: Number((payload as { windowMinutes?: number }).windowMinutes) || undefined,
+      });
+    }
     throw new ApiError(res.status, message, payload);
   }
 

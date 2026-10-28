@@ -3,6 +3,7 @@
 import { SidebarProvider, SidebarInset } from '@/shared/components/common';
 import AdminSidebar from './admin_sidebar';
 import AdminHeader from './admin_header';
+import StepUpHost from '@/app/[locale]/(domain)/admin/_islands/step_up_host';
 
 export function AdminDashboardWrapper({
   children,
@@ -26,6 +27,8 @@ export function AdminDashboardWrapper({
           </main>
         </SidebarInset>
       </div>
+      {/* Mounted once: any request that needs a fresh second factor opens this. */}
+      <StepUpHost />
     </SidebarProvider>
   );
 }

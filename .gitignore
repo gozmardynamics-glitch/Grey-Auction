@@ -49,3 +49,6 @@ backend/uploads/
 testdata/images/
 testdata/manifest.json
 frontend/public/testdata/
+
+# Local administrator TOTP secret written by tools/admin/enrol-mfa.js (development only)
+.admin-mfa-secret

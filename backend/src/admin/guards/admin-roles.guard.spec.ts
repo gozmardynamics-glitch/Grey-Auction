@@ -3,12 +3,14 @@ import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { AdminRolesGuard } from './admin-roles.guard';
 import { Admin, AdminRole } from '../entities/admin.entity';
+import { AdminMfaService } from '../../admin-mfa/admin-mfa.service';
 
 describe('AdminRolesGuard', () => {
   let guard: AdminRolesGuard;
   const reflector = { getAllAndOverride: jest.fn() };
   const adminFindOne = jest.fn();
   const dataSource = { getRepository: jest.fn(() => ({ findOne: adminFindOne })) };
+  const mfa = { requirementFor: jest.fn() };
 
   const buildContext = (user: any) => {
     const request: any = { user };
@@ -21,7 +23,13 @@ describe('AdminRolesGuard', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    guard = new AdminRolesGuard(reflector as unknown as Reflector, dataSource as unknown as DataSource);
+    // Policy requires MFA by default, as it does in production.
+    mfa.requirementFor.mockResolvedValue({ required: true, stepUpMinutes: 10 });
+    guard = new AdminRolesGuard(
+      reflector as unknown as Reflector,
+      dataSource as unknown as DataSource,
+      mfa as unknown as AdminMfaService,
+    );
   });
 
   it('fails closed when the endpoint declares no @AdminRoles', async () => {
@@ -66,15 +74,36 @@ describe('AdminRolesGuard', () => {
 
   it('grants access for a linked, active admin with a sufficient role', async () => {
     (reflector.getAllAndOverride as jest.Mock).mockReturnValue([AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN]);
-    adminFindOne.mockResolvedValue({ role: AdminRole.PLATFORM_ADMIN, isActive: true });
+    adminFindOne.mockResolvedValue({ role: AdminRole.PLATFORM_ADMIN, isActive: true, mfaEnabled: true });
 
     const ctx = buildContext({ id: 'u1', isEmailVerified: true });
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
   });
 
+  it('denies an otherwise-valid admin who has not enrolled a second factor', async () => {
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([AdminRole.SUPER_ADMIN]);
+    adminFindOne.mockResolvedValue({ role: AdminRole.SUPER_ADMIN, isActive: true, mfaEnabled: false });
+
+    await expect(
+      guard.canActivate(buildContext({ id: 'u1', isEmailVerified: true })),
+    ).rejects.toMatchObject({
+      response: { code: 'MFA_ENROLMENT_REQUIRED' },
+    });
+  });
+
+  it('lets an unenrolled admin through only when the policy does not require MFA', async () => {
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([AdminRole.SUPPORT_ADMIN]);
+    adminFindOne.mockResolvedValue({ role: AdminRole.SUPPORT_ADMIN, isActive: true, mfaEnabled: false });
+    mfa.requirementFor.mockResolvedValue({ required: false, stepUpMinutes: 15 });
+
+    await expect(
+      guard.canActivate(buildContext({ id: 'u1', isEmailVerified: true })),
+    ).resolves.toBe(true);
+  });
+
   it('denies when the linked admin role is insufficient', async () => {
     (reflector.getAllAndOverride as jest.Mock).mockReturnValue([AdminRole.SUPER_ADMIN]);
-    adminFindOne.mockResolvedValue({ role: AdminRole.SUPPORT_ADMIN, isActive: true });
+    adminFindOne.mockResolvedValue({ role: AdminRole.SUPPORT_ADMIN, isActive: true, mfaEnabled: true });
 
     await expect(
       guard.canActivate(buildContext({ id: 'u1', isEmailVerified: true })),

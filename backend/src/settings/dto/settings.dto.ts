@@ -4,10 +4,13 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -28,6 +31,7 @@ export const SETTINGS_SECTIONS = [
   'authentication',
   'advanced',
   'notifications',
+  'goodwill',
 ] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
@@ -105,6 +109,15 @@ export class UpdateSettingsDto {
   @IsOptional() @IsBoolean() auditLogs?: boolean;
   @IsOptional() @IsBoolean() dataEncryption?: boolean;
 
+  // ── complaints · goodwill ──
+  /**
+   * Goodwill credits are a discretionary remedy, so the platform decides
+   * whether they exist at all and how large a single one may be. There is no
+   * "unlimited" option on purpose.
+   */
+  @IsOptional() @IsBoolean() enabled?: boolean;
+  @IsOptional() @IsInt() @Min(1) @Max(50_000_000) maxAmount?: number;
+
   // ── notifications ──
   @ApiPropertyOptional({ type: [SettingsNotificationToggleDto] })
   @IsOptional()
@@ -142,6 +155,7 @@ export const SETTINGS_SECTION_FIELDS: Record<SettingsSection, string[]> = {
   ],
   advanced: ['ipWhitelist', 'auditLogs', 'dataEncryption'],
   notifications: ['notifications'],
+  goodwill: ['enabled', 'maxAmount'],
 };
 
 /**

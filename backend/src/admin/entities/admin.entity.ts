@@ -40,6 +40,41 @@ export class Admin {
   @Column({ default: true })
   isActive: boolean;
 
+  // ── Second factor ────────────────────────────────────────────────
+  /**
+   * Administrators can refund escrow, credit wallets and release holds, so a
+   * password alone is not enough authority. The secret is stored encrypted
+   * (AES-256-GCM, see AdminMfaService) — never in the clear, never logged.
+   */
+  @Column({ type: 'boolean', default: false })
+  mfaEnabled: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  mfaSecret: string | null;
+
+  /** SHA-256 hashes of single-use recovery codes; the codes themselves are
+   *  shown once, at enrolment, and never stored. */
+  @Column({ type: 'jsonb', default: '[]' })
+  mfaRecoveryCodes: Array<{ hash: string; usedAt: string | null }>;
+
+  @Column({ type: 'timestamp', nullable: true })
+  mfaEnrolledAt: Date | null;
+
+  /** Brute-force guard: consecutive bad codes, and the lockout they trigger. */
+  @Column({ type: 'int', default: 0 })
+  mfaFailedAttempts: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  mfaLockedUntil: Date | null;
+
+  /** Highest TOTP counter already accepted — a code can never be reused. */
+  @Column({ type: 'bigint', nullable: true })
+  mfaLastStep: string | null;
+
+  /** When this admin last proved a second factor; drives step-up windows. */
+  @Column({ type: 'timestamp', nullable: true })
+  lastMfaAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

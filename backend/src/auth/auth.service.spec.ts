@@ -5,15 +5,25 @@ import { UnauthorizedException, ConflictException, BadRequestException } from '@
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
-import { AuthService } from './auth.service';
+import { AuthService, LoginResult } from './auth.service';
 import { User, UserRole } from './entities/user.entity';
 import { EmailService } from '../common/email/email.service';
+import { AdminMfaService } from '../admin-mfa/admin-mfa.service';
+
+/** Narrow a login result to the session arm — the tests here are non-admins. */
+function expectSession(result: LoginResult): { user: any; token: string } {
+  if ('mfaRequired' in result) {
+    throw new Error('Expected a session, got an MFA challenge');
+  }
+  return result;
+}
 
 describe('AuthService', () => {
   let service: AuthService;
   let userRepository: jest.Mocked<Partial<Repository<User>>>;
   let jwtService: jest.Mocked<Partial<JwtService>>;
   let emailService: jest.Mocked<Partial<EmailService>>;
+  let adminMfa: jest.Mocked<Partial<AdminMfaService>>;
 
   const mockUser: Partial<User> = {
     id: 'user-1',
@@ -51,6 +61,14 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: JwtService, useValue: jwtService },
         { provide: EmailService, useValue: emailService },
+        {
+          provide: AdminMfaService,
+          useValue: (adminMfa = {
+            // Not an admin by default: the non-MFA path is what these tests cover.
+            gateForUser: jest.fn().mockResolvedValue(null),
+            verifySecondFactor: jest.fn(),
+          }),
+        },
       ],
     }).compile();
 
@@ -103,11 +121,76 @@ describe('AuthService', () => {
       (userRepository.findOne as jest.Mock).mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
-      const result = await service.login(loginDto);
+      const result = expectSession(await service.login(loginDto));
 
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: loginDto.email } });
       expect(result.token).toBe('mock-jwt-token');
       expect(result.user).toBeDefined();
+    });
+
+    it('refuses a session for an administrator who must prove a second factor, and says why', async () => {
+      (userRepository.findOne as jest.Mock).mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (adminMfa.gateForUser as jest.Mock).mockResolvedValue({
+        mfaRequired: true,
+        enrolmentRequired: true,
+      });
+
+      await expect(service.login(loginDto)).rejects.toMatchObject({
+        response: { code: 'MFA_ENROLMENT_REQUIRED' },
+      });
+      // Correct password, no session, no code checked — the password alone gets
+      // an administrator nowhere.
+      expect(adminMfa.verifySecondFactor).not.toHaveBeenCalled();
+    });
+
+    it('asks for a code, not enrolment, once the administrator has enrolled', async () => {
+      (userRepository.findOne as jest.Mock).mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (adminMfa.gateForUser as jest.Mock).mockResolvedValue({
+        mfaRequired: true,
+        enrolmentRequired: false,
+      });
+
+      await expect(service.login(loginDto)).rejects.toMatchObject({
+        response: { code: 'MFA_REQUIRED' },
+      });
+    });
+
+    it('issues the session once the second factor verifies', async () => {
+      (userRepository.findOne as jest.Mock).mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (adminMfa.gateForUser as jest.Mock).mockResolvedValue({
+        mfaRequired: true,
+        enrolmentRequired: false,
+      });
+      (adminMfa.verifySecondFactor as jest.Mock).mockResolvedValue({
+        method: 'totp',
+        stepUpMinutes: 5,
+      });
+
+      const result = expectSession(await service.login({ ...loginDto, code: '123456' }));
+
+      expect(result.token).toBe('mock-jwt-token');
+      expect(adminMfa.verifySecondFactor).toHaveBeenCalledWith(
+        'user-1',
+        '123456',
+        expect.objectContaining({ allowRecovery: true, allowPendingEnrolment: true }),
+      );
+    });
+
+    it('issues nothing when the supplied code is rejected', async () => {
+      (userRepository.findOne as jest.Mock).mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      (adminMfa.gateForUser as jest.Mock).mockResolvedValue({
+        mfaRequired: true,
+        enrolmentRequired: false,
+      });
+      (adminMfa.verifySecondFactor as jest.Mock).mockRejectedValue(new UnauthorizedException());
+
+      await expect(service.login({ ...loginDto, code: '000000' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
@@ -153,8 +236,7 @@ describe('AuthService', () => {
         (userRepository.findOne as jest.Mock).mockResolvedValue(withOtp());
         jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
-        const result = await service.login(loginDto);
-
+        const result = expectSession(await service.login(loginDto));
         expect((result.user as any).otpCode).toBeUndefined();
         expect((result.user as any).otpExpiry).toBeUndefined();
         expect((result.user as any).passwordHash).toBeUndefined();

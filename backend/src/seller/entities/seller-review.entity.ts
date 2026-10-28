@@ -109,6 +109,26 @@ export class SellerReview {
   @Column({ type: 'timestamp', nullable: true })
   flagged_at: Date;
 
+  /**
+   * Reporting is a signal, not a verdict, so it lives beside `status` rather
+   * than inside it. `flag_reason`/`flagged_at`/`flagged_by_id` describe the
+   * report currently outstanding; these fields count and attribute it, and
+   * record how it was decided. Only `status` decides what the public sees.
+   */
+  @Column({ type: 'int', default: 0 })
+  report_count: number;
+
+  /** User ids that have already reported this review — one report each. */
+  @Column({ type: 'jsonb', default: '[]' })
+  reporters: string[];
+
+  @Column({ type: 'timestamp', nullable: true })
+  report_resolved_at: Date;
+
+  /** `upheld` (hidden/removed by an admin) or `rejected` (restored). */
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  report_resolution: string;
+
   @Column({ type: 'boolean', default: false })
   is_verified_purchase: boolean;
 

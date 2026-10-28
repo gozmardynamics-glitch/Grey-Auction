@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn, Matches, MaxLength } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class LoginDto {
@@ -8,6 +8,16 @@ export class LoginDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  /**
+   * Second factor, when the account is an administrator. Optional so an
+   * ordinary login is unchanged, and so the first attempt can come back with
+   * "we need a code" instead of a generic failure.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  code?: string;
 }
 
 export class RegisterDto {

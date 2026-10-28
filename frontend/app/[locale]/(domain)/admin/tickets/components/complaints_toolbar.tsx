@@ -45,6 +45,10 @@ export default function ComplaintsToolbar({ selectedTicket }: ComplaintsToolbarP
   const [showCredit, setShowCredit] = useState(false);
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
+  const [goodwillPolicy, setGoodwillPolicy] = useState<{
+    enabled: boolean;
+    maxAmount: number;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const loadSummary = useCallback(async () => {
@@ -68,6 +72,11 @@ export default function ComplaintsToolbar({ selectedTicket }: ComplaintsToolbarP
   useEffect(() => {
     void loadSummary();
     void loadFlagged();
+    void apiFetch<{ data?: { enabled: boolean; maxAmount: number } }>(
+      'admin/wallets/goodwill-policy',
+    )
+      .then((json) => setGoodwillPolicy(json?.data ?? null))
+      .catch(() => setGoodwillPolicy(null));
   }, [loadSummary, loadFlagged]);
 
   const exportRegister = async () => {
@@ -112,11 +121,24 @@ export default function ComplaintsToolbar({ selectedTicket }: ComplaintsToolbarP
       toast.error('This complaint is not linked to an account, so it cannot be credited');
       return;
     }
+    const amount = Number(creditAmount);
+    if (goodwillPolicy && !goodwillPolicy.enabled) {
+      toast.error('Goodwill credits are switched off in settings.');
+      return;
+    }
+    if (goodwillPolicy && amount > goodwillPolicy.maxAmount) {
+      toast.error(
+        `The ceiling is ₦${goodwillPolicy.maxAmount.toLocaleString()} per credit. ` +
+          'Raise it in settings, or handle it as a formal remedy.',
+      );
+      return;
+    }
     setBusy(true);
     try {
       await apiFetch(`admin/wallets/${encodeURIComponent(selectedTicket.userId)}/credit`, {
         method: 'POST',
-        body: { amount: Number(creditAmount), reason: creditReason },
+        // A key per submission makes a double click one credit, not two.
+        body: { amount, reason: creditReason, idempotencyKey: crypto.randomUUID() },
       });
       toast.success('Goodwill credit issued');
       setShowCredit(false);
@@ -186,36 +208,52 @@ export default function ComplaintsToolbar({ selectedTicket }: ComplaintsToolbarP
 
       {showCredit && selectedTicket && (
         <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border/60 p-3">
-          <div className="w-32">
-            <label className="text-xs text-muted-foreground" htmlFor="credit-amount">
-              Amount (NGN)
-            </label>
-            <Input
-              id="credit-amount"
-              type="number"
-              min={1}
-              value={creditAmount}
-              onChange={(e) => setCreditAmount(e.target.value)}
-            />
-          </div>
-          <div className="min-w-[240px] flex-1">
-            <label className="text-xs text-muted-foreground" htmlFor="credit-reason">
-              Reason (required — it goes on the ledger)
-            </label>
-            <Input
-              id="credit-reason"
-              value={creditReason}
-              onChange={(e) => setCreditReason(e.target.value)}
-              placeholder="e.g. delivery delay apology"
-            />
-          </div>
-          <Button
-            size="sm"
-            disabled={busy || !creditAmount || !creditReason.trim()}
-            onClick={() => void creditWallet()}
-          >
-            Credit wallet
-          </Button>
+          {goodwillPolicy && !goodwillPolicy.enabled ? (
+            <p className="text-sm text-muted-foreground">
+              Goodwill credits are switched off. A super admin can enable them in
+              Settings → Goodwill credits.
+            </p>
+          ) : (
+            <>
+              <div className="w-32">
+                <label className="text-xs text-muted-foreground" htmlFor="credit-amount">
+                  Amount (NGN)
+                </label>
+                <Input
+                  id="credit-amount"
+                  type="number"
+                  min={1}
+                  max={goodwillPolicy?.maxAmount}
+                  value={creditAmount}
+                  onChange={(e) => setCreditAmount(e.target.value)}
+                />
+              </div>
+              <div className="min-w-[240px] flex-1">
+                <label className="text-xs text-muted-foreground" htmlFor="credit-reason">
+                  Reason — it goes on the ledger (required)
+                </label>
+                <Input
+                  id="credit-reason"
+                  value={creditReason}
+                  onChange={(e) => setCreditReason(e.target.value)}
+                  placeholder="e.g. delivery delay apology"
+                />
+              </div>
+              <Button
+                size="sm"
+                disabled={busy || !creditAmount || !creditReason.trim()}
+                onClick={() => void creditWallet()}
+              >
+                Credit wallet
+              </Button>
+            </>
+          )}
+          {goodwillPolicy?.enabled && (
+            <p className="w-full text-xs text-muted-foreground">
+              Ceiling ₦{goodwillPolicy.maxAmount.toLocaleString()} per credit. Crediting a wallet
+              needs a fresh second-factor code.
+            </p>
+          )}
         </div>
       )}
 

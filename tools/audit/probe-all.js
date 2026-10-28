@@ -27,6 +27,7 @@
 'use strict';
 
 const fs = require('fs');
+const { adminLogin } = require('../lib/mfa');
 const os = require('os');
 const path = require('path');
 
@@ -105,6 +106,27 @@ async function call(routePath, { method = 'GET', token, body } = {}) {
 }
 
 async function login(email, password, attempt = 1) {
+  // The admin account answers MFA challenges only; tools/lib/mfa.js supplies
+  // the code, and non-admin accounts sign in exactly as before.
+  try {
+    const token = await adminLogin(
+      async (path, options) => {
+        const res = await call(path, {
+          method: options?.method || 'GET',
+          body: options?.body,
+          headers: options?.headers,
+        });
+        // tools/lib/mfa.js expects the ok flag the other clients return.
+        return { ...res, ok: res.status >= 200 && res.status < 300 };
+      },
+      email,
+      password,
+    );
+    if (token) return token;
+  } catch (error) {
+    if (!/requires a two-factor code|has not set up/.test(error.message)) throw error;
+    // Fall through to the plain path so a non-admin sweep still works.
+  }
   const res = await call('/api/auth/login', { method: 'POST', body: { email, password } });
   if (res.status === 200) return res.json.data.token;
   // /api/auth/login is throttled (5/min per IP). Back-to-back sweeps trip it, so

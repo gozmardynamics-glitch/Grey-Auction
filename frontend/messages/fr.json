@@ -35,8 +35,8 @@
     "support": "Support",
     "faq": "FAQ",
     "privacyPolicy": "Politique de confidentialité",
-"dataProtection": "Protection des données",
-"complaints": "Réclamations",
+    "dataProtection": "Protection des données",
+    "complaints": "Réclamations",
     "termsAndConditions": "Conditions générales",
     "copyright": "Tous droits réservés",
     "auctions": "Enchères",
@@ -1769,6 +1769,12 @@
         "enterScopeId": "Saisissez l'ID du vendeur ou du produit.",
         "confirmRemoveOverride": "Supprimer le remplacement {scope} ?",
         "confirmDelete": "Supprimer la configuration de frais pour « {name} » ?"
+      },
+      "twoFactor": {
+        "title": "Double authentification"
+      },
+      "goodwill": {
+        "title": "Geste commercial"
       }
     },
     "auditLogs": "Journaux d'audit",
@@ -1822,7 +1828,9 @@
       "preferences": "Préférences",
       "security": "Sécurité",
       "auditLogs": "Journaux d’audit",
-      "systemStatus": "État du système"
+      "systemStatus": "État du système",
+      "twoFactor": "Double authentification",
+      "goodwill": "Geste commercial"
     }
   },
   "chatbot": {

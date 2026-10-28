@@ -188,6 +188,10 @@ export default async function LegalPage({ slug }: { slug: string }) {
   const fallback = FALLBACKS[slug] ?? FALLBACKS.terms;
   let title = fallback.title;
   let markdown = fallback.body;
+  // Only the CMS copy is the current, binding document. The bundled text is a
+  // summary, and saying so is the difference between a degraded page and a page
+  // that quietly misstates the terms.
+  let fromCms = false;
 
   try {
     // SERVER_API_BASE, not NEXT_PUBLIC_API_URL: the public variable is the
@@ -200,10 +204,11 @@ export default async function LegalPage({ slug }: { slug: string }) {
       if (page && page.title && page.content) {
         title = page.title;
         markdown = String(page.content);
+        fromCms = true;
       }
     }
   } catch {
-    // Static fallback stays
+    // Static summary stays
   }
 
   const blocks = parse(markdown);
@@ -235,6 +240,13 @@ export default async function LegalPage({ slug }: { slug: string }) {
       </header>
 
       <div className="lg:grid lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] lg:items-start lg:gap-8 xl:gap-10">
+        {!fromCms && (
+          <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 lg:col-span-2 dark:text-amber-200">
+            <strong className="font-semibold">This is a summary, not the published document.</strong>{' '}
+            The full text could not be loaded just now. Please refresh; if it keeps happening,
+            contact support and we will send you a copy.
+          </div>
+        )}
         {/* Sticky rail on wide screens — the contents stops eating a screenful. */}
         {showContents && (
           <nav

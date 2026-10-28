@@ -261,36 +261,20 @@ export default function SecuritySettings() {
               )}
             />
 
-            <FormField
-              control={authForm.control}
-              name="twoFactorAuth"
-              render={({ field }) => (
-                <>
-                  <div>
-                    <FormLabel className="text-sm font-medium">
-                      {t('twoFactorAuth')}
-                    </FormLabel>
-                    <FormDescription className="text-xs">
-                      {t('twoFactorAuthHint')}
-                    </FormDescription>
-                  </div>
-                  <FormItem>
-                    <div className="flex items-center gap-2">
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <span className="text-sm text-muted-foreground">
-                        {t('enable')}
-                      </span>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                </>
-              )}
-            />
+            {/*
+              The old `twoFactorAuth` switch saved a boolean nobody enforced.
+              Second factor is real now and lives in its own settings module, so
+              the switch is replaced by a pointer rather than left here implying
+              it controls something.
+            */}
+            <div>
+              <FormLabel className="text-sm font-medium">{t('twoFactorAuth')}</FormLabel>
+              <FormDescription className="text-xs">{t('twoFactorAuthHint')}</FormDescription>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Managed in <strong>Settings → Two-factor authentication</strong>: enrolment, the
+              per-role requirement and how long a code stays valid for sensitive actions.
+            </p>
           </div>
 
           <Button type="submit">{t('saveChanges')}</Button>

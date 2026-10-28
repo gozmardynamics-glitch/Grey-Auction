@@ -1,6 +1,6 @@
 # Grey Auction — review & fix plan
 
-**Living document. Last updated 2026-10-26.**
+**Living document. Last updated 2026-10-28.**
 
 This file used to carry the full defect catalogue plus a pass-by-pass delivery
 log. Completed work has been removed — **only pending work is listed below**.
@@ -52,7 +52,48 @@ are grouped by what breaks if left alone.
 | 20 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
 | 21 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
 
-### Fixed in the end-to-end audit (2026-10-27, no action needed)
+### Found in the administrator-MFA and complaints pass (2026-10-28)
+
+| # | Item | Why it matters | Where |
+|---|---|---|---|
+| 22 | **Partial refunds have no screen** | The API supports a partial refund with an explicit allocation, but no admin screen calls it: an escrow hold is not linked to a ticket, so a button could refund the wrong sale. | `admin/tickets/**`; needs `tickets.invoiceId` on the ticket first |
+| 23 | **A resolved dispute leaves the hold out of auto-release** | Once a hold has been disputed and resolved, `autoReleaseAt` is not re-armed, so the remainder needs a manual release. | `backend/src/escrow/escrow.service.ts` |
+| 24 | **Corporate-scope administration is designed but not assignable** | An organisation's own administrators need to be bound to one seller so every query is filtered to it. There is no organisation-seat model, and creating the role without the binding would expose every seller's data. | data model; design in `docs/security/ADMIN-MFA.md` |
+| 25 | **No self-service MFA device rotation** | An administrator cannot add a replacement authenticator from a live session. Recovery codes and the super-admin reset cover the need, so this is a convenience, not a gap in access. | `backend/src/admin-mfa/**` |
+
+### Fixed in the administrator-MFA and complaints pass (2026-10-28, no action needed)
+
+**Reporting a review could delete it.** `POST /sellers/reviews/:id/report` set the review to
+`FLAGGED`, and both the rating average and the public review list only count `ACTIVE` — so any
+signed-in user could drop a review, and its rating, from a seller's public record simply by
+reporting it. A report now records the complaint and leaves the review visible; one report per
+person; nobody can report their own review or a review of their own business; a report is
+answered by an explicit admin decision, which also refreshes the seller's cached rating. Rows
+that were hidden only by a report were restored by migration.
+
+**Administrators had no second factor.** One password could refund escrow, release it to a
+seller, credit a wallet and suspend an account. Every admin route now requires a TOTP code, and
+the actions that move money or change standing require a fresh one. See
+`docs/security/ADMIN-MFA.md`.
+
+**Revenue and VAT were overstated after a partial refund.** An invoice is immutable by design,
+but a partial refund gives part of the platform share and the VAT back, so summing invoice
+columns alone overstated both. `GET /admin/kpi` now reports `platformRevenue` and `vatCollected`
+net of refunds, plus `refundedTotal`, `refundedRevenue` and `vatRefunded` so the two reconcile.
+
+**Goodwill credits were uncapped, non-idempotent cash.** Each call minted a new reference, so a
+double-click credited twice, and there was no ceiling. Credits now carry an idempotency key, and
+the scheme has an on/off switch and a per-credit ceiling that an administrator sets.
+
+**`/terms` was placeholder text.** The Terms page served four hardcoded paragraphs while every
+other legal page was real CMS content — and the Complaints Policy calls the Terms the binding
+agreement. `content/legal/terms.md` is now published, and the bundled summary is labelled as one
+if the CMS ever fails.
+
+**`GET /tickets/:id` answered `200 { data: null }`** for an id that does not exist, because the
+ownership helper returned early on a missing row. It is a 404 now.
+
+
 
 **An anonymous caller could enumerate invitation tokens.** `GET
 /invites/product/:productId` and `/invites/room/:roomId` had no guard and
