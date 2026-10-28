@@ -40,6 +40,7 @@ function buildFooterColumns(t: (key: string) => string) {
       links: [
         { label: t('faq'), href: '/faq' },
         { label: t('privacyPolicy'), href: '/privacy-policy' },
+        { label: t('dataProtection'), href: '/data-protection' },
         { label: t('termsAndConditions'), href: '/terms' },
         { label: t('deliveryInfo'), href: '/faq' },
       ],
