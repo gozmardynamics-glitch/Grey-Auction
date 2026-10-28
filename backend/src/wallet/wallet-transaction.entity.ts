@@ -11,6 +11,9 @@ export enum WalletTransactionType {
   WITHDRAW = 'withdraw',
   ESCROW_RELEASE = 'escrow_release',
   ESCROW_REFUND = 'escrow_refund',
+  /** Manual credit: a goodwill payment or a remedy agreed while handling a
+   *  complaint. Always carries a reference and an admin author. */
+  ADJUSTMENT = 'adjustment',
 }
 
 export enum WalletTransactionStatus {

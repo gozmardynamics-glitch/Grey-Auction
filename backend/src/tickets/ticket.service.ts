@@ -237,6 +237,8 @@ export class TicketService {
     dueSoon: number;
     unacknowledged: number;
     unresponded: number;
+    dataProtectionOpen: number;
+    dataProtectionOverdue: number;
     byCategory: Record<string, number>;
   }> {
     const rows = await this.repo.find({
@@ -248,6 +250,8 @@ export class TicketService {
     let dueSoon = 0;
     let unacknowledged = 0;
     let unresponded = 0;
+    let dataProtectionOpen = 0;
+    let dataProtectionOverdue = 0;
 
     for (const ticket of rows) {
       const view = this.sla.view(ticket);
@@ -256,9 +260,22 @@ export class TicketService {
       if (!view.acknowledged) unacknowledged += 1;
       if (!view.firstResponded) unresponded += 1;
       byCategory[ticket.category] = (byCategory[ticket.category] || 0) + 1;
+      if (ticket.category === TicketCategory.DATA_PROTECTION) {
+        dataProtectionOpen += 1;
+        if ((view.statutoryDaysLeft ?? 1) < 0) dataProtectionOverdue += 1;
+      }
     }
 
-    return { open: rows.length, overdue, dueSoon, unacknowledged, unresponded, byCategory };
+    return {
+      open: rows.length,
+      overdue,
+      dueSoon,
+      unacknowledged,
+      unresponded,
+      dataProtectionOpen,
+      dataProtectionOverdue,
+      byCategory,
+    };
   }
 
   /**

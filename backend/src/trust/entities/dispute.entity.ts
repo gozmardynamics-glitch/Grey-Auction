@@ -64,6 +64,21 @@ export class Dispute {
   @Column({ type: 'timestamp', nullable: true })
   resolvedAt: Date;
 
+  /**
+   * One appeal per dispute. A decision a party disagrees with can be reviewed
+   * once by a different administrator — the Complaints Policy promises an
+   * internal review, and without this a decided dispute had no next step except
+   * the regulator.
+   */
+  @Column({ type: 'int', default: 0 })
+  appealCount: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  appealedAt: Date;
+
+  @Column({ type: 'text', nullable: true })
+  appealReason: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

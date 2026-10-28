@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { EscrowHold, EscrowStatus } from '../escrow/entities/escrow-hold.entity';
 import { SellerPayout, PayoutStatus } from '../seller/entities/seller-payout.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +10,8 @@ import { Seller, SellerVerificationStatus } from '../seller/entities/seller.enti
 import { Invoice } from '../invoices/invoice.entity';
 import { User, UserRole } from '../auth/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
+import { Ticket, TicketStatus } from '../tickets/ticket.entity';
+import { SellerReview, ReviewStatus } from '../seller/entities/seller-review.entity';
 import { USER_PUBLIC_SELECT } from '../common/projections/user-projection';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from './guards/admin-roles.guard';
@@ -42,6 +44,8 @@ export class AdminReportsController {
     @InjectRepository(SellerPayout) private readonly payoutRepo: Repository<SellerPayout>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Room) private readonly roomRepo: Repository<Room>,
+    @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
+    @InjectRepository(SellerReview) private readonly reviewRepo: Repository<SellerReview>,
   ) {}
 
   /**
@@ -148,6 +152,122 @@ export class AdminReportsController {
         pendingSellers,
       },
     };
+  }
+
+  /**
+   * Complaint register: one row per complaint, for the monthly review.
+   *
+   * The policy promises we learn from complaints as a group. That needs an
+   * export, not a screen — this is the source for "how many, how fast, what did
+   * we decide". `format=csv` returns a file an accountant or a regulator can
+   * open; the default JSON is for the dashboard.
+   */
+  @Get('complaints/register')
+  @AdminRoles(...ALL_ADMIN_ROLES)
+  @ApiOperation({ summary: 'Complaint register (admin) — JSON or CSV' })
+  async complaintsRegister(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('format') format?: string,
+  ) {
+    const qb = this.ticketRepo.createQueryBuilder('t').orderBy('t."createdAt"', 'DESC').take(2000);
+    if (from) qb.andWhere('t."createdAt" >= :from', { from: new Date(from) });
+    if (to) qb.andWhere('t."createdAt" <= :to', { to: new Date(to) });
+    const rows = await qb.getMany();
+
+    const records = rows.map((ticket) => ({
+      reference: ticket.reference,
+      raised_at: ticket.createdAt?.toISOString() ?? '',
+      category: ticket.category,
+      severity: ticket.severity,
+      source: ticket.source,
+      status: ticket.status,
+      escalated_at: ticket.escalatedAt?.toISOString() ?? '',
+      first_response_at: ticket.firstResponseAt?.toISOString() ?? '',
+      due_at: ticket.dueAt?.toISOString() ?? '',
+      outcome: ticket.outcome ?? '',
+      closure_reason: ticket.closureReason ?? '',
+      resolution: ticket.resolutionNote ?? '',
+      subject: ticket.subject,
+    }));
+
+    const summary = {
+      total: records.length,
+      open: records.filter((r) => r.status !== TicketStatus.RESOLVED && r.status !== TicketStatus.CLOSED).length,
+      byCategory: records.reduce<Record<string, number>>((acc, r) => {
+        acc[r.category] = (acc[r.category] || 0) + 1;
+        return acc;
+      }, {}),
+      byOutcome: records.reduce<Record<string, number>>((acc, r) => {
+        if (r.outcome) acc[r.outcome] = (acc[r.outcome] || 0) + 1;
+        return acc;
+      }, {}),
+    };
+
+    if (String(format).toLowerCase() === 'csv') {
+      const columns = Object.keys(records[0] ?? {
+        reference: '', raised_at: '', category: '', severity: '', source: '', status: '',
+        escalated_at: '', first_response_at: '', due_at: '', outcome: '', closure_reason: '',
+        resolution: '', subject: '',
+      });
+      const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      const csv = [
+        columns.join(','),
+        ...records.map((record) => columns.map((column) => escape((record as never)[column])).join(',')),
+      ].join('\n');
+      // Returned as a string body; the caller saves it. Keeps this dependency-free.
+      return { success: true, format: 'csv', filename: `complaints-${new Date().toISOString().slice(0, 10)}.csv`, csv, summary };
+    }
+
+    return { success: true, data: { summary, records } };
+  }
+
+  /**
+   * Reviews a user has reported. Without this, "flag the review" absorbed the
+   * complaint silently: the flag was stored and nobody ever looked at it.
+   */
+  @Get('reviews/flagged')
+  @AdminRoles(...ALL_ADMIN_ROLES)
+  @ApiOperation({ summary: 'Reviews awaiting moderation (admin)' })
+  async flaggedReviews() {
+    const data = await this.reviewRepo.find({
+      where: { status: ReviewStatus.FLAGGED },
+      order: { flagged_at: 'DESC' },
+      take: 200,
+    });
+    return { success: true, data };
+  }
+
+  /**
+   * Decide a reported review: `hide` keeps it for the record but off the profile,
+   * `remove` takes it down, `restore` rejects the report. Hiding rather than
+   * deleting is the default in a dispute, because the review is evidence.
+   */
+  @Patch('reviews/:id/decision')
+  @AdminRoles(...ALL_ADMIN_ROLES)
+  @ApiOperation({ summary: 'Act on a reported review (admin)' })
+  async decideReview(@Param('id') id: string, @Body() body: { action: 'hide' | 'remove' | 'restore' }) {
+    const review = await this.reviewRepo.findOne({ where: { id } });
+    if (!review) throw new NotFoundException('Review not found');
+
+    const action = String(body?.action || '').toLowerCase();
+    if (!['hide', 'remove', 'restore'].includes(action)) {
+      throw new BadRequestException('action must be hide, remove or restore');
+    }
+
+    if (action === 'hide') review.status = ReviewStatus.HIDDEN;
+    if (action === 'remove') {
+      review.status = ReviewStatus.REMOVED;
+      review.deleted_at = new Date();
+    }
+    if (action === 'restore') {
+      review.status = ReviewStatus.ACTIVE;
+      review.flag_reason = null;
+      review.flagged_by_id = null;
+      review.flagged_at = null;
+    }
+
+    return { success: true, data: await this.reviewRepo.save(review) };
   }
 
   @Get('auctions')

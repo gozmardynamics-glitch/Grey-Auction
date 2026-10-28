@@ -55,6 +55,25 @@ export class EscrowController {
     return { success: true, data };
   }
 
+  /**
+   * Reduce the bill rather than close the hold. The remainder stays in escrow so
+   * it can still be released to the seller — the outcome most disputes actually
+   * want.
+   */
+  @Post('holds/:id/partial-refund')
+  @UseGuards(JwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refund part of an escrow hold, keeping the rest in escrow (admin)' })
+  async partialRefund(
+    @Param('id') id: string,
+    @Body() body: { amount: number; reason: string },
+    @CurrentUser() user: any,
+  ) {
+    const data = await this.service.partialRefund(id, user.id, body);
+    return { success: true, message: 'Partial refund issued', data };
+  }
+
   @Post('holds/:id/refund')
   @UseGuards(JwtAuthGuard, AdminRolesGuard)
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN, AdminRole.FINANCE_ADMIN)

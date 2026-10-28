@@ -2,12 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AdminReportsController } from './admin-reports.controller';
+import { Ticket } from '../tickets/ticket.entity';
 import { Product } from '../products/entities/product.entity';
 import { Bid } from '../bids/entities/bid.entity';
 import { Seller } from '../seller/entities/seller.entity';
 import { Invoice } from '../invoices/invoice.entity';
 import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { SellerPayout } from '../seller/entities/seller-payout.entity';
+import { SellerReview } from '../seller/entities/seller-review.entity';
 import { User } from '../auth/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
 
@@ -36,6 +38,8 @@ describe('AdminReportsController', () => {
         { provide: getRepositoryToken(SellerPayout), useValue: repos.payout },
         { provide: getRepositoryToken(User), useValue: repos.user },
         { provide: getRepositoryToken(Room), useValue: repos.room },
+        { provide: getRepositoryToken(Ticket), useValue: { find: jest.fn() } },
+        { provide: getRepositoryToken(SellerReview), useValue: { find: jest.fn() } },
         {
           provide: DataSource,
           useValue: { getRepository: jest.fn() },

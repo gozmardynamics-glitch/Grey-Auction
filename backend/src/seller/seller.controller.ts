@@ -849,6 +849,31 @@ export class SellerController {
     };
   }
 
+  /**
+   * Report a review.
+   *
+   * The Complaints Policy offers "flag the review" as a channel, but only an
+   * admin could set the flag — so a buyer who believed a seller's review was
+   * abusive had no way to say so. This is that route: it flags the review and
+   * records who reported it, which puts it in the queue below.
+   */
+  @Post('reviews/:id/report')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Report a review for moderation' })
+  async reportReview(
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+    @CurrentUser() user: any,
+  ) {
+    const data = await this.reviewService.flag(
+      id,
+      { flag_reason: String(body?.reason || '').slice(0, 500) || 'Reported by a user' } as any,
+      user.id,
+    );
+    return { success: true, message: 'Review reported for moderation', data };
+  }
+
   @Post('reviews/:id/flag')
   @UseGuards(JwtAuthGuard, AdminRolesGuard)
   @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.PLATFORM_ADMIN)

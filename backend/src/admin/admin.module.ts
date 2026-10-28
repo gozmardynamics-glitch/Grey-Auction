@@ -10,6 +10,8 @@ import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { SellerPayout } from '../seller/entities/seller-payout.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Ticket } from '../tickets/ticket.entity';
+import { SellerReview } from '../seller/entities/seller-review.entity';
+import { WalletModule } from '../wallet/wallet.module';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { AdminReportsController } from './admin-reports.controller';
@@ -30,7 +32,11 @@ import { AdminRolesGuard } from './guards/admin-roles.guard';
       Room,
       // Suspending a buyer is checked against their open complaints.
       Ticket,
+      // Flagged reviews surface in the complaint queue.
+      SellerReview,
     ]),
+    // Goodwill credits go through the ledger, not a balance edit.
+    WalletModule,
   ],
   controllers: [AdminController, AdminReportsController],
   providers: [AdminService, AdminRolesGuard],

@@ -33,10 +33,20 @@ export const SEVERITY_BY_CATEGORY: Record<TicketCategory, TicketSeverity> = {
   [TicketCategory.OTHER]: TicketSeverity.P4,
 };
 
+/** Statutory response window for a data-protection complaint (calendar days). */
+export const STATUTORY_DP_DAYS = 30;
+
 export type SlaState = 'met' | 'on_track' | 'due_soon' | 'overdue' | 'closed';
 
 export interface SlaView {
   state: SlaState;
+  /**
+   * Data-protection complaints carry a statutory response window on top of the
+   * internal SLA (30 days). Present only for that category, so the admin queue
+   * can show a legal deadline rather than an operational one.
+   */
+  statutoryDueAt?: Date | null;
+  statutoryDaysLeft?: number | null;
   /** Business days left (negative when overdue). */
   businessDaysLeft: number | null;
   dueAt: Date | null;
@@ -103,12 +113,15 @@ export class TicketSlaService {
   view(
     ticket: {
       status?: TicketStatus | string;
+      category?: TicketCategory | string | null;
+      createdAt?: Date | null;
       dueAt?: Date | null;
       acknowledgedAt?: Date | null;
       firstResponseAt?: Date | null;
     },
     now = new Date(),
   ): SlaView {
+    const statutory = this.statutoryView(ticket, now);
     const status = String(ticket.status || '');
     const closed = status === TicketStatus.RESOLVED || status === TicketStatus.CLOSED;
     const dueAt = ticket.dueAt ? new Date(ticket.dueAt) : null;
@@ -116,16 +129,33 @@ export class TicketSlaService {
     const firstResponded = Boolean(ticket.firstResponseAt);
 
     if (closed) {
-      return { state: 'closed', businessDaysLeft: null, dueAt, acknowledged, firstResponded };
+      return { state: 'closed', businessDaysLeft: null, dueAt, acknowledged, firstResponded, ...statutory };
     }
     if (!dueAt) {
-      return { state: 'on_track', businessDaysLeft: null, dueAt: null, acknowledged, firstResponded };
+      return { state: 'on_track', businessDaysLeft: null, dueAt: null, acknowledged, firstResponded, ...statutory };
     }
 
     const left = this.businessDaysBetween(now, dueAt);
     const overdue = dueAt.getTime() <= now.getTime();
     const state: SlaState = overdue ? 'overdue' : left <= 1 ? 'due_soon' : 'on_track';
-    return { state, businessDaysLeft: left, dueAt, acknowledged, firstResponded };
+    return { state, businessDaysLeft: left, dueAt, acknowledged, firstResponded, ...statutory };
+  }
+
+  /**
+   * The statutory window for a data-protection complaint: 30 calendar days from
+   * when it was raised. Calendar, not business, because the obligation runs on
+   * days rather than working weeks.
+   */
+  private statutoryView(
+    ticket: { category?: TicketCategory | string | null; createdAt?: Date | null },
+    now: Date,
+  ): { statutoryDueAt?: Date | null; statutoryDaysLeft?: number | null } {
+    if (String(ticket.category || '') !== TicketCategory.DATA_PROTECTION) return {};
+    const raised = ticket.createdAt ? new Date(ticket.createdAt) : null;
+    if (!raised) return {};
+    const due = new Date(raised.getTime() + STATUTORY_DP_DAYS * 86_400_000);
+    const daysLeft = Math.ceil((due.getTime() - now.getTime()) / 86_400_000);
+    return { statutoryDueAt: due, statutoryDaysLeft: daysLeft };
   }
 
   /** Reference quoted to the complainant: TKT-2026-000042. */

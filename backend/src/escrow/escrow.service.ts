@@ -167,6 +167,99 @@ export class EscrowService {
     return toMoney(hold.amount);
   }
 
+  /**
+   * Partial refund: reduce the bill instead of closing the hold.
+   *
+   * A dispute that should settle at "half of it" used to have only two exits —
+   * release everything to the seller or refund everything to the buyer — which
+   * pushed both sides to extremes. This refunds part of the buyer's bill and
+   * leaves the rest of the hold open, so the remainder can still be released.
+   *
+   * The refund is allocated **pro rata** across the three components, because
+   * that is the only split that is neutral between the parties and keeps the
+   * invariant `sellerNet + platformShare + vat = amount` exactly true. Rounding
+   * residue goes to VAT, which is the component that reconciles against the tax
+   * return rather than a party's pocket.
+   */
+  async partialRefund(
+    id: string,
+    adminId: string,
+    input: { amount: number; reason: string },
+  ): Promise<EscrowHold> {
+    const amount = toMoney(input.amount);
+    if (!(amount > 0)) throw new BadRequestException('A refund amount is required');
+    if (!input.reason || !input.reason.trim()) {
+      throw new BadRequestException('A refund reason is required');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const hold = await this.requireOpen(manager, id);
+      const remaining = toMoney(hold.amount);
+      if (amount > remaining) {
+        throw new BadRequestException(
+          `Refund of ${amount} exceeds the ${remaining} still held on this escrow`,
+        );
+      }
+
+      // Full amount means the caller wants the hold closed: reuse the existing
+      // path so invoice, order and lot unwind exactly as before.
+      if (amount === remaining) {
+        return this.refund(id, adminId, input.reason);
+      }
+
+      const sellerNet = toMoney(hold.sellerNet);
+      const platformShare = toMoney(hold.platformShare);
+      const vatAmount = toMoney(hold.vatAmount);
+      const ratio = remaining > 0 ? amount / remaining : 0;
+
+      const sellerPart = toMoney(sellerNet * ratio);
+      const platformPart = toMoney(platformShare * ratio);
+      // Remainder to VAT so the three parts add up to the refunded amount.
+      const vatPart = toMoney(amount - sellerPart - platformPart);
+
+      const next = {
+        amount: toMoney(remaining - amount),
+        sellerNet: toMoney(sellerNet - sellerPart),
+        platformShare: toMoney(platformShare - platformPart),
+        vatAmount: toMoney(vatAmount - vatPart),
+      };
+
+      // Defensive: the invariant is the whole point of the split.
+      const sum = toMoney(next.sellerNet + next.platformShare + next.vatAmount);
+      if (Math.abs(sum - next.amount) > 0.01) {
+        throw new BadRequestException(
+          `Refund would break the escrow split (${sum} vs ${next.amount}); aborting`,
+        );
+      }
+
+      const breakdown = Array.isArray(hold.refundBreakdown) ? [...hold.refundBreakdown] : [];
+      breakdown.push({
+        amount,
+        sellerNet: sellerPart,
+        platformShare: platformPart,
+        vat: vatPart,
+        reason: input.reason.trim(),
+        at: new Date().toISOString(),
+        by: adminId,
+      });
+
+      Object.assign(hold, next, {
+        refundedAmount: toMoney(Number(hold.refundedAmount || 0) + amount),
+        refundBreakdown: breakdown,
+      });
+      const saved = await manager.getRepository(EscrowHold).save(hold);
+
+      await this.walletService.creditInManager(manager, hold.buyerId, {
+        amount,
+        reference: `escrow_partial_refund:${hold.id}:${breakdown.length}`,
+        description: `Partial escrow refund for invoice ${hold.invoiceId}: ${input.reason.trim()}`,
+        type: WalletTransactionType.ESCROW_REFUND,
+      });
+
+      return saved;
+    });
+  }
+
   async refund(id: string, adminId: string, reason: string): Promise<EscrowHold> {
     if (!reason || !reason.trim()) throw new BadRequestException('A refund reason is required');
     return this.dataSource.transaction(async (manager) => {

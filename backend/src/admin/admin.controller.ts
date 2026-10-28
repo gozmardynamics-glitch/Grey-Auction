@@ -83,6 +83,16 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Post('wallets/:userId/credit')
+  @ApiOperation({ summary: 'Goodwill credit to an account wallet (admin)' })
+  async creditWallet(
+    @Param('userId') userId: string,
+    @Body() body: { amount: number; reason: string },
+  ) {
+    const data = await this.adminService.creditWallet(userId, body);
+    return { success: true, message: 'Wallet credited', data };
+  }
+
   @Post('buyers/:id/suspend')
   @ApiOperation({
     summary: 'Suspend buyer (refused while a money complaint is open unless force=true)',

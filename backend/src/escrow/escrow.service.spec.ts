@@ -216,3 +216,87 @@ describe('EscrowService', () => {
     });
   });
 });
+
+describe('EscrowService partial refunds', () => {
+  it('keeps the split exact and leaves the remainder in escrow', async () => {
+    const holds = {
+      findOne: jest.fn().mockResolvedValue({
+        id: 'h1',
+        invoiceId: 'inv1',
+        buyerId: 'b1',
+        sellerId: 's1',
+        status: EscrowStatus.HELD,
+        amount: 1000,
+        sellerNet: 800,
+        platformShare: 150,
+        vatAmount: 50,
+        refundedAmount: 0,
+        refundBreakdown: [],
+      }),
+      save: jest.fn(async (row: any) => row),
+    };
+    const manager = { getRepository: jest.fn(() => holds) };
+    const walletService = { creditInManager: jest.fn(async () => undefined) };
+    const service = new EscrowService(
+      holds as any,
+      { transaction: jest.fn(async (cb: any) => cb(manager)) } as any,
+      walletService as any,
+    );
+
+    const result = await service.partialRefund('h1', 'admin1', { amount: 400, reason: 'Scratch on the door' });
+
+    // Pro rata: 40% of every component came back, so the invariant holds on the remainder.
+    expect(result.amount).toBe(600);
+    expect(result.sellerNet).toBe(480);
+    expect(result.platformShare).toBe(90);
+    expect(result.vatAmount).toBe(30);
+    expect(result.sellerNet + result.platformShare + result.vatAmount).toBeCloseTo(result.amount, 2);
+    expect(result.refundedAmount).toBe(400);
+    expect(result.refundBreakdown).toHaveLength(1);
+    // The buyer is compensated through the ledger, not by editing a balance.
+    expect(walletService.creditInManager).toHaveBeenCalledWith(
+      manager,
+      'b1',
+      expect.objectContaining({
+        amount: 400,
+        reference: 'escrow_partial_refund:h1:1',
+        type: WalletTransactionType.ESCROW_REFUND,
+      }),
+    );
+    // The hold stays open: the rest can still be released to the seller.
+    expect(result.status).toBe(EscrowStatus.HELD);
+  });
+
+  it('refuses a refund larger than the money still held', async () => {
+    const holds = {
+      findOne: jest.fn().mockResolvedValue({
+        id: 'h1', invoiceId: 'inv1', buyerId: 'b1', sellerId: 's1',
+        status: EscrowStatus.HELD, amount: 500, sellerNet: 400, platformShare: 75, vatAmount: 25,
+        refundedAmount: 0, refundBreakdown: [],
+      }),
+      save: jest.fn(),
+    };
+    const service = new EscrowService(
+      holds as any,
+      { transaction: jest.fn(async (cb: any) => cb({ getRepository: () => holds })) } as any,
+      { creditInManager: jest.fn() } as any,
+    );
+
+    await expect(service.partialRefund('h1', 'a', { amount: 900, reason: 'x' })).rejects.toThrow(
+      /exceeds/,
+    );
+  });
+
+  it('requires a reason, because a refund without one cannot be reviewed', async () => {
+    const holds = { findOne: jest.fn(), save: jest.fn() };
+    const service = new EscrowService(
+      holds as any,
+      { transaction: jest.fn(async (cb: any) => cb({ getRepository: () => holds })) } as any,
+      { creditInManager: jest.fn() } as any,
+    );
+
+    await expect(service.partialRefund('h1', 'a', { amount: 100, reason: '   ' })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+});

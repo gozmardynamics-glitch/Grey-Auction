@@ -191,16 +191,32 @@ passes, not after" — with `slaNotifiedAt` making it idempotent. It can be run 
 demand with `POST /tickets/sla/sweep` after a restart rather than waiting for the
 hour.
 
-**Still open:**
+**Closed in the follow-through pass** (verified live, 26 checks):
+
+| # | Gap | How it was closed |
+|---|---|---|
+| 5 | Partial refunds impossible | `POST /escrow/holds/:id/partial-refund` refunds part of the buyer's bill and **keeps the hold open** with the remainder, so the rest can still be released. The refund is allocated pro rata across seller / platform / VAT, which is the only split that is neutral between the parties and keeps `sellerNet + platformShare + vat = amount` exactly true; rounding residue goes to VAT. It refuses a refund larger than the remainder, requires a reason, records a breakdown on the hold, and credits the buyer through the ledger (`escrow_partial_refund:<hold>:<n>`). Asking for the full remainder delegates to the existing full refund so the invoice, order and lot unwind as before. |
+| 6 | No goodwill credit | `POST /admin/wallets/:userId/credit` — a required reason, a unique `goodwill:<uuid>` reference, and a new `ADJUSTMENT` ledger type so a discretionary credit never looks like a customer deposit in reporting. |
+| 8 | No complaint register | `GET /admin/complaints/register` returns one row per complaint with a summary (total, open, by category, by outcome) and `?format=csv` produces the file for the monthly review or a regulator. |
+| 9 | No appeal on a dispute | `POST /disputes/:id/appeal` — party only, decided disputes only, **once**. It reopens the case for review, records the reason and count, and clears the previous decision so the reviewer is not anchored by it. |
+| 10 | Review flags went nowhere | `POST /sellers/reviews/:id/report` lets any signed-in user report a review (previously only an admin could set the flag, so the published channel did nothing), and `GET /admin/reviews/flagged` + `PATCH /admin/reviews/:id/decision` give it a queue and an outcome. Hiding is the default decision in a dispute, because the review is evidence. |
+| 11 | Data-protection complaints had no statutory clock | They are classified P1 **and** now carry `statutoryDueAt` / `statutoryDaysLeft` on the SLA view — 30 calendar days from when they were raised — with `dataProtectionOpen` and `dataProtectionOverdue` in the SLA summary so the legal deadline is visible next to the operational one. |
+
+**Still open (smaller, and now the only ones left):**
 
 | # | Gap | Consequence | Next step |
 |---|---|---|---|
-| 5 | **Partial refunds impossible** | A dispute that should settle at 50% can only be all-or-nothing, pushing both sides to extremes | Partial-amount refund on the escrow hold plus a resolution reason |
-| 6 | **No fee waiver / goodwill credit endpoint** | A remedy the policy implies still needs database access | Admin wallet-credit endpoint with reference and audit entry |
-| 8 | **No complaint register export** | The monthly report is assembled from the endpoints by hand | A single reporting query joining tickets and disputes by topic and outcome |
-| 9 | **No appeal on a dispute outcome** | Disputes end at resolved/rejected; the policy promises a review | Allow one reopen, or an `appeal` record linked to the dispute |
-| 10 | **Review flags go nowhere visible** | "Flag a review" is offered as a channel that silently absorbs complaints | Surface flagged reviews in the admin queue with an uphold/remove decision |
-| 11 | **Data-protection complaints have a queue but no statutory clock** | They are classified P1 and routed, but no separate NDPA deadline is tracked | Reuse `docs/privacy/PRIVACY-SECTION.md` gap 5 (rights register) |
+| 12 | **No admin UI for the new endpoints** | Partial refund, goodwill credit, the flagged-review queue and the register are API-only; a handler still needs a tool that speaks HTTP | Add the four controls to the admin screens: a partial-refund dialog on the escrow panel, a credit action on the buyer row, a flagged-review tab, and an export button on the complaints page |
+| 13 | **Appeals do not notify anyone** | A reopened dispute is only visible by looking | Notify the original resolver and the other party when an appeal is raised |
+| 14 | **The register is not the whole picture** | It covers tickets; disputes live in their own table and are only counted by the fee/escrow reports | Join disputes into the register once both are in one shape |
+| 15 | **Refund allocation is pro rata only** | A negotiation that wants "seller absorbs it all" cannot say so | Accept an explicit per-party split with pro-rata as the default |
+
+**Risks introduced by closing them:**
+
+- **Partial refunds change `hold.amount`.** Anything reading a hold's original value must read `amount + refundedAmount`. The admin KPI `escrowFloat` sums `amount`, which is correct (it is what is still held), but a report of "original sale value" would now be short.
+- **The `ADJUSTMENT` ledger type is new.** Reporting that assumes wallet credits are only deposits or escrow releases needs to handle it; the enum was extended rather than reused for exactly that reason.
+- **An appeal clears `resolution`/`resolvedById`.** That is deliberate — the reviewer must not be anchored — but the previous outcome now survives only in the messages and the audit trail, so never rely on the dispute row for the full history.
+- **A reported review hides the seller's rating input.** Hiding a review removes it from the average, so a false report briefly distorts the rating until the decision is made. Acceptable, but the queue should be worked promptly.
 
 ## 11. Decisions taken
 

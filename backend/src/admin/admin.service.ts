@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
+import { WalletService } from '../wallet/wallet.service';
+import { WalletTransactionType } from '../wallet/wallet-transaction.entity';
 import { Ticket, TicketSeverity, TicketStatus } from '../tickets/ticket.entity';
 import { Admin, AdminRole } from './entities/admin.entity';
 import { User, UserRole } from '../auth/entities/user.entity';
@@ -14,6 +17,8 @@ export class AdminService {
     @InjectRepository(Admin) private readonly adminRepo: Repository<Admin>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly walletService: WalletService,
   ) {}
 
   // ─── Admins CRUD ────────────────────────────────────────────────
@@ -150,6 +155,38 @@ export class AdminService {
       select: ['id', 'email', 'name', 'isActive', 'isEmailVerified', 'createdAt', 'updatedAt'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  /**
+   * Goodwill credit: the remedy a complaint handler actually needs when the
+   * answer is "we were wrong, here is something back" but no escrow hold is
+   * involved (a fee overcharge, a delay, a service failure).
+   *
+   * It is a ledger entry, not a balance edit: the reason is required, the
+   * reference is unique so a retry cannot double-credit, and the type is
+   * ADJUSTMENT so it never looks like a customer deposit in reporting.
+   */
+  async creditWallet(userId: string, input: { amount: number; reason: string }) {
+    const amount = Math.round(Number(input.amount) * 100) / 100;
+    if (!(amount > 0)) throw new BadRequestException('A credit amount is required');
+    if (!input.reason || !input.reason.trim()) {
+      throw new BadRequestException('A reason is required for a goodwill credit');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Account not found');
+
+    const reference = `goodwill:${randomUUID()}`;
+    await this.dataSource.transaction((manager) =>
+      this.walletService.creditInManager(manager, userId, {
+        amount,
+        reference,
+        description: `Goodwill credit: ${input.reason.trim()}`,
+        type: WalletTransactionType.ADJUSTMENT,
+      }),
+    );
+
+    return { userId, amount, reference, reason: input.reason.trim() };
   }
 
   /**

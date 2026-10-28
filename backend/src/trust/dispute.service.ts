@@ -112,6 +112,42 @@ export class DisputeService {
   }
 
   /** Feedback loop: parties rate the outcome once the case is closed. */
+  /**
+   * Appeal a decided dispute, once.
+   *
+   * Reopening rather than creating a second case keeps the evidence, the
+   * messages and the money in one place. Only a party may appeal, only a decided
+   * dispute can be appealed, and only once — otherwise "review" becomes a loop.
+   */
+  async appeal(id: string, user: { id: string }, reason: string) {
+    const dispute = await this.disputes.findOne({ where: { id } });
+    if (!dispute) throw new NotFoundException('Dispute not found');
+
+    const isParty = dispute.openedById === user.id || dispute.againstUserId === user.id;
+    if (!isParty) throw new ForbiddenException('Not a party to this dispute');
+    if (!reason || !reason.trim()) {
+      throw new BadRequestException('Say why you are appealing so the reviewer can act on it');
+    }
+    if (!CLOSED_STATUSES.includes(dispute.status)) {
+      throw new BadRequestException('Only a decided dispute can be appealed');
+    }
+    if ((dispute.appealCount || 0) >= 1) {
+      throw new BadRequestException('This dispute has already been appealed once');
+    }
+
+    dispute.status = DisputeStatus.UNDER_REVIEW;
+    dispute.appealCount = (dispute.appealCount || 0) + 1;
+    dispute.appealedAt = new Date();
+    dispute.appealReason = reason.trim();
+    // Clear the decision so the reviewer is not anchored by the previous outcome;
+    // it stays in the record via appealReason and the audit trail.
+    dispute.resolution = null;
+    dispute.resolvedById = null;
+    dispute.resolvedAt = null;
+
+    return this.disputes.save(dispute);
+  }
+
   async addFeedback(id: string, user: { id: string }, dto: DisputeFeedbackDto) {
     const dispute = await this.disputes.findOne({ where: { id } });
     if (!dispute) throw new NotFoundException('Dispute not found');

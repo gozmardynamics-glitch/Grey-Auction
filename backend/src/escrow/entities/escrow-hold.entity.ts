@@ -69,6 +69,27 @@ export class EscrowHold {
   @Column({ type: 'text', nullable: true })
   refundReason: string;
 
+  /**
+   * How much of this hold has already been refunded to the buyer, and how that
+   * was split across the components. A partial refund is a *reduction of the
+   * bill*, not a closure: the hold stays open with the remaining amounts so the
+   * rest can still be released to the seller. `amount` is always the remainder,
+   * so `sellerNet + platformShare + vatAmount === amount` keeps holding.
+   */
+  @Column({ type: 'decimal', precision: 18, scale: 2, default: 0, transformer: decimalTransformer })
+  refundedAmount: number;
+
+  @Column({ type: 'jsonb', default: '[]' })
+  refundBreakdown: Array<{
+    amount: number;
+    sellerNet: number;
+    platformShare: number;
+    vat: number;
+    reason: string;
+    at: string;
+    by: string;
+  }>;
+
   @Column({ type: 'uuid', nullable: true })
   resolvedById: string;
 

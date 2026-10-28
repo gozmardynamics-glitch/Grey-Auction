@@ -158,6 +158,19 @@ export class DisputeController {
     return { success: true, data };
   }
 
+  @Post(':id/appeal')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Appeal a decided dispute, once (party)' })
+  async appeal(
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+    @CurrentUser() user: any,
+  ) {
+    const data = await this.service.appeal(id, user, body?.reason);
+    return { success: true, message: 'Dispute reopened for review', data };
+  }
+
   @Post(':id/feedback')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
