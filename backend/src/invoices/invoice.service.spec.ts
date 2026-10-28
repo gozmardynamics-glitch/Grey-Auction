@@ -7,6 +7,7 @@ import { Invoice, InvoiceStatus } from './invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { EmailService } from '../common/email/email.service';
+import { EscrowService } from '../escrow/escrow.service';
 
 describe('InvoiceService', () => {
   let service: InvoiceService;
@@ -14,6 +15,7 @@ describe('InvoiceService', () => {
   const userRepo = { findOne: jest.fn() };
   const productRepo = { findOne: jest.fn() };
   const emailService = { sendReceiptEmail: jest.fn(), sendInvoiceEmail: jest.fn() };
+  const escrowService = { holdInManager: jest.fn() };
   const manager = { getRepository: jest.fn(() => invoiceRepo), query: jest.fn(async () => []) };
   const dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
 
@@ -27,6 +29,7 @@ describe('InvoiceService', () => {
         { provide: getRepositoryToken(Product), useValue: productRepo },
         { provide: EmailService, useValue: emailService },
         { provide: DataSource, useValue: dataSource },
+        { provide: EscrowService, useValue: escrowService },
       ],
     }).compile();
     service = module.get<InvoiceService>(InvoiceService);
@@ -42,6 +45,14 @@ describe('InvoiceService', () => {
 
     expect(res.status).toBe(InvoiceStatus.PAID);
     expect(invoiceRepo.findOne).toHaveBeenCalledWith({ where: { id: 'inv1' }, lock: { mode: 'pessimistic_write' } });
+    // Regression: the admin mark-paid path used to settle the invoice without
+    // opening an escrow hold, so the seller was never credited on release.
+    expect(escrowService.holdInManager).toHaveBeenCalledWith(manager, {
+      invoiceId: 'inv1',
+      amount: 1000,
+      buyerId: 'b1',
+      sellerId: undefined,
+    });
     expect(invoiceRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({ status: InvoiceStatus.PAID, payment_reference: 'REF', payment_method: 'card' }),
     );
@@ -62,6 +73,28 @@ describe('InvoiceService', () => {
   it('rejects an unknown invoice', async () => {
     (invoiceRepo.findOne as jest.Mock).mockResolvedValue(null);
     await expect(service.markPaid('nope', {})).rejects.toThrow(NotFoundException);
+  });
+
+  it('does not open a second hold when an open one already exists', async () => {
+    const invoice = { id: 'inv1', status: InvoiceStatus.ISSUED, buyer_id: 'b1', seller_id: 's1', total: 500, invoice_number: 'INV-1' };
+    (invoiceRepo.findOne as jest.Mock).mockResolvedValue(invoice);
+    (invoiceRepo.save as jest.Mock).mockImplementation(async (x: any) => x);
+    (userRepo.findOne as jest.Mock).mockResolvedValue(null);
+    (escrowService.holdInManager as jest.Mock).mockResolvedValueOnce(null); // already held
+
+    await service.markPaid('inv1', {});
+
+    // Called once inside the same transaction — EscrowService returns null for an
+    // existing open hold, so a retry cannot double-hold.
+    expect(escrowService.holdInManager).toHaveBeenCalledTimes(1);
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('never opens a hold for a cancelled invoice', async () => {
+    (invoiceRepo.findOne as jest.Mock).mockResolvedValue({ id: 'inv1', status: InvoiceStatus.CANCELLED });
+
+    await expect(service.markPaid('inv1', {})).rejects.toThrow(BadRequestException);
+    expect(escrowService.holdInManager).not.toHaveBeenCalled();
   });
 
   it('issues an invoice inside a transaction (settlement seam)', async () => {

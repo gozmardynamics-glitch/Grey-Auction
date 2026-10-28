@@ -10,6 +10,7 @@ import { Invoice, InvoiceStatus } from './invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { EmailService } from '../common/email/email.service';
+import { EscrowService } from '../escrow/escrow.service';
 
 export interface GenerateInvoiceDto {
   auctionId: string;
@@ -58,6 +59,7 @@ export class InvoiceService {
     private readonly emailService: EmailService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly escrowService: EscrowService,
   ) {}
 
   async generateInvoice(data: GenerateInvoiceDto): Promise<Invoice> {
@@ -172,9 +174,24 @@ export class InvoiceService {
   }
 
   async markPaid(id: string, dto: MarkPaidDto = {}): Promise<Invoice> {
-    const saved = await this.dataSource.transaction((manager) =>
-      this.markPaidInManager(manager, id, dto),
-    );
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const invoice = await this.markPaidInManager(manager, id, dto);
+
+      // Settling an invoice must open its escrow hold in the same transaction.
+      // The webhook path already did this; the admin "mark paid" path did not,
+      // which produced a paid invoice with no hold: the seller was never
+      // credited on release, the auto-release sweep never saw it, and the escrow
+      // screen stayed empty. holdInManager is idempotent (it returns null when
+      // an open hold already exists), so a retry cannot double-hold.
+      await this.escrowService.holdInManager(manager, {
+        invoiceId: invoice.id,
+        amount: Number(invoice.total),
+        buyerId: invoice.buyer_id,
+        sellerId: invoice.seller_id,
+      });
+
+      return invoice;
+    });
 
     const buyer = await this.userRepo.findOne({
       where: { id: saved.buyer_id },

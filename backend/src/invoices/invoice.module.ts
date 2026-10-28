@@ -17,6 +17,7 @@ import { EmailModule } from '../common/email/email.module';
 import { FeeModule } from '../fees/fee.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CommonModule } from '../common/common.module';
+import { EscrowModule } from '../escrow/escrow.module';
 
 @Module({
   imports: [
@@ -26,6 +27,8 @@ import { CommonModule } from '../common/common.module';
     FeeModule,
     NotificationModule,
     CommonModule,
+    // markPaid() opens the escrow hold for a manually settled invoice.
+    EscrowModule,
   ],
   controllers: [InvoiceController],
   providers: [

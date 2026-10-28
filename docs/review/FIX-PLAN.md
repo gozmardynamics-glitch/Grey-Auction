@@ -36,21 +36,22 @@ are grouped by what breaks if left alone.
 | 9 | **Seller dashboard charts still mock** | The stat cards, orders and payout counters now come from real endpoints, but `TotalRevenue` (12 mock months), `ListedAuctions` and `Messages` receive no data; admin `TotalRevenue`/`RegisteredUsers`/`AuctionActivity` are likewise still mock-driven behind the new KPI panel. | `seller/dashboard/components/total_revenue.tsx`, `admin/dashboard/components/*` |
 | 10 | **Admin settings fake-save** | `auctions.tsx`, `preferences.tsx`, `payments.tsx` "Save changes" are empty handlers that toast success (no endpoint exists for those sections). | `admin/settings/components/modules/*` |
 | 11 | **Agent studio sub-pages are stubs** | `agents/instances`, `agents/tools[/:id]`, `agents/workflows[/:id]` are one-line placeholders; only the settings editor for a single agent is real. | `admin/agents/**` |
-| 12 | **Room counts are placeholders** | `bidders` is 0 in both room tables (participants are not aggregated) and `auctions` is `productIds.length`, not live lot counts. | `frontend/lib/server/data.ts` room mappers |
-| 13 | **No category rows and no admin form** | `categories` is empty, so the public category navigation and the admin table show nothing; `POST /categories` exists but no screen calls it (the old "Add Category" button was removed when the endpoint was missing). | `admin/categories/**`, seed the table from the `products.category` strings |
-| 14 | **An admin cannot delete another seller's lot** | `DELETE /products/:id` answers "Not your product" for an admin, so an abandoned or fraudulent lot can only be rejected, never removed. | `backend/src/products/product.service.ts` `remove()` |
-| 15 | **Lots publish without photos** | The wizard hardcodes `images: []` and never uploads, so every listing created through the UI has no photograph. | `seller/auctions/create_listing/page.tsx`, needs an upload endpoint |
-| 16 | **Double opt-in confirms on GET** | `/subscriptions/confirm` changes state on a GET, so a mail scanner that prefetches links confirms the subscription without the reader clicking. | make the page POST the token after a click |
+| 12 | **Admin-settled invoices create no order row** | The webhook marks the order paid (creating one from the invoice when missing); the admin `mark paid` path does not, so a manually settled sale never appears in order tracking. Needs an orchestrator above both modules, because `OrderModule` already imports `InvoiceModule`. | `backend/src/invoices/invoice.service.ts`, `backend/src/orders/order.service.ts` |
+| 13 | **Room counts are placeholders** | `bidders` is 0 in both room tables (participants are not aggregated) and `auctions` is `productIds.length`, not live lot counts. | `frontend/lib/server/data.ts` room mappers |
+| 14 | **No category rows and no admin form** | `categories` is empty, so the public category navigation and the admin table show nothing; `POST /categories` exists but no screen calls it (the old "Add Category" button was removed when the endpoint was missing). | `admin/categories/**`, seed the table from the `products.category` strings |
+| 15 | **An admin cannot delete another seller's lot** | `DELETE /products/:id` answers "Not your product" for an admin, so an abandoned or fraudulent lot can only be rejected, never removed. | `backend/src/products/product.service.ts` `remove()` |
+| 16 | **Lots publish without photos** | The wizard hardcodes `images: []` and never uploads, so every listing created through the UI has no photograph. | `seller/auctions/create_listing/page.tsx`, needs an upload endpoint |
+| 17 | **Double opt-in confirms on GET** | `/subscriptions/confirm` changes state on a GET, so a mail scanner that prefetches links confirms the subscription without the reader clicking. | make the page POST the token after a click |
 
 ### P3 — accepted, low value
 
 | # | Item | Note |
 |---|---|---|
-| 17 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
-| 18 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
-| 19 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
-| 20 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
-| 21 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
+| 18 | Dead buyer modules (`account`, `auctions`, `authentications`, `messages`) | Not referenced by `MODULE_MAP`; leftovers to delete. |
+| 19 | Chat has no typing/presence | Delivery is live over `/chat`; typing/presence was never promised in the UI. |
+| 20 | Agent monitoring polls every 15s | Says so on the page and can be paused; move to the socket only if too coarse. |
+| 21 | `METRICS_TOKEN` unset in dev | `/api/metrics` is open until the env var is set; production should also keep it on an internal interface. |
+| 22 | Dev database has no payment gateway keys | Nothing can be charged in dev: every provider reports `available: false` and checkout says so. That is correct behaviour, not a bug — set `PAYSTACK_SECRET_KEY` to exercise the flow. |
 
 ### Fixed in the end-to-end audit (2026-10-27, no action needed)
 
@@ -88,6 +89,27 @@ without seeing the join code.
 by the public, active-only list, so a deactivated category disappeared from the
 screen used to re-activate it, and `findAllAdmin()` was never wired to a route.
 `GET /categories/admin/all` (guarded, declared before `:slug`) fixes both.
+
+**Manually settling an invoice left no escrow hold.** `POST /invoices/:id/pay`
+(the admin path for bank transfers and offline settlement) marked the invoice
+paid but never opened the hold, while the payment webhook did — so a manually
+settled sale credited the seller nothing on release, was invisible to the
+auto-release sweep, and left the escrow screen empty. `markPaid` now opens the
+hold inside the same transaction (idempotent: `holdInManager` returns null when
+an open hold exists, and the partial unique index catches racers).
+`/testdata` caught it; a verification now asserts the hold exists, that it
+splits into seller + platform + VAT, and that re-settling does not double-hold.
+
+**The publishing gate blamed the score for missing documents.** With KYC
+verification approved and consent granted but no approved documents, approving a
+lot answered "KYC compliance score 0% (high risk) does not meet the publishing
+threshold" — pointing an admin at the score when the fix was to approve
+documents. The gate now names the actual blocker (outstanding documents, a
+blocking signal, or no configured requirements).
+
+**Banner links could not point at localhost.** `@IsUrl()` rejects hostnames
+without a public TLD, so a dev banner could not link to the local site; it now
+uses `require_tld: false` and still rejects a genuinely invalid URL.
 
 **The API contract disagreed with the code.** `POST /sellers/register` was
 guarded but not marked `@ApiBearerAuth()`, so the generated client types
@@ -158,7 +180,11 @@ through `admins.user_id` + a verified email · registration blocking
 the same-origin `/api/proxy` BFF (session token never reaches client JS) ·
 WebSocket auth via short-lived `typ: realtime` tickets · settings reads
 admin-only with credentials redacted · single-flight payment/escrow partial
-unique indexes · cron advisory locks · the bidding-room lifecycle cron
+unique indexes · cron advisory locks · the bid cooldown records its slot only
+**after** the bid commits, so a rejected bid never locks the bidder out · escrow
+holds and shipments are deliberately party-scoped (an admin gets 403) ·
+`@IsUrl` and the enum values are consistent per module (documents are lowercase
+`approved`, sellers uppercase `APPROVED`) · the bidding-room lifecycle cron
 (`scheduled` → `live` → `closed` every minute, overlap-guarded, broadcasts over
 the socket) — verified live, do not rewrite it.
 
@@ -189,7 +215,7 @@ it against dev or staging.
 
 **Verify before shipping.**
 ```
-cd backend  && npm run build && npx jest && npm run lint   # 53 suites / 432 tests, 0 lint errors
+cd backend  && npm run build && npx jest && npm run lint   # 53 suites / 436 tests, 0 lint errors
 cd frontend && npx tsc --noEmit && npm run lint && npm test && npm run build
 ```
 CI runs the same steps on `main`; all three jobs (Backend, Frontend, Lighthouse)

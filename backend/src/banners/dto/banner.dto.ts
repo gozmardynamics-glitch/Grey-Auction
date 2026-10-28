@@ -28,7 +28,8 @@ export class CreateBannerDto {
 
   @ApiPropertyOptional({ example: 'https://example.com/auctions' })
   @IsOptional()
-  @IsUrl()
+  // require_tld: false — a banner may point at the local dev site.
+  @IsUrl({ require_tld: false })
   @MaxLength(500)
   link?: string;
 
@@ -71,7 +72,8 @@ export class UpdateBannerDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
+  // require_tld: false — a banner may point at the local dev site.
+  @IsUrl({ require_tld: false })
   @MaxLength(500)
   link?: string;
 

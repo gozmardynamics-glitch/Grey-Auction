@@ -73,10 +73,14 @@ and references them as `/testdata/….webp`. That copy is removed by `purge.js`.
 * **Bids have a 2 s per-user-per-lot cooldown** — rapid bids are refused by
   design, so the seeder paces them.
 * **An escrow hold can only be opened while the invoice is still `issued`**;
-  placing it after `POST /invoices/:id/pay` answers "Invoice is not payable".
-  Hold first, settle second.
+  `POST /escrow/holds` after `POST /invoices/:id/pay` answers "Invoice is not
+  payable". Settling an invoice now opens its hold automatically, so the seeder's
+  explicit hold is only there to get a hold id it can release/refund — the
+  idempotent insert makes the second attempt a no-op.
 * **Holds and shipments are party-scoped** — the buyer opens the hold and books
-  the shipment; an admin token gets "This invoice does not belong to you".
+  the shipment; an admin token gets "This invoice does not belong to you", and
+  `GET /escrow/holds/invoice/:id` filters to the caller, so a verification script
+  must read it as the buyer.
 * **Enums are lowercase** in some places (`KycDocumentStatus='approved'`) and
   uppercase in others (`documentType='INSPECTION_REPORT'`). The API's validation
   message names the allowed values, which is the fastest way to find out.

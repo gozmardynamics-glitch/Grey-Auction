@@ -238,6 +238,42 @@ describe('KycRiskService', () => {
     expect(gate.allowed).toBe(false);
   });
 
+  it('names the missing documents rather than quoting the score', async () => {
+    // Regression: a seller with verification APPROVED and consent granted but no
+    // approved documents was told "compliance score 0% (high risk)", which points
+    // the admin at the score instead of the documents that actually block it.
+    requirements.find.mockResolvedValue([req()]);
+    documents.find.mockResolvedValue([]); // nothing uploaded
+    users.findOne.mockResolvedValue({ id: 'user-1', isEmailVerified: true, isActive: true });
+    sellers.findOne.mockResolvedValue({
+      user_id: 'user-1',
+      verification_status: SellerVerificationStatus.APPROVED,
+      publish_approved: true,
+    });
+
+    const gate = await service.canPublish('user-1');
+
+    expect(gate.allowed).toBe(false);
+    expect(gate.reason).toMatch(/1 of 1 required KYC document/i);
+    expect(gate.reason).not.toMatch(/compliance score/i);
+  });
+
+  it('says so when no requirements are configured to score against', async () => {
+    requirements.find.mockResolvedValue([]);
+    documents.find.mockResolvedValue([]);
+    users.findOne.mockResolvedValue({ id: 'user-1', isEmailVerified: true, isActive: true });
+    sellers.findOne.mockResolvedValue({
+      user_id: 'user-1',
+      verification_status: SellerVerificationStatus.APPROVED,
+      publish_approved: true,
+    });
+
+    const gate = await service.canPublish('user-1');
+
+    expect(gate.allowed).toBe(false);
+    expect(gate.reason).toMatch(/no KYC requirements are configured/i);
+  });
+
   it('blocks publishing when there is no seller profile at all', async () => {
     requirements.find.mockResolvedValue([req()]);
     documents.find.mockResolvedValue([doc()]);

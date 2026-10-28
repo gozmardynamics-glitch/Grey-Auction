@@ -255,9 +255,23 @@ export class KycRiskService {
       };
     }
     if (!report.eligibleToPublish) {
+      // Say which condition actually failed. Quoting the score for a missing
+      // document sends an admin to the wrong screen: the score is 0 because
+      // nothing is approved yet, and approving documents is what fixes it.
+      const outstanding = report.requiredTotal - report.requiredApproved;
+      const critical = report.signals.filter((signal) => signal.severity === 'critical');
+      const reason =
+        report.requiredTotal === 0
+          ? 'No KYC requirements are configured, so compliance cannot be established'
+          : outstanding > 0
+            ? `${outstanding} of ${report.requiredTotal} required KYC document(s) still need approval`
+            : critical.length
+              ? `Blocking compliance signal: ${critical[0].detail}`
+              : `KYC compliance score ${report.complianceScore}% (${report.band} risk) is below the publishing threshold of ${KycRiskService.MINIMUM_PUBLISH_SCORE}%`;
+
       return {
         allowed: false,
-        reason: `KYC compliance score ${report.complianceScore}% (${report.band} risk) does not meet the publishing threshold`,
+        reason,
         report,
         publishApproved,
         verificationStatus,
