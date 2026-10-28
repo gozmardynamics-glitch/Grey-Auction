@@ -184,7 +184,17 @@ export class EscrowService {
   async partialRefund(
     id: string,
     adminId: string,
-    input: { amount: number; reason: string },
+    input: {
+      amount: number;
+      reason: string;
+      /**
+       * Optional explicit split. A negotiated outcome often says *who* absorbs
+       * the refund — "the seller takes it all" is the common case — and forcing
+       * a pro-rata split made the ledger disagree with the agreement. Omitted
+       * means pro rata, which stays the neutral default.
+       */
+      allocation?: { sellerNet?: number; platformShare?: number; vat?: number };
+    },
   ): Promise<EscrowHold> {
     const amount = toMoney(input.amount);
     if (!(amount > 0)) throw new BadRequestException('A refund amount is required');
@@ -212,10 +222,35 @@ export class EscrowService {
       const vatAmount = toMoney(hold.vatAmount);
       const ratio = remaining > 0 ? amount / remaining : 0;
 
-      const sellerPart = toMoney(sellerNet * ratio);
-      const platformPart = toMoney(platformShare * ratio);
-      // Remainder to VAT so the three parts add up to the refunded amount.
-      const vatPart = toMoney(amount - sellerPart - platformPart);
+      let sellerPart: number;
+      let platformPart: number;
+      let vatPart: number;
+
+      if (input.allocation) {
+        sellerPart = toMoney(Number(input.allocation.sellerNet ?? 0));
+        platformPart = toMoney(Number(input.allocation.platformShare ?? 0));
+        vatPart = toMoney(Number(input.allocation.vat ?? 0));
+
+        if (sellerPart < 0 || platformPart < 0 || vatPart < 0) {
+          throw new BadRequestException('Allocation amounts cannot be negative');
+        }
+        if (sellerPart > sellerNet || platformPart > platformShare || vatPart > vatAmount) {
+          throw new BadRequestException(
+            `Allocation exceeds a component of the hold (seller ${sellerNet}, platform ${platformShare}, VAT ${vatAmount})`,
+          );
+        }
+        const allocated = toMoney(sellerPart + platformPart + vatPart);
+        if (Math.abs(allocated - amount) > 0.01) {
+          throw new BadRequestException(
+            `Allocation (${allocated}) must add up to the refund amount (${amount})`,
+          );
+        }
+      } else {
+        sellerPart = toMoney(sellerNet * ratio);
+        platformPart = toMoney(platformShare * ratio);
+        // Remainder to VAT so the three parts add up to the refunded amount.
+        vatPart = toMoney(amount - sellerPart - platformPart);
+      }
 
       const next = {
         amount: toMoney(remaining - amount),

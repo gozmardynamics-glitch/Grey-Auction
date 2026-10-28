@@ -12,6 +12,7 @@ import { User, UserRole } from '../auth/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Ticket, TicketStatus } from '../tickets/ticket.entity';
 import { SellerReview, ReviewStatus } from '../seller/entities/seller-review.entity';
+import { Dispute } from '../trust/entities/dispute.entity';
 import { USER_PUBLIC_SELECT } from '../common/projections/user-projection';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminRolesGuard } from './guards/admin-roles.guard';
@@ -46,6 +47,7 @@ export class AdminReportsController {
     @InjectRepository(Room) private readonly roomRepo: Repository<Room>,
     @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
     @InjectRepository(SellerReview) private readonly reviewRepo: Repository<SellerReview>,
+    @InjectRepository(Dispute) private readonly disputeRepo: Repository<Dispute>,
   ) {}
 
   /**
@@ -175,7 +177,18 @@ export class AdminReportsController {
     if (to) qb.andWhere('t."createdAt" <= :to', { to: new Date(to) });
     const rows = await qb.getMany();
 
-    const records = rows.map((ticket) => ({
+    // Disputes are the other half of the complaint picture — a dispute *is* a
+    // complaint with money attached — so the register joins them rather than
+    // leaving an export that only counts half the cases.
+    const disputeQb = this.disputeRepo
+      .createQueryBuilder('d')
+      .orderBy('d."createdAt"', 'DESC')
+      .take(2000);
+    if (from) disputeQb.andWhere('d."createdAt" >= :from', { from: new Date(from) });
+    if (to) disputeQb.andWhere('d."createdAt" <= :to', { to: new Date(to) });
+    const disputes = await disputeQb.getMany();
+
+    const complaintRecords = rows.map((ticket) => ({
       reference: ticket.reference,
       raised_at: ticket.createdAt?.toISOString() ?? '',
       category: ticket.category,
@@ -191,8 +204,32 @@ export class AdminReportsController {
       subject: ticket.subject,
     }));
 
+    const disputeRecords = disputes.map((dispute) => ({
+      kind: 'dispute',
+      reference: dispute.id.slice(0, 8).toUpperCase(),
+      raised_at: dispute.createdAt?.toISOString() ?? '',
+      category: dispute.reason,
+      severity: 'p1',
+      source: 'dispute',
+      status: dispute.status,
+      escalated_at: dispute.appealedAt?.toISOString() ?? '',
+      first_response_at: dispute.resolvedAt?.toISOString() ?? '',
+      due_at: '',
+      outcome: dispute.status === 'resolved' ? 'upheld' : dispute.status === 'rejected' ? 'not_upheld' : '',
+      closure_reason: '',
+      resolution: dispute.resolution ?? '',
+      subject: `Dispute: ${dispute.reason.replace(/_/g, ' ')}`,
+    }));
+
+    const records = [
+      ...complaintRecords.map((record) => ({ kind: 'complaint', ...record })),
+      ...disputeRecords,
+    ].sort((a, b) => String(b.raised_at).localeCompare(String(a.raised_at)));
+
     const summary = {
       total: records.length,
+      complaints: complaintRecords.length,
+      disputes: disputeRecords.length,
       open: records.filter((r) => r.status !== TicketStatus.RESOLVED && r.status !== TicketStatus.CLOSED).length,
       byCategory: records.reduce<Record<string, number>>((acc, r) => {
         acc[r.category] = (acc[r.category] || 0) + 1;

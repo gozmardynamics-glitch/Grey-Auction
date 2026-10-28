@@ -10,6 +10,7 @@ import { Invoice } from '../invoices/invoice.entity';
 import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { SellerPayout } from '../seller/entities/seller-payout.entity';
 import { SellerReview } from '../seller/entities/seller-review.entity';
+import { Dispute } from '../trust/entities/dispute.entity';
 import { User } from '../auth/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
 
@@ -40,6 +41,7 @@ describe('AdminReportsController', () => {
         { provide: getRepositoryToken(Room), useValue: repos.room },
         { provide: getRepositoryToken(Ticket), useValue: { find: jest.fn() } },
         { provide: getRepositoryToken(SellerReview), useValue: { find: jest.fn() } },
+        { provide: getRepositoryToken(Dispute), useValue: { find: jest.fn(), createQueryBuilder: jest.fn() } },
         {
           provide: DataSource,
           useValue: { getRepository: jest.fn() },

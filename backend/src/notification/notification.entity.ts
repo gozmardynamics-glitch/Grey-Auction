@@ -19,6 +19,8 @@ export enum NotificationType {
   SALE_DECLINED = 'sale_declined',
   /** A new chat message arrived for this account. */
   NEW_MESSAGE = 'new_message',
+  /** A decided dispute was appealed and is back under review. */
+  DISPUTE_APPEALED = 'dispute_appealed',
 }
 
 @Entity('notifications')

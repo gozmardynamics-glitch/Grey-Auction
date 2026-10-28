@@ -11,6 +11,7 @@ import { SellerPayout } from '../seller/entities/seller-payout.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Ticket } from '../tickets/ticket.entity';
 import { SellerReview } from '../seller/entities/seller-review.entity';
+import { Dispute } from '../trust/entities/dispute.entity';
 import { WalletModule } from '../wallet/wallet.module';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
@@ -32,8 +33,10 @@ import { AdminRolesGuard } from './guards/admin-roles.guard';
       Room,
       // Suspending a buyer is checked against their open complaints.
       Ticket,
-      // Flagged reviews surface in the complaint queue.
+      // Flagged reviews surface in the complaint queue, and disputes are
+      // joined into the complaint register.
       SellerReview,
+      Dispute,
     ]),
     // Goodwill credits go through the ledger, not a balance edit.
     WalletModule,

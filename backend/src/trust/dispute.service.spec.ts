@@ -4,6 +4,7 @@ import {
   NotFoundException, ForbiddenException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { DisputeService } from './dispute.service';
+import { NotificationService } from '../notification/notification.service';
 import { Dispute, DisputeStatus, DisputeFeedback, DisputeReason } from './entities/dispute.entity';
 import { Product } from '../products/entities/product.entity';
 
@@ -11,6 +12,7 @@ describe('DisputeService', () => {
   let service: DisputeService;
   const disputes = { create: jest.fn(), save: jest.fn(), findOne: jest.fn(), find: jest.fn() };
   const feedback = { create: jest.fn(), save: jest.fn(), findOne: jest.fn(), find: jest.fn() };
+  const notifications = { create: jest.fn(async () => undefined) };
   const products = { findOne: jest.fn() };
 
   beforeEach(async () => {
@@ -21,6 +23,7 @@ describe('DisputeService', () => {
         { provide: getRepositoryToken(Dispute), useValue: disputes },
         { provide: getRepositoryToken(DisputeFeedback), useValue: feedback },
         { provide: getRepositoryToken(Product), useValue: products },
+        { provide: NotificationService, useValue: notifications },
       ],
     }).compile();
     service = module.get<DisputeService>(DisputeService);

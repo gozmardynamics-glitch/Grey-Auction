@@ -67,7 +67,12 @@ export class EscrowController {
   @ApiOperation({ summary: 'Refund part of an escrow hold, keeping the rest in escrow (admin)' })
   async partialRefund(
     @Param('id') id: string,
-    @Body() body: { amount: number; reason: string },
+    @Body()
+    body: {
+      amount: number;
+      reason: string;
+      allocation?: { sellerNet?: number; platformShare?: number; vat?: number };
+    },
     @CurrentUser() user: any,
   ) {
     const data = await this.service.partialRefund(id, user.id, body);

@@ -500,6 +500,8 @@ interface Ticket {
   severity?: string | null;
   /** on_track | due_soon | overdue | closed, from the backend's SLA engine. */
   slaState?: string | null;
+  /** The account that raised it — the target of a goodwill credit. */
+  userId?: string | null;
   dueAt?: string | null;
   contact: {
     name: string;

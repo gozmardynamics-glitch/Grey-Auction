@@ -1770,6 +1770,7 @@ const toTicketRow = (raw: RawTicketRow): AdminTicket => {
     severity: raw.severity || null,
     slaState: slaState || null,
     dueAt: raw.dueAt || null,
+    userId: raw.userId || null,
     contact: {
       name: raw.userName || raw.userEmail || 'Unknown contact',
       avatar: '',

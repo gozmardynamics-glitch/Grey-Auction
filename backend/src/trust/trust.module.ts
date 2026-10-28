@@ -8,6 +8,7 @@ import { SellerDocument } from '../seller/entities/seller-document.entity';
 import { ConditionReportService } from './condition-report.service';
 import { DisputeService } from './dispute.service';
 import { KycBadgeService } from './kyc-badge.service';
+import { NotificationModule } from '../notification/notification.module';
 import {
   ConditionReportController,
   DisputeController,
@@ -18,6 +19,8 @@ import {
 @Module({
   imports: [
     TypeOrmModule.forFeature([ConditionReport, Dispute, DisputeFeedback, Product, Seller, SellerDocument]),
+    // A reopened dispute has to reach the people who were involved in it.
+    NotificationModule,
   ],
   controllers: [
     ConditionReportController,

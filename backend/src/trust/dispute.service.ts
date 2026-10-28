@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import {
@@ -13,6 +7,8 @@ import {
   DisputeFeedback,
 } from './entities/dispute.entity';
 import { Product } from '../products/entities/product.entity';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/notification.entity';
 import { CreateDisputeDto, ResolveDisputeDto, DisputeFeedbackDto } from './dto/trust.dto';
 
 const ACTIVE_STATUSES = [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW];
@@ -20,6 +16,7 @@ const CLOSED_STATUSES = [DisputeStatus.RESOLVED, DisputeStatus.REJECTED];
 
 @Injectable()
 export class DisputeService {
+  private readonly logger = new Logger(DisputeService.name);
   constructor(
     @InjectRepository(Dispute)
     private readonly disputes: Repository<Dispute>,
@@ -27,6 +24,7 @@ export class DisputeService {
     private readonly feedback: Repository<DisputeFeedback>,
     @InjectRepository(Product)
     private readonly products: Repository<Product>,
+    private readonly notifications: NotificationService,
   ) {}
 
   /** Buyer (or seller) opens a case. One active dispute per user per lot. */
@@ -135,6 +133,8 @@ export class DisputeService {
       throw new BadRequestException('This dispute has already been appealed once');
     }
 
+    const previousResolver = dispute.resolvedById;
+
     dispute.status = DisputeStatus.UNDER_REVIEW;
     dispute.appealCount = (dispute.appealCount || 0) + 1;
     dispute.appealedAt = new Date();
@@ -145,7 +145,43 @@ export class DisputeService {
     dispute.resolvedById = null;
     dispute.resolvedAt = null;
 
-    return this.disputes.save(dispute);
+    const saved = await this.disputes.save(dispute);
+
+    // A reopened case is only visible if someone is told. The other party needs
+    // to know a decision they were given is back under review; the resolver (if
+    // any) needs to know their call is being questioned.
+    const link = '/buyer/dashboard?tab=disputes';
+    const recipients = new Set<string>();
+    if (dispute.openedById && dispute.openedById !== user.id) recipients.add(dispute.openedById);
+    if (dispute.againstUserId && dispute.againstUserId !== user.id) recipients.add(dispute.againstUserId);
+    for (const userId of recipients) {
+      await this.notifications
+        .create(userId, {
+          type: NotificationType.DISPUTE_APPEALED,
+          title: 'A dispute was appealed',
+          body: 'The other party disputed the outcome. It is back under review with a different reviewer.',
+          link,
+        })
+        .catch((error) =>
+          // The appeal is already committed; a failed notice must not undo it,
+          // but it must be visible rather than silently dropped.
+          this.logger.warn(`Appeal notification failed for ${userId}: ${error.message}`),
+        );
+    }
+    if (previousResolver && previousResolver !== user.id) {
+      await this.notifications
+        .create(previousResolver, {
+          type: NotificationType.DISPUTE_APPEALED,
+          title: 'Your dispute decision was appealed',
+          body: `The decision on dispute ${dispute.id.slice(0, 8)} is being reviewed by someone else.`,
+          link: '/admin/dashboard',
+        })
+        .catch((error) =>
+          this.logger.warn(`Appeal notification to the resolver failed: ${error.message}`),
+        );
+    }
+
+    return saved;
   }
 
   async addFeedback(id: string, user: { id: string }, dto: DisputeFeedbackDto) {

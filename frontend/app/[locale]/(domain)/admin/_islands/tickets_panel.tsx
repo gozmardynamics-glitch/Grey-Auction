@@ -7,6 +7,7 @@ import TicketEmptyState from '../tickets/components/ticket_empty_state';
 import TicketList from '../tickets/components/ticket_list';
 import TicketChatView from '../tickets/components/ticket_chat_view';
 import TicketContactPanel from '../tickets/components/ticket_contact_sheet';
+import ComplaintsToolbar from '../tickets/components/complaints_toolbar';
 import ImageLightbox from '../../seller/messages/components/image_lightbox';
 import { Ticket } from '../models';
 
@@ -34,6 +35,10 @@ export default function TicketsPanel({ tickets }: TicketsPanelProps) {
 
   return (
     <>
+      {/* Service levels, the register export, reported reviews and the remedy
+          that used to need database access. */}
+      <ComplaintsToolbar selectedTicket={selectedTicket} />
+
       {isEmpty ? (
         /* Empty State */
         <Card className="flex h-[600px] items-center justify-center">

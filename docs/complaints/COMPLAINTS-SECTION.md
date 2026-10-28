@@ -202,20 +202,27 @@ hour.
 | 10 | Review flags went nowhere | `POST /sellers/reviews/:id/report` lets any signed-in user report a review (previously only an admin could set the flag, so the published channel did nothing), and `GET /admin/reviews/flagged` + `PATCH /admin/reviews/:id/decision` give it a queue and an outcome. Hiding is the default decision in a dispute, because the review is evidence. |
 | 11 | Data-protection complaints had no statutory clock | They are classified P1 **and** now carry `statutoryDueAt` / `statutoryDaysLeft` on the SLA view — 30 calendar days from when they were raised — with `dataProtectionOpen` and `dataProtectionOverdue` in the SLA summary so the legal deadline is visible next to the operational one. |
 
-**Still open (smaller, and now the only ones left):**
+**Closed in the workspace pass** (verified live, 17 checks):
 
-| # | Gap | Consequence | Next step |
+| # | Gap | How it was closed |
+|---|---|---|
+| 12 | No admin UI for the new endpoints | The complaints workspace gained a toolbar above the conversation panes: **service-level chips** (open / overdue / due soon / awaiting first reply / data-protection, including how many are past the statutory clock), an **Export register** button that downloads the CSV, a **Reported reviews** panel with hide / remove / dismiss-report per item, and a **Goodwill credit** form that posts to the wallet endpoint with a required reason. Partial refund stays API-only on purpose — a ticket carries no invoice reference, so there is nothing to point the control at yet (see below). |
+| 13 | Appeals notified nobody | `DisputeService.appeal` now notifies the other party and the previous resolver, with the appeal itself committed first. The first attempt used `type: 'dispute' as any`, which the database enum rejected — and the catch swallowed it, so the appeal succeeded in silence. Fixed by adding a real `dispute_appealed` notification type (entity + migration) and logging delivery failures instead of discarding them. |
+| 14 | Register covered only tickets | `GET /admin/complaints/register` now joins disputes into one export: a `kind` column distinguishes them, the summary reports `complaints` and `disputes` separately, appeals surface on the dispute row, and the CSV carries both. |
+| 15 | Refund allocation was pro rata only | `partialRefund` accepts an optional `allocation: { sellerNet, platformShare, vat }`. It must sum to the refund and may not exceed any component — both are 400s — and the chosen split is recorded in the hold's breakdown, so a negotiated "the seller absorbs it" is what the ledger shows. Omitted still means pro rata, the neutral default. |
+
+**One item left, deliberately:**
+
+| # | Gap | Why it is not built | Next step |
 |---|---|---|---|
-| 12 | **No admin UI for the new endpoints** | Partial refund, goodwill credit, the flagged-review queue and the register are API-only; a handler still needs a tool that speaks HTTP | Add the four controls to the admin screens: a partial-refund dialog on the escrow panel, a credit action on the buyer row, a flagged-review tab, and an export button on the complaints page |
-| 13 | **Appeals do not notify anyone** | A reopened dispute is only visible by looking | Notify the original resolver and the other party when an appeal is raised |
-| 14 | **The register is not the whole picture** | It covers tickets; disputes live in their own table and are only counted by the fee/escrow reports | Join disputes into the register once both are in one shape |
-| 15 | **Refund allocation is pro rata only** | A negotiation that wants "seller absorbs it all" cannot say so | Accept an explicit per-party split with pro-rata as the default |
+| 16 | **Partial refund has no admin control** | A ticket has no invoice or hold reference, so a complaint handler cannot reach the escrow from the queue. Putting the button in the complaints workspace would mean guessing which hold to touch — worse than no button. It needs a link: either `tickets.invoiceId`, or an invoice/escrow lookup inside the workspace. | Add `invoice_id` to the ticket (nullable) and populate it when a complaint is opened from a purchase; then the partial-refund dialog has somewhere to point. |
 
 **Risks introduced by closing them:**
 
 - **Partial refunds change `hold.amount`.** Anything reading a hold's original value must read `amount + refundedAmount`. The admin KPI `escrowFloat` sums `amount`, which is correct (it is what is still held), but a report of "original sale value" would now be short.
 - **The `ADJUSTMENT` ledger type is new.** Reporting that assumes wallet credits are only deposits or escrow releases needs to handle it; the enum was extended rather than reused for exactly that reason.
 - **An appeal clears `resolution`/`resolvedById`.** That is deliberate — the reviewer must not be anchored — but the previous outcome now survives only in the messages and the audit trail, so never rely on the dispute row for the full history.
+- **Notifications can fail after the thing they describe succeeded.** The appeal commits, then the notice is attempted; a delivery failure is now logged rather than hidden, but nothing retries it. If appeals matter enough to guarantee delivery, they need an outbox.
 - **A reported review hides the seller's rating input.** Hiding a review removes it from the average, so a false report briefly distorts the rating until the decision is made. Acceptable, but the queue should be worked promptly.
 
 ## 11. Decisions taken
