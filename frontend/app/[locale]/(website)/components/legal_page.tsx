@@ -212,42 +212,74 @@ export default async function LegalPage({ slug }: { slug: string }) {
   // "Last updated" is authored as an italic line at the top of the document.
   const updated = blocks.find((block) => block.kind === 'p' && /^_Last updated/i.test(block.text));
 
+  // Long policies read badly as a single 768px column with the screen empty
+  // either side: the contents becomes a sticky rail and the document itself gets
+  // the full width, so a table-heavy page is a third shorter to scroll.
+  const showContents = contents.length > 3;
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="mb-3 text-3xl font-bold tracking-tight">{title}</h1>
-      {updated && updated.kind === 'p' && (
-        <p className="mb-6 text-sm text-muted-foreground">{inline(updated.text)}</p>
-      )}
-
-      {sibling && (
-        <p className="mb-6 rounded-lg border border-border/60 bg-card px-4 py-3 text-sm">
-          Related:{' '}
-          <Link href={`/${sibling.slug}`} className="font-medium text-primary underline underline-offset-2">
-            {sibling.label}
-          </Link>
-        </p>
-      )}
-
-      {/* Long policies need a table of contents, not just scrolling. */}
-      {contents.length > 3 && (
-        <nav className="mb-8 rounded-lg border border-border/60 bg-card p-4" aria-label="Contents">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            On this page
+    <div className="mx-auto w-full max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
+      <header className="mb-6 max-w-4xl">
+        <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
+        {updated && updated.kind === 'p' && (
+          <p className="text-sm text-muted-foreground">{inline(updated.text)}</p>
+        )}
+        {sibling && (
+          <p className="mt-4 inline-block rounded-lg border border-border/60 bg-card px-4 py-2 text-sm">
+            Related:{' '}
+            <Link href={`/${sibling.slug}`} className="font-medium text-primary underline underline-offset-2">
+              {sibling.label}
+            </Link>
           </p>
-          <ol className="grid gap-1 text-sm sm:grid-cols-2">
-            {contents.map((heading, i) => (
-              <li key={i}>
-                <a href={`#section-${i + 1}`} className="text-muted-foreground hover:text-foreground">
-                  {heading.text}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
+        )}
+      </header>
 
-      <Card className="border border-border">
-        <CardContent className="space-y-4 p-6 text-sm leading-relaxed text-muted-foreground md:p-8">
+      <div className="lg:grid lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] lg:items-start lg:gap-8 xl:gap-10">
+        {/* Sticky rail on wide screens — the contents stops eating a screenful. */}
+        {showContents && (
+          <nav
+            className="hidden lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border/60 lg:bg-card lg:p-4"
+            aria-label="Contents"
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              On this page
+            </p>
+            <ol className="space-y-1 text-sm">
+              {contents.map((heading, i) => (
+                <li key={i}>
+                  <a
+                    href={`#section-${i + 1}`}
+                    className="block rounded px-1 py-0.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  >
+                    {heading.text}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+
+        <div className="min-w-0">
+          {/* Narrow screens keep the inline contents, in two columns. */}
+          {showContents && (
+            <nav className="mb-6 rounded-lg border border-border/60 bg-card p-4 lg:hidden" aria-label="Contents">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                On this page
+              </p>
+              <ol className="grid gap-1 text-sm sm:grid-cols-2">
+                {contents.map((heading, i) => (
+                  <li key={i}>
+                    <a href={`#section-${i + 1}`} className="text-muted-foreground hover:text-foreground">
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
+          <Card className="border border-border">
+            <CardContent className="space-y-4 p-6 text-sm leading-relaxed text-muted-foreground md:p-8 xl:px-10">
           {blocks.map((block, i) => {
             if (block.kind === 'h') {
               const sectionIndex = contents.indexOf(block);
@@ -267,10 +299,15 @@ export default async function LegalPage({ slug }: { slug: string }) {
             }
             if (block.kind === 'ul' || block.kind === 'ol') {
               const List = block.kind === 'ul' ? 'ul' : 'ol';
+              // Short bullets flow in two columns once there is room; ordered
+              // lists stay single-column because their sequence is the point.
+              const twoUp = block.kind === 'ul' && block.items.length >= 6;
               return (
                 <List
                   key={i}
-                  className={`space-y-1.5 pl-5 ${block.kind === 'ul' ? 'list-disc' : 'list-decimal'}`}
+                  className={`space-y-1.5 pl-5 ${block.kind === 'ul' ? 'list-disc' : 'list-decimal'} ${
+                    twoUp ? 'xl:columns-2 xl:gap-x-10 xl:space-y-0 [&>li]:mb-1.5 [&>li]:break-inside-avoid' : ''
+                  }`}
                 >
                   {block.items.map((item, j) => (
                     <li key={j}>{inline(item)}</li>
@@ -309,7 +346,9 @@ export default async function LegalPage({ slug }: { slug: string }) {
             return <p key={i}>{inline(block.text)}</p>;
           })}
         </CardContent>
-      </Card>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
