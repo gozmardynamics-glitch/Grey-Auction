@@ -43,3 +43,9 @@ coverage/
 
 # Local storage driver output (dev uploads, KYC test artifacts)
 backend/uploads/
+
+# testdata fixtures — generated at runtime, removed by `node testdata/purge.js`.
+# The scripts are tracked; the generated assets and the run manifest are not.
+testdata/images/
+testdata/manifest.json
+frontend/public/testdata/
