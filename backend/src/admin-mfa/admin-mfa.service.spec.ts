@@ -1,4 +1,3 @@
-import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 
 import { AdminMfaService } from './admin-mfa.service';
@@ -45,18 +44,15 @@ describe('AdminMfaService', () => {
   let repo: ReturnType<typeof buildRepo>;
   let settings: { get: jest.Mock; set: jest.Mock };
   let audit: { logAction: jest.Mock };
-  let jwt: { sign: jest.Mock; verify: jest.Mock };
   let enrolledSecret = '';
 
   const build = (seed: Partial<Admin> = {}) => {
     repo = buildRepo(seed);
     settings = { get: jest.fn(async () => ({})), set: jest.fn(async () => undefined) };
     audit = { logAction: jest.fn(async () => undefined) };
-    jwt = { sign: jest.fn(() => 'challenge'), verify: jest.fn(() => ({ sub: 'user-1', typ: 'mfa_challenge' })) };
     service = new AdminMfaService(
       repo as any,
       settings as unknown as SettingsService,
-      jwt as unknown as JwtService,
       audit as unknown as AuditService,
     );
   };

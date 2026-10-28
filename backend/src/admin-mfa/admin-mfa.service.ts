@@ -7,7 +7,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import {
   createCipheriv,
@@ -29,7 +28,6 @@ import { RoleMfaPolicyDto, UpdateMfaPolicyDto } from './dto/mfa.dto';
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 const RECOVERY_CODE_COUNT = 10;
-const CHALLENGE_TTL = '10m';
 
 export interface MfaPolicy {
   /** Master switch. When false no role is challenged. */
@@ -71,7 +69,6 @@ export class AdminMfaService {
   constructor(
     @InjectRepository(Admin) private readonly adminRepo: Repository<Admin>,
     private readonly settings: SettingsService,
-    private readonly jwt: JwtService,
     private readonly audit: AuditService,
   ) {}
 
