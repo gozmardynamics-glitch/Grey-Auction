@@ -8,7 +8,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Order, OrderStatus } from './order.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
-import { InvoiceService } from '../invoices/invoice.service';
+import { InvoiceFactoryService } from '../invoices/invoice-factory.service';
 import { FeeService } from '../fees/fee.service';
 import { Product, AuctionType, ProductStatus } from '../products/entities/product.entity';
 
@@ -22,7 +22,7 @@ export class OrderService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly feeService: FeeService,
-    private readonly invoiceService: InvoiceService,
+    private readonly invoiceFactory: InvoiceFactoryService,
   ) {}
 
   /**
@@ -81,7 +81,7 @@ export class OrderService {
         buyerId,
       });
 
-      const invoice = await this.invoiceService.createInvoice(manager, {
+      const invoice = await this.invoiceFactory.create(manager, {
         auctionId: product.id,
         productId: product.id,
         buyerId,

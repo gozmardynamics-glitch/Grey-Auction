@@ -8,6 +8,8 @@ import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 import { EmailService } from '../common/email/email.service';
 import { EscrowService } from '../escrow/escrow.service';
+import { InvoiceFactoryService } from './invoice-factory.service';
+import { OrderService } from '../orders/order.service';
 
 describe('InvoiceService', () => {
   let service: InvoiceService;
@@ -16,6 +18,7 @@ describe('InvoiceService', () => {
   const productRepo = { findOne: jest.fn() };
   const emailService = { sendReceiptEmail: jest.fn(), sendInvoiceEmail: jest.fn() };
   const escrowService = { holdInManager: jest.fn() };
+  const orderService = { markPaidInManager: jest.fn() };
   const manager = { getRepository: jest.fn(() => invoiceRepo), query: jest.fn(async () => []) };
   const dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
 
@@ -30,6 +33,10 @@ describe('InvoiceService', () => {
         { provide: EmailService, useValue: emailService },
         { provide: DataSource, useValue: dataSource },
         { provide: EscrowService, useValue: escrowService },
+        { provide: OrderService, useValue: orderService },
+        // Real factory: the numbering and total maths live there now, so the
+        // settlement-seam test still exercises the actual implementation.
+        InvoiceFactoryService,
       ],
     }).compile();
     service = module.get<InvoiceService>(InvoiceService);
@@ -53,6 +60,9 @@ describe('InvoiceService', () => {
       buyerId: 'b1',
       sellerId: undefined,
     });
+    // Regression: a manually settled invoice must also mark its order paid, or
+    // the sale never appears in order tracking.
+    expect(orderService.markPaidInManager).toHaveBeenCalledWith(manager, 'inv1', 'REF');
     expect(invoiceRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({ status: InvoiceStatus.PAID, payment_reference: 'REF', payment_method: 'card' }),
     );
@@ -95,6 +105,7 @@ describe('InvoiceService', () => {
 
     await expect(service.markPaid('inv1', {})).rejects.toThrow(BadRequestException);
     expect(escrowService.holdInManager).not.toHaveBeenCalled();
+    expect(orderService.markPaidInManager).not.toHaveBeenCalled();
   });
 
   it('issues an invoice inside a transaction (settlement seam)', async () => {

@@ -6,7 +6,7 @@ import { OrderService } from './order.service';
 import { Order, OrderStatus } from './order.entity';
 import { Invoice, InvoiceStatus } from '../invoices/invoice.entity';
 import { FeeService } from '../fees/fee.service';
-import { InvoiceService } from '../invoices/invoice.service';
+import { InvoiceFactoryService } from '../invoices/invoice-factory.service';
 import { Product, AuctionType, ProductStatus } from '../products/entities/product.entity';
 
 describe('OrderService', () => {
@@ -15,7 +15,7 @@ describe('OrderService', () => {
   const invoiceRepo = { findOne: jest.fn() };
   const productRepo = { findOne: jest.fn() };
   const feeService = { resolveAndCompute: jest.fn() };
-  const invoiceService = { createInvoice: jest.fn() };
+  const invoiceFactory = { create: jest.fn() };
   const manager = {
     getRepository: jest.fn((entity) =>
       entity === Order ? orderRepo : entity === Product ? productRepo : invoiceRepo,
@@ -38,7 +38,7 @@ describe('OrderService', () => {
         { provide: getRepositoryToken(Invoice), useValue: invoiceRepo },
         { provide: getRepositoryToken(Product), useValue: productRepo },
         { provide: FeeService, useValue: feeService },
-        { provide: InvoiceService, useValue: invoiceService },
+        { provide: InvoiceFactoryService, useValue: invoiceFactory },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -164,7 +164,7 @@ describe('OrderService', () => {
         source: 'default',
       });
       (invoiceRepo.findOne as jest.Mock).mockResolvedValue(null);
-      (invoiceService.createInvoice as jest.Mock).mockResolvedValue({
+      (invoiceFactory.create as jest.Mock).mockResolvedValue({
         id: 'inv9', invoice_number: 'INV-2026-000009', auction_id: 'p9',
         product_id: 'p9', buyer_id: 'b1', seller_id: 's1',
         hammer_price: '20000.00', commission: '1000.00', vat: '1575.00',
@@ -181,7 +181,7 @@ describe('OrderService', () => {
         20000,
         expect.objectContaining({ category: 'art', sellerId: 's1', productId: 'p9' }),
       );
-      expect(invoiceService.createInvoice).toHaveBeenCalledWith(
+      expect(invoiceFactory.create).toHaveBeenCalledWith(
         manager,
         expect.objectContaining({
           hammerPrice: 20000,

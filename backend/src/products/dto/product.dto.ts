@@ -3,6 +3,13 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductStatus, AuctionType } from '../entities/product.entity';
 
+/**
+ * A new lot.
+ *
+ * `auctionType` is accepted for forward compatibility but is **ignored here**:
+ * the type is fixed once, when an admin approves the lot (`ApproveProductDto`).
+ * Sending it on create is a no-op, not an error.
+ */
 export class CreateProductDto {
   @ApiProperty()
   @IsString()

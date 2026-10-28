@@ -18,6 +18,8 @@ import { FeeModule } from '../fees/fee.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CommonModule } from '../common/common.module';
 import { EscrowModule } from '../escrow/escrow.module';
+import { InvoiceFactoryModule } from './invoice-factory.module';
+import { OrderModule } from '../orders/order.module';
 
 @Module({
   imports: [
@@ -27,8 +29,11 @@ import { EscrowModule } from '../escrow/escrow.module';
     FeeModule,
     NotificationModule,
     CommonModule,
-    // markPaid() opens the escrow hold for a manually settled invoice.
+    // markPaid() opens the escrow hold and marks the order paid, so a manually
+    // settled invoice is indistinguishable from a gateway-settled one.
     EscrowModule,
+    OrderModule,
+    InvoiceFactoryModule,
   ],
   controllers: [InvoiceController],
   providers: [
