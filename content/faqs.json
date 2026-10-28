@@ -1,0 +1,369 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "note": "Copy for the public FAQ. Every claim here is checked against the code (see docs/faq/FAQ-SECTION.md). Where policy is undecided the answer deliberately avoids inventing a number and the gap is listed in the doc instead.",
+    "audiences": {
+      "getting-started": "all",
+      "buying": "buying",
+      "paying": "buying",
+      "collecting": "buying",
+      "selling": "selling",
+      "fees": "selling",
+      "private-rooms": "all",
+      "account": "all",
+      "disputes": "all"
+    }
+  },
+  "categories": [
+    {
+      "name": "Getting started",
+      "emoji": "🚀",
+      "items": [
+        {
+          "question": "What is GreyAuction?",
+          "answer": "GreyAuction is an online auction house for vehicles, watches, art and antiquities, electronics, jewellery and property. Sellers list lots with verified documentation and buyers bid online, either in public sales or in private rooms the seller has invited them to.\n\nEverything happens in one place: bidding, invoicing, payment, escrow and collection."
+        },
+        {
+          "question": "Do I need an account to look around?",
+          "answer": "No. You can browse auctions and read every lot page, including the fee breakdown and any condition report, without signing in.\n\nYou need an account to bid, follow a lot, accept an invitation to a private room, or pay an invoice."
+        },
+        {
+          "question": "How do I create an account?",
+          "answer": "Choose Register, pick the buyer or organisation route, and confirm the 6-digit code we email you. That verification step is what lets us contact you about lots you have bid on.\n\nThe whole thing takes about two minutes."
+        },
+        {
+          "question": "What is the difference between a buyer account and an organisation account?",
+          "answer": "An organisation account registers a company, agency or institution so invoices and documentation can be issued to its name. A buyer account is for an individual.\n\nIf you are unsure which you need, the answer decides how your invoices will read, so pick the one that matches who is paying."
+        },
+        {
+          "question": "Which currencies can I pay in?",
+          "answer": "Settlement is in Nigerian naira (NGN). Lot pages may show indicative conversions in other currencies, but the invoice, the payment and the seller's payout are all in NGN.\n\nIf an invoice is ever issued in another currency, checkout will say so rather than quietly converting it."
+        },
+        {
+          "question": "Can I use the site on my phone?",
+          "answer": "Yes. The whole journey — browsing, bidding, live bidding in a room, paying and tracking your purchases — works on a phone browser, and live rooms update in real time as bids arrive."
+        },
+        {
+          "question": "How do I speak to a person?",
+          "answer": "Use the Contact page and your message opens a support ticket; you will see the ticket and every reply in your dashboard.\n\nIf your question concerns a specific lot or invoice, mention its number — it saves a round trip."
+        }
+      ]
+    },
+    {
+      "name": "Buying and bidding",
+      "emoji": "🔨",
+      "items": [
+        {
+          "question": "How do I place a bid?",
+          "answer": "Open the lot, enter your amount and confirm. Your bid must beat the current bid by at least the lot's minimum increment, and the form tells you the minimum before you commit.\n\nYou can add a maximum at the same time — see the auto-bid question below."
+        },
+        {
+          "question": "What is an auto-bid (proxy bid)?",
+          "answer": "You set the most you are willing to pay and the system bids the smallest amount needed to keep you in front, up to that ceiling. It only ever bids on your behalf, never above your maximum.\n\nThis means you can walk away from your screen and still win at the lowest possible price."
+        },
+        {
+          "question": "Do auto-bids beat a manual bid of the same amount?",
+          "answer": "Yes. A standing auto-bid takes priority over a one-off bid that matches it, because the auto-bidder was prepared to go higher from the start.\n\nIf you intend to win against a proxy bidder, bid above their ceiling rather than matching their last price."
+        },
+        {
+          "question": "Can I cancel or retract a bid?",
+          "answer": "No. A bid is binding the moment it is accepted, and there is no withdraw button — that is what makes bidding on the site meaningful for sellers.\n\nTake the extra second to check the amount, the increment and the fee breakdown before you confirm."
+        },
+        {
+          "question": "Why was my bid rejected?",
+          "answer": "The most common reasons are: the amount is below the current bid, below the starting bid, or below the minimum increment; the lot is not open for bidding or has ended; the seller requires a minimum wallet balance you have not funded; or a second bid arrived within two seconds of your previous one on the same lot, which is blocked to stop accidental double-submits.\n\nEach case returns a specific message, so the error tells you exactly which rule applied."
+        },
+        {
+          "question": "What is the minimum bid increment?",
+          "answer": "Each lot has its own increment, set by the seller and shown on the lot page. Your next bid must be at least the current bid plus that amount.\n\nIncrements keep the bidding ladder readable and stop one-naira bidding wars."
+        },
+        {
+          "question": "What is a reserve price?",
+          "answer": "A reserve is the lowest price the seller will accept. Bidding can be below it, but if the reserve is not met when the lot closes the lot does not sell and the seller is notified.\n\nSome lots show the reserve, some only say whether it has been met; the lot page tells you which."
+        },
+        {
+          "question": "What is Buy Now?",
+          "answer": "On lots set up as a direct sale you can skip the auction and buy at the fixed price immediately, which issues your invoice straight away.\n\nOnly lots an administrator has approved as direct sales offer it; ordinary auction lots never do."
+        },
+        {
+          "question": "What happens when the auction ends?",
+          "answer": "The lot is settled automatically: the winning bid becomes an invoice, and you are emailed a copy with it also waiting in your dashboard under Invoices.\n\nIf you were outbid you are told so, and the lot closes without an obligation on you."
+        },
+        {
+          "question": "What does 'final bid subject to seller approval' mean?",
+          "answer": "On some lots the seller has asked to confirm the result before an invoice is issued. Your winning bid stands, but the seller has a window to accept or decline it.\n\nIf they accept, you get the invoice as normal; if they do not respond in time the lot closes without a sale, and you owe nothing."
+        },
+        {
+          "question": "How do I keep an eye on a lot without bidding?",
+          "answer": "Use the heart icon on the lot to follow it. Followed lots appear in your dashboard and are how you track prices before deciding to bid."
+        },
+        {
+          "question": "Can I bid on my own lot?",
+          "answer": "No. Sellers cannot bid on their own lots, and the platform blocks it at the bidding engine rather than relying on trust."
+        },
+        {
+          "question": "Can I see who else is bidding?",
+          "answer": "You see the bid amounts and a display name for other bidders — never contact details. Bid history on the lot shows the ladder, and live rooms show new bids as they land."
+        }
+      ]
+    },
+    {
+      "name": "Paying and invoices",
+      "emoji": "💳",
+      "items": [
+        {
+          "question": "How is my total calculated?",
+          "answer": "Your total is the hammer price plus the buyer's premium plus VAT (and any fixed or other charges that apply to the lot). The lot page shows this breakdown live before you bid, so there are no surprises at checkout.\n\nThe invoice repeats the same lines and is the binding record of what you were charged."
+        },
+        {
+          "question": "What is the buyer's premium?",
+          "answer": "It is the platform's charge for running the sale, calculated as a percentage of the hammer price. The percentage is set per category by the platform and confirmed on the lot page before you bid."
+        },
+        {
+          "question": "Why is VAT on my invoice?",
+          "answer": "VAT at the prevailing rate is added to the taxable amount shown on your invoice and is remitted by the platform — it is not income to us and not paid to the seller.\n\nIf you are buying through a registered organisation, your invoice reflects the details you registered with."
+        },
+        {
+          "question": "How do I pay?",
+          "answer": "Open the invoice and choose Pay. You are taken to the payment platform to pay by card or bank, and the invoice updates itself once the payment is confirmed — no need to email proof of payment.\n\nIf you have funded your wallet, the balance can be used instead."
+        },
+        {
+          "question": "Which payment methods do you accept?",
+          "answer": "Only the methods shown at checkout. We deliberately hide any provider we cannot confirm and settle, so if an option is not listed it is not available for that invoice rather than unreliable.\n\nCash is not accepted."
+        },
+        {
+          "question": "How long do I have to pay an invoice?",
+          "answer": "The due date is printed on the invoice itself and is set by the seller's payment terms, so it can differ from lot to lot. Your dashboard shows which invoices are still outstanding."
+        },
+        {
+          "question": "Can I pay in instalments?",
+          "answer": "No. An invoice is settled in a single payment against the total shown."
+        },
+        {
+          "question": "Where do I find my invoices?",
+          "answer": "In your dashboard under Invoices. Each one opens the itemised view and can be downloaded as a PDF once it has been paid."
+        },
+        {
+          "question": "Can someone else pay my invoice?",
+          "answer": "Payments are tied to the account that owns the invoice, so the invoice should be paid from the buyer's own account. If a company needs to pay on your behalf, contact support before paying so the record stays correct."
+        },
+        {
+          "question": "I paid but the invoice still shows unpaid — what now?",
+          "answer": "Card and bank payments normally confirm within minutes. If it has not updated, the payment may still be clearing with the provider; check again shortly.\n\nIf it is still outstanding after that, contact support with the invoice number and your payment reference and we will trace it."
+        },
+        {
+          "question": "Can I change the name or details on an invoice?",
+          "answer": "Invoice details come from the account that bid, so corrections are made by support rather than by editing the invoice yourself. Contact us with the invoice number before paying and we will reissue it correctly."
+        }
+      ]
+    },
+    {
+      "name": "Collecting your lot",
+      "emoji": "📦",
+      "items": [
+        {
+          "question": "When can I collect my lot?",
+          "answer": "Once your payment has been confirmed. Until then the funds sit in escrow and the lot is not released.\n\nCollection details are shown with your invoice and in the purchase view for that lot."
+        },
+        {
+          "question": "Who arranges delivery?",
+          "answer": "You do. Where delivery is offered you can enter a delivery address while paying and get a quoted shipping cost, and a shipment is created so you can follow it.\n\nFor anything oversized — a car, for example — collection in person or your own transporter is the norm."
+        },
+        {
+          "question": "Can someone else collect on my behalf?",
+          "answer": "Yes, with your authorisation. Tell support in advance who is collecting, and give that person your invoice number so the lot can be released against it.\n\nWithout the invoice reference nothing can be released."
+        },
+        {
+          "question": "What condition are lots in?",
+          "answer": "Lots are sold in the condition described on the lot page. Where an independent condition report has been uploaded you can read and download it from the lot's Documents tab before bidding.\n\nRead it — it is the seller's and the platform's description of what you are buying."
+        },
+        {
+          "question": "Can I inspect a lot before bidding?",
+          "answer": "Where viewing is available it is described on the lot page. Otherwise rely on the photographs, the condition report and the specification, and bid accordingly.\n\nIf something material is unclear, ask through Contact before the auction closes — not after."
+        },
+        {
+          "question": "What happens to my money while the lot is being collected?",
+          "answer": "It is held in escrow. The seller is credited only once the escrow window passes or you confirm the lot is as described, which is the protection you get for paying up front."
+        }
+      ]
+    },
+    {
+      "name": "Selling with GreyAuction",
+      "emoji": "🏷️",
+      "items": [
+        {
+          "question": "How do I become a seller?",
+          "answer": "Register as a seller and submit the verification documents we ask for. An administrator reviews them, and once your verification is approved you can also be granted consent to publish lots.\n\nThe two are separate: being verified is not the same as being cleared to publish, and a lot stays in draft until both are in place."
+        },
+        {
+          "question": "Why can't I publish my lot?",
+          "answer": "There are two usual reasons and the error names the actual one: required verification documents are not yet approved, or publishing consent has not been granted yet.\n\nApprove the documents, then the publishing decision, and the lot can go live."
+        },
+        {
+          "question": "What information do I need to list a lot?",
+          "answer": "A title and description, a category and subcategory, a starting bid and end time, photographs, and — recommended — the specifications buyers will ask about: year, mileage, reference numbers, dimensions, provenance.\n\nYou can also attach documents such as an inspection report or certificate."
+        },
+        {
+          "question": "Can I set a reserve price or Buy Now?",
+          "answer": "Yes. On the listing form you can set a reserve (and choose whether it is shown or only indicated), a Buy Now price, and your own minimum bid increment.\n\nA lot with Buy Now must be approved as a direct sale before the button appears."
+        },
+        {
+          "question": "What is the escrow release window?",
+          "answer": "It is how long the buyer's payment is held after they pay before it is released to you — the buyer's protection window. You choose it per lot; zero means immediate release.\n\nA longer window can reassure buyers on high-value lots; a short one gets you paid sooner."
+        },
+        {
+          "question": "Can I require the final bid to be approved by me?",
+          "answer": "Yes — optional per lot. When enabled, settlement waits for your accept or decline instead of invoicing automatically, and you can set the threshold above which you want to be asked.\n\nIf you do not answer within the window the lot closes without a sale, so only use it if you will be reachable."
+        },
+        {
+          "question": "Can I edit a lot once it is live?",
+          "answer": "Bidding terms are locked when the lot is approved — that is what stops a seller changing the goalposts mid-auction. Price, reserve, increment and auction type cannot move under live bids.\n\nFor a genuine error, contact support before the auction closes."
+        },
+        {
+          "question": "What if my lot does not reach its reserve?",
+          "answer": "The lot closes unsold and you are notified. It is not invoiced to anyone, and you are free to relist it, adjust the reserve, or sell it another way."
+        },
+        {
+          "question": "What can't I sell?",
+          "answer": "Lots are screened automatically for prohibited goods, counterfeits, misleading claims, offers to deal off-platform and stolen or untraceable items, and an administrator approves every lot before it goes public.\n\nIf a lot is rejected you are told why, and relisting the same item unchanged will not pass."
+        },
+        {
+          "question": "How do I invite specific buyers?",
+          "answer": "Create a private room and invite bidders by email, either as an exclusive invitation for one person or as an open request that you approve individually. See Private rooms and invitations below."
+        }
+      ]
+    },
+    {
+      "name": "Fees and payouts",
+      "emoji": "💰",
+      "items": [
+        {
+          "question": "What fees do I pay as a seller?",
+          "answer": "A seller commission on the hammer price plus any other charges that apply to your category, with VAT treated separately. Your fee settings page shows what applies to you, and the exact figures for a lot are visible before you publish.\n\nYou can switch individual fees on or off where your terms allow it, but the percentages themselves are set by the platform."
+        },
+        {
+          "question": "When and how do I get paid?",
+          "answer": "When the buyer's payment is released from escrow, your proceeds land in your seller wallet — the amount is the hammer price less your seller commission.\n\nFrom the wallet you request a payout to your bank account, entering your PIN to confirm."
+        },
+        {
+          "question": "Why is my withdrawable balance lower than the sale price?",
+          "answer": "Because the seller commission is deducted before the money reaches your wallet. The wallet ledger is the record of what is available — it is not recalculated from invoice totals.\n\nIf a lot is still inside its escrow window, that money has not arrived yet either."
+        },
+        {
+          "question": "How do I request a payout?",
+          "answer": "From the seller payment screen, choose withdraw, enter the amount and your wallet PIN. The money is reserved from your balance the moment you request it, so you cannot spend the same balance twice.\n\nSet your wallet PIN before you need it."
+        },
+        {
+          "question": "Why can't I withdraw after changing my bank details?",
+          "answer": "A changed payout account has to rest before money can leave it. This exists to protect you: if someone ever gained access to your account, they could not redirect a payout and drain it the same minute.\n\nThe screen tells you the exact time the hold lifts, and you cannot change bank details while a payout is already in progress."
+        },
+        {
+          "question": "Can I change how often I am paid?",
+          "answer": "Yes, in your seller settings under payout frequency. It controls how often payouts are batched, not when escrow releases."
+        },
+        {
+          "question": "What happens if a payout fails?",
+          "answer": "The money is returned to your wallet rather than lost, and the payout is marked as failed so you can correct the bank details and request it again."
+        }
+      ]
+    },
+    {
+      "name": "Private rooms and invitations",
+      "emoji": "🔐",
+      "items": [
+        {
+          "question": "What is a private bidding room?",
+          "answer": "A sale the seller has chosen not to list publicly. Only the seller, bidders they have invited and administrators can see the room or its lots.\n\nPrivate rooms are how single-owner collections and discreet sales are run."
+        },
+        {
+          "question": "How do I join a private room?",
+          "answer": "Open the invitation link we emailed you and accept — that joins you to the room and records your acceptance. Invitations you have been sent also appear in your dashboard under Invitations.\n\nSome rooms also accept a join code if the seller enabled one."
+        },
+        {
+          "question": "What does 'by request' mean on an invitation?",
+          "answer": "It is an open invitation: you ask for access and the seller approves you individually. Until they do, the room stays closed to you.\n\nAn 'exclusive' invitation needs no approval — it is already yours."
+        },
+        {
+          "question": "Can I forward my invitation to a friend?",
+          "answer": "No. An invitation is issued to your email address and can only be redeemed by your account, so forwarding it will not let anyone else in.\n\nIf someone else should join, ask the seller to invite them."
+        },
+        {
+          "question": "I lost or deleted my invitation email — what now?",
+          "answer": "Check your dashboard under Invitations first; every invitation sent to your account is listed there while it is still valid.\n\nIf it has expired, ask the seller to issue a new one."
+        },
+        {
+          "question": "Do private rooms have deposit requirements?",
+          "answer": "Some do — the seller can require a deposit or a minimum wallet balance before you can bid, and the room shows this before you join.\n\nFund your wallet first if you plan to bid in a room that requires it."
+        }
+      ]
+    },
+    {
+      "name": "Verification and account",
+      "emoji": "✅",
+      "items": [
+        {
+          "question": "Do I need to verify my identity to buy?",
+          "answer": "Buyers need a verified email address to bid and pay. Full identity verification — documents, reviewed by an administrator — is required for sellers before they can publish lots."
+        },
+        {
+          "question": "Which documents will you ask a seller for?",
+          "answer": "Whatever the current requirements list shows in your verification panel — typically a government identity document, and for company sellers additional business documentation. Each requirement is uploaded separately and reviewed.\n\nYou can see exactly what is outstanding, and why a document was rejected."
+        },
+        {
+          "question": "How long does verification take?",
+          "answer": "Documents are reviewed by an administrator, not instantly. You will see the outcome and any reviewer note in your verification panel, and a rejection tells you what to fix."
+        },
+        {
+          "question": "I forgot my password.",
+          "answer": "Use Forgot password on the sign-in page and follow the emailed link. The link is time-limited, so request a fresh one if it has expired.\n\nIf the email does not arrive, check spam, and confirm you are using the address you registered with."
+        },
+        {
+          "question": "How do I update my phone number or address?",
+          "answer": "In your dashboard under Account / Profile. Saved details are used for invoices and delivery, so keep them current.\n\nYour email address is the account identifier and cannot be changed from that screen — contact support for that."
+        },
+        {
+          "question": "How do I delete my account?",
+          "answer": "Request deletion from your account settings or through support. Accounts are deactivated rather than erased outright, because invoices and sale records have to be retained for accounting and dispute purposes.\n\nBid and payment history is preserved under your reference even after deactivation."
+        },
+        {
+          "question": "Why has my account been suspended?",
+          "answer": "Accounts can be suspended by an administrator for unpaid invoices, failed verification or a dispute outcome. Signing in will tell you that the account is inactive.\n\nContact support — reinstatement is possible once the underlying issue is resolved."
+        }
+      ]
+    },
+    {
+      "name": "Disputes, refunds and rules",
+      "emoji": "🛟",
+      "items": [
+        {
+          "question": "The lot is not as described. What do I do?",
+          "answer": "Open a dispute on the purchase rather than contacting the seller privately — a dispute flags the escrow so the money is not released while it is investigated.\n\nGive the reason and a clear description of the difference, and reference the condition report or photographs you are comparing against."
+        },
+        {
+          "question": "What happens during a dispute?",
+          "answer": "The escrow hold is marked as disputed and an administrator reviews the evidence. The outcome is either release of the funds to the seller or a refund to the buyer — the money does not move on its own while the dispute is open.\n\nBoth parties can add feedback once it is closed."
+        },
+        {
+          "question": "How long does a refund take?",
+          "answer": "A refund is issued back to the original payment method once the dispute is resolved in your favour. Timing then depends on your bank or card issuer rather than on us."
+        },
+        {
+          "question": "Are my bids legally binding?",
+          "answer": "Yes. A bid is an offer to buy at that price and cannot be withdrawn, and a winning bid becomes an invoice you are expected to pay.\n\nThe Terms and Conditions set out the full contract, and they take precedence over anything written in this FAQ."
+        },
+        {
+          "question": "What are the rules on condition and descriptions?",
+          "answer": "Lots are sold as described on the lot page, with any uploaded condition report forming part of that description. Sellers are responsible for accuracy and lots are screened before publication.\n\nWhere 'sold as seen' applies, it is stated on the lot."
+        },
+        {
+          "question": "How do reviews work?",
+          "answer": "After a completed sale the buyer can rate the seller on the transaction, including communication, accuracy and delivery, and leave a comment. Sellers can respond publicly.\n\nReviews are only possible where a real sale exists."
+        },
+        {
+          "question": "How is my personal data used?",
+          "answer": "Your data is used to run the sale: invoicing, payment, verification where required, delivery and support. Contact details are not shown to other users.\n\nThe Privacy Policy has the full detail, including how long records are kept and your rights over them."
+        }
+      ]
+    }
+  ]
+}

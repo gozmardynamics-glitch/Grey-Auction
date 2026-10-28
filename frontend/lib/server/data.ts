@@ -1175,30 +1175,79 @@ export async function getTestimonials() {
   return USE_MOCK_FALLBACK ? mockTestimonials : [];
 }
 
+/**
+ * Public FAQ, grouped for the /faq page.
+ *
+ * Order comes from the `order` column, not from the API's row order, so the
+ * reading sequence is stable whatever the database hands back. Each item also
+ * carries a slug so a question can be linked to directly.
+ */
 export async function getFaqCategories() {
   const data = await apiFetch('/faqs');
   const list = unwrapList(data);
   if (list && list.length > 0) {
-    // Group the flat FAQ rows into the FAQCategory shape the UI expects
-    const groups = new Map<string, { question: string; answer: string }[]>();
+    const groups = new Map<
+      string,
+      { id: string; question: string; answer: string; order: number }[]
+    >();
+
     for (const faq of list) {
-      const row = faq as { category?: unknown; question?: unknown; answer?: unknown };
-      const name = (typeof row.category === 'string' && row.category) || 'General';
+      const row = faq as {
+        id?: unknown;
+        category?: unknown;
+        question?: unknown;
+        answer?: unknown;
+        order?: unknown;
+      };
+      const name = (typeof row.category === 'string' && row.category.trim()) || 'General';
+      const question = typeof row.question === 'string' ? row.question.trim() : '';
+      if (!question) continue;
+
       if (!groups.has(name)) groups.set(name, []);
       groups.get(name)!.push({
-        question: (typeof row.question === 'string' && row.question) || '',
-        answer: (typeof row.answer === 'string' && row.answer) || '',
+        id: faqSlug(question),
+        question,
+        answer: typeof row.answer === 'string' ? row.answer : '',
+        order: Number(row.order) || 0,
       });
     }
-    const EMOJIS = ['📦', '💬', '💰', '🛠️', '🚚', '🔒', '⭐', '🏷️'];
-    let i = 0;
-    return Array.from(groups.entries()).map(([name, items]) => ({
-      name,
-      emoji: EMOJIS[i++ % EMOJIS.length],
-      items,
-    }));
+
+    // Emoji is presentation, keyed by name so it survives any row reordering;
+    // an unknown category (one an admin added) gets a neutral marker.
+    const EMOJI: Record<string, string> = {
+      'Getting started': '\u{1F680}',
+      'Buying and bidding': '\u{1F528}',
+      'Paying and invoices': '\u{1F4B3}',
+      'Collecting your lot': '\u{1F4E6}',
+      'Selling with GreyAuction': '\u{1F3F7}\uFE0F',
+      'Fees and payouts': '\u{1F4B0}',
+      'Private rooms and invitations': '\u{1F510}',
+      'Verification and account': '\u2705',
+      'Disputes, refunds and rules': '\u{1F6DF}',
+    };
+
+    return Array.from(groups.entries())
+      .map(([name, items]) => ({
+        name,
+        emoji: EMOJI[name] || '\u2753',
+        items: items.sort((a, b) => a.order - b.order),
+      }))
+      .sort((a, b) => (a.items[0]?.order ?? 0) - (b.items[0]?.order ?? 0));
   }
   return USE_MOCK_FALLBACK ? mockFaqCategories : [];
+}
+
+/** Stable, readable anchor for a question: "why-was-my-bid-rejected". */
+function faqSlug(question: string): string {
+  const base = question
+    .toLowerCase()
+    // Apostrophes are dropped rather than turned into a separator, so
+    // "Why can't I…" links as why-cant-i… rather than why-can-t-i…
+    .replace(/[\u2018\u2019'"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return base || 'question';
 }
 
 export async function getCartItems() {

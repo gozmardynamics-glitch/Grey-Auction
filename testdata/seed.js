@@ -716,10 +716,10 @@ async function main() {
 
   // ─── Editorial content ────────────────────────────────────────────────────
   await section('faqs, banners and content', async (s) => {
+    // One self-identifying category only: the public FAQ page carries real
+    // content from content/faqs.json, so fixtures must not look like topics.
     const faqs = [
-      { category: 'buying', question: `${MARK}: How does the buyer's premium work?`, answer: 'A premium of 10% is added to the hammer price. VAT at 7.5% is charged on the hammer price plus premium.', order: 1 },
-      { category: 'buying', question: `${MARK}: When can I collect my lot?`, answer: 'Collection opens once the invoice is paid. Your invoice shows the collection window for each lot.', order: 2 },
-      { category: 'selling', question: `${MARK}: How long until I am paid?`, answer: 'Funds are held in escrow until the buyer confirms collection, then released to your wallet; payouts run on your chosen schedule.', order: 3 },
+      { category: `${MARK} fixtures`, question: `${MARK}: does the FAQ admin table render and paginate?`, answer: 'Fixture row used to check the admin FAQ table. Safe to delete.', order: 9001 },
     ];
     for (const faq of faqs) {
       const res = await call('/api/admin/faqs', { method: 'POST', token: admin.token, body: { ...faq, isActive: true } });

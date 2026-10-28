@@ -168,6 +168,8 @@ interface AuctionDetail {
 }
 
 interface FAQItem {
+  /** Anchor slug, so a single answer can be linked to. */
+  id?: string;
   question: string;
   answer: string;
 }
