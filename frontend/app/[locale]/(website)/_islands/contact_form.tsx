@@ -15,10 +15,32 @@ import {
   FormMessage,
   Button,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/shared/components/common';
 import { Textarea } from '@/shared/components/common/textarea';
 import { getErrorMessage } from '@/shared/utils/error_utils';
 import { ContactFormValues, contactSchema } from '../models/schema';
+
+/**
+ * Triage topics. Kept in step with the complaints taxonomy in
+ * docs/complaints/COMPLAINTS-SECTION.md and the categories in the Complaints
+ * Policy, because the ticket queue has no category field of its own.
+ */
+const TOPICS = [
+  'Bidding and auctions',
+  'Payments and invoices',
+  'Escrow, refunds and disputes',
+  'Seller payouts',
+  'Listing accuracy and condition',
+  'Delivery and collection',
+  'Account, verification and access',
+  'Data protection and privacy',
+  'Something else',
+];
 
 export default function ContactForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +52,7 @@ export default function ContactForm() {
       lastName: '',
       email: '',
       message: '',
+      topic: 'Bidding and auctions',
     },
   });
 
@@ -45,7 +68,10 @@ export default function ContactForm() {
         body: JSON.stringify({
           name: `${data.firstName} ${data.lastName}`.trim(),
           email: data.email,
-          subject: `Website enquiry from ${data.firstName} ${data.lastName}`.trim(),
+          // The subject is the only free field the ticket queue shows, so the
+          // topic goes in it — otherwise every complaint and every enquiry look
+          // identical to whoever triages the queue.
+          subject: `[${data.topic || 'General'}] ${`${data.firstName} ${data.lastName}`.trim() || data.email || 'Website visitor'}`,
           message: data.message,
         }),
       });
@@ -121,6 +147,39 @@ export default function ContactForm() {
                       className="bg-background"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="topic"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What is this about?</FormLabel>
+                  <Select
+                    disabled={isLoading}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Choose a topic" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {TOPICS.map((topic) => (
+                        <SelectItem key={topic} value={topic}>
+                          {topic}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    For a problem with a specific purchase, open a dispute from the
+                    purchase itself instead — it freezes the funds while we look into it.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

@@ -41,6 +41,7 @@ function buildFooterColumns(t: (key: string) => string) {
         { label: t('faq'), href: '/faq' },
         { label: t('privacyPolicy'), href: '/privacy-policy' },
         { label: t('dataProtection'), href: '/data-protection' },
+        { label: t('complaints'), href: '/complaints' },
         { label: t('termsAndConditions'), href: '/terms' },
         { label: t('deliveryInfo'), href: '/faq' },
       ],

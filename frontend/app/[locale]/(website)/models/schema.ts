@@ -5,6 +5,8 @@ const contactSchema = z.object({
   lastName: z.string().optional(),
   email: z.string().optional(),
   message: z.string().optional(),
+  /** Which area the message is about — drives triage in the ticket queue. */
+  topic: z.string().optional(),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;

@@ -120,7 +120,7 @@ async function main() {
       ? `\ndry run: ${published} page(s) ready`
       : `\npublished ${published} page(s)`,
   );
-  console.log('  /en/privacy-policy   /en/data-protection');
+  console.log('  /en/privacy-policy   /en/data-protection   /en/complaints');
 
   if (failures.length) {
     console.log('\nnot published:');
