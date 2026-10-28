@@ -82,6 +82,43 @@ export default function TicketList({
                     </span>
                   )}
                 </div>
+
+                {/* Triage line: what it is about, how urgent, and whether the
+                    published service level is already broken. */}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
+                  {ticket.reference && (
+                    <span className="font-mono text-muted-foreground">{ticket.reference}</span>
+                  )}
+                  {ticket.category && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+                      {ticket.category.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                  {ticket.severity && (
+                    <span
+                      className={cn(
+                        'rounded px-1.5 py-0.5 font-semibold',
+                        ticket.severity === 'p1'
+                          ? 'bg-red-100 text-red-700'
+                          : ticket.severity === 'p2'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {ticket.severity.toUpperCase()}
+                    </span>
+                  )}
+                  {ticket.slaState === 'overdue' && (
+                    <span className="rounded bg-red-100 px-1.5 py-0.5 font-semibold text-red-700">
+                      Overdue
+                    </span>
+                  )}
+                  {ticket.slaState === 'due_soon' && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-700">
+                      Due soon
+                    </span>
+                  )}
+                </div>
               </div>
             </Button>
           ))}

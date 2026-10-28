@@ -84,9 +84,13 @@ export class AdminController {
   }
 
   @Post('buyers/:id/suspend')
-  @ApiOperation({ summary: 'Suspend buyer' })
-  async suspendBuyer(@Param('id') id: string) {
-    const data = await this.adminService.setBuyerStatus(id, false);
+  @ApiOperation({
+    summary: 'Suspend buyer (refused while a money complaint is open unless force=true)',
+  })
+  async suspendBuyer(@Param('id') id: string, @Body() body?: { force?: boolean; reason?: string }) {
+    // The guard lives in the service so it cannot be bypassed by another caller;
+    // `force` is the documented override and is echoed in the response.
+    const data = await this.adminService.setBuyerStatus(id, false, { force: body?.force === true });
     return { success: true, message: 'Buyer suspended', data };
   }
 

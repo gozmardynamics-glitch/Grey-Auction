@@ -1714,6 +1714,11 @@ export async function getAdminBiddingRooms() {
 
 interface RawTicketRow {
   id: string;
+  reference?: string | null;
+  category?: string | null;
+  severity?: string | null;
+  dueAt?: string | null;
+  sla?: { state?: string | null } | null;
   subject?: string | null;
   description?: string | null;
   status?: string | null;
@@ -1755,8 +1760,16 @@ const toTicketRow = (raw: RawTicketRow): AdminTicket => {
       type: 'text',
     });
   }
+  const slaState = raw.sla?.state;
   return {
     id: raw.id,
+    // Triage essentials. Without these the queue is a list of names and the
+    // service-level promise is invisible to the person who has to keep it.
+    reference: raw.reference || null,
+    category: raw.category || null,
+    severity: raw.severity || null,
+    slaState: slaState || null,
+    dueAt: raw.dueAt || null,
     contact: {
       name: raw.userName || raw.userEmail || 'Unknown contact',
       avatar: '',

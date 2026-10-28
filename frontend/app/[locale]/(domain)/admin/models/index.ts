@@ -492,6 +492,15 @@ interface TicketMessage {
 
 interface Ticket {
   id: string;
+  /** Complaint reference quoted to the complainant (TKT-2026-000042). */
+  reference?: string | null;
+  /** What the complaint is about — drives severity and the SLA. */
+  category?: string | null;
+  /** p1 (money or safety) … p4 (feedback). */
+  severity?: string | null;
+  /** on_track | due_soon | overdue | closed, from the backend's SLA engine. */
+  slaState?: string | null;
+  dueAt?: string | null;
   contact: {
     name: string;
     avatar: string;

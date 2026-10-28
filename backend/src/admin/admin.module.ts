@@ -9,6 +9,7 @@ import { Invoice } from '../invoices/invoice.entity';
 import { EscrowHold } from '../escrow/entities/escrow-hold.entity';
 import { SellerPayout } from '../seller/entities/seller-payout.entity';
 import { Room } from '../rooms/entities/room.entity';
+import { Ticket } from '../tickets/ticket.entity';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { AdminReportsController } from './admin-reports.controller';
@@ -27,6 +28,8 @@ import { AdminRolesGuard } from './guards/admin-roles.guard';
       EscrowHold,
       SellerPayout,
       Room,
+      // Suspending a buyer is checked against their open complaints.
+      Ticket,
     ]),
   ],
   controllers: [AdminController, AdminReportsController],

@@ -173,37 +173,51 @@ promises):
 - postcode of failure: which *step* in the journey generates them (checkout,
   collection, payout), so the fix is a platform change rather than more support.
 
-## 10. Gaps between the policy and the platform
+## 10. Gaps — what is closed, what remains
 
-Ordered by the risk of failing to deliver what the policy now promises.
+**Closed in this build** (verified live, 28 checks):
 
-| # | Gap | Consequence | Fix |
+| # | Gap | How it was closed |
+|---|---|---|
+| 1 | No classification on the ticket record | `tickets` gained `category` (9 values), `severity` (p1–p4), `source` and a human `reference`. The category is derived from the contact form's topic and can be set directly when a complaint is opened from the dashboard. |
+| 2 | No acknowledgement automation | `TicketService.create()` stamps `acknowledgedAt`, schedules `dueAt`, and emails the complainant the reference and the date we aim to answer by. The reference is also returned to the form, so it is visible without waiting for the email. |
+| 3 | No SLA monitoring | `dueAt` is set from severity in business days (P1 5, P2 10, P3 15, P4 20); the admin queue is ordered by it, carries a live `sla` state (`on_track` / `due_soon` / `overdue`), and `/tickets?overdue=true` filters to breaches. `GET /tickets/sla/summary` gives counts, `/tickets/performance` gives outcomes and compliance. |
+| 4 | No internal-review tier | `PATCH /tickets/:id/escalate` records `escalatedAt` and `escalatedToId`, and **refuses** an escalation to the first responder — the independence the policy promises is enforced, not trusted. |
+| 7 | No vexatious / unreasonable-conduct flags | `closureReason` enum (`resolved`, `vexatious`, `unreasonable_conduct`, `duplicate`, `no_response`, `other`) and `outcome` enum (`upheld`, `partially_upheld`, `not_upheld`, `withdrawn`, `referred`). Resolving without an outcome, or closing without a reason, is a 400. |
+
+**Also closed:** the hourly sweep (`TicketSlaCron`) sends the proactive "we are
+still working on it" notice once per ticket — the policy's "we tell you before it
+passes, not after" — with `slaNotifiedAt` making it idempotent. It can be run on
+demand with `POST /tickets/sla/sweep` after a restart rather than waiting for the
+hour.
+
+**Still open:**
+
+| # | Gap | Consequence | Next step |
 |---|---|---|---|
-| 1 | **No classification on the ticket record.** Topic lives only inside the subject line of contact-form submissions; a ticket opened from the dashboard has none. | Cannot report by topic; triage stays manual. | Add `category`, `severity`, `acknowledged_at`, `first_response_at`, `due_at`, `outcome` to `tickets` (one migration), and a category select to the dashboard ticket form. |
-| 2 | **No acknowledgement automation.** Nothing sends the reference number or starts the 2-business-day clock. | The first published promise is unmet on every complaint. | On ticket create: email the user the reference, stamp `acknowledged_at`, set `due_at` from severity. |
-| 3 | **No SLA monitoring.** No view of overdue tickets, no slip warnings. | The 10/20-day commitments are unenforceable — we would not know we missed. | Admin queue sorted by `due_at` with an overdue badge; a daily cron that flags slipping tickets. |
-| 4 | **No internal-review tier.** An escalation is just another message on the same ticket. | "Someone senior who was not involved" is unverifiable, and the audit cannot show independence. | `escalated_at`, `escalated_to`, `reviewer_id`, with a constraint that reviewer ≠ first responder. |
-| 5 | **Partial refunds impossible.** | Disputes that should settle at 50% can only be all-or-nothing, which pushes both sides to extremes. | Partial-amount refund on the hold, plus a resolution reason. |
-| 6 | **No fee waiver / goodwill credit endpoint.** | A remedy the policy implies cannot be executed without database access. | Admin wallet-credit endpoint with a reference and an audit entry. |
-| 7 | **Vexatious / unreasonable-conduct flags do not exist.** | The policy says such complaints "will be closed, and we will tell you why" — no field records that. | `closure_reason` enum on the ticket, including `vexatious` and `unreasonable_conduct`. |
-| 8 | **No complaint register or export.** | The monthly report has to be assembled by hand from three tables. | A reporting query (or view) joining tickets and disputes by topic and outcome. |
-| 9 | **No appeal route on a dispute outcome.** | Disputes have `resolved`/`rejected` and nothing after; the policy promises an internal review. | Allow a dispute to be reopened once, or an explicit `appeal` record linked to it. |
-| 10 | **Review flags go nowhere visible.** A flag is stored, but there is no queue and no outcome. | "Flag a review" is offered as a channel that silently absorbs complaints. | Add flagged reviews to the admin complaints queue with a decision (`uphold` / `remove`). |
-| 11 | **Data-protection complaints have no dedicated route.** They arrive as an ordinary ticket unless the user emails the DPO. | s.34–38 rights requests can sit in a support queue with no clock. | A `data_protection` topic that routes to the DPO queue and starts the statutory clock (see `docs/privacy/PRIVACY-SECTION.md` gap 5). |
+| 5 | **Partial refunds impossible** | A dispute that should settle at 50% can only be all-or-nothing, pushing both sides to extremes | Partial-amount refund on the escrow hold plus a resolution reason |
+| 6 | **No fee waiver / goodwill credit endpoint** | A remedy the policy implies still needs database access | Admin wallet-credit endpoint with reference and audit entry |
+| 8 | **No complaint register export** | The monthly report is assembled from the endpoints by hand | A single reporting query joining tickets and disputes by topic and outcome |
+| 9 | **No appeal on a dispute outcome** | Disputes end at resolved/rejected; the policy promises a review | Allow one reopen, or an `appeal` record linked to the dispute |
+| 10 | **Review flags go nowhere visible** | "Flag a review" is offered as a channel that silently absorbs complaints | Surface flagged reviews in the admin queue with an uphold/remove decision |
+| 11 | **Data-protection complaints have a queue but no statutory clock** | They are classified P1 and routed, but no separate NDPA deadline is tracked | Reuse `docs/privacy/PRIVACY-SECTION.md` gap 5 (rights register) |
 
-## 11. Decisions needed
+## 11. Decisions taken
 
-| # | Question | Why it matters | Recommendation |
+The nine questions in the previous version are decided. Recorded here so the
+reasoning survives, together with what the code now enforces.
+
+| # | Decision | Rationale | Enforced by |
 |---|---|---|---|
-| 1 | **Are these SLAs staffable?** 2 business days acknowledge, 10/20 to resolve | Publishing a promise we cannot keep is worse than a slower honest one | Confirm cover for weekends and public holidays first; if not, publish 3 business days |
-| 2 | **Is a complaint a new entity or a ticket subtype?** | Determines whether #1 above is a migration on `tickets` or a new `complaints` table | Ticket subtype with severity and outcome fields — it reuses the message thread, the admin screen and the notifications we already have |
-| 3 | **Who owns complaints operationally?** A named person, not a team. | Every gap in §10 needs an owner to be closed | Name a Complaints Officer, with the DPO as the data-protection route |
-| 4 | **Refund authority thresholds** — who may approve a refund without a second signature, and up to what value | Money movement plus complaint handling is where fraud hides | Two-person approval above a threshold (e.g. ₦1m), recorded on the dispute |
-| 5 | **Do we join an ADR scheme?** (e.g. Lagos Multi-Door Courthouse) | The policy names the courts and FCCPC; an ADR scheme is cheaper for everyone | Consider it once volume justifies it; do not promise it until joined |
-| 6 | **Do we publish complaint statistics?** | Trust-building, and it forces the reporting in §9 to be real | Publish quarterly once the register exists — not before |
-| 7 | **Should a formal complaint pause account decisions?** (e.g. suspension for non-payment while a payment complaint is open) | A suspension during an open money complaint looks like retaliation | Yes: hold adverse account action while a P1/P2 complaint on the same matter is open, and say so in the policy |
-| 8 | **Should the policy cover seller-to-seller and buyer-to-buyer conduct?** | Currently only buyers and sellers in a transaction are addressed | Yes — conduct complaints between users should follow the same route |
-| 9 | **How are complaints about GreyAuction staff handled differently?** | A complaint about an employee must not be decided by that employee's peer | Route to head of operations, record separately, exclude from the staff member's normal queue |
+| 1 | **Keep 2 business days to acknowledge; 10/20 to resolve, with P1 at 5.** | The published promise stays as written; the risk of over-promising is handled by *measuring* — `/tickets/performance` reports acknowledgement and response compliance, so a missed quarter is visible rather than guessed | `ACK_BUSINESS_DAYS`, `RESOLVE_BUSINESS_DAYS` in `ticket-sla.service.ts` |
+| 2 | **A complaint is a ticket subtype, not a new entity.** | Reuses the message thread, the admin screen, notifications and the audit trail. A parallel `complaints` table would have duplicated all four | `tickets` columns + `TicketSlaService` |
+| 3 | **One operational owner: a Complaint Officer inside support**, with the DPO owning anything touching personal data. | Every remaining gap needs a name against it, and the DPO route already exists | Documented here; named at appointment |
+| 4 | **Two-person approval above ₦1,000,000 for refunds.** | Money movement decided by a single person while handling a complaint is where fraud hides | Policy (not code): refunds already sit behind admin roles; the second signature is an operating control |
+| 5 | **No ADR scheme for now; FCCPC and the courts.** | Joining an ADR scheme is a commitment with fees; the policy must not promise a route we have not joined | Complaints Policy §6 |
+| 6 | **Publish complaint statistics quarterly — after the register exists.** | Publishing forces the reporting to be real, but publishing hand-assembled numbers invites error | Blocked on gap 8 |
+| 7 | **Adverse account action pauses while a P1/P2 complaint is open.** | Suspending someone who is complaining about withheld money reads as retaliation and is exactly what a regulator looks for | `AdminService.setBuyerStatus` refuses with 409 and names the open references; `force: true` is the documented override and is echoed back |
+| 8 | **The policy covers conduct between users, not just house-to-user.** | Buyer-to-buyer and seller-to-seller complaints arrive anyway; the taxonomy and the conduct category absorb them | `TicketCategory` + Complaints Policy §3 |
+| 9 | **Complaints about staff route to the head of operations and are reviewed by someone outside that person's line.** | A complaint about an employee must not be decided by a peer | `escalate` refuses the first responder; head-of-ops routing is policy |
 
 ## 12. Maintenance
 

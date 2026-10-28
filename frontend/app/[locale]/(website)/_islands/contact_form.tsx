@@ -62,6 +62,8 @@ export default function ContactForm() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       // Backend ContactController: subject + message are required; the name is
       // split into one field for the ticket queue.
+      // `topic` is accepted by ContactDto and mapped to a complaint category —
+      // which decides the service level, so it is not decoration.
       const res = await fetch(`${apiBase}/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,7 +73,8 @@ export default function ContactForm() {
           // The subject is the only free field the ticket queue shows, so the
           // topic goes in it — otherwise every complaint and every enquiry look
           // identical to whoever triages the queue.
-          subject: `[${data.topic || 'General'}] ${`${data.firstName} ${data.lastName}`.trim() || data.email || 'Website visitor'}`,
+          subject: `${`${data.firstName} ${data.lastName}`.trim() || data.email || 'Website visitor'} — ${data.topic || 'General'}`,
+          topic: data.topic,
           message: data.message,
         }),
       });
@@ -79,7 +82,15 @@ export default function ContactForm() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || 'Could not send your message');
       }
-      toast.success('Thanks — our team will get back to you shortly.');
+      const json = await res.json().catch(() => null);
+      const reference = json?.data?.reference;
+      // The policy promises a reference, so it is shown here rather than only
+      // emailed — one toast, not two.
+      toast.success(
+        reference
+          ? `Thanks — we have your message. Your reference is ${reference}.`
+          : 'Thanks — our team will get back to you shortly.',
+      );
       form.reset();
     } catch (error) {
       toast.error(getErrorMessage(error) || 'Could not send your message. Please try again.');

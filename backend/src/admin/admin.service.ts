@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
+import { Ticket, TicketSeverity, TicketStatus } from '../tickets/ticket.entity';
 import { Admin, AdminRole } from './entities/admin.entity';
 import { User, UserRole } from '../auth/entities/user.entity';
 import * as bcrypt from 'bcryptjs';
@@ -12,6 +13,7 @@ export class AdminService {
   constructor(
     @InjectRepository(Admin) private readonly adminRepo: Repository<Admin>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Ticket) private readonly ticketRepo: Repository<Ticket>,
   ) {}
 
   // ─── Admins CRUD ────────────────────────────────────────────────
@@ -150,11 +152,47 @@ export class AdminService {
     });
   }
 
-  async setBuyerStatus(id: string, isActive: boolean) {
+  /**
+   * Suspend or reinstate a buyer.
+   *
+   * Suspending someone while a money complaint of theirs is open looks like
+   * retaliation, and it is the kind of thing a regulator reads badly — so it is
+   * refused rather than left to judgement. An admin who genuinely needs to act
+   * during an open complaint can pass `force`, which is recorded on the returned
+   * result so the decision is visible afterwards.
+   */
+  async setBuyerStatus(id: string, isActive: boolean, options: { force?: boolean } = {}) {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Buyer not found');
+
+    let openComplaints: Ticket[] = [];
+    if (!isActive) {
+      openComplaints = await this.ticketRepo.find({
+        where: {
+          userId: id,
+          status: Not(In([TicketStatus.RESOLVED, TicketStatus.CLOSED])),
+          severity: In([TicketSeverity.P1, TicketSeverity.P2]),
+        },
+        take: 5,
+      });
+      if (openComplaints.length && !options.force) {
+        throw new ConflictException(
+          `This account has ${openComplaints.length} open complaint(s) that concern money ` +
+            `(${openComplaints.map((ticket) => ticket.reference).join(', ')}). ` +
+            'Resolve them first, or repeat the request with force=true and a recorded reason.',
+        );
+      }
+    }
+
     user.isActive = isActive;
     await this.userRepo.save(user);
-    return { success: true, id, isActive };
+    return {
+      success: true,
+      id,
+      isActive,
+      ...(openComplaints.length && {
+        suspendedDuringComplaints: openComplaints.map((ticket) => ticket.reference),
+      }),
+    };
   }
 }
